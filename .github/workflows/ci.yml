@@ -1,0 +1,156 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+      - staging
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RUST_TEST_THREADS: 1
+  RUSTDOCFLAGS: -D warnings
+  RUSTFLAGS: -D warnings
+  RUSTUP_MAX_RETRIES: 10
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rust: stable
+          - rust: beta
+          - rust: nightly
+          # TODO
+          # - rust: stable
+          #   target: aarch64-unknown-linux-gnu
+          # - rust: nightly
+          #   target: aarch64-unknown-linux-gnu
+          - rust: stable
+            target: i586-unknown-linux-gnu
+          - rust: nightly
+            target: i586-unknown-linux-gnu
+          - rust: stable
+            target: i686-unknown-linux-gnu
+          - rust: nightly
+            target: i686-unknown-linux-gnu
+          - rust: stable
+            target: riscv64gc-unknown-linux-gnu
+          - rust: nightly
+            target: riscv64gc-unknown-linux-gnu
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          toolchain: ${{ matrix.rust }}
+          component: rust-src
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: taiki-e/install-action@cargo-minimal-versions
+      - uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+        if: matrix.target != ''
+      - run: cargo test -vv --workspace --all-features $DOCTEST_XCOMPILE
+      - run: cargo test -vv --workspace --all-features --release $DOCTEST_XCOMPILE
+      - run: cargo test -vv --workspace --all-features --release $DOCTEST_XCOMPILE
+        env:
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
+          CARGO_PROFILE_RELEASE_LTO: fat
+      - run: tools/build.sh
+        if: matrix.target == ''
+      - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private
+        if: startsWith(matrix.rust, 'nightly')
+
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: taiki-e/install-action@cargo-hack
+      # Make sure this crate can be built with MSRV and all later versions.
+      # However, this takes time, so for PR, set the version interval.
+      - run: cargo hack build -vvv --workspace --feature-powerset --optional-deps --ignore-private --no-dev-deps --version-range ..
+        if: github.event_name != 'pull_request'
+      - run: cargo hack build -vvv --workspace --feature-powerset --optional-deps --ignore-private --no-dev-deps --version-range .. --version-step 2
+        if: github.event_name == 'pull_request'
+
+  valgrind:
+    env:
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER: valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --track-origins=yes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: taiki-e/github-actions/install-rust@main
+      - uses: taiki-e/install-action@valgrind
+      - run: cargo test -vv --workspace --all-features -Z doctest-xcompile
+      - run: cargo test -vv --workspace --all-features --release -Z doctest-xcompile
+      - run: cargo test -vv --workspace --all-features --release -Z doctest-xcompile
+        env:
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
+          CARGO_PROFILE_RELEASE_LTO: fat
+
+  tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          component: clippy,rustfmt
+      - uses: taiki-e/install-action@shellcheck
+      - run: cargo fmt --all --check
+        if: always()
+      - run: cargo clippy --workspace --all-features --all-targets
+        if: always()
+      - run: shellcheck $(git ls-files '*.sh')
+        if: always()
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: taiki-e/github-actions/install-rust@main
+      - run: cargo doc --workspace --all-features
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg docsrs
+
+  # ALL THE PREVIOUS JOBS NEEDS TO BE ADDED TO THE `needs` SECTION OF THIS JOB!
+
+  ci-success:
+    name: ci
+    if: github.event_name == 'push' && success()
+    needs:
+      - test
+      - msrv
+      - valgrind
+      - tidy
+      - docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark the job as a success
+        run: exit 0

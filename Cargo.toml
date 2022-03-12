@@ -1,0 +1,33 @@
+[package]
+name = "atomic-maybe-uninit"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.59"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/taiki-e/atomic-maybe-uninit"
+keywords = ["atomic"]
+categories = ["concurrency", "data-structures", "embedded", "no-std"]
+exclude = ["/.*", "/tools"]
+description = """
+Atomic operations on potentially uninitialized integers.
+"""
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+targets = [
+    # TODO
+    # "aarch64-unknown-linux-gnu",
+    "i686-unknown-linux-gnu",
+    "riscv64gc-unknown-linux-gnu",
+    "x86_64-unknown-linux-gnu",
+]
+
+[workspace]
+resolver = "2"
+
+[features]
+raw = []
+
+[dev-dependencies]
+paste = "1"
