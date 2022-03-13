@@ -63,6 +63,10 @@ if ! grep -Eq "^\\[${version//./\\.}\\]: " CHANGELOG.md; then
     bail "not found link to [${version}] in CHANGELOG.md"
 fi
 
+if ! git branch | grep -q '\* main'; then
+    bail "current branch is not 'main'"
+fi
+
 set -x
 
 git push origin main
