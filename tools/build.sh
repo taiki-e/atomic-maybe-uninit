@@ -48,7 +48,7 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
         # -Z check-cfg-features requires 1.61.0-nightly
         1.3* | 1.4* | 1.5* | 1.60.*) ;;
         *)
-            check_cfg='-Z unstable-options --check-cfg=names(docsrs,const_fn_trait_bound,target_feature_a)'
+            check_cfg='-Z unstable-options --check-cfg=names(const_fn_trait_bound,target_feature_a)'
             rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
             subcmd=clippy
             ;;

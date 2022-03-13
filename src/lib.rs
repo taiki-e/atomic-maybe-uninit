@@ -75,7 +75,6 @@ Feel free to submit an issue if your target is not supported yet.
     )),
     feature(asm_experimental_arch)
 )]
-#![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[cfg(test)]
 extern crate std;
@@ -89,11 +88,7 @@ mod tests;
 
 mod arch;
 
-#[cfg(feature = "raw")]
-#[cfg_attr(docsrs, doc(cfg(feature = "raw")))]
 pub mod raw;
-#[cfg(not(feature = "raw"))]
-mod raw;
 
 #[cfg(doc)]
 use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};

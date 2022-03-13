@@ -136,8 +136,6 @@ jobs:
           persist-credentials: false
       - uses: taiki-e/github-actions/install-rust@main
       - run: cargo doc --workspace --all-features
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg docsrs
 
   # ALL THE PREVIOUS JOBS NEEDS TO BE ADDED TO THE `needs` SECTION OF THIS JOB!
 

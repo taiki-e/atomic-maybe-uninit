@@ -13,8 +13,6 @@ Atomic operations on potentially uninitialized integers.
 """
 
 [package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
 targets = [
     # TODO
     # "aarch64-unknown-linux-gnu",
@@ -25,9 +23,6 @@ targets = [
 
 [workspace]
 resolver = "2"
-
-[features]
-raw = []
 
 [dev-dependencies]
 paste = "1"
