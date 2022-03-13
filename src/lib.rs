@@ -9,12 +9,13 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, and RISC-V are supported.
+Currently, x86, x86_64, AArch64, and RISC-V are supported.
 
 | target_arch | primitives                                          | load | store | swap |
 | ----------- | --------------------------------------------------- |:----:|:-----:|:----:|
 | x86         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓    | ✓     | ✓    |
 | x86_64      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓    | ✓     | ✓    |
+| aarch64     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓    | ✓     | ✓    |
 | riscv32     | isize,usize,i32,u32                                 | ✓    | ✓     | ✓*   |
 | riscv32     | i8,u8,i16,u16                                       | ✓    | ✓     |      |
 | riscv64     | isize,usize,i32,u32,i64,u64                         | ✓    | ✓     | ✓*   |
@@ -66,12 +67,12 @@ Feel free to submit an issue if your target is not supported yet.
 )]
 #![cfg_attr(
     not(any(
-        target_arch = "aarch64",
+        target_arch = "x86",
+        target_arch = "x86_64",
         target_arch = "arm",
+        target_arch = "aarch64",
         target_arch = "riscv32",
         target_arch = "riscv64",
-        target_arch = "x86_64",
-        target_arch = "x86",
     )),
     feature(asm_experimental_arch)
 )]

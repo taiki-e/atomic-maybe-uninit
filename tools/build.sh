@@ -12,11 +12,10 @@ default_targets=(
     i586-unknown-linux-gnu
     i686-unknown-linux-gnu
 
-    # TODO
-    # # aarch64
-    # aarch64-unknown-linux-gnu
-    # # aarch64_be
-    # aarch64_be-unknown-linux-gnu
+    # aarch64
+    aarch64-unknown-linux-gnu
+    # aarch64_be
+    aarch64_be-unknown-linux-gnu
 
     # riscv
     riscv64gc-unknown-linux-gnu

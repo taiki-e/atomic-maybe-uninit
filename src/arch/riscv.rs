@@ -4,14 +4,13 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/zGsx9qv8T
+// - riscv64gc https://godbolt.org/z/xfY4rM6z4
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-use crate::{
-    raw::{AtomicLoad, AtomicStore},
-    utils::ordering_unreachable_unchecked,
-};
+#[cfg(any(target_feature_a, target_feature = "a"))]
+use crate::raw::AtomicSwap;
+use crate::raw::{AtomicLoad, AtomicStore};
 
 macro_rules! atomic_load_store {
     ($int_type:ident, $asm_suffix:tt) => {
@@ -66,7 +65,7 @@ macro_rules! atomic_load_store {
                                 options(nostack),
                             );
                         }
-                        _ => ordering_unreachable_unchecked(order),
+                        _ => crate::utils::ordering_unreachable_unchecked(order),
                     }
                 }
             }
@@ -85,7 +84,7 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                // load val to tmp
+                                // load from val to tmp
                                 concat!("l", $asm_suffix, " {tmp}, 0({val})"),
                                 // (atomic) store tmp to dst
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
@@ -95,10 +94,10 @@ macro_rules! atomic_load_store {
                                 options(nostack),
                             );
                         }
-                        // Release and SeqCst stores are equivalent in RISC-V.
+                        // Release and SeqCst stores are equivalent.
                         Ordering::Release | Ordering::SeqCst => {
                             asm!(
-                                // load val to tmp
+                                // load from val to tmp
                                 concat!("l", $asm_suffix, " {tmp}, 0({val})"),
                                 // (atomic) store tmp to dst
                                 "fence rw, w",
@@ -109,7 +108,7 @@ macro_rules! atomic_load_store {
                                 options(nostack),
                             );
                         }
-                        _ => ordering_unreachable_unchecked(order),
+                        _ => crate::utils::ordering_unreachable_unchecked(order),
                     }
                 }
             }
@@ -121,7 +120,7 @@ macro_rules! atomic {
     ($int_type:ident, $asm_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix);
         #[cfg(any(target_feature_a, target_feature = "a"))]
-        impl crate::raw::AtomicSwap for $int_type {
+        impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -133,81 +132,33 @@ macro_rules! atomic {
                 #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
+                    macro_rules! atomic_swap {
+                        ($order:tt) => {
+                            asm!(
+                                // load val to val_tmp
+                                concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
+                                // (atomic) swap
+                                // - load value from dst and store it to out_tmp
+                                // - store value of val_tmp to dst
+                                concat!("amoswap.", $asm_suffix, $order, " {out_tmp}, {val_tmp}, 0({dst})"),
+                                // store out_tmp to out
+                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                val_tmp = out(reg) _,
+                                out = in(reg) out,
+                                out_tmp = out(reg) _,
+                                options(nostack),
+                            )
+                        };
+                    }
                     match order {
-                        Ordering::Relaxed => {
-                            asm!(
-                                // load val to val_tmp
-                                concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
-                                // (atomic) swap
-                                // - load value from dst and store it to out_tmp
-                                // - store value of val_tmp to dst
-                                concat!("amoswap.", $asm_suffix, " {out_tmp}, {val_tmp}, 0({dst})"),
-                                // store out_tmp to out
-                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                val_tmp = out(reg) _,
-                                out = in(reg) out,
-                                out_tmp = out(reg) _,
-                                options(nostack),
-                            );
-                        }
-                        Ordering::Acquire => {
-                            asm!(
-                                // load val to val_tmp
-                                concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
-                                // (atomic) swap
-                                // - load value from dst and store it to out_tmp
-                                // - store value of val_tmp to dst
-                                concat!("amoswap.", $asm_suffix, ".aq {out_tmp}, {val_tmp}, 0({dst})"),
-                                // store out_tmp to out
-                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                val_tmp = out(reg) _,
-                                out = in(reg) out,
-                                out_tmp = out(reg) _,
-                                options(nostack),
-                            );
-                        }
-                        Ordering::Release => {
-                            asm!(
-                                // load val to val_tmp
-                                concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
-                                // (atomic) swap
-                                // - load value from dst and store it to out_tmp
-                                // - store value of val_tmp to dst
-                                concat!("amoswap.", $asm_suffix, ".rl {out_tmp}, {val_tmp}, 0({dst})"),
-                                // store out_tmp to out
-                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                val_tmp = out(reg) _,
-                                out = in(reg) out,
-                                out_tmp = out(reg) _,
-                                options(nostack),
-                            );
-                        }
-                        // AcqRel and SeqCst swaps are equivalent in RISC-V.
-                        Ordering::AcqRel | Ordering::SeqCst => {
-                            asm!(
-                                // load val to val_tmp
-                                concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
-                                // (atomic) swap
-                                // - load value from dst and store it to out_tmp
-                                // - store value of val_tmp to dst
-                                concat!("amoswap.", $asm_suffix, ".aqrl {out_tmp}, {val_tmp}, 0({dst})"),
-                                // store out_tmp to out
-                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                val_tmp = out(reg) _,
-                                out = in(reg) out,
-                                out_tmp = out(reg) _,
-                                options(nostack),
-                            );
-                        }
-                        _ => ordering_unreachable_unchecked(order),
+                        Ordering::Relaxed => atomic_swap!(""),
+                        Ordering::Acquire => atomic_swap!(".aq"),
+                        Ordering::Release => atomic_swap!(".rl"),
+                        // AcqRel and SeqCst swaps are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(".aqrl"),
+                        _ => crate::utils::ordering_unreachable_unchecked(order),
                     }
                 }
             }

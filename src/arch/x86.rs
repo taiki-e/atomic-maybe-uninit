@@ -1,14 +1,10 @@
 // Generated asm:
-// - x86_64 https://godbolt.org/z/vnhjG8ase
-// - i586 https://godbolt.org/z/j95zc6aTq
-// - i686 https://godbolt.org/z/METabMhhG
+// - x86_64 https://godbolt.org/z/Mq93KhhKe
+// - i686 https://godbolt.org/z/aaoq657Wz
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-use crate::{
-    raw::{AtomicLoad, AtomicStore, AtomicSwap},
-    utils::ordering_unreachable_unchecked,
-};
+use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
 macro_rules! delegate {
     ($from:ident, $($to:ident),*) => {$(
@@ -55,7 +51,8 @@ macro_rules! delegate {
     )*};
 }
 
-impl AtomicLoad for i8 {
+delegate!(u8, i8);
+impl AtomicLoad for u8 {
     #[inline]
     unsafe fn atomic_load(
         src: *const MaybeUninit<Self>,
@@ -64,7 +61,7 @@ impl AtomicLoad for i8 {
     ) {
         // SAFETY: the caller must uphold the safety contract for `atomic_store`.
         unsafe {
-            // atomic load is always SeqCst in x86 and x86_64.
+            // atomic load is always SeqCst.
             asm!(
                 // (atomic) load from src to tmp
                 "mov {tmp}, byte ptr [{src}]",
@@ -78,7 +75,7 @@ impl AtomicLoad for i8 {
         }
     }
 }
-impl AtomicStore for i8 {
+impl AtomicStore for u8 {
     #[inline]
     unsafe fn atomic_store(
         dst: *mut MaybeUninit<Self>,
@@ -88,10 +85,10 @@ impl AtomicStore for i8 {
         // SAFETY: the caller must uphold the safety contract for `atomic_store`.
         unsafe {
             match order {
-                // Relaxed and Release stores are equivalent in x86 and x86_64.
+                // Relaxed and Release stores are equivalent.
                 Ordering::Relaxed | Ordering::Release => {
                     asm!(
-                        // load val to tmp
+                        // load from val to tmp
                         "mov {tmp}, byte ptr [{val}]",
                         // (atomic) store tmp to dst
                         "mov byte ptr [{dst}], {tmp}",
@@ -103,7 +100,7 @@ impl AtomicStore for i8 {
                 }
                 Ordering::SeqCst => {
                     asm!(
-                        // load val to tmp
+                        // load from val to tmp
                         "mov {tmp}, byte ptr [{val}]",
                         // (atomic) store tmp to dst (SeqCst store is xchg, not mov)
                         "xchg byte ptr [{dst}], {tmp}",
@@ -113,12 +110,12 @@ impl AtomicStore for i8 {
                         options(nostack),
                     );
                 }
-                _ => ordering_unreachable_unchecked(order),
+                _ => crate::utils::ordering_unreachable_unchecked(order),
             }
         }
     }
 }
-impl AtomicSwap for i8 {
+impl AtomicSwap for u8 {
     #[inline]
     unsafe fn atomic_swap(
         dst: *mut MaybeUninit<Self>,
@@ -128,9 +125,9 @@ impl AtomicSwap for i8 {
     ) {
         // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
         unsafe {
-            // atomic swap is always SeqCst in x86 and x86_64.
+            // atomic swap is always SeqCst.
             asm!(
-                // load val to tmp
+                // load from val to tmp
                 "mov {tmp}, byte ptr [{val}]",
                 // (atomic) swap tmp and dst
                 "xchg byte ptr [{dst}], {tmp}",
@@ -145,9 +142,9 @@ impl AtomicSwap for i8 {
         }
     }
 }
-delegate!(i8, u8);
 
-impl AtomicLoad for i16 {
+delegate!(u16, i16);
+impl AtomicLoad for u16 {
     #[inline]
     unsafe fn atomic_load(
         src: *const MaybeUninit<Self>,
@@ -156,7 +153,7 @@ impl AtomicLoad for i16 {
     ) {
         // SAFETY: the caller must uphold the safety contract for `atomic_store`.
         unsafe {
-            // atomic load is always SeqCst in x86 and x86_64.
+            // atomic load is always SeqCst.
             asm!(
                 // (atomic) load from src to ax
                 "mov ax, word ptr [{src}]",
@@ -170,7 +167,7 @@ impl AtomicLoad for i16 {
         }
     }
 }
-impl AtomicStore for i16 {
+impl AtomicStore for u16 {
     #[inline]
     unsafe fn atomic_store(
         dst: *mut MaybeUninit<Self>,
@@ -180,10 +177,10 @@ impl AtomicStore for i16 {
         // SAFETY: the caller must uphold the safety contract for `atomic_store`.
         unsafe {
             match order {
-                // Relaxed and Release stores are equivalent in x86 and x86_64.
+                // Relaxed and Release stores are equivalent.
                 Ordering::Relaxed | Ordering::Release => {
                     asm!(
-                        // load val to ax
+                        // load from val to ax
                         "mov ax, word ptr [{val}]",
                         // (atomic) store ax to dst
                         "mov word ptr [{dst}], ax",
@@ -195,7 +192,7 @@ impl AtomicStore for i16 {
                 }
                 Ordering::SeqCst => {
                     asm!(
-                        // load val to ax
+                        // load from val to ax
                         "mov ax, word ptr [{val}]",
                         // (atomic) store ax to dst (SeqCst store is xchg, not mov)
                         "xchg word ptr [{dst}], ax",
@@ -205,12 +202,12 @@ impl AtomicStore for i16 {
                         options(nostack),
                     );
                 }
-                _ => ordering_unreachable_unchecked(order),
+                _ => crate::utils::ordering_unreachable_unchecked(order),
             }
         }
     }
 }
-impl AtomicSwap for i16 {
+impl AtomicSwap for u16 {
     #[inline]
     unsafe fn atomic_swap(
         dst: *mut MaybeUninit<Self>,
@@ -220,9 +217,9 @@ impl AtomicSwap for i16 {
     ) {
         // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
         unsafe {
-            // atomic swap is always SeqCst in x86 and x86_64.
+            // atomic swap is always SeqCst.
             asm!(
-                // load val to ax
+                // load from val to ax
                 "mov ax, word ptr [{val}]",
                 // (atomic) swap ax and dst
                 "xchg word ptr [{dst}], ax",
@@ -237,9 +234,9 @@ impl AtomicSwap for i16 {
         }
     }
 }
-delegate!(i16, u16);
 
-impl AtomicLoad for i32 {
+delegate!(u32, i32);
+impl AtomicLoad for u32 {
     #[inline]
     unsafe fn atomic_load(
         src: *const MaybeUninit<Self>,
@@ -248,7 +245,7 @@ impl AtomicLoad for i32 {
     ) {
         // SAFETY: the caller must uphold the safety contract for `atomic_store`.
         unsafe {
-            // atomic load is always SeqCst in x86 and x86_64.
+            // atomic load is always SeqCst.
             asm!(
                 // (atomic) load from src to tmp
                 "mov {tmp:e}, dword ptr [{src}]",
@@ -262,7 +259,7 @@ impl AtomicLoad for i32 {
         }
     }
 }
-impl AtomicStore for i32 {
+impl AtomicStore for u32 {
     #[inline]
     unsafe fn atomic_store(
         dst: *mut MaybeUninit<Self>,
@@ -272,10 +269,10 @@ impl AtomicStore for i32 {
         // SAFETY: the caller must uphold the safety contract for `atomic_store`.
         unsafe {
             match order {
-                // Relaxed and Release stores are equivalent in x86 and x86_64.
+                // Relaxed and Release stores are equivalent.
                 Ordering::Relaxed | Ordering::Release => {
                     asm!(
-                        // load val to tmp
+                        // load from val to tmp
                         "mov {tmp:e}, dword ptr [{val}]",
                         // (atomic) store tmp to dst
                         "mov dword ptr [{dst}], {tmp:e}",
@@ -287,7 +284,7 @@ impl AtomicStore for i32 {
                 }
                 Ordering::SeqCst => {
                     asm!(
-                        // load val to tmp
+                        // load from val to tmp
                         "mov {tmp:e}, dword ptr [{val}]",
                         // (atomic) store tmp to dst (SeqCst store is xchg, not mov)
                         "xchg dword ptr [{dst}], {tmp:e}",
@@ -297,12 +294,12 @@ impl AtomicStore for i32 {
                         options(nostack),
                     );
                 }
-                _ => ordering_unreachable_unchecked(order),
+                _ => crate::utils::ordering_unreachable_unchecked(order),
             }
         }
     }
 }
-impl AtomicSwap for i32 {
+impl AtomicSwap for u32 {
     #[inline]
     unsafe fn atomic_swap(
         dst: *mut MaybeUninit<Self>,
@@ -312,9 +309,9 @@ impl AtomicSwap for i32 {
     ) {
         // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
         unsafe {
-            // atomic swap is always SeqCst in x86 and x86_64.
+            // atomic swap is always SeqCst.
             asm!(
-                // load val to tmp
+                // load from val to tmp
                 "mov {tmp:e}, dword ptr [{val}]",
                 // (atomic) swap tmp and dst
                 "xchg dword ptr [{dst}], {tmp:e}",
@@ -329,10 +326,11 @@ impl AtomicSwap for i32 {
         }
     }
 }
-delegate!(i32, u32);
 
 #[cfg(target_arch = "x86_64")]
-impl AtomicLoad for i64 {
+delegate!(u64, i64);
+#[cfg(target_arch = "x86_64")]
+impl AtomicLoad for u64 {
     #[inline]
     unsafe fn atomic_load(
         src: *const MaybeUninit<Self>,
@@ -341,7 +339,7 @@ impl AtomicLoad for i64 {
     ) {
         // SAFETY: the caller must uphold the safety contract for `atomic_store`.
         unsafe {
-            // atomic load is always SeqCst in x86 and x86_64.
+            // atomic load is always SeqCst.
             asm!(
                 // (atomic) load from src to tmp
                 "mov {tmp}, qword ptr [{src}]",
@@ -356,7 +354,7 @@ impl AtomicLoad for i64 {
     }
 }
 #[cfg(target_arch = "x86_64")]
-impl AtomicStore for i64 {
+impl AtomicStore for u64 {
     #[inline]
     unsafe fn atomic_store(
         dst: *mut MaybeUninit<Self>,
@@ -366,10 +364,10 @@ impl AtomicStore for i64 {
         // SAFETY: the caller must uphold the safety contract for `atomic_store`.
         unsafe {
             match order {
-                // Relaxed and Release stores are equivalent in x86 and x86_64.
+                // Relaxed and Release stores are equivalent.
                 Ordering::Relaxed | Ordering::Release => {
                     asm!(
-                        // load val to tmp
+                        // load from val to tmp
                         "mov {tmp}, qword ptr [{val}]",
                         // (atomic) store tmp to dst
                         "mov qword ptr [{dst}], {tmp}",
@@ -381,7 +379,7 @@ impl AtomicStore for i64 {
                 }
                 Ordering::SeqCst => {
                     asm!(
-                        // load val to tmp
+                        // load from val to tmp
                         "mov {tmp}, qword ptr [{val}]",
                         // (atomic) store tmp to dst (SeqCst store is xchg, not mov)
                         "xchg qword ptr [{dst}], {tmp}",
@@ -391,13 +389,13 @@ impl AtomicStore for i64 {
                         options(nostack),
                     );
                 }
-                _ => ordering_unreachable_unchecked(order),
+                _ => crate::utils::ordering_unreachable_unchecked(order),
             }
         }
     }
 }
 #[cfg(target_arch = "x86_64")]
-impl AtomicSwap for i64 {
+impl AtomicSwap for u64 {
     #[inline]
     unsafe fn atomic_swap(
         dst: *mut MaybeUninit<Self>,
@@ -407,9 +405,9 @@ impl AtomicSwap for i64 {
     ) {
         // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
         unsafe {
-            // atomic swap is always SeqCst in x86 and x86_64.
+            // atomic swap is always SeqCst.
             asm!(
-                // load val to tmp
+                // load from val to tmp
                 "mov {tmp}, qword ptr [{val}]",
                 // (atomic) swap tmp and dst
                 "xchg qword ptr [{dst}], {tmp}",
@@ -424,13 +422,11 @@ impl AtomicSwap for i64 {
         }
     }
 }
-#[cfg(target_arch = "x86_64")]
-delegate!(i64, u64);
 
 #[cfg(target_pointer_width = "32")]
-delegate!(i32, isize, usize);
+delegate!(u32, isize, usize);
 #[cfg(target_pointer_width = "64")]
-delegate!(i64, isize, usize);
+delegate!(u64, isize, usize);
 
 #[cfg(test)]
 mod tests {
