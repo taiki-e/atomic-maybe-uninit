@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Support AArch64.
 
+- Support X32 ABI.
+
 - Remove `raw` feature and always expose `raw` module.
 
 ## [0.1.0] - 2022-03-12
