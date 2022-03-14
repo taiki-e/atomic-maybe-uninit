@@ -26,7 +26,7 @@ macro_rules! test_atomic {
 
 macro_rules! __test_atomic_load_store {
     ($int_type:ident) => {
-        use std::{mem::MaybeUninit, sync::atomic::Ordering};
+        use std::mem::MaybeUninit;
 
         use crate::{tests::helper::*, AtomicMaybeUninit};
 
@@ -40,13 +40,26 @@ macro_rules! __test_atomic_load_store {
             test_load_ordering(|order| VAR.load(order));
             test_store_ordering(|order| VAR.store(MaybeUninit::new(10), order));
             unsafe {
-                assert_eq!(VAR.load(Ordering::SeqCst).assume_init(), 10);
-                VAR.store(MaybeUninit::new(5), Ordering::SeqCst);
-                assert_eq!(VAR.load(Ordering::SeqCst).assume_init(), 5);
-                let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(1));
-                assert_eq!(a.load(Ordering::SeqCst).assume_init(), 1);
-                a.store(MaybeUninit::new(2), Ordering::SeqCst);
-                assert_eq!(a.load(Ordering::SeqCst).assume_init(), 2);
+                for (load_order, store_order) in load_orderings().into_iter().zip(store_orderings())
+                {
+                    assert_eq!(VAR.load(load_order).assume_init(), 10);
+                    VAR.store(MaybeUninit::new(5), store_order);
+                    assert_eq!(VAR.load(load_order).assume_init(), 5);
+                    VAR.store(MaybeUninit::uninit(), store_order);
+                    let _v = VAR.load(load_order);
+                    VAR.store(MaybeUninit::new(10), store_order);
+
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(1));
+                    assert_eq!(a.load(load_order).assume_init(), 1);
+                    a.store(MaybeUninit::new(2), store_order);
+                    assert_eq!(a.load(load_order).assume_init(), 2);
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::uninit());
+                    let _v = a.load(load_order);
+                    a.store(MaybeUninit::new(2), store_order);
+                    assert_eq!(a.load(load_order).assume_init(), 2);
+                    a.store(MaybeUninit::uninit(), store_order);
+                    let _v = a.load(load_order);
+                }
             }
         }
     };
@@ -57,9 +70,16 @@ macro_rules! __test_atomic {
         fn swap() {
             unsafe {
                 let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
-                test_all_orderings(|order| a.swap(MaybeUninit::new(5), order));
-                assert_eq!(a.swap(MaybeUninit::new(10), Ordering::SeqCst).assume_init(), 5);
-                assert_eq!(a.load(Ordering::SeqCst).assume_init(), 10);
+                test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
+                for order in swap_orderings() {
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                    assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), 5);
+                    assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
+                    let _v = a.swap(MaybeUninit::new(15), order);
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::uninit());
+                    let _v = a.swap(MaybeUninit::new(10), order);
+                    assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
+                }
             }
         }
     };
@@ -82,12 +102,12 @@ fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::Strin
         .cloned()
         .unwrap_or_else(|| msg.downcast_ref::<&'static str>().copied().unwrap().into())
 }
-fn load_orderings() -> [Ordering; 3] {
+pub(crate) fn load_orderings() -> [Ordering; 3] {
     [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst]
 }
 #[track_caller]
 pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
-    for &order in &load_orderings() {
+    for order in load_orderings() {
         f(order);
     }
 
@@ -110,12 +130,12 @@ pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) 
         );
     }
 }
-fn store_orderings() -> [Ordering; 3] {
+pub(crate) fn store_orderings() -> [Ordering; 3] {
     [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst]
 }
 #[track_caller]
 pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
-    for &order in &store_orderings() {
+    for order in store_orderings() {
         f(order);
     }
 
@@ -138,11 +158,11 @@ pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T)
         );
     }
 }
-fn all_orderings() -> [Ordering; 5] {
+pub(crate) fn swap_orderings() -> [Ordering; 5] {
     [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst]
 }
-pub(crate) fn test_all_orderings<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
-    for &order in &all_orderings() {
+pub(crate) fn test_swap_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
+    for order in swap_orderings() {
         f(order);
     }
 }
