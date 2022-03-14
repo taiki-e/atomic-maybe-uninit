@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.2.1] - 2022-03-14
+
 - Optimize aarch64 atomic swap when the `lse` target feature is enabled at compile-time.
 
 - Document safety requirements of functions in `raw` module.
@@ -26,6 +28,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/taiki-e/atomic-maybe-uninit/releases/tag/v0.1.0
