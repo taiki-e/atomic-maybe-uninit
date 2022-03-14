@@ -48,6 +48,73 @@ fn main() {
     if target.starts_with("aarch64") && has_target_feature("lse", &version, None) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_lse");
     }
+    // #[cfg(target_feature = "v7")] doesn't work on stable.
+    if let Some(mut arch) = target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")) {
+        // armv7-unknown-linux-gnueabihf
+        //    ^^
+        //
+        // As of rustc 1.61.0-nightly (2022-03-13), all v7+ targets are:
+        // $ rustc --print target-list | grep -E '^(arm(eb)?|thumb)(v7|v8|v9)'
+        // armebv7r-none-eabi
+        // armebv7r-none-eabihf
+        // armv7-apple-ios
+        // armv7-linux-androideabi
+        // armv7-unknown-freebsd
+        // armv7-unknown-linux-gnueabi
+        // armv7-unknown-linux-gnueabihf
+        // armv7-unknown-linux-musleabi
+        // armv7-unknown-linux-musleabihf
+        // armv7-unknown-linux-uclibceabi
+        // armv7-unknown-linux-uclibceabihf
+        // armv7-unknown-netbsd-eabihf
+        // armv7-wrs-vxworks-eabihf
+        // armv7a-kmc-solid_asp3-eabi
+        // armv7a-kmc-solid_asp3-eabihf
+        // armv7a-none-eabi
+        // armv7a-none-eabihf
+        // armv7r-none-eabi
+        // armv7r-none-eabihf
+        // armv7s-apple-ios
+        // thumbv7a-pc-windows-msvc
+        // thumbv7a-uwp-windows-msvc
+        // thumbv7em-none-eabi
+        // thumbv7em-none-eabihf
+        // thumbv7m-none-eabi
+        // thumbv7neon-linux-androideabi
+        // thumbv7neon-unknown-linux-gnueabihf
+        // thumbv7neon-unknown-linux-musleabihf
+        // thumbv8m.base-none-eabi
+        // thumbv8m.main-none-eabi
+        // thumbv8m.main-none-eabihf
+        //
+        // So, there is the following "vN*" patterns in v7+:
+        // $ rustc --print target-list | grep -E '^(arm(eb)?|thumb)(v7|v8|v9)' | sed -E 's/^(arm(eb)?|thumb)//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort | uniq
+        // v7
+        // v7a
+        // v7em
+        // v7m
+        // v7neon
+        // v7r
+        // v7s
+        // v8m
+        //
+        // - v7, v7a, v7neon, and v7s are "aclass"
+        // - v7em, v7m, and v8m are "mclass"
+        // - v7r is "rclass"
+        arch = arch.split_once('-').unwrap().0;
+        arch = arch.split_once('.').unwrap_or((arch, "")).0; // ignore .base/.main suffix
+        arch = arch.strip_prefix("eb").unwrap_or(arch); // ignore endianness
+        if arch.starts_with("v7") || arch.starts_with("v8") {
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_v7");
+            if matches!(arch, "v7" | "v7a" | "v7neon" | "v7s") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_aclass");
+            } else if matches!(arch, "v7em" | "v7m" | "v8m") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_mclass");
+            } else if matches!(arch, "v7r") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_rclass");
+            }
+        }
+    }
     // #[cfg(target_feature = "a")] doesn't work on stable.
     if let Some(target) = target.strip_prefix("riscv") {
         // riscv64gc-unknown-linux-gnu

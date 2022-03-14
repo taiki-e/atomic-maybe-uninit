@@ -16,10 +16,18 @@ default_targets=(
 
     # aarch64
     aarch64-unknown-linux-gnu
-    # aarch64_be
+    # aarch64 big endian
     aarch64_be-unknown-linux-gnu
     # aarch64 ILP32 ABI
     aarch64-unknown-linux-gnu_ilp32
+    # armv7-a
+    armv7-unknown-linux-gnueabi
+    armv7-unknown-linux-gnueabihf
+    thumbv7neon-unknown-linux-gnueabihf
+    # armv7-r
+    armv7r-none-eabi
+    # armv7-r big endian
+    armebv7r-none-eabi
 
     # riscv
     riscv64gc-unknown-linux-gnu
@@ -51,7 +59,7 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
         # -Z check-cfg-features requires 1.61.0-nightly
         1.3* | 1.4* | 1.5* | 1.60.*) ;;
         *)
-            check_cfg='-Z unstable-options --check-cfg=names(atomic_maybe_uninit_const_fn_trait_bound,atomic_maybe_uninit_target_feature_lse,atomic_maybe_uninit_target_feature_a)'
+            check_cfg='-Z unstable-options --check-cfg=names(atomic_maybe_uninit_const_fn_trait_bound,atomic_maybe_uninit_target_feature_lse,atomic_maybe_uninit_target_feature_v7,atomic_maybe_uninit_target_feature_aclass,atomic_maybe_uninit_target_feature_mclass,atomic_maybe_uninit_target_feature_rclass,atomic_maybe_uninit_target_feature_a)'
             rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
             subcmd=clippy
             ;;

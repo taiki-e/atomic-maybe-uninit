@@ -42,6 +42,14 @@ jobs:
           - rust: nightly
             target: aarch64-unknown-linux-gnu
           - rust: stable
+            target: armv7-unknown-linux-gnueabi
+          - rust: nightly
+            target: armv7-unknown-linux-gnueabi
+          - rust: stable
+            target: armv7-unknown-linux-gnueabihf
+          - rust: nightly
+            target: armv7-unknown-linux-gnueabihf
+          - rust: stable
             target: i586-unknown-linux-gnu
           - rust: nightly
             target: i586-unknown-linux-gnu
@@ -53,6 +61,10 @@ jobs:
             target: riscv64gc-unknown-linux-gnu
           - rust: nightly
             target: riscv64gc-unknown-linux-gnu
+          - rust: stable
+            target: thumbv7neon-unknown-linux-gnueabihf
+          - rust: nightly
+            target: thumbv7neon-unknown-linux-gnueabihf
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v3

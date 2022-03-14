@@ -9,12 +9,14 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, AArch64, and RISC-V are supported.
+Currently, x86, x86_64, ARMv7-A, ARMv7-R, AArch64, and RISC-V are supported.
 
 | target_arch | primitives                                          | load | store | swap |
 | ----------- | --------------------------------------------------- |:----:|:-----:|:----:|
 | x86         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓    | ✓     | ✓    |
 | x86_64      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓    | ✓     | ✓    |
+| arm (v7-a)  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓    | ✓     | ✓    |
+| arm (v7-r)  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓    | ✓     | ✓    |
 | aarch64     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓    | ✓     | ✓\[1]|
 | riscv32     | isize,usize,i32,u32                                 | ✓    | ✓     | ✓\[2]|
 | riscv32     | i8,u8,i16,u16                                       | ✓    | ✓     |      |
