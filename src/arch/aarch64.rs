@@ -5,7 +5,7 @@
 //   https://developer.arm.com/documentation/ddi0487/latest
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/68n9h793K
+// - aarch64 https://godbolt.org/z/n1hxc8PKx
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -48,7 +48,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }
@@ -82,7 +82,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_store!(""),
                         // Release and SeqCst stores are equivalent.
                         Ordering::Release | Ordering::SeqCst => atomic_store!("l"),
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }
@@ -130,7 +130,7 @@ macro_rules! atomic {
                         Ordering::Release => atomic_swap!("", "l"),
                         // AcqRel and SeqCst swaps are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("a", "l"),
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }
@@ -200,7 +200,7 @@ macro_rules! atomic128 {
                         Ordering::Relaxed => atomic_load!("", ""),
                         Ordering::Acquire => atomic_load!("a", ""),
                         Ordering::SeqCst => atomic_load!("a", "l"),
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }
@@ -244,7 +244,7 @@ macro_rules! atomic128 {
                         Ordering::Relaxed => atomic_store!("", ""),
                         Ordering::Release => atomic_store!("", "l"),
                         Ordering::SeqCst => atomic_store!("a", "l"),
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }
@@ -294,7 +294,7 @@ macro_rules! atomic128 {
                         Ordering::Release => atomic_swap!("", "l"),
                         // AcqRel and SeqCst swaps are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("a", "l"),
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }

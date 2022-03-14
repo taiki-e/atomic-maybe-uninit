@@ -1,5 +1,5 @@
 // Generated asm:
-// - x86_64 https://godbolt.org/z/3j4Pj8Ee1
+// - x86_64 https://godbolt.org/z/foM1YbaoG
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -75,7 +75,7 @@ macro_rules! atomic {
                                 options(nostack),
                             );
                         }
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }

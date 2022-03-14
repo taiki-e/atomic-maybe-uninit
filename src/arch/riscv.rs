@@ -4,7 +4,7 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/xfY4rM6z4
+// - riscv64gc https://godbolt.org/z/Ef9so3M8G
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -65,7 +65,7 @@ macro_rules! atomic_load_store {
                                 options(nostack),
                             );
                         }
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }
@@ -108,7 +108,7 @@ macro_rules! atomic_load_store {
                                 options(nostack),
                             );
                         }
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }
@@ -158,7 +158,7 @@ macro_rules! atomic {
                         Ordering::Release => atomic_swap!(".rl"),
                         // AcqRel and SeqCst swaps are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(".aqrl"),
-                        _ => crate::utils::ordering_unreachable_unchecked(order),
+                        _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
             }

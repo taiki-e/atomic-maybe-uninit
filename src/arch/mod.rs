@@ -3,7 +3,7 @@
 // - inline assembly rust by example: https://doc.rust-lang.org/nightly/rust-by-example/unsafe/asm.html
 // - feature(asm_experimental_arch): https://doc.rust-lang.org/stable/unstable-book/language-features/asm-experimental-arch.html
 //
-// template for "generated asm" link: https://godbolt.org/z/8WbTx8efW
+// template for "generated asm" link: https://godbolt.org/z/PG9jrT58x
 
 #[cfg(not(any(
     target_arch = "x86",

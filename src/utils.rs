@@ -1,4 +1,4 @@
-use core::sync::atomic::Ordering;
+use core::{hint, sync::atomic::Ordering};
 
 macro_rules! static_assert {
     ($cond:expr $(, $($msg:tt)*)?) => {
@@ -13,11 +13,10 @@ macro_rules! static_assert {
 // https://github.com/rust-lang/rust/blob/1.59.0/library/core/src/sync/atomic.rs#L2359
 #[inline]
 pub(crate) fn assert_load_ordering(order: Ordering) {
-    use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
     match order {
-        Acquire | Relaxed | SeqCst => {}
-        Release => panic!("there is no such thing as a release load"),
-        AcqRel => panic!("there is no such thing as an acquire/release load"),
+        Ordering::Acquire | Ordering::Relaxed | Ordering::SeqCst => {}
+        Ordering::Release => panic!("there is no such thing as a release load"),
+        Ordering::AcqRel => panic!("there is no such thing as an acquire/release load"),
         _ => unreachable!("{:?}", order),
     }
 }
@@ -25,25 +24,38 @@ pub(crate) fn assert_load_ordering(order: Ordering) {
 // https://github.com/rust-lang/rust/blob/1.59.0/library/core/src/sync/atomic.rs#L2345
 #[inline]
 pub(crate) fn assert_store_ordering(order: Ordering) {
-    use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
     match order {
-        Release | Relaxed | SeqCst => {}
-        Acquire => panic!("there is no such thing as an acquire store"),
-        AcqRel => panic!("there is no such thing as an acquire/release store"),
+        Ordering::Release | Ordering::Relaxed | Ordering::SeqCst => {}
+        Ordering::Acquire => panic!("there is no such thing as an acquire store"),
+        Ordering::AcqRel => panic!("there is no such thing as an acquire/release store"),
         _ => unreachable!("{:?}", order),
     }
 }
 
 #[inline]
-pub(crate) unsafe fn ordering_unreachable_unchecked(order: Ordering) -> ! {
+pub(crate) fn assert_swap_ordering(order: Ordering) {
     match order {
-        // SAFETY: the caller must uphold the safety contract for `ordering_unreachable_unchecked`.
-        #[cfg(not(debug_assertions))]
         Ordering::AcqRel
         | Ordering::Acquire
         | Ordering::Relaxed
         | Ordering::Release
-        | Ordering::SeqCst => unsafe { core::hint::unreachable_unchecked() },
+        | Ordering::SeqCst => {}
         _ => unreachable!("{:?}", order),
+    }
+}
+
+/// Informs the compiler that this point in the code is not reachable, enabling
+/// further optimizations.
+///
+/// # Safety
+///
+/// Reaching this function is completely undefined behavior.
+#[inline]
+pub(crate) unsafe fn release_unreachable_unchecked() -> ! {
+    if cfg!(debug_assertions) {
+        unreachable!();
+    } else {
+        // SAFETY: the caller must uphold the safety contract for `release_unreachable_unchecked`.
+        unsafe { hint::unreachable_unchecked() }
     }
 }
