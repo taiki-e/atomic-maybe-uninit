@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Optimize aarch64 atomic swap when the `lse` target feature is enabled at compile-time.
+
 - Document safety requirements of functions in `raw` module.
 
 ## [0.2.0] - 2022-03-13

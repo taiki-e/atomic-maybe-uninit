@@ -74,6 +74,20 @@ jobs:
         env:
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
           CARGO_PROFILE_RELEASE_LTO: fat
+      - run: cargo test -vv --workspace --all-features $DOCTEST_XCOMPILE
+        env:
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
+        if: startsWith(matrix.target, 'aarch64')
+      - run: cargo test -vv --workspace --all-features --release $DOCTEST_XCOMPILE
+        env:
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
+        if: startsWith(matrix.target, 'aarch64')
+      - run: cargo test -vv --workspace --all-features --release $DOCTEST_XCOMPILE
+        env:
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
+          CARGO_PROFILE_RELEASE_LTO: fat
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
+        if: startsWith(matrix.target, 'aarch64')
       - run: tools/build.sh
         if: matrix.target == ''
       - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private

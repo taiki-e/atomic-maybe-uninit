@@ -15,13 +15,14 @@ Currently, x86, x86_64, AArch64, and RISC-V are supported.
 | ----------- | --------------------------------------------------- |:----:|:-----:|:----:|
 | x86         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓    | ✓     | ✓    |
 | x86_64      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓    | ✓     | ✓    |
-| aarch64     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓    | ✓     | ✓    |
-| riscv32     | isize,usize,i32,u32                                 | ✓    | ✓     | ✓*   |
+| aarch64     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓    | ✓     | ✓\[1]|
+| riscv32     | isize,usize,i32,u32                                 | ✓    | ✓     | ✓\[2]|
 | riscv32     | i8,u8,i16,u16                                       | ✓    | ✓     |      |
-| riscv64     | isize,usize,i32,u32,i64,u64                         | ✓    | ✓     | ✓*   |
+| riscv64     | isize,usize,i32,u32,i64,u64                         | ✓    | ✓     | ✓\[2]|
 | riscv64     | i8,u8,i16,u16                                       | ✓    | ✓     |      |
 
-\* RISC-V's atomic swap requires the A extension.
+\[1] If the `lse` target feature is enabled at compile-time, more efficient instructions are used instead of increasing the CPU requirement to ARMv8.1+.<br>
+\[2] RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.
 
 Feel free to submit an issue if your target is not supported yet.
 
@@ -145,7 +146,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// Creates a new atomic integer.
     ///
     /// This is `const fn` on Rust 1.61+. See also `const_new` function.
-    #[cfg(const_fn_trait_bound)]
+    #[cfg(atomic_maybe_uninit_const_fn_trait_bound)]
     #[inline]
     pub const fn new(v: MaybeUninit<T>) -> Self {
         Self { v: UnsafeCell::new(v), _align: [] }
@@ -154,7 +155,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// Creates a new atomic integer.
     ///
     /// This is `const fn` on Rust 1.61+.
-    #[cfg(not(const_fn_trait_bound))]
+    #[cfg(not(atomic_maybe_uninit_const_fn_trait_bound))]
     #[inline]
     pub fn new(v: MaybeUninit<T>) -> Self {
         Self { v: UnsafeCell::new(v), _align: [] }

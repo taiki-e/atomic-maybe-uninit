@@ -5,7 +5,8 @@
 //   https://developer.arm.com/documentation/ddi0487/latest
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/n1hxc8PKx
+// - aarch64 https://godbolt.org/z/841qnj9aM
+// - aarch64+lse https://godbolt.org/z/xznKnMavs
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -99,6 +100,26 @@ macro_rules! atomic {
                 #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature_lse))]
+                    macro_rules! atomic_swap {
+                        ($acq:tt, $rel:tt) => {
+                            asm!(
+                                // load from val to tmp
+                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", $ptr_modifier, "}]"),
+                                // (atomic) swap
+                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
+                                concat!("swp", $acq, $rel, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", $ptr_modifier, "}]"),
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature_lse)))]
                     macro_rules! atomic_swap {
                         ($acq:tt, $rel:tt) => {
                             asm!(
