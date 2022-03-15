@@ -57,9 +57,12 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
     rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
     case "${rustc_version}" in
         # -Z check-cfg-features requires 1.61.0-nightly
-        1.3* | 1.4* | 1.5* | 1.60.*) ;;
+        1.[0-5]* | 1.60.*) ;;
         *)
-            check_cfg='-Z unstable-options --check-cfg=names(atomic_maybe_uninit_const_fn_trait_bound,atomic_maybe_uninit_target_feature_lse,atomic_maybe_uninit_target_feature_v7,atomic_maybe_uninit_target_feature_aclass,atomic_maybe_uninit_target_feature_mclass,atomic_maybe_uninit_target_feature_rclass,atomic_maybe_uninit_target_feature_a)'
+            # shellcheck disable=SC2207
+            build_script_cfg=($(grep -E 'cargo:rustc-cfg=' build.rs | sed -E 's/^.*cargo:rustc-cfg=//' | sed -E 's/".*$//' | LC_ALL=C sort | uniq))
+            check_cfg="-Z unstable-options --check-cfg=names($(IFS=',' && echo "${build_script_cfg[*]}"))"
+            echo "base rustflags='${check_cfg}'"
             rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
             subcmd=clippy
             ;;
