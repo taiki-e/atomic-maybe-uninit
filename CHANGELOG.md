@@ -10,11 +10,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Support ARMv7-A and ARMv7-R.
+- Support ARMv7-A, ARMv7-R, ARMv7-M, and ARMv8-M.
 
 ## [0.2.1] - 2022-03-14
 
-- Optimize aarch64 atomic swap when the `lse` target feature is enabled at compile-time.
+- Optimize AArch64 atomic swap when the `lse` target feature is enabled at compile-time.
 
 - Document safety requirements of functions in `raw` module.
 

@@ -1,5 +1,5 @@
 // Generated asm:
-// - x86_64 https://godbolt.org/z/foM1YbaoG
+// - x86_64 https://godbolt.org/z/jdozja8cz
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -31,8 +31,8 @@ macro_rules! atomic {
                         // store tmp to out
                         concat!("mov ", $ptr_size, " ptr [{out", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
                         src = in(reg) src,
-                        out = in(reg) out,
-                        tmp = out($val_reg) _,
+                        out = inout(reg) out => _,
+                        tmp = lateout($val_reg) _,
                         options(nostack),
                     );
                 }
@@ -57,9 +57,9 @@ macro_rules! atomic {
                                 concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", $ptr_modifier, "}]"),
                                 // (atomic) store tmp to dst
                                 concat!("mov ", $ptr_size, " ptr [{dst", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                tmp = out($val_reg) _,
+                                tmp = lateout($val_reg) _,
                                 options(nostack),
                             );
                         }
@@ -69,9 +69,9 @@ macro_rules! atomic {
                                 concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", $ptr_modifier, "}]"),
                                 // (atomic) store tmp to dst (SeqCst store is xchg, not mov)
                                 concat!("xchg ", $ptr_size, " ptr [{dst", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                tmp = out($val_reg) _,
+                                tmp = lateout($val_reg) _,
                                 options(nostack),
                             );
                         }
@@ -100,10 +100,10 @@ macro_rules! atomic {
                         concat!("xchg ", $ptr_size, " ptr [{dst", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
                         // store tmp to out
                         concat!("mov ", $ptr_size, " ptr [{out", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
-                        dst = in(reg) dst,
+                        dst = inout(reg) dst => _,
                         val = in(reg) val,
-                        out = in(reg) out,
-                        tmp = out($val_reg) _,
+                        out = inout(reg) out => _,
+                        tmp = lateout($val_reg) _,
                         options(nostack),
                     );
                 }

@@ -4,7 +4,7 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/Ef9so3M8G
+// - riscv64gc https://godbolt.org/z/n7vzjGrWx
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -33,8 +33,8 @@ macro_rules! atomic_load_store {
                                 // store tmp to out
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 src = in(reg) src,
-                                out = in(reg) out,
-                                tmp = out(reg) _,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             );
                         }
@@ -46,8 +46,8 @@ macro_rules! atomic_load_store {
                                 // store tmp to out
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 src = in(reg) src,
-                                out = in(reg) out,
-                                tmp = out(reg) _,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             );
                         }
@@ -60,8 +60,8 @@ macro_rules! atomic_load_store {
                                 // store tmp to out
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 src = in(reg) src,
-                                out = in(reg) out,
-                                tmp = out(reg) _,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             );
                         }
@@ -88,9 +88,9 @@ macro_rules! atomic_load_store {
                                 concat!("l", $asm_suffix, " {tmp}, 0({val})"),
                                 // (atomic) store tmp to dst
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             );
                         }
@@ -102,9 +102,9 @@ macro_rules! atomic_load_store {
                                 // (atomic) store tmp to dst
                                 "fence rw, w",
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             );
                         }
@@ -143,11 +143,11 @@ macro_rules! atomic {
                                 concat!("amoswap.", $asm_suffix, $order, " {out_tmp}, {val_tmp}, 0({dst})"),
                                 // store out_tmp to out
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                val_tmp = out(reg) _,
-                                out = in(reg) out,
-                                out_tmp = out(reg) _,
+                                val_tmp = lateout(reg) _,
+                                out = inout(reg) out => _,
+                                out_tmp = lateout(reg) _,
                                 options(nostack),
                             )
                         };

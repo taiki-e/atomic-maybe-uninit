@@ -17,19 +17,19 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, ARMv7-A, ARMv7-R, AArch64, and RISC-V are supported.
+Currently, x86, x86_64, ARMv7, ARMv8, AArch64, and RISC-V are supported.
 
-| target_arch | primitives                                          | load | store | swap |
-| ----------- | --------------------------------------------------- |:----:|:-----:|:----:|
-| x86         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓    | ✓     | ✓    |
-| x86_64      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓    | ✓     | ✓    |
-| arm (v7-a)  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓    | ✓     | ✓    |
-| arm (v7-r)  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓    | ✓     | ✓    |
-| aarch64     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓    | ✓     | ✓\[1]|
-| riscv32     | isize,usize,i32,u32                                 | ✓    | ✓     | ✓\[2]|
-| riscv32     | i8,u8,i16,u16                                       | ✓    | ✓     |      |
-| riscv64     | isize,usize,i32,u32,i64,u64                         | ✓    | ✓     | ✓\[2]|
-| riscv64     | i8,u8,i16,u16                                       | ✓    | ✓     |      |
+| target_arch     | primitives                                          | [load]/[store] | [swap] |
+| --------------- | --------------------------------------------------- |:--------------:|:------:|
+| x86             | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓      |
+| x86_64          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓              | ✓      |
+| arm (v7,v8)     | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓      |
+| arm (v7-a)      | i64,u64                                             | ✓              | ✓      |
+| aarch64         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              | ✓\[1]  |
+| riscv32         | isize,usize,i32,u32                                 | ✓              | ✓\[2]  |
+| riscv32         | i8,u8,i16,u16                                       | ✓              |        |
+| riscv64         | isize,usize,i32,u32,i64,u64                         | ✓              | ✓\[2]  |
+| riscv64         | i8,u8,i16,u16                                       | ✓              |        |
 
 \[1] If the `lse` target feature is enabled at compile-time, more efficient instructions are used instead of increasing the CPU requirement to ARMv8.1+.<br>
 \[2] RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.
@@ -41,6 +41,9 @@ Feel free to submit an issue if your target is not supported yet.
 - [portable-atomic]: Portable atomic types including extensions such as 128-bit atomics, atomic float, etc.
 - [atomic-memcpy]: Byte-wise atomic memcpy.
 
+[load]: https://docs.rs/atomic-maybe-uninit/latest/atomic_maybe_uninit/struct.AtomicMaybeUninit.html#method.load
+[store]: https://docs.rs/atomic-maybe-uninit/latest/atomic_maybe_uninit/struct.AtomicMaybeUninit.html#method.store
+[swap]: https://docs.rs/atomic-maybe-uninit/latest/atomic_maybe_uninit/struct.AtomicMaybeUninit.html#method.swap
 [atomic-memcpy]: https://github.com/taiki-e/atomic-memcpy
 [portable-atomic]: https://github.com/taiki-e/portable-atomic
 [undefined-behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html

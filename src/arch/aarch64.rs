@@ -5,8 +5,8 @@
 //   https://developer.arm.com/documentation/ddi0487/latest
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/841qnj9aM
-// - aarch64+lse https://godbolt.org/z/xznKnMavs
+// - aarch64 https://godbolt.org/z/hafs1K1qh
+// - aarch64+lse https://godbolt.org/z/xvx58nrvT
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -39,8 +39,8 @@ macro_rules! atomic {
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", $ptr_modifier, "}]"),
                                 src = in(reg) src,
-                                out = in(reg) out,
-                                tmp = out(reg) _,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             )
                         };
@@ -72,9 +72,9 @@ macro_rules! atomic {
                                 concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", $ptr_modifier, "}]"),
                                 // (atomic) store tmp to dst
                                 concat!("st", $rel, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             )
                         };
@@ -111,10 +111,10 @@ macro_rules! atomic {
                                 concat!("swp", $acq, $rel, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", $ptr_modifier, "}]"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                out = in(reg) out,
-                                tmp = out(reg) _,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             )
                         };
@@ -135,12 +135,12 @@ macro_rules! atomic {
                                     "cbnz {r:w}, 2b",
                                 // store out_tmp to out
                                 concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", $ptr_modifier, "}]"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                val_tmp = out(reg) _,
-                                out = in(reg) out,
-                                out_tmp = out(reg) _,
-                                r = out(reg) _,
+                                val_tmp = lateout(reg) _,
+                                out = inout(reg) out => _,
+                                out_tmp = lateout(reg) _,
+                                r = lateout(reg) _,
                                 options(nostack),
                             )
                         };
@@ -255,13 +255,13 @@ macro_rules! atomic128 {
                                     concat!("st", $rel, "xp {r:w}, {val_lo}, {val_hi}, [{dst", $ptr_modifier, "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
-                                tmp_hi = out(reg) _,
-                                tmp_lo = out(reg) _,
-                                r = out(reg) _,
+                                tmp_hi = lateout(reg) _,
+                                tmp_lo = lateout(reg) _,
+                                r = lateout(reg) _,
                                 options(nostack),
                             )
                         };
@@ -302,14 +302,14 @@ macro_rules! atomic128 {
                                     "cbnz {r:w}, 2b",
                                 // store tmp pair to out
                                 concat!("stp {tmp_lo}, {tmp_hi}, [{out", $ptr_modifier, "}]"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                out = in(reg) out,
+                                out = inout(reg) out => _,
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
-                                tmp_hi = out(reg) _,
-                                tmp_lo = out(reg) _,
-                                r = out(reg) _,
+                                tmp_hi = lateout(reg) _,
+                                tmp_lo = lateout(reg) _,
+                                r = lateout(reg) _,
                                 options(nostack),
                             )
                         };

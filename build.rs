@@ -105,13 +105,26 @@ fn main() {
         arch = arch.split_once('.').unwrap_or((arch, "")).0; // ignore .base/.main suffix
         arch = arch.strip_prefix("eb").unwrap_or(arch); // ignore endianness
         if arch.starts_with("v7") || arch.starts_with("v8") {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_v7");
+            let mut known = true;
             if matches!(arch, "v7" | "v7a" | "v7neon" | "v7s") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_aclass");
             } else if matches!(arch, "v7em" | "v7m" | "v8m") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_mclass");
             } else if matches!(arch, "v7r") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_rclass");
+            } else {
+                known = false;
+                println!(
+                    "cargo:warning={}: unrecognized arm arch: {}",
+                    env!("CARGO_PKG_NAME"),
+                    arch
+                );
+            }
+            if known {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_v7");
+                if arch.starts_with("v8") {
+                    println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_v8");
+                }
             }
         }
     }
@@ -181,9 +194,9 @@ fn has_target_feature(name: &str, version: &Version, stabilized: Option<u32>) ->
             if flag.starts_with("target-feature=") {
                 flag = &flag["target-feature=".len()..];
                 for s in flag.split(',').filter(|s| !s.is_empty()) {
-                    match (s.as_bytes()[0] as char, &s[1..]) {
-                        ('+', f) if f == name => has_target_feature = true,
-                        ('-', f) if f == name => has_target_feature = false,
+                    match (s.as_bytes()[0] as char, &s.as_bytes()[1..]) {
+                        ('+', f) if f == name.as_bytes() => has_target_feature = true,
+                        ('-', f) if f == name.as_bytes() => has_target_feature = false,
                         _ => {}
                     }
                 }

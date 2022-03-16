@@ -7,19 +7,28 @@ trap -- 'exit 0' SIGINT
 
 default_targets=(
     # x86_64
+    # rustc --print target-list | grep -E '^x86_64' | grep -E '(-unknown-linux|-none)'
     x86_64-unknown-linux-gnu
-    # x86
-    i586-unknown-linux-gnu
-    i686-unknown-linux-gnu
     # x86_64 X32 ABI
     x86_64-unknown-linux-gnux32
 
+    # x86
+    # rustc --print target-list | grep -E '^i.86' | grep -E '(-unknown-linux|-none)'
+    i586-unknown-linux-gnu
+    i686-unknown-linux-gnu
+
     # aarch64
+    # rustc --print target-list | grep -E '^aarch64' | grep -E '(-unknown-linux|-none)'
     aarch64-unknown-linux-gnu
     # aarch64 big endian
     aarch64_be-unknown-linux-gnu
     # aarch64 ILP32 ABI
     aarch64-unknown-linux-gnu_ilp32
+    # aarch64 ILP32 ABI big endian
+    aarch64_be-unknown-linux-gnu_ilp32
+
+    # armv7+
+    # rustc --print target-list | grep -E '^(arm(eb)?|thumb)(v7|v8|v9)' | grep -E '(-unknown-linux|-none)'
     # armv7-a
     armv7-unknown-linux-gnueabi
     armv7-unknown-linux-gnueabihf
@@ -28,11 +37,21 @@ default_targets=(
     armv7r-none-eabi
     # armv7-r big endian
     armebv7r-none-eabi
+    # armv7-m
+    thumbv7em-none-eabi
+    thumbv7em-none-eabihf
+    thumbv7m-none-eabi
+    # armv8-m
+    thumbv8m.base-none-eabi
+    thumbv8m.main-none-eabi
+    thumbv8m.main-none-eabihf
 
     # riscv
+    # rustc --print target-list | grep -E '^riscv' | grep -E '(-unknown-linux|-none)'
     riscv64gc-unknown-linux-gnu
     # no atomic load/store
     riscv32i-unknown-none-elf
+    riscv32im-unknown-none-elf
     riscv32imc-unknown-none-elf
     # riscv32 with atomic
     riscv32imac-unknown-none-elf

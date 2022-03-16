@@ -1,10 +1,24 @@
 // Generated asm:
-// - armv7-a https://godbolt.org/z/KWGxjoorr
-// - armv7-r https://godbolt.org/z/E1MThhGWh
+// - armv7-a https://godbolt.org/z/KPPxxMzWq
+// - armv7-r https://godbolt.org/z/9cPf7cb9j
+// - armv7-m https://godbolt.org/z/bW44v9dvj
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature_mclass)))]
+macro_rules! asm_dmb {
+    () => {
+        "dmb ish"
+    };
+}
+#[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature_mclass))]
+macro_rules! asm_dmb {
+    () => {
+        "dmb sy"
+    };
+}
 
 macro_rules! atomic {
     ($int_type:ident, $asm_suffix:tt) => {
@@ -20,16 +34,16 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
-                        ($after:tt) => {
+                        ($acq:expr) => {
                             asm!(
                                 // (atomic) load from src to tmp
                                 concat!("ldr", $asm_suffix, " {tmp}, [{src}]"),
-                                $after, // acquire fence
+                                $acq, // acquire fence
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 src = in(reg) src,
-                                out = in(reg) out,
-                                tmp = out(reg) _,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             )
                         };
@@ -37,7 +51,7 @@ macro_rules! atomic {
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!("dmb ish"),
+                        Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_dmb!()),
                         _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
@@ -55,25 +69,25 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($before:tt, $after:tt) => {
+                        ($acq:expr, $rel:expr) => {
                             asm!(
                                 // load from val to tmp
                                 concat!("ldr", $asm_suffix, " {tmp}, [{val}]"),
                                 // (atomic) store tmp to dst
-                                $before, // release fence
+                                $rel, // release fence
                                 concat!("str", $asm_suffix, " {tmp}, [{dst}]"),
-                                $after, // acquire fence
-                                dst = in(reg) dst,
+                                $acq, // acquire fence
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 options(nostack),
                             )
                         };
                     }
                     match order {
                         Ordering::Relaxed => atomic_store!("", ""),
-                        Ordering::Release => atomic_store!("dmb ish", ""),
-                        Ordering::SeqCst => atomic_store!("dmb ish", "dmb ish"),
+                        Ordering::Release => atomic_store!("", asm_dmb!()),
+                        Ordering::SeqCst => atomic_store!(asm_dmb!(), asm_dmb!()),
                         _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
@@ -92,12 +106,12 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {
-                        ($before:tt, $after:tt) => {
+                        ($acq:expr, $rel:expr) => {
                             asm!(
                                 // load from val to val_tmp
                                 concat!("ldr", $asm_suffix, " {val_tmp}, [{val}]"),
                                 // (atomic) swap
-                                $before, // release fence
+                                $rel, // release fence
                                 "2:",
                                     // load from dst to out_tmp
                                     concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
@@ -106,25 +120,25 @@ macro_rules! atomic {
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
                                     "bne 2b",
-                                $after, // acquire fence
+                                $acq, // acquire fence
                                 // store out_tmp to out
                                 concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                                dst = in(reg) dst,
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                val_tmp = out(reg) _,
-                                out = in(reg) out,
-                                out_tmp = out(reg) _,
-                                r = out(reg) _,
+                                out = inout(reg) out => _,
+                                r = lateout(reg) _,
+                                out_tmp = lateout(reg) _,
+                                val_tmp = lateout(reg) _,
                                 options(nostack),
                             )
                         };
                     }
                     match order {
                         Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("", "dmb ish"),
-                        Ordering::Release => atomic_swap!("dmb ish", ""),
+                        Ordering::Acquire => atomic_swap!(asm_dmb!(), ""),
+                        Ordering::Release => atomic_swap!("", asm_dmb!()),
                         // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("dmb ish", "dmb ish"),
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(asm_dmb!(), asm_dmb!()),
                         _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
@@ -161,16 +175,16 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
-                        ($after:tt) => {
+                        ($acq:expr) => {
                             asm!(
                                 // (atomic) load from src to tmp pair
                                 "ldrexd r2, r3, [{src}]",
                                 "clrex",
-                                $after, // acquire fence
+                                $acq, // acquire fence
                                 // store tmp pair to out
                                 "strd r2, r3, [{out}]",
                                 src = in(reg) src,
-                                out = in(reg) out,
+                                out = inout(reg) out => _,
                                 // tmp pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -181,7 +195,7 @@ macro_rules! atomic64 {
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!("dmb ish"),
+                        Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_dmb!()),
                         _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
@@ -200,39 +214,38 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($before:tt, $after:tt) => {
+                        ($acq:expr, $rel:expr) => {
                             asm!(
                                 // load from val to val pair
-                                "ldrd r4, r5, [{val}]",
+                                "ldrd r2, r3, [{val}]",
                                 // (atomic) store val pair to dst
-                                $before, // release fence
+                                $rel, // release fence
                                 "2:",
                                     // load from dst to tmp pair
-                                    "ldrexd r8, r9, [{dst}]",
+                                    "ldrexd r4, r5, [{dst}]",
                                     // store val pair to dst
-                                    "strexd {r}, r4, r5, [{dst}]",
+                                    "strexd {r}, r2, r3, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
                                     "bne 2b",
-                                $after, // acquire fence
-                                dst = in(reg) dst,
+                                $acq, // acquire fence
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                r = out(reg) _,
+                                r = lateout(reg) _,
                                 // val pair - must be even-numbered and not R14
-                                out("r4") _,
-                                out("r5") _,
+                                out("r2") _,
+                                out("r3") _,
                                 // tmp pair - must be even-numbered and not R14
-                                // r6 is reserved by LLVM
-                                out("r8") _,
-                                out("r9") _,
+                                lateout("r4") _,
+                                lateout("r5") _,
                                 options(nostack),
                             )
                         };
                     }
                     match order {
                         Ordering::Relaxed => atomic_store!("", ""),
-                        Ordering::Release => atomic_store!("dmb ish", ""),
-                        Ordering::SeqCst => atomic_store!("dmb ish", "dmb ish"),
+                        Ordering::Release => atomic_store!("", asm_dmb!()),
+                        Ordering::SeqCst => atomic_store!(asm_dmb!(), asm_dmb!()),
                         _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
@@ -252,44 +265,43 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {
-                        ($before:tt, $after:tt) => {
+                        ($acq:expr, $rel:expr) => {
                             asm!(
                                 // load from val to val pair
-                                "ldrd r4, r5, [{val}]",
+                                "ldrd r2, r3, [{val}]",
                                 // (atomic) swap
-                                $before, // release fence
+                                $rel, // release fence
                                 "2:",
                                     // load from dst to tmp pair
-                                    "ldrexd r8, r9, [{dst}]",
+                                    "ldrexd r4, r5, [{dst}]",
                                     // store val pair to dst
-                                    "strexd {r}, r4, r5, [{dst}]",
+                                    "strexd {r}, r2, r3, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
                                     "bne 2b",
-                                $after, // acquire fence
+                                $acq, // acquire fence
                                 // store tmp pair to out
-                                "strd r8, r9, [{out}]",
-                                dst = in(reg) dst,
+                                "strd r4, r5, [{out}]",
+                                dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                out = in(reg) out,
-                                r = out(reg) _,
+                                out = inout(reg) out => _,
+                                r = lateout(reg) _,
                                 // val pair - must be even-numbered and not R14
-                                out("r4") _,
-                                out("r5") _,
+                                out("r2") _,
+                                out("r3") _,
                                 // tmp pair - must be even-numbered and not R14
-                                // r6 is reserved by LLVM
-                                out("r8") _,
-                                out("r9") _,
+                                lateout("r4") _,
+                                lateout("r5") _,
                                 options(nostack),
                             )
                         };
                     }
                     match order {
                         Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("", "dmb ish"),
-                        Ordering::Release => atomic_swap!("dmb ish", ""),
+                        Ordering::Acquire => atomic_swap!(asm_dmb!(), ""),
+                        Ordering::Release => atomic_swap!("", asm_dmb!()),
                         // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("dmb ish", "dmb ish"),
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(asm_dmb!(), asm_dmb!()),
                         _ => crate::utils::release_unreachable_unchecked(),
                     }
                 }
