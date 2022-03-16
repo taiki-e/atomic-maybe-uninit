@@ -1,12 +1,12 @@
 [package]
 name = "atomic-maybe-uninit"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 rust-version = "1.59"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/atomic-maybe-uninit"
 keywords = ["atomic"]
-categories = ["concurrency", "data-structures", "embedded", "no-std"]
+categories = ["concurrency", "data-structures", "embedded", "hardware-support", "no-std"]
 exclude = ["/.*", "/tools"]
 description = """
 Atomic operations on potentially uninitialized integers.

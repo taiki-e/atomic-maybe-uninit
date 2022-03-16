@@ -69,6 +69,6 @@ fi
 
 set -x
 
-git push origin main
 git tag "${tag}"
+git push origin main
 git push origin --tags
