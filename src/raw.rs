@@ -3,7 +3,10 @@
 #[cfg(doc)]
 use core::{
     cell::UnsafeCell,
-    sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst},
+    sync::atomic::{
+        fence,
+        Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst},
+    },
 };
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -118,5 +121,79 @@ pub trait AtomicSwap: Primitive {
         val: *const MaybeUninit<Self>,
         out: *mut MaybeUninit<Self>,
         order: Ordering,
+    );
+}
+
+/// Byte-wise atomic memcpy.
+///
+/// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
+pub trait AtomicMemcpy: Primitive {
+    /// Loads `count * size_of::<Self>()` bytes from `src` into `out`.
+    ///
+    /// The memory ordering of this operation is always [`Relaxed`].
+    /// If [`Acquire`] memory ordering is needed, emit the [`Acquire`] [`fence`]
+    /// *after* this operation.
+    ///
+    /// **Note:** There is *no* guarantee that all elements have been copied at
+    /// the same time, so if `src` is updated by a concurrent write operation,
+    /// the elements at `out` may be a mix of elements before and after the update.
+    ///
+    /// # Safety
+    ///
+    /// Behavior is undefined if any of the following conditions are violated:
+    ///
+    /// - `src` must be valid for reads.
+    /// - `src` must be properly aligned **to the size of `Self`**.
+    ///   (For example, if `Self` is `u128`, `src` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
+    /// - `src` must go through [`UnsafeCell::get`].
+    /// - `src` must *not* overlap with `out`.
+    /// - `out` must be valid for writes.
+    /// - `out` must be properly aligned.
+    ///
+    /// The rules for the validity of pointer follow [the rules applied to
+    /// functions exposed by the standard library's `ptr` module][validity],
+    /// except that concurrent atomic operations of the same granularity on `src`
+    /// are allowed.
+    ///
+    /// [validity]: core::ptr#safety
+    unsafe fn atomic_load_memcpy(
+        src: *const MaybeUninit<Self>,
+        out: *mut MaybeUninit<Self>,
+        count: usize,
+    );
+
+    /// Stores `count * size_of::<Self>()` from `val` into `dst`.
+    ///
+    ///
+    /// The memory ordering of this operation is always [`Relaxed`].
+    /// If [`Release`] memory ordering is needed, emit the [`Release`] [`fence`]
+    /// *before* this operation.
+    ///
+    /// **Note:** There is *no* guarantee that all elements have been copied at
+    /// the same time, so if `dst` is updated by a concurrent write operation,
+    /// the elements at `dst` may be a mix of elements before and after the update.
+    ///
+    /// # Safety
+    ///
+    /// Behavior is undefined if any of the following conditions are violated:
+    ///
+    /// - `dst` must be valid for writes.
+    /// - `dst` must be properly aligned **to the size of `Self`**.
+    ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
+    /// - `dst` must go through [`UnsafeCell::get`].
+    /// - `dst` must *not* overlap with `val`.
+    /// - `val` must be valid for reads.
+    /// - `val` must be properly aligned.
+    ///
+    /// The rules for the validity of pointer follow [the rules applied to
+    /// functions exposed by the standard library's `ptr` module][validity],
+    /// except that concurrent atomic operations of the same granularity on `dst`
+    /// are allowed.
+    ///
+    /// [validity]: core::ptr#safety
+    unsafe fn atomic_store_memcpy(
+        dst: *mut MaybeUninit<Self>,
+        val: *const MaybeUninit<Self>,
+        count: usize,
     );
 }
