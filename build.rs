@@ -43,9 +43,8 @@ fn main() {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_const_fn_trait_bound");
     }
 
-    // #[cfg(target_feature = "lse")] doesn't work on stable.
-    // https://github.com/rust-lang/rust/pull/90621
-    if target.starts_with("aarch64") && has_target_feature("lse", &version, None) {
+    // aarch64_target_feature stabilized in Rust 1.61.
+    if target.starts_with("aarch64") && has_target_feature("lse", &version, Some(61)) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_lse");
     }
     // #[cfg(target_feature = "v7")] doesn't work on stable.
