@@ -11,6 +11,8 @@ env:
 test_task:
   env:
     TARGET: aarch64-unknown-linux-gnu
+    RUSTDOCFLAGS: -D warnings --cfg weak_memory
+    RUSTFLAGS: -D warnings --cfg weak_memory
   arm_container:
     image: rust:latest
   setup_script:

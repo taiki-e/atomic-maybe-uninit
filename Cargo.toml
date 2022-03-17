@@ -25,4 +25,5 @@ targets = [
 resolver = "2"
 
 [dev-dependencies]
+crossbeam-utils = "0.8"
 paste = "1"
