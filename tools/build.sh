@@ -26,6 +26,8 @@ default_targets=(
     aarch64-unknown-linux-gnu_ilp32
     # aarch64 ILP32 ABI big endian
     aarch64_be-unknown-linux-gnu_ilp32
+    # aarch64 always support lse
+    aarch64-apple-darwin
 
     # armv7+
     # rustc --print target-list | grep -E '^(arm(eb)?|thumb)(v7|v8|v9)' | grep -E '(-unknown-linux|-none)'

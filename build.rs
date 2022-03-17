@@ -44,7 +44,10 @@ fn main() {
     }
 
     // aarch64_target_feature stabilized in Rust 1.61.
-    if target.starts_with("aarch64") && has_target_feature("lse", &version, Some(61)) {
+    // aarch64 macos always support lse: https://github.com/rust-lang/rust/blob/1.59.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
+    if target.starts_with("aarch64")
+        && has_target_feature("lse", target == "aarch64-apple-darwin", &version, Some(61))
+    {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature_lse");
     }
     // #[cfg(target_feature = "v7")] doesn't work on stable.
@@ -169,7 +172,12 @@ fn rustc_version() -> Option<Version> {
     Some(Version { minor, nightly })
 }
 
-fn has_target_feature(name: &str, version: &Version, stabilized: Option<u32>) -> bool {
+fn has_target_feature(
+    name: &str,
+    mut has_target_feature: bool,
+    version: &Version,
+    stabilized: Option<u32>,
+) -> bool {
     // HACK: Currently, it seems that the only way that works on the stable is
     // to parse the `-C target-feature` in RUSTFLAGS.
     //
@@ -180,7 +188,6 @@ fn has_target_feature(name: &str, version: &Version, stabilized: Option<u32>) ->
     // (e.g., https://godbolt.org/z/8Eh3z5Wzb), so this hack works properly on stable.
     //
     // [RFC2045]: https://rust-lang.github.io/rfcs/2045-target-feature.html#backend-compilation-options
-    let mut has_target_feature = false;
     if version.nightly || stabilized.map_or(false, |stabilized| version.minor >= stabilized) {
         has_target_feature = env::var("CARGO_CFG_TARGET_FEATURE")
             .ok()
