@@ -65,12 +65,7 @@ Feel free to submit an issue if your target is not supported yet.
     clippy::pedantic,
     clippy::undocumented_unsafe_blocks
 )]
-#![allow(
-    clippy::doc_markdown,
-    clippy::module_inception,
-    clippy::must_use_candidate,
-    clippy::type_complexity
-)]
+#![allow(clippy::doc_markdown, clippy::module_inception, clippy::type_complexity)]
 #![cfg_attr(
     not(any(
         target_arch = "x86",
@@ -153,6 +148,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// This is `const fn` on Rust 1.61+. See also `const_new` function.
     #[cfg(atomic_maybe_uninit_const_fn_trait_bound)]
     #[inline]
+    #[must_use]
     pub const fn new(v: MaybeUninit<T>) -> Self {
         Self { v: UnsafeCell::new(v), _align: [] }
     }
@@ -162,6 +158,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// This is `const fn` on Rust 1.61+.
     #[cfg(not(atomic_maybe_uninit_const_fn_trait_bound))]
     #[inline]
+    #[must_use]
     pub fn new(v: MaybeUninit<T>) -> Self {
         Self { v: UnsafeCell::new(v), _align: [] }
     }
@@ -255,6 +252,7 @@ macro_rules! int {
         impl AtomicMaybeUninit<$ty> {
             /// Creates a new atomic integer. Unlike [`new`](Self::new), this is always `const fn`.
             #[inline]
+            #[must_use]
             pub const fn const_new(v: MaybeUninit<$ty>) -> Self {
                 Self { v: UnsafeCell::new(v), _align: [] }
             }
