@@ -1,6 +1,7 @@
 #![no_main]
 #![no_std]
 #![warn(rust_2018_idioms, unsafe_op_in_unsafe_fn)]
+#![feature(panic_info_message)]
 
 use core::{fmt::Write, mem::MaybeUninit, panic::PanicInfo, sync::atomic::Ordering};
 
@@ -67,33 +68,33 @@ fn swap_orderings() -> [Ordering; 5] {
 
 #[entry]
 fn main() -> ! {
-    loop {
-        asm::nop();
+    asm::nop();
 
-        let mut hstdout = semihosting::hio::hstdout().unwrap();
+    let mut hstdout = semihosting::hio::hstdout().unwrap();
 
-        macro_rules! test_atomic {
-            ($int_type:ident) => {
-                paste::paste! {
-                    fn [<test_atomic_ $int_type>]() {
-                        __test_atomic!($int_type);
-                    }
-                    let _ = write!(hstdout, "test test_atomic_{} ...", stringify!($int_type));
-                    [<test_atomic_ $int_type>]();
-                    let _ = write!(hstdout, " ok\n");
+    macro_rules! test_atomic {
+        ($int_type:ident) => {
+            paste::paste! {
+                fn [<test_atomic_ $int_type>]() {
+                    __test_atomic!($int_type);
                 }
-            };
-        }
+                let _ = write!(hstdout, "test test_atomic_{} ...", stringify!($int_type));
+                [<test_atomic_ $int_type>]();
+                let _ = write!(hstdout, " ok\n");
+            }
+        };
+    }
 
-        test_atomic!(isize);
-        test_atomic!(usize);
-        test_atomic!(i8);
-        test_atomic!(u8);
-        test_atomic!(i16);
-        test_atomic!(u16);
-        test_atomic!(i32);
-        test_atomic!(u32);
+    test_atomic!(isize);
+    test_atomic!(usize);
+    test_atomic!(i8);
+    test_atomic!(u8);
+    test_atomic!(i16);
+    test_atomic!(u16);
+    test_atomic!(i32);
+    test_atomic!(u32);
 
+    loop {
         semihosting::debug::exit(semihosting::debug::EXIT_SUCCESS);
     }
 }
@@ -102,11 +103,18 @@ fn main() -> ! {
 #[panic_handler]
 fn panic(info: &PanicInfo<'_>) -> ! {
     if let Ok(mut hstdout) = semihosting::hio::hstdout() {
-        if let Some(s) = info.payload().downcast_ref::<&str>() {
-            let _ = write!(hstdout, "panic occurred: {:?}\n", s);
+        if let Some(s) = info.message() {
+            if let Some(l) = info.location() {
+                let _ = writeln!(hstdout, "panicked at '{:?}', {}", s, l);
+            } else {
+                let _ = writeln!(hstdout, "panicked at '{:?}' (no location info)", s);
+            }
         } else {
-            let _ = write!(hstdout, "panic occurred\n");
+            let _ = writeln!(hstdout, "panic occurred (no message)");
         }
     }
-    loop {}
+
+    loop {
+        semihosting::debug::exit(semihosting::debug::EXIT_FAILURE);
+    }
 }
