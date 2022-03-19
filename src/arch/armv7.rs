@@ -325,4 +325,7 @@ mod tests {
     test_atomic!(u32);
     test_atomic!(i64);
     test_atomic!(u64);
+
+    stress_test_load_store!();
+    stress_test_load_swap!();
 }

@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support MIPS32r2 and MIPS64r2.
+
 - Add `#[must_use]` to constructors.
 
 ## [0.2.2] - 2022-03-16

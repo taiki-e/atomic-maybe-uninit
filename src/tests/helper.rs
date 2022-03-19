@@ -85,6 +85,113 @@ macro_rules! __test_atomic {
     };
 }
 
+macro_rules! __stress_test {
+    ($write:ident, $load_order:ident, $store_order:ident) => {
+        use core::{mem::MaybeUninit, sync::atomic::AtomicUsize};
+        use std::{sync::atomic::Ordering, vec::Vec};
+
+        use crossbeam_utils::thread;
+
+        use crate::AtomicMaybeUninit;
+
+        const N: usize = if cfg!(debug_assertions) { 500_000 } else { 4_000_000 };
+
+        #[allow(clippy::undocumented_unsafe_blocks)]
+        unsafe {
+            let v = &(0..N).map(|_| AtomicUsize::new(0)).collect::<Vec<_>>();
+            let a = &AtomicMaybeUninit::from(0_usize);
+            thread::scope(|s| {
+                s.spawn(|_| {
+                    for i in 0..N {
+                        if let Some(b) = (a.load(Ordering::$load_order).assume_init()
+                            as *const AtomicUsize)
+                            .as_ref()
+                        {
+                            assert_eq!(b.load(Ordering::Relaxed), 1, "i={i}");
+                        }
+                    }
+                });
+                for b in v {
+                    b.store(1, Ordering::Relaxed);
+                    a.$write(MaybeUninit::new(b as *const _ as usize), Ordering::$store_order);
+                }
+            })
+            .unwrap();
+        }
+    };
+}
+
+macro_rules! stress_test_load_store {
+    () => {
+        // This test should panic on architectures with weak memory models.
+        #[test]
+        // This should be `any(target_arch = ...)`, but qemu-user running on x86_64 does
+        // not seem to support weak memory emulation.
+        // Therefore, explicitly enable should_panic only on actual aarch64 hardware.
+        #[cfg_attr(weak_memory, should_panic)]
+        fn stress_load_relaxed_store_relaxed() {
+            __stress_test!(store, Relaxed, Relaxed);
+        }
+        #[test]
+        // `asm!` implies a compiler fence, so it seems the relaxed load written in
+        // `asm!` behaves like a consume load on architectures with weak memory models.
+        // #[cfg_attr(weak_memory, should_panic)]
+        fn stress_load_relaxed_store_release() {
+            __stress_test!(store, Relaxed, Release);
+        }
+        // This test should panic on architectures with weak memory models.
+        #[test]
+        #[cfg_attr(weak_memory, should_panic)]
+        fn stress_load_acquire_store_relaxed() {
+            __stress_test!(store, Acquire, Relaxed);
+        }
+        #[test]
+        fn stress_load_acquire_store_release() {
+            __stress_test!(store, Acquire, Release);
+        }
+        #[test]
+        fn stress_load_seqcst_store_seqcst() {
+            __stress_test!(store, SeqCst, SeqCst);
+        }
+    };
+}
+
+macro_rules! stress_test_load_swap {
+    () => {
+        // This test should panic on architectures with weak memory models.
+        #[test]
+        #[cfg_attr(weak_memory, should_panic)]
+        fn stress_load_relaxed_swap_relaxed() {
+            __stress_test!(swap, Relaxed, Relaxed);
+        }
+        #[test]
+        // `asm!` implies a compiler fence, so it seems the relaxed load written in
+        // `asm!` behaves like a consume load on architectures with weak memory models.
+        // #[cfg_attr(weak_memory, should_panic)]
+        fn stress_load_relaxed_swap_release() {
+            __stress_test!(swap, Relaxed, Release);
+        }
+        // This test should panic on architectures with weak memory models.
+        #[test]
+        #[cfg_attr(weak_memory, should_panic)]
+        fn stress_load_acquire_swap_relaxed() {
+            __stress_test!(swap, Acquire, Relaxed);
+        }
+        #[test]
+        fn stress_load_acquire_swap_release() {
+            __stress_test!(swap, Acquire, Release);
+        }
+        #[test]
+        fn stress_load_acquire_swap_acqrel() {
+            __stress_test!(swap, Acquire, AcqRel);
+        }
+        #[test]
+        fn stress_load_seqcst_swap_seqcst() {
+            __stress_test!(swap, SeqCst, SeqCst);
+        }
+    };
+}
+
 #[track_caller]
 fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::String {
     let backtrace = std::env::var_os("RUST_BACKTRACE");

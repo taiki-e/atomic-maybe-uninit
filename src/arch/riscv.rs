@@ -199,4 +199,7 @@ mod tests {
     test_atomic!(i64);
     #[cfg(target_arch = "riscv64")]
     test_atomic!(u64);
+
+    stress_test_load_store!();
+    stress_test_load_swap!();
 }

@@ -5,6 +5,7 @@ edition = "2021"
 publish = false
 
 [workspace]
+resolver = "2"
 
 [dependencies]
 atomic-maybe-uninit = { path = "../.." }

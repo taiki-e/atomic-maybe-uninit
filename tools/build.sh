@@ -57,6 +57,13 @@ default_targets=(
     riscv32imc-unknown-none-elf
     # riscv32 with atomic
     riscv32imac-unknown-none-elf
+
+    # mips
+    mips-unknown-linux-gnu
+    mipsel-unknown-linux-gnu
+    # mips64
+    mips64-unknown-linux-gnuabi64
+    mips64el-unknown-linux-gnuabi64
 )
 
 pre_args=()
@@ -74,7 +81,9 @@ rustup_target_list=$(rustup ${pre_args[@]+"${pre_args[@]}"} target list)
 rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -Vv | grep 'release: ' | sed 's/release: //')
 subcmd=build
+nightly=''
 if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]]; then
+    nightly=1
     rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
     case "${rustc_version}" in
         # -Z check-cfg-features requires 1.61.0-nightly
@@ -106,10 +115,18 @@ build() {
         echo "target '${target}' not available on ${rustc_version}"
         return 0
     fi
+    if [[ -z "${nightly}" ]]; then
+        case "${target}" in
+            mips*)
+                echo "target '${target}' requires nightly compiler"
+                return 0
+                ;;
+        esac
+    fi
     args+=(${pre_args[@]+"${pre_args[@]}"} hack "${subcmd}")
     if grep <<<"${rustup_target_list}" -Eq "^${target}( |$)"; then
         x rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
-    elif [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]]; then
+    elif [[ -n "${nightly}" ]]; then
         case "${target}" in
             *-none* | avr-* | riscv32imc-esp-espidf) args+=(-Z build-std=core) ;;
             *) args+=(-Z build-std) ;;
