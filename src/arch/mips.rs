@@ -1,10 +1,10 @@
 // Generated asm:
-// - mipsel https://godbolt.org/z/s45qP8x9K
-// - mips64el https://godbolt.org/z/hqn6Gehn6
+// - mipsel https://godbolt.org/z/61zcr1cdT
+// - mips64el https://godbolt.org/z/1sd3Pv1M6
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-use crate::raw::{AtomicLoad, AtomicStore};
+use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
 macro_rules! atomic_load_store {
     ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
@@ -120,40 +120,100 @@ macro_rules! atomic_load_store {
     };
 }
 
+#[rustfmt::skip]
+macro_rules! atomic {
+    ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt, $asm_ll_suffix:tt) => {
+        atomic_load_store!($int_type, $asm_suffix, $asm_u_suffix);
+        impl AtomicSwap for $int_type {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // clippy bug that does not recognize safety comments inside macros.
+                #[allow(clippy::undocumented_unsafe_blocks)]
+                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                unsafe {
+                    macro_rules! atomic_swap {
+                        ($acq:expr, $rel:expr) => {
+                            asm!(
+                                ".set noat",
+                                // load from val to val_tmp
+                                concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
+                                // (atomic) swap
+                                $rel, // release fence
+                                "2:",
+                                    // load from dst to out_tmp
+                                    concat!("ll", $asm_ll_suffix, " {out_tmp}, 0({dst})"),
+                                    "move {r}, {val_tmp}",
+                                    // store val to dst
+                                    concat!("sc", $asm_ll_suffix, " {r}, 0({dst})"),
+                                    // 1 if the store was successful, 0 if no store was performed
+                                    "beqz {r}, 2b",
+                                $acq, // acquire fence
+                                // store out_tmp to out
+                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
+                                ".set at",
+                                dst = inout(reg) dst => _,
+                                val = in(reg) val,
+                                out = inout(reg) out => _,
+                                r = lateout(reg) _,
+                                out_tmp = lateout(reg) _,
+                                val_tmp = lateout(reg) _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => atomic_swap!("", ""),
+                        Ordering::Acquire => atomic_swap!("sync", ""),
+                        Ordering::Release => atomic_swap!("", "sync"),
+                        // AcqRel and SeqCst swaps are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("sync", "sync"),
+                        _ => crate::utils::release_unreachable_unchecked(),
+                    }
+                }
+            }
+        }
+    };
+}
+
 atomic_load_store!(i8, "b", "u");
 atomic_load_store!(u8, "b", "u");
 atomic_load_store!(i16, "h", "u");
 atomic_load_store!(u16, "h", "u");
-atomic_load_store!(i32, "w", "");
-atomic_load_store!(u32, "w", "");
+atomic!(i32, "w", "", "");
+atomic!(u32, "w", "", "");
 #[cfg(target_arch = "mips64")]
-atomic_load_store!(i64, "d", "");
+atomic!(i64, "d", "", "d");
 #[cfg(target_arch = "mips64")]
-atomic_load_store!(u64, "d", "");
+atomic!(u64, "d", "", "d");
 #[cfg(target_pointer_width = "32")]
-atomic_load_store!(isize, "w", "");
+atomic!(isize, "w", "", "");
 #[cfg(target_pointer_width = "32")]
-atomic_load_store!(usize, "w", "");
+atomic!(usize, "w", "", "");
 #[cfg(target_pointer_width = "64")]
-atomic_load_store!(isize, "d", "");
+atomic!(isize, "d", "", "d");
 #[cfg(target_pointer_width = "64")]
-atomic_load_store!(usize, "d", "");
+atomic!(usize, "d", "", "d");
 
 #[cfg(test)]
 mod tests {
-    test_atomic_load_store!(isize);
-    test_atomic_load_store!(usize);
+    test_atomic!(isize);
+    test_atomic!(usize);
     test_atomic_load_store!(i8);
     test_atomic_load_store!(u8);
     test_atomic_load_store!(i16);
     test_atomic_load_store!(u16);
-    test_atomic_load_store!(i32);
-    test_atomic_load_store!(u32);
+    test_atomic!(i32);
+    test_atomic!(u32);
     #[cfg(target_arch = "mips64")]
-    test_atomic_load_store!(i64);
+    test_atomic!(i64);
     #[cfg(target_arch = "mips64")]
-    test_atomic_load_store!(u64);
+    test_atomic!(u64);
 
     stress_test_load_store!();
-    // stress_test_load_swap!();
+    stress_test_load_swap!();
 }

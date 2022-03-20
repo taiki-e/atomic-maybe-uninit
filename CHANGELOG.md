@@ -10,6 +10,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Implement MIPS32r2 32-bit swap.
+
+- Implement MIPS64r2 32-bit and 64-bit swap.
+
 ## [0.2.3] - 2022-03-19
 
 - Support MIPS32r2 and MIPS64r2.

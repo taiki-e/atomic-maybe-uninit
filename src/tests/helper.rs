@@ -82,6 +82,24 @@ macro_rules! __test_atomic {
                 }
             }
         }
+        mod quickcheck {
+            use std::mem::MaybeUninit;
+
+            use crate::{tests::helper::*, AtomicMaybeUninit};
+            ::quickcheck::quickcheck! {
+                fn swap(x: $int_type, y: $int_type) -> bool {
+                    unsafe {
+                        for order in swap_orderings() {
+                            let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
+                            assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
+                            assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
+                            assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
+                        }
+                    }
+                    true
+                }
+            }
+        }
     };
 }
 

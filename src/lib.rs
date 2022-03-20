@@ -22,8 +22,10 @@ Currently, x86, x86_64, ARM (v7+), AArch64, RISC-V, MIPS32r2, and MIPS64r2 are s
 | riscv32         | i8,u8,i16,u16                                       | ✓              |        |
 | riscv64         | isize,usize,i32,u32,i64,u64                         | ✓              | ✓\[2]  |
 | riscv64         | i8,u8,i16,u16                                       | ✓              |        |
-| mips \[3]       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              |        |
-| mips64 \[3]     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓              |        |
+| mips \[3]       | isize,usize,i32,u32                                 | ✓              | ✓      |
+| mips \[3]       | i8,u8,i16,u16                                       | ✓              |        |
+| mips64 \[3]     | isize,usize,i32,u32,i64,u64                         | ✓              | ✓      |
+| mips64 \[3]     | i8,u8,i16,u16                                       | ✓              |        |
 
 \[1] If the `lse` target feature is enabled at compile-time, more efficient instructions are used instead of increasing the CPU requirement to ARMv8.1+.<br>
 \[2] RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.<br>
