@@ -35,7 +35,7 @@ Feel free to submit an issue if your target is not supported yet.
 
 ## Related Projects
 
-- [portable-atomic]: Portable atomic types including extensions such as 128-bit atomics, atomic float, etc.
+- [portable-atomic]: Portable atomic types including support for 128-bit atomics, atomic float, etc.
 - [atomic-memcpy]: Byte-wise atomic memcpy.
 
 [load]: https://docs.rs/atomic-maybe-uninit/latest/atomic_maybe_uninit/struct.AtomicMaybeUninit.html#method.load
