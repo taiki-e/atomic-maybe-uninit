@@ -100,7 +100,7 @@ macro_rules! atomic {
                 #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
-                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature_lse))]
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
                     macro_rules! atomic_swap {
                         ($acq:tt, $rel:tt) => {
                             asm!(
@@ -119,7 +119,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature_lse)))]
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
                     macro_rules! atomic_swap {
                         ($acq:tt, $rel:tt) => {
                             asm!(

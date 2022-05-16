@@ -8,7 +8,7 @@
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature_a))]
+#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
 use crate::raw::AtomicSwap;
 use crate::raw::{AtomicLoad, AtomicStore};
 
@@ -119,7 +119,7 @@ macro_rules! atomic_load_store {
 macro_rules! atomic {
     ($int_type:ident, $asm_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix);
-        #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature_a))]
+        #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(

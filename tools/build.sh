@@ -89,8 +89,9 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
         # -Z check-cfg requires 1.63.0-nightly
         1.[0-5]* | 1.6[0-2].*) ;;
         *)
+            # TODO: handle key-value cfg from build script as --check-cfg=values(name, "value1", "value2", ... "valueN")
             # shellcheck disable=SC2207
-            build_script_cfg=($(grep -E 'cargo:rustc-cfg=' build.rs | sed -E 's/^.*cargo:rustc-cfg=//' | sed -E 's/".*$//' | LC_ALL=C sort | uniq))
+            build_script_cfg=($(grep -E 'cargo:rustc-cfg=' build.rs | sed -E 's/^.*cargo:rustc-cfg=//' | sed -E 's/(=\\)?".*$//' | LC_ALL=C sort | uniq))
             check_cfg="-Z unstable-options --check-cfg=names($(IFS=',' && echo "${build_script_cfg[*]}"))"
             echo "base rustflags='${check_cfg}'"
             rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null

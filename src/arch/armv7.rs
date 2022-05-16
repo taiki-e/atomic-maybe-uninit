@@ -7,13 +7,13 @@ use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
-#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature_mclass)))]
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! asm_dmb {
     () => {
         "dmb ish"
     };
 }
-#[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature_mclass))]
+#[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))]
 macro_rules! asm_dmb {
     () => {
         "dmb sy"
@@ -162,7 +162,7 @@ atomic!(usize, "");
 #[rustfmt::skip]
 macro_rules! atomic64 {
     ($int_type:ident) => {
-        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature_aclass))]
+        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature = "aclass"))]
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -201,7 +201,7 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature_aclass))]
+        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature = "aclass"))]
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
@@ -251,7 +251,7 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature_aclass))]
+        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature = "aclass"))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(

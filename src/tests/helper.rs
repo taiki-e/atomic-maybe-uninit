@@ -34,7 +34,7 @@ macro_rules! __test_atomic_load_store {
         fn load_store() {
             static VAR: AtomicMaybeUninit<$int_type> =
                 AtomicMaybeUninit::<$int_type>::const_new(MaybeUninit::new(10));
-            #[cfg(const_fn_trait_bound)]
+            #[cfg(atomic_maybe_uninit_const_fn_trait_bound)]
             static _VAR: AtomicMaybeUninit<$int_type> =
                 AtomicMaybeUninit::new(MaybeUninit::new(10));
             test_load_ordering(|order| VAR.load(order));
