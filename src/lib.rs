@@ -63,11 +63,13 @@ Feel free to submit an issue if your target is not supported yet.
     unsafe_op_in_unsafe_fn
 )]
 #![warn(
+    clippy::default_union_representation,
     clippy::exhaustive_enums,
     clippy::exhaustive_structs,
     clippy::inline_asm_x86_att_syntax,
     clippy::missing_inline_in_public_items,
     clippy::pedantic,
+    clippy::transmute_undefined_repr,
     clippy::undocumented_unsafe_blocks
 )]
 #![allow(clippy::doc_markdown, clippy::module_inception, clippy::type_complexity)]
