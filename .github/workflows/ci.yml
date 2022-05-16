@@ -186,7 +186,7 @@ jobs:
 
   ci-success:
     name: ci
-    if: github.event_name == 'push' && success()
+    if: success()
     needs:
       - test
       - msrv
