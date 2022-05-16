@@ -86,8 +86,8 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
     nightly=1
     rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
     case "${rustc_version}" in
-        # -Z check-cfg-features requires 1.61.0-nightly
-        1.[0-5]* | 1.60.*) ;;
+        # -Z check-cfg requires 1.63.0-nightly
+        1.[0-5]* | 1.6[0-2].*) ;;
         *)
             # shellcheck disable=SC2207
             build_script_cfg=($(grep -E 'cargo:rustc-cfg=' build.rs | sed -E 's/^.*cargo:rustc-cfg=//' | sed -E 's/".*$//' | LC_ALL=C sort | uniq))
@@ -128,7 +128,7 @@ build() {
         x rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
     elif [[ -n "${nightly}" ]]; then
         case "${target}" in
-            *-none* | avr-* | riscv32imc-esp-espidf) args+=(-Z build-std=core) ;;
+            *-none* | avr-* | *-esp-espidf) args+=(-Z build-std=core) ;;
             *) args+=(-Z build-std) ;;
         esac
     else
@@ -136,15 +136,16 @@ build() {
         return 0
     fi
     if [[ -n "${check_cfg:-}" ]]; then
-        args+=(-Z check-cfg-features)
+        args+=(-Z check-cfg)
     fi
     args+=(--target "${target}")
 
+    args+=(--workspace --ignore-private --feature-powerset --optional-deps)
     RUSTFLAGS="${RUSTFLAGS:-} ${check_cfg:-}" \
-        x cargo "${args[@]}" --feature-powerset --optional-deps --workspace --ignore-private "$@"
+        x cargo "${args[@]}" "$@"
     if [[ "${target}" == "aarch64"* ]]; then
         RUSTFLAGS="${RUSTFLAGS:-} ${check_cfg:-} -C target-feature=+lse" \
-            x cargo "${args[@]}" --feature-powerset --optional-deps --workspace --ignore-private --target-dir target/lse "$@"
+            x cargo "${args[@]}" --target-dir target/lse "$@"
     fi
 }
 
