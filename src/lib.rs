@@ -27,7 +27,7 @@ Currently, x86, x86_64, ARM (v7+), AArch64, RISC-V, MIPS32r2, and MIPS64r2 are s
 | mips64 \[3]     | isize,usize,i32,u32,i64,u64                         | ✓              | ✓      |
 | mips64 \[3]     | i8,u8,i16,u16                                       | ✓              |        |
 
-\[1] If the `lse` target feature is enabled at compile-time, more efficient instructions are used instead of increasing the CPU requirement to ARMv8.1+.<br>
+\[1] If the `lse` target feature is enabled at compile-time, more efficient instructions are used.<br>
 \[2] RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.<br>
 \[3] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 
@@ -116,6 +116,10 @@ use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap, Primitive};
 pub struct AtomicMaybeUninit<T: Primitive> {
     v: UnsafeCell<MaybeUninit<T>>,
     /// `[T::Align; 0]` ensures alignment is at least that of `T::Align`.
+    ///
+    /// This is needed because x86's u64 is 4-byte aligned and x86_64's u128 is
+    /// 8-byte aligned and atomic operations normally require the same alignment
+    /// as the size.
     _align: [T::Align; 0],
 }
 
@@ -282,6 +286,7 @@ int!(usize, AlignPtr);
 mod private {
     use core::panic::{RefUnwindSafe, UnwindSafe};
 
+    // Auto traits is needed to better docs.
     pub trait PrimitivePriv: Copy + Send + Sync + Unpin + UnwindSafe + RefUnwindSafe {
         type Align: Send + Sync + Unpin + UnwindSafe + RefUnwindSafe;
     }
