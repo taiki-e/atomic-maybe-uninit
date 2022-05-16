@@ -52,7 +52,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_dmb!()),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
@@ -88,7 +88,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_store!("", ""),
                         Ordering::Release => atomic_store!("", asm_dmb!()),
                         Ordering::SeqCst => atomic_store!(asm_dmb!(), asm_dmb!()),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
@@ -139,7 +139,7 @@ macro_rules! atomic {
                         Ordering::Release => atomic_swap!("", asm_dmb!()),
                         // AcqRel and SeqCst swaps are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(asm_dmb!(), asm_dmb!()),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
@@ -196,7 +196,7 @@ macro_rules! atomic64 {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_dmb!()),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
@@ -246,7 +246,7 @@ macro_rules! atomic64 {
                         Ordering::Relaxed => atomic_store!("", ""),
                         Ordering::Release => atomic_store!("", asm_dmb!()),
                         Ordering::SeqCst => atomic_store!(asm_dmb!(), asm_dmb!()),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
@@ -302,7 +302,7 @@ macro_rules! atomic64 {
                         Ordering::Release => atomic_swap!("", asm_dmb!()),
                         // AcqRel and SeqCst swaps are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(asm_dmb!(), asm_dmb!()),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }

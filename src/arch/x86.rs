@@ -75,7 +75,7 @@ macro_rules! atomic {
                                 options(nostack),
                             );
                         }
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }

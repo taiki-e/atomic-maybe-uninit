@@ -37,7 +37,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_load!("r"),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
@@ -71,7 +71,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_store!("r"),
                         // Release and SeqCst stores are equivalent.
                         Ordering::Release | Ordering::SeqCst => atomic_store!("l"),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
@@ -120,7 +120,7 @@ macro_rules! atomic {
                         Ordering::Release => atomic_swap!("r", "l"),
                         // AcqRel and SeqCst swaps are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("a", "l"),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }

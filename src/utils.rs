@@ -1,4 +1,4 @@
-use core::{hint, sync::atomic::Ordering};
+use core::sync::atomic::Ordering;
 
 macro_rules! static_assert {
     ($cond:expr $(, $($msg:tt)*)?) => {
@@ -7,6 +7,28 @@ macro_rules! static_assert {
                 panic!($($msg)*)
             }
         };
+    };
+}
+
+/// Informs the compiler that this point in the code is not reachable, enabling
+/// further optimizations.
+///
+/// In release mode, this macro calls `core::hint::unreachable_unchecked`.
+/// In debug mode, this macro calls `unreachable!` just in case.
+///
+/// # Safety
+///
+/// Reaching this function is completely undefined behavior.
+macro_rules! unreachable_unchecked {
+    ($($tt:tt)*) => {
+        if cfg!(debug_assertions) {
+            unreachable!($($tt)*);
+        } else {
+            // SAFETY: the caller must uphold the safety contract for `unreachable_unchecked`.
+            // (To force the caller to use unsafe block for this macro, do not use
+            // unsafe block here.)
+            core::hint::unreachable_unchecked()
+        }
     };
 }
 
@@ -41,21 +63,5 @@ pub(crate) fn assert_swap_ordering(order: Ordering) {
         | Ordering::Release
         | Ordering::SeqCst => {}
         _ => unreachable!("{:?}", order),
-    }
-}
-
-/// Informs the compiler that this point in the code is not reachable, enabling
-/// further optimizations.
-///
-/// # Safety
-///
-/// Reaching this function is completely undefined behavior.
-#[inline]
-pub(crate) unsafe fn release_unreachable_unchecked() -> ! {
-    if cfg!(debug_assertions) {
-        unreachable!();
-    } else {
-        // SAFETY: the caller must uphold the safety contract for `release_unreachable_unchecked`.
-        unsafe { hint::unreachable_unchecked() }
     }
 }

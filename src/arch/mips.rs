@@ -50,7 +50,7 @@ macro_rules! atomic_load_store {
                                 options(nostack),
                             );
                         }
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
@@ -112,7 +112,7 @@ macro_rules! atomic_load_store {
                                 options(nostack),
                             );
                         }
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
@@ -172,7 +172,7 @@ macro_rules! atomic {
                         Ordering::Release => atomic_swap!("", "sync"),
                         // AcqRel and SeqCst swaps are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("sync", "sync"),
-                        _ => crate::utils::release_unreachable_unchecked(),
+                        _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
