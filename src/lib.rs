@@ -157,7 +157,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// Creates a new atomic integer.
     ///
     /// This is `const fn` on Rust 1.61+. See also `const_new` function.
-    #[cfg(atomic_maybe_uninit_const_fn_trait_bound)]
+    #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
     #[inline]
     #[must_use]
     pub const fn new(v: MaybeUninit<T>) -> Self {
@@ -167,7 +167,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// Creates a new atomic integer.
     ///
     /// This is `const fn` on Rust 1.61+.
-    #[cfg(not(atomic_maybe_uninit_const_fn_trait_bound))]
+    #[cfg(atomic_maybe_uninit_no_const_fn_trait_bound)]
     #[inline]
     #[must_use]
     pub fn new(v: MaybeUninit<T>) -> Self {

@@ -5,7 +5,7 @@
 use std::{env, process::Command, str};
 
 // rustc +stable -Vv | grep -E '^(commit-date|release)'
-const LATEST_STABLE: Version = Version { minor: 60, nightly: false };
+const LATEST_STABLE: Version = Version { minor: 61, nightly: false };
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
@@ -47,9 +47,8 @@ fn main() {
     };
 
     // const_fn_trait_bound stabilized in Rust 1.61.
-    if version.minor >= 61 {
-        // TODO: invert cfg once Rust 1.61 became stable.
-        println!("cargo:rustc-cfg=atomic_maybe_uninit_const_fn_trait_bound");
+    if version.minor < 61 {
+        println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
     }
 
     // aarch64_target_feature stabilized in Rust 1.61.
