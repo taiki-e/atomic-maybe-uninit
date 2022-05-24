@@ -27,8 +27,6 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                // clippy bug that does not recognize safety comments inside macros.
-                #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
@@ -61,8 +59,6 @@ macro_rules! atomic {
                 val: *const MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                // clippy bug that does not recognize safety comments inside macros.
-                #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
@@ -96,8 +92,6 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                // clippy bug that does not recognize safety comments inside macros.
-                #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
@@ -196,8 +190,6 @@ macro_rules! atomic128 {
                 out: *mut MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                // clippy bug that does not recognize safety comments inside macros.
-                #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
@@ -238,8 +230,6 @@ macro_rules! atomic128 {
                 val: *const MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                // clippy bug that does not recognize safety comments inside macros.
-                #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
@@ -283,8 +273,6 @@ macro_rules! atomic128 {
                 out: *mut MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                // clippy bug that does not recognize safety comments inside macros.
-                #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {

@@ -20,8 +20,6 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                // clippy bug that does not recognize safety comments inside macros.
-                #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     // atomic load is always SeqCst.
@@ -45,8 +43,6 @@ macro_rules! atomic {
                 val: *const MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                // clippy bug that does not recognize safety comments inside macros.
-                #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     match order {
@@ -88,8 +84,6 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                // clippy bug that does not recognize safety comments inside macros.
-                #[allow(clippy::undocumented_unsafe_blocks)]
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     // atomic swap is always SeqCst.
