@@ -52,7 +52,7 @@ fn main() {
     }
 
     // aarch64_target_feature stabilized in Rust 1.61.
-    // aarch64 macos always support lse because it is armv8.6: https://github.com/rust-lang/rust/blob/1.59.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
+    // aarch64 macos always support lse because it is armv8.6: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
     if target.starts_with("aarch64")
         && has_target_feature("lse", target == "aarch64-apple-darwin", &version, Some(61))
     {

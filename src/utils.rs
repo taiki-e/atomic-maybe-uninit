@@ -32,7 +32,7 @@ macro_rules! unreachable_unchecked {
     };
 }
 
-// https://github.com/rust-lang/rust/blob/1.59.0/library/core/src/sync/atomic.rs#L2359
+// https://github.com/rust-lang/rust/blob/1.61.0/library/core/src/sync/atomic.rs#L2566
 #[inline]
 pub(crate) fn assert_load_ordering(order: Ordering) {
     match order {
@@ -43,7 +43,7 @@ pub(crate) fn assert_load_ordering(order: Ordering) {
     }
 }
 
-// https://github.com/rust-lang/rust/blob/1.59.0/library/core/src/sync/atomic.rs#L2345
+// https://github.com/rust-lang/rust/blob/1.61.0/library/core/src/sync/atomic.rs#L2552
 #[inline]
 pub(crate) fn assert_store_ordering(order: Ordering) {
     match order {
