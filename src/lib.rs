@@ -9,26 +9,26 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, ARM (v7+), AArch64, RISC-V, MIPS32r2, and MIPS64r2 are supported.
+Currently, x86, x86_64, ARM (v6-m, v7+), AArch64, RISC-V, MIPS32r2, and MIPS64r2 are supported.
 
 | target_arch     | primitives                                          | [load]/[store] | [swap] |
 | --------------- | --------------------------------------------------- |:--------------:|:------:|
 | x86             | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓      |
 | x86_64          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓              | ✓      |
-| arm (v7+)       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓      |
+| arm (v6-m, v7+) | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓\[1]  |
 | arm (v7-a)      | i64,u64                                             | ✓              | ✓      |
-| aarch64         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              | ✓\[1]  |
-| riscv32         | isize,usize,i32,u32                                 | ✓              | ✓\[2]  |
+| aarch64 \[2]    | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              | ✓      |
+| riscv32         | isize,usize,i32,u32                                 | ✓              | ✓\[1]  |
 | riscv32         | i8,u8,i16,u16                                       | ✓              |        |
-| riscv64         | isize,usize,i32,u32,i64,u64                         | ✓              | ✓\[2]  |
+| riscv64         | isize,usize,i32,u32,i64,u64                         | ✓              | ✓\[1]  |
 | riscv64         | i8,u8,i16,u16                                       | ✓              |        |
 | mips \[3]       | isize,usize,i32,u32                                 | ✓              | ✓      |
 | mips \[3]       | i8,u8,i16,u16                                       | ✓              |        |
 | mips64 \[3]     | isize,usize,i32,u32,i64,u64                         | ✓              | ✓      |
 | mips64 \[3]     | i8,u8,i16,u16                                       | ✓              |        |
 
-\[1] If the `lse` target feature is enabled at compile-time, more efficient instructions are used.<br>
-\[2] RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.<br>
+\[1] ARM's atomic swap is not available on v6-m (thumbv6m). RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.<br>
+\[2] If the `lse` target feature is enabled at compile-time, more efficient instructions are used.<br>
 \[3] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 
 Feel free to submit an issue if your target is not supported yet.

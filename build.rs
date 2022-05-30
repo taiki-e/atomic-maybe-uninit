@@ -51,86 +51,66 @@ fn main() {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
     }
 
-    // aarch64_target_feature stabilized in Rust 1.61.
-    // aarch64 macos always support lse because it is armv8.6: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
-    if target.starts_with("aarch64")
-        && has_target_feature("lse", target == "aarch64-apple-darwin", &version, Some(61))
-    {
-        println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"lse\"");
+    if target.starts_with("aarch64") {
+        // aarch64 macos always support lse and lse2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
+        let is_aarch64_macos = target == "aarch64-apple-darwin";
+        // aarch64_target_feature stabilized in Rust 1.61.
+        if has_target_feature("lse", is_aarch64_macos, &version, Some(61)) {
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"lse\"");
+        }
     }
-    // #[cfg(target_feature = "v7")] doesn't work on stable.
+    // #[cfg(target_feature = "v7")] and others don't work on stable.
     if let Some(mut arch) = target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")) {
         // armv7-unknown-linux-gnueabihf
         //    ^^
-        //
-        // As of rustc 1.61.0-nightly (2022-03-13), all v7+ targets are:
-        // $ rustc --print target-list | grep -E '^(arm|thumb)(eb)?v[7-9]'
-        // armebv7r-none-eabi
-        // armebv7r-none-eabihf
-        // armv7-apple-ios
-        // armv7-linux-androideabi
-        // armv7-unknown-freebsd
-        // armv7-unknown-linux-gnueabi
-        // armv7-unknown-linux-gnueabihf
-        // armv7-unknown-linux-musleabi
-        // armv7-unknown-linux-musleabihf
-        // armv7-unknown-linux-uclibceabi
-        // armv7-unknown-linux-uclibceabihf
-        // armv7-unknown-netbsd-eabihf
-        // armv7-wrs-vxworks-eabihf
-        // armv7a-kmc-solid_asp3-eabi
-        // armv7a-kmc-solid_asp3-eabihf
-        // armv7a-none-eabi
-        // armv7a-none-eabihf
-        // armv7r-none-eabi
-        // armv7r-none-eabihf
-        // armv7s-apple-ios
-        // thumbv7a-pc-windows-msvc
-        // thumbv7a-uwp-windows-msvc
-        // thumbv7em-none-eabi
-        // thumbv7em-none-eabihf
-        // thumbv7m-none-eabi
-        // thumbv7neon-linux-androideabi
-        // thumbv7neon-unknown-linux-gnueabihf
-        // thumbv7neon-unknown-linux-musleabihf
-        // thumbv8m.base-none-eabi
-        // thumbv8m.main-none-eabi
-        // thumbv8m.main-none-eabihf
-        //
-        // So, there is the following "vN*" patterns in v7+:
-        // $ rustc --print target-list | grep -E '^(arm|thumb)(eb)?v[7-9]' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort | uniq
-        // v7
-        // v7a
-        // v7em
-        // v7m
-        // v7neon
-        // v7r
-        // v7s
-        // v8m
-        //
-        // - v7, v7a, v7neon, and v7s are "aclass"
-        // - v7em, v7m, and v8m are "mclass"
-        // - v7r is "rclass"
         arch = arch.split_once('-').unwrap().0;
         arch = arch.split_once('.').unwrap_or((arch, "")).0; // ignore .base/.main suffix
         arch = arch.strip_prefix("eb").unwrap_or(arch); // ignore endianness
-        if arch.starts_with("v7") || arch.starts_with("v8") {
-            let mut known = true;
-            if matches!(arch, "v7" | "v7a" | "v7neon" | "v7s") {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"aclass\"");
-            } else if matches!(arch, "v7em" | "v7m" | "v8m") {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"mclass\"");
-            } else if matches!(arch, "v7r") {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"rclass\"");
-            } else {
-                known = false;
-                println!(
-                    "cargo:warning={}: unrecognized arm arch: {}",
-                    env!("CARGO_PKG_NAME"),
-                    target
-                );
-            }
-            if known {
+        let mut known = true;
+        // As of rustc 1.63.0-nightly (2022-05-27), there are the following "vN*" patterns:
+        // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort | uniq | sed -E 's/^/"/g' | sed -E 's/$/"/g'
+        // ""
+        // "v4t"
+        // "v5te"
+        // "v6"
+        // "v6k"
+        // "v6m"
+        // "v7"
+        // "v7a"
+        // "v7em"
+        // "v7m"
+        // "v7neon"
+        // "v7r"
+        // "v7s"
+        // "v8m"
+        //
+        // - v7, v7a, v7neon, and v7s are "aclass"
+        // - v6m, v7em, v7m, and v8m are "mclass"
+        // - v7r is "rclass"
+        //
+        // Other targets (we don't currently support them) don't have *class target feature.
+        // For example:
+        // $ rustc +nightly --print cfg --target arm-unknown-linux-gnueabi | grep target_feature
+        // target_feature="llvm14-builtins-abi"
+        // target_feature="v5te"
+        // target_feature="v6"
+        if matches!(arch, "v7" | "v7a" | "v7neon" | "v7s") {
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"aclass\"");
+        } else if matches!(arch, "v6m" | "v7em" | "v7m" | "v8m") {
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"mclass\"");
+        } else if matches!(arch, "v7r") {
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"rclass\"");
+        } else {
+            known = false;
+            println!(
+                "cargo:warning={}: unrecognized arm target: {}",
+                env!("CARGO_PKG_NAME"),
+                target
+            );
+        }
+        if known {
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v6\"");
+            if arch.starts_with("v7") || arch.starts_with("v8") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v7\"");
                 if arch.starts_with("v8") {
                     println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v8\"");

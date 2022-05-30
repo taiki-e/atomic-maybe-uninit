@@ -29,8 +29,8 @@ default_targets=(
     # aarch64 always support lse
     aarch64-apple-darwin
 
-    # armv7+
-    # rustc --print target-list | grep -E '^(arm(eb)?|thumb)(v7|v8|v9)' | grep -E '(-unknown-linux|-none)'
+    # arm
+    # rustc --print target-list | grep -E '^(arm(eb)?|thumb)(v6m|v7|v8|v9)' | grep -E '(-unknown-linux|-none)'
     # armv7-a
     armv7-unknown-linux-gnueabi
     armv7-unknown-linux-gnueabihf
@@ -39,6 +39,8 @@ default_targets=(
     armv7r-none-eabi
     # armv7-r big endian
     armebv7r-none-eabi
+    # armv6-m
+    thumbv6m-none-eabi
     # armv7-m
     thumbv7em-none-eabi
     thumbv7em-none-eabihf
@@ -99,6 +101,7 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
             ;;
     esac
 fi
+echo "base rustflags='${RUSTFLAGS:-} ${check_cfg:-}'"
 
 x() {
     local cmd="$1"
@@ -111,7 +114,8 @@ x() {
 build() {
     local target="$1"
     shift
-    args=()
+    local args=()
+    local target_rustflags="${RUSTFLAGS:-} ${check_cfg:-}"
     if ! grep <<<"${rustc_target_list}" -Eq "^${target}$"; then
         echo "target '${target}' not available on ${rustc_version}"
         return 0
@@ -141,11 +145,14 @@ build() {
     fi
     args+=(--target "${target}")
 
-    args+=(--workspace --ignore-private --feature-powerset --optional-deps)
-    RUSTFLAGS="${RUSTFLAGS:-} ${check_cfg:-}" \
+    args+=(
+        --workspace --ignore-private
+        --feature-powerset --optional-deps
+    )
+    RUSTFLAGS="${target_rustflags}" \
         x cargo "${args[@]}" "$@"
     if [[ "${target}" == "aarch64"* ]]; then
-        RUSTFLAGS="${RUSTFLAGS:-} ${check_cfg:-} -C target-feature=+lse" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
             x cargo "${args[@]}" --target-dir target/lse "$@"
     fi
 }

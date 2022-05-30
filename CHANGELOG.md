@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support ARMv6-M.
+
 ## [0.2.4] - 2022-03-20
 
 - Implement MIPS32r2 32-bit swap.

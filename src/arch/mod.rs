@@ -10,7 +10,13 @@
     target_arch = "x86_64",
     all(
         target_arch = "arm",
-        any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")
+        any(
+            any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+            all(
+                any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+                any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"),
+            )
+        )
     ),
     target_arch = "aarch64",
     target_arch = "riscv32",
@@ -24,15 +30,21 @@ compile_error!("this target is not supported yet");
 mod aarch64;
 #[cfg(all(
     target_arch = "arm",
-    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")
+    any(
+        any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+        all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"),
+        )
+    ),
+    not(any(target_feature = "v8", atomic_maybe_uninit_target_feature = "v8"))
 ))]
-#[cfg(not(any(target_feature = "v8", atomic_maybe_uninit_target_feature = "v8")))]
-mod armv7;
+mod arm;
 #[cfg(all(
     target_arch = "arm",
-    any(target_feature = "v8", atomic_maybe_uninit_target_feature = "v8")
+    any(target_feature = "v8", atomic_maybe_uninit_target_feature = "v8"),
+    any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")
 ))]
-#[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))]
 mod armv8m;
 #[cfg(any(target_arch = "mips", target_arch = "mips64"))]
 mod mips;
