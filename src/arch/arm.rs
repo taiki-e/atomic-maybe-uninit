@@ -1,11 +1,14 @@
 // Generated asm:
-// - armv7-a https://godbolt.org/z/KPPxxMzWq
-// - armv7-r https://godbolt.org/z/9cPf7cb9j
-// - armv7-m https://godbolt.org/z/bW44v9dvj
+// - armv7-a https://godbolt.org/z/xfxqvKGbM
+// - armv7-r https://godbolt.org/z/5vqYjhMhb
+// - armv6-m https://godbolt.org/z/9GfjKeKKP
+// - armv7-m https://godbolt.org/z/aa5j15ra6
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+#[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
+use crate::raw::AtomicSwap;
+use crate::raw::{AtomicLoad, AtomicStore};
 
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! asm_dmb {
@@ -32,11 +35,11 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
-                        ($acq:expr) => {
+                        ($acquire:expr) => {
                             asm!(
                                 // (atomic) load from src to tmp
                                 concat!("ldr", $asm_suffix, " {tmp}, [{src}]"),
-                                $acq, // acquire fence
+                                $acquire, // acquire fence
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 src = in(reg) src,
@@ -65,14 +68,14 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($acq:expr, $rel:expr) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 // load from val to tmp
                                 concat!("ldr", $asm_suffix, " {tmp}, [{val}]"),
                                 // (atomic) store tmp to dst
-                                $rel, // release fence
+                                $release, // release fence
                                 concat!("str", $asm_suffix, " {tmp}, [{dst}]"),
-                                $acq, // acquire fence
+                                $acquire, // acquire fence
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
@@ -89,6 +92,7 @@ macro_rules! atomic {
                 }
             }
         }
+        #[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -100,12 +104,12 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {
-                        ($acq:expr, $rel:expr) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 // load from val to val_tmp
                                 concat!("ldr", $asm_suffix, " {val_tmp}, [{val}]"),
                                 // (atomic) swap
-                                $rel, // release fence
+                                $release, // release fence
                                 "2:",
                                     // load from dst to out_tmp
                                     concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
@@ -114,7 +118,7 @@ macro_rules! atomic {
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
                                     "bne 2b",
-                                $acq, // acquire fence
+                                $acquire, // acquire fence
                                 // store out_tmp to out
                                 concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
                                 dst = inout(reg) dst => _,
@@ -167,12 +171,12 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
-                        ($acq:expr) => {
+                        ($acquire:expr) => {
                             asm!(
                                 // (atomic) load from src to tmp pair
                                 "ldrexd r2, r3, [{src}]",
                                 "clrex",
-                                $acq, // acquire fence
+                                $acquire, // acquire fence
                                 // store tmp pair to out
                                 "strd r2, r3, [{out}]",
                                 src = in(reg) src,
@@ -204,12 +208,12 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($acq:expr, $rel:expr) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 // load from val to val pair
                                 "ldrd r2, r3, [{val}]",
                                 // (atomic) store val pair to dst
-                                $rel, // release fence
+                                $release, // release fence
                                 "2:",
                                     // load from dst to tmp pair
                                     "ldrexd r4, r5, [{dst}]",
@@ -218,7 +222,7 @@ macro_rules! atomic64 {
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
                                     "bne 2b",
-                                $acq, // acquire fence
+                                $acquire, // acquire fence
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 r = lateout(reg) _,
@@ -253,12 +257,12 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {
-                        ($acq:expr, $rel:expr) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 // load from val to val pair
                                 "ldrd r2, r3, [{val}]",
                                 // (atomic) swap
-                                $rel, // release fence
+                                $release, // release fence
                                 "2:",
                                     // load from dst to tmp pair
                                     "ldrexd r4, r5, [{dst}]",
@@ -267,7 +271,7 @@ macro_rules! atomic64 {
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
                                     "bne 2b",
-                                $acq, // acquire fence
+                                $acquire, // acquire fence
                                 // store tmp pair to out
                                 "strd r4, r5, [{out}]",
                                 dst = inout(reg) dst => _,

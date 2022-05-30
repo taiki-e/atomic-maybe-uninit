@@ -41,6 +41,7 @@ macro_rules! __test_atomic {
         }
         swap();
         fn swap() {
+            #[cfg(target_has_atomic = "ptr")]
             unsafe {
                 for order in swap_orderings() {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
@@ -62,6 +63,7 @@ fn load_orderings() -> [Ordering; 3] {
 fn store_orderings() -> [Ordering; 3] {
     [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst]
 }
+#[cfg(target_has_atomic = "ptr")]
 fn swap_orderings() -> [Ordering; 5] {
     [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst]
 }
