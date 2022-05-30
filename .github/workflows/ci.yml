@@ -10,6 +10,7 @@ on:
       - main
       - dev
       - staging
+      - atomic-memcpy
   schedule:
     - cron: '0 1 * * *'
   workflow_dispatch:
