@@ -73,7 +73,12 @@ Feel free to submit an issue if your target is not supported yet.
     clippy::transmute_undefined_repr,
     clippy::undocumented_unsafe_blocks
 )]
-#![allow(clippy::doc_markdown, clippy::module_inception, clippy::type_complexity)]
+#![allow(
+    clippy::doc_markdown,
+    clippy::module_inception,
+    clippy::too_many_lines,
+    clippy::type_complexity
+)]
 #![cfg_attr(
     not(any(
         target_arch = "x86",
