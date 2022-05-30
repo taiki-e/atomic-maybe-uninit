@@ -203,6 +203,7 @@ jobs:
     if: success()
     needs:
       - test
+      - no-std
       - msrv
       - valgrind
       - tidy
