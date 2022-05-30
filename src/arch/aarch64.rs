@@ -3,10 +3,12 @@
 //   https://developer.arm.com/documentation/dui0801/latest
 // - Arm Architecture Reference Manual for A-profile architecture
 //   https://developer.arm.com/documentation/ddi0487/latest
+// - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
 // - aarch64 https://godbolt.org/z/aTqxx6zMr
 // - aarch64+lse https://godbolt.org/z/1vv6MzKfK
+// - aarch64+lse+lse2 https://godbolt.org/z/nKMjhYGW8
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -170,9 +172,24 @@ atomic!(isize, "", "");
 #[cfg(target_pointer_width = "64")]
 atomic!(usize, "", "");
 
+// There are a few ways to implement 128-bit atomic operations in AArch64.
+//
+// - LDXP/STXP loop (DW LL/SC)
+// - CASP (DWCAS) added as FEAT_LSE (armv8.1-a)
+// - LDP/STP (DW load/store) if FEAT_LSE2 (armv8.4-a) is available
+//
+// If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.
+// Otherwise, use LDXP/STXP loop.
+//
+// Note: As of rustc 1.61.0, -C target-feature=+lse2 does not implicitly enable lse.
+// Also, target_feature "lse2" is not available on rustc side:
+// https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
+//
 // Refs:
+// - LDP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/LDP
 // - LDXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/LDXP
 // - LDAXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/LDAXP
+// - STP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STP
 // - STXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STXP
 // - STLXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STLXP
 macro_rules! atomic128 {
@@ -190,6 +207,35 @@ macro_rules! atomic128 {
                 out: *mut MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
+                // SAFETY: the caller must guarantee that `dst` is valid for reads,
+                // 16-byte aligned, that there are no concurrent non-atomic operations.
+                // the above cfg guarantee that the CPU supports FEAT_LSE2.
+                unsafe {
+                    macro_rules! atomic_load {
+                        ($acquire:tt) => {
+                            asm!(
+                                // (atomic) load from src to tmp pair
+                                concat!("ldp {tmp_lo}, {tmp_hi}, [{src", $ptr_modifier, "}]"),
+                                $acquire,
+                                // store tmp pair to out
+                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", $ptr_modifier, "}]"),
+                                src = in(reg) src,
+                                out = in(reg) out,
+                                tmp_hi = out(reg) _,
+                                tmp_lo = out(reg) _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => atomic_load!(""),
+                        Ordering::Acquire => atomic_load!("dmb ishld"),
+                        Ordering::SeqCst => atomic_load!("dmb ish"),
+                        _ => unreachable_unchecked!("{:?}", order),
+                    }
+                }
+                #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
@@ -230,6 +276,36 @@ macro_rules! atomic128 {
                 val: *const MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
+                // SAFETY: the caller must guarantee that `dst` is valid for writes,
+                // 16-byte aligned, that there are no concurrent non-atomic operations.
+                // the above cfg guarantee that the CPU supports FEAT_LSE2.
+                unsafe {
+                    macro_rules! atomic_store {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // load from val to val pair
+                                concat!("ldp {val_lo}, {val_hi}, [{val", $ptr_modifier, "}]"),
+                                // (atomic) store val pair to dst
+                                $release,
+                                concat!("stp {val_lo}, {val_hi}, [{dst", $ptr_modifier, "}]"),
+                                $acquire,
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                val_hi = out(reg) _,
+                                val_lo = out(reg) _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("", "dmb ish"),
+                        Ordering::SeqCst => atomic_store!("dmb ish", "dmb ish"),
+                        _ => unreachable_unchecked!("{:?}", order),
+                    }
+                }
+                #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {

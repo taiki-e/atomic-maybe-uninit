@@ -10,7 +10,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Support ARMv6-M.
+- Support ARMv6-M. (#4)
+
+- Optimize AArch64 128-bit atomic load/store when the `lse2` target feature is enabled at compile-time.
 
 ## [0.2.4] - 2022-03-20
 

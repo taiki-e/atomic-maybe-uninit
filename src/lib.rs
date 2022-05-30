@@ -28,7 +28,7 @@ Currently, x86, x86_64, ARM (v6-m, v7+), AArch64, RISC-V, MIPS32r2, and MIPS64r2
 | mips64 \[3]     | i8,u8,i16,u16                                       | ✓              |        |
 
 \[1] ARM's atomic swap is not available on v6-m (thumbv6m). RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.<br>
-\[2] If the `lse` target feature is enabled at compile-time, more efficient instructions are used.<br>
+\[2] If target features such as `lse` and `lse2` are enabled at compile-time, more efficient instructions are used.<br>
 \[3] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 
 Feel free to submit an issue if your target is not supported yet.

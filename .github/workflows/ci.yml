@@ -90,12 +90,15 @@ jobs:
         with:
           target: ${{ matrix.target }}
         if: matrix.target != ''
+
       - run: cargo test -vv --workspace --all-features $DOCTEST_XCOMPILE
       - run: cargo test -vv --workspace --all-features --release $DOCTEST_XCOMPILE
       - run: cargo test -vv --workspace --all-features --release $DOCTEST_XCOMPILE
         env:
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
           CARGO_PROFILE_RELEASE_LTO: fat
+
+      # lse+
       - run: cargo test -vv --workspace --all-features $DOCTEST_XCOMPILE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
@@ -110,6 +113,8 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: fat
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
         if: startsWith(matrix.target, 'aarch64')
+      # TODO: it seems qemu-user has not yet properly implemented FEAT_LSE2: https://github.com/taiki-e/portable-atomic/pull/11#issuecomment-1114044327
+
       - run: tools/build.sh
         if: matrix.target == ''
       - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private
@@ -149,6 +154,7 @@ jobs:
           persist-credentials: false
       - uses: taiki-e/github-actions/install-rust@main
       - uses: taiki-e/install-action@valgrind
+      # -Z doctest-xcompile is needed to apply CARGO_TARGET_*_RUNNER to doctest.
       - run: cargo test -vv --workspace --all-features -Z doctest-xcompile
       - run: cargo test -vv --workspace --all-features --release -Z doctest-xcompile
       - run: cargo test -vv --workspace --all-features --release -Z doctest-xcompile

@@ -55,8 +55,13 @@ fn main() {
         // aarch64 macos always support lse and lse2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
         let is_aarch64_macos = target == "aarch64-apple-darwin";
         // aarch64_target_feature stabilized in Rust 1.61.
-        if has_target_feature("lse", is_aarch64_macos, &version, Some(61)) {
+        if has_target_feature("lse", is_aarch64_macos, &version, Some(61), true) {
             println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"lse\"");
+        }
+        // As of rustc 1.61.0, target_feature "lse2" is not available on rustc side:
+        // https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
+        if has_target_feature("lse2", is_aarch64_macos, &version, None, false) {
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"lse2\"");
         }
     }
     // #[cfg(target_feature = "v7")] and others don't work on stable.
@@ -165,6 +170,7 @@ fn has_target_feature(
     mut has_target_feature: bool,
     version: &Version,
     stabilized: Option<u32>,
+    is_in_rustc: bool,
 ) -> bool {
     // HACK: Currently, it seems that the only way to handle unstable target
     // features on the stable is to parse the `-C target-feature` in RUSTFLAGS.
@@ -176,7 +182,9 @@ fn has_target_feature(
     // (e.g., https://godbolt.org/z/8Eh3z5Wzb), so this hack works properly on stable.
     //
     // [RFC2045]: https://rust-lang.github.io/rfcs/2045-target-feature.html#backend-compilation-options
-    if version.nightly || stabilized.map_or(false, |stabilized| version.minor >= stabilized) {
+    if is_in_rustc
+        && (version.nightly || stabilized.map_or(false, |stabilized| version.minor >= stabilized))
+    {
         has_target_feature = env::var("CARGO_CFG_TARGET_FEATURE")
             .ok()
             .map_or(false, |s| s.split(',').any(|s| s == name));
