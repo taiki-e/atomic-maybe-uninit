@@ -1,6 +1,6 @@
 // Generated asm:
-// - mipsel https://godbolt.org/z/61zcr1cdT
-// - mips64el https://godbolt.org/z/1sd3Pv1M6
+// - mipsel https://godbolt.org/z/reYMdcd9z
+// - mips64el https://godbolt.org/z/hn7Yraav5
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -131,13 +131,13 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {
-                        ($acq:expr, $rel:expr) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 ".set noat",
                                 // load from val to val_tmp
                                 concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
                                 // (atomic) swap
-                                $rel, // release fence
+                                $release, // release fence
                                 "2:",
                                     // load from dst to out_tmp
                                     concat!("ll", $asm_ll_suffix, " {out_tmp}, 0({dst})"),
@@ -146,7 +146,7 @@ macro_rules! atomic {
                                     concat!("sc", $asm_ll_suffix, " {r}, 0({dst})"),
                                     // 1 if the store was successful, 0 if no store was performed
                                     "beqz {r}, 2b",
-                                $acq, // acquire fence
+                                $acquire, // acquire fence
                                 // store out_tmp to out
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
                                 ".set at",

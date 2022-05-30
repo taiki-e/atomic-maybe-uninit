@@ -4,7 +4,7 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/n7vzjGrWx
+// - riscv64gc https://godbolt.org/z/9TshGGW4K
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 

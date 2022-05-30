@@ -5,8 +5,8 @@
 //   https://developer.arm.com/documentation/ddi0487/latest
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/hafs1K1qh
-// - aarch64+lse https://godbolt.org/z/xvx58nrvT
+// - aarch64 https://godbolt.org/z/aTqxx6zMr
+// - aarch64+lse https://godbolt.org/z/1vv6MzKfK
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -30,10 +30,10 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
-                        ($acq:tt) => {
+                        ($acquire:tt) => {
                             asm!(
                                 // (atomic) load from src to tmp
-                                concat!("ld", $acq, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{src", $ptr_modifier, "}]"),
+                                concat!("ld", $acquire, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{src", $ptr_modifier, "}]"),
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", $ptr_modifier, "}]"),
                                 src = in(reg) src,
@@ -62,12 +62,12 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($rel:tt) => {
+                        ($release:tt) => {
                             asm!(
                                 // load from val to tmp
                                 concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", $ptr_modifier, "}]"),
                                 // (atomic) store tmp to dst
-                                concat!("st", $rel, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
+                                concat!("st", $release, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
@@ -96,13 +96,13 @@ macro_rules! atomic {
                 unsafe {
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
                     macro_rules! atomic_swap {
-                        ($acq:tt, $rel:tt) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to tmp
                                 concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", $ptr_modifier, "}]"),
                                 // (atomic) swap
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
-                                concat!("swp", $acq, $rel, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
+                                concat!("swp", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", $ptr_modifier, "}]"),
                                 dst = inout(reg) dst => _,
@@ -115,16 +115,16 @@ macro_rules! atomic {
                     }
                     #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
                     macro_rules! atomic_swap {
-                        ($acq:tt, $rel:tt) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val_tmp
                                 concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val", $ptr_modifier, "}]"),
                                 // (atomic) swap
                                 "2:",
                                     // load from dst to out_tmp
-                                    concat!("ld", $acq, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
                                     // store val to dst
-                                    concat!("st", $rel, "xr", $asm_suffix, " {r:w}, {val_tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {val_tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 // store out_tmp to out
@@ -193,14 +193,14 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
-                        ($acq:tt, $rel:tt) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 // (atomic) load from src to tmp pair
                                 "2:",
                                     // load from src to tmp pair
-                                    concat!("ld", $acq, "xp {tmp_lo}, {tmp_hi}, [{src", $ptr_modifier, "}]"),
+                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{src", $ptr_modifier, "}]"),
                                     // store tmp pair to src
-                                    concat!("st", $rel, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{src", $ptr_modifier, "}]"),
+                                    concat!("st", $release, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{src", $ptr_modifier, "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 // store tmp pair to out
@@ -233,16 +233,16 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($acq:tt, $rel:tt) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val pair
                                 concat!("ldp {val_lo}, {val_hi}, [{val", $ptr_modifier, "}]"),
                                 // (atomic) store val pair to dst
                                 "2:",
                                     // load from dst to tmp pair
-                                    concat!("ld", $acq, "xp {tmp_lo}, {tmp_hi}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst", $ptr_modifier, "}]"),
                                     // store val pair to dst
-                                    concat!("st", $rel, "xp {r:w}, {val_lo}, {val_hi}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", $ptr_modifier, "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 dst = inout(reg) dst => _,
@@ -276,16 +276,16 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {
-                        ($acq:tt, $rel:tt) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val pair
                                 concat!("ldp {val_lo}, {val_hi}, [{val", $ptr_modifier, "}]"),
                                 // (atomic) swap
                                 "2:",
                                     // load from dst to tmp pair
-                                    concat!("ld", $acq, "xp {tmp_lo}, {tmp_hi}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst", $ptr_modifier, "}]"),
                                     // store val pair to dst
-                                    concat!("st", $rel, "xp {r:w}, {val_lo}, {val_hi}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", $ptr_modifier, "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 // store tmp pair to out

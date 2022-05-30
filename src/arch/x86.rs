@@ -1,5 +1,5 @@
 // Generated asm:
-// - x86_64 https://godbolt.org/z/jdozja8cz
+// - x86_64 https://godbolt.org/z/Y4jvdx3hj
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
