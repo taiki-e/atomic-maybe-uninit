@@ -82,10 +82,12 @@ macro_rules! __test_atomic {
                 }
             }
         }
+        #[cfg(not(all(valgrind, target_arch = "aarch64")))] // TODO: flaky
         mod quickcheck {
             use std::mem::MaybeUninit;
 
             use crate::{tests::helper::*, AtomicMaybeUninit};
+
             ::quickcheck::quickcheck! {
                 fn swap(x: $int_type, y: $int_type) -> bool {
                     unsafe {

@@ -32,6 +32,8 @@ test_task:
 valgrind_task:
   env:
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER: valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --track-origins=yes
+    RUSTDOCFLAGS: -D warnings --cfg valgrind
+    RUSTFLAGS: -D warnings --cfg valgrind
     TARGET: aarch64-unknown-linux-gnu
   arm_container:
     image: rust:latest
