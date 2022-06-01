@@ -1,13 +1,13 @@
 #![allow(dead_code, unused_macros)]
 
-use std::sync::atomic::Ordering;
+pub(crate) use std::sync::atomic::Ordering;
 
 macro_rules! test_atomic_load_store {
     ($int_type:ident) => {
         paste::paste! {
             #[allow(clippy::undocumented_unsafe_blocks)]
             mod [<test_atomic_ $int_type>] {
-                __test_atomic_load_store!($int_type);
+                __test_atomic!(load_store, $int_type);
             }
         }
     };
@@ -17,15 +17,15 @@ macro_rules! test_atomic {
         paste::paste! {
             #[allow(clippy::undocumented_unsafe_blocks)]
             mod [<test_atomic_ $int_type>] {
-                __test_atomic_load_store!($int_type);
-                __test_atomic!($int_type);
+                __test_atomic!(load_store, $int_type);
+                __test_atomic!(swap, $int_type);
             }
         }
     };
 }
 
-macro_rules! __test_atomic_load_store {
-    ($int_type:ident) => {
+macro_rules! __test_atomic {
+    (load_store, $int_type:ident) => {
         use std::mem::MaybeUninit;
 
         use crate::{tests::helper::*, AtomicMaybeUninit};
@@ -37,6 +37,13 @@ macro_rules! __test_atomic_load_store {
             #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
             static _VAR: AtomicMaybeUninit<$int_type> =
                 AtomicMaybeUninit::new(MaybeUninit::new(10));
+            let var = AtomicMaybeUninit::<$int_type>::const_new(MaybeUninit::new(10));
+            unsafe {
+                assert_eq!(
+                    VAR.load(Ordering::Relaxed).assume_init(),
+                    var.load(Ordering::Relaxed).assume_init()
+                );
+            }
             test_load_ordering(|order| VAR.load(order));
             test_store_ordering(|order| VAR.store(MaybeUninit::new(10), order));
             unsafe {
@@ -62,10 +69,28 @@ macro_rules! __test_atomic_load_store {
                 }
             }
         }
+        #[cfg(not(all(valgrind, target_arch = "aarch64")))] // TODO: flaky
+        ::quickcheck::quickcheck! {
+            fn quickcheck_load_store(x: $int_type, y: $int_type) -> bool {
+                unsafe {
+                    for (load_order, store_order) in
+                        load_orderings().into_iter().zip(store_orderings())
+                    {
+                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
+                        assert_eq!(a.load(load_order).assume_init(), x);
+                        a.store(MaybeUninit::new(y), store_order);
+                        assert_eq!(a.load(load_order).assume_init(), y);
+                        a.store(MaybeUninit::new(x), store_order);
+                        assert_eq!(a.load(load_order).assume_init(), x);
+                        a.store(MaybeUninit::uninit(), store_order);
+                        let _v = a.load(load_order);
+                    }
+                }
+                true
+            }
+        }
     };
-}
-macro_rules! __test_atomic {
-    ($int_type:ident) => {
+    (swap, $int_type:ident) => {
         #[test]
         fn swap() {
             unsafe {
@@ -83,23 +108,17 @@ macro_rules! __test_atomic {
             }
         }
         #[cfg(not(all(valgrind, target_arch = "aarch64")))] // TODO: flaky
-        mod quickcheck {
-            use std::mem::MaybeUninit;
-
-            use crate::{tests::helper::*, AtomicMaybeUninit};
-
-            ::quickcheck::quickcheck! {
-                fn swap(x: $int_type, y: $int_type) -> bool {
-                    unsafe {
-                        for order in swap_orderings() {
-                            let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
-                            assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
-                            assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
-                            assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
-                        }
+        ::quickcheck::quickcheck! {
+            fn quickcheck_swap(x: $int_type, y: $int_type) -> bool {
+                unsafe {
+                    for order in swap_orderings() {
+                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
+                        assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
+                        assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
+                        assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
                     }
-                    true
                 }
+                true
             }
         }
     };
@@ -238,24 +257,14 @@ pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) 
         f(order);
     }
 
-    if option_env!("CARGO_PROFILE_RELEASE_LTO").map_or(false, |v| v == "fat")
-        && option_env!("MSAN_OPTIONS").is_some()
-    {
-        // MSAN false positive: https://gist.github.com/taiki-e/dd6269a8ffec46284fdc764a4849f884
+    if skip_should_panic_test() {
         return;
     }
-
-    // Miri's panic handling is slow
-    if !cfg!(miri) {
-        assert_eq!(
-            assert_panic(|| f(Ordering::Release)),
-            "there is no such thing as a release load"
-        );
-        assert_eq!(
-            assert_panic(|| f(Ordering::AcqRel)),
-            "there is no such thing as an acquire/release load"
-        );
-    }
+    assert_eq!(assert_panic(|| f(Ordering::Release)), "there is no such thing as a release load");
+    assert_eq!(
+        assert_panic(|| f(Ordering::AcqRel)),
+        "there is no such thing as an acquire/release load"
+    );
 }
 pub(crate) fn store_orderings() -> [Ordering; 3] {
     [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst]
@@ -266,24 +275,14 @@ pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T)
         f(order);
     }
 
-    if option_env!("CARGO_PROFILE_RELEASE_LTO").map_or(false, |v| v == "fat")
-        && option_env!("MSAN_OPTIONS").is_some()
-    {
-        // MSAN false positive: https://gist.github.com/taiki-e/dd6269a8ffec46284fdc764a4849f884
+    if skip_should_panic_test() {
         return;
     }
-
-    // Miri's panic handling is slow
-    if !cfg!(miri) {
-        assert_eq!(
-            assert_panic(|| f(Ordering::Acquire)),
-            "there is no such thing as an acquire store"
-        );
-        assert_eq!(
-            assert_panic(|| f(Ordering::AcqRel)),
-            "there is no such thing as an acquire/release store"
-        );
-    }
+    assert_eq!(assert_panic(|| f(Ordering::Acquire)), "there is no such thing as an acquire store");
+    assert_eq!(
+        assert_panic(|| f(Ordering::AcqRel)),
+        "there is no such thing as an acquire/release store"
+    );
 }
 pub(crate) fn swap_orderings() -> [Ordering; 5] {
     [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst]
@@ -292,4 +291,11 @@ pub(crate) fn test_swap_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) 
     for order in swap_orderings() {
         f(order);
     }
+}
+fn skip_should_panic_test() -> bool {
+    // Miri's panic handling is slow
+    // MSAN false positive: https://gist.github.com/taiki-e/dd6269a8ffec46284fdc764a4849f884
+    cfg!(miri)
+        || option_env!("CARGO_PROFILE_RELEASE_LTO").map_or(false, |v| v == "fat")
+            && option_env!("MSAN_OPTIONS").is_some()
 }
