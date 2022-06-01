@@ -5,14 +5,21 @@ use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
+#[cfg(target_pointer_width = "32")]
+macro_rules! ptr_modifier {
+    () => {
+        ":e"
+    };
+}
+#[cfg(target_pointer_width = "64")]
+macro_rules! ptr_modifier {
+    () => {
+        ""
+    };
+}
+
 macro_rules! atomic {
     ($int_type:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt) => {
-        #[cfg(target_pointer_width = "32")]
-        atomic!($int_type, $val_reg, $val_modifier, $ptr_size, ":e");
-        #[cfg(target_pointer_width = "64")]
-        atomic!($int_type, $val_reg, $val_modifier, $ptr_size, "");
-    };
-    ($int_type:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $ptr_modifier:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -25,9 +32,9 @@ macro_rules! atomic {
                     // atomic load is always SeqCst.
                     asm!(
                         // (atomic) load from src to tmp
-                        concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{src", $ptr_modifier, "}]"),
+                        concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"),
                         // store tmp to out
-                        concat!("mov ", $ptr_size, " ptr [{out", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
+                        concat!("mov ", $ptr_size, " ptr [{out", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
                         src = in(reg) src,
                         out = inout(reg) out => _,
                         tmp = lateout($val_reg) _,
@@ -50,9 +57,9 @@ macro_rules! atomic {
                         Ordering::Relaxed | Ordering::Release => {
                             asm!(
                                 // load from val to tmp
-                                concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", $ptr_modifier, "}]"),
+                                concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", ptr_modifier!(), "}]"),
                                 // (atomic) store tmp to dst
-                                concat!("mov ", $ptr_size, " ptr [{dst", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
+                                concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout($val_reg) _,
@@ -62,9 +69,9 @@ macro_rules! atomic {
                         Ordering::SeqCst => {
                             asm!(
                                 // load from val to tmp
-                                concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", $ptr_modifier, "}]"),
+                                concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", ptr_modifier!(), "}]"),
                                 // (atomic) store tmp to dst (SeqCst store is xchg, not mov)
-                                concat!("xchg ", $ptr_size, " ptr [{dst", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
+                                concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout($val_reg) _,
@@ -89,11 +96,11 @@ macro_rules! atomic {
                     // atomic swap is always SeqCst.
                     asm!(
                         // load from val to tmp
-                        concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", $ptr_modifier, "}]"),
+                        concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", ptr_modifier!(), "}]"),
                         // (atomic) swap tmp and dst
-                        concat!("xchg ", $ptr_size, " ptr [{dst", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
+                        concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
                         // store tmp to out
-                        concat!("mov ", $ptr_size, " ptr [{out", $ptr_modifier, "}], {tmp", $val_modifier, "}"),
+                        concat!("mov ", $ptr_size, " ptr [{out", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
                         dst = inout(reg) dst => _,
                         val = in(reg) val,
                         out = inout(reg) out => _,

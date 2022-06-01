@@ -14,14 +14,21 @@ use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
+#[cfg(target_pointer_width = "32")]
+macro_rules! ptr_modifier {
+    () => {
+        ":w"
+    };
+}
+#[cfg(target_pointer_width = "64")]
+macro_rules! ptr_modifier {
+    () => {
+        ""
+    };
+}
+
 macro_rules! atomic {
     ($int_type:ident, $asm_suffix:tt, $val_modifier:tt) => {
-        #[cfg(target_pointer_width = "32")]
-        atomic!($int_type, $asm_suffix, $val_modifier, ":w");
-        #[cfg(target_pointer_width = "64")]
-        atomic!($int_type, $asm_suffix, $val_modifier, "");
-    };
-    ($int_type:ident, $asm_suffix:tt, $val_modifier:tt, $ptr_modifier:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -35,9 +42,9 @@ macro_rules! atomic {
                         ($acquire:tt) => {
                             asm!(
                                 // (atomic) load from src to tmp
-                                concat!("ld", $acquire, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{src", $ptr_modifier, "}]"),
+                                concat!("ld", $acquire, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{src", ptr_modifier!(), "}]"),
                                 // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", $ptr_modifier, "}]"),
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
@@ -67,9 +74,9 @@ macro_rules! atomic {
                         ($release:tt) => {
                             asm!(
                                 // load from val to tmp
-                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", $ptr_modifier, "}]"),
+                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", ptr_modifier!(), "}]"),
                                 // (atomic) store tmp to dst
-                                concat!("st", $release, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
+                                concat!("st", $release, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
@@ -101,12 +108,12 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to tmp
-                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", $ptr_modifier, "}]"),
+                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", ptr_modifier!(), "}]"),
                                 // (atomic) swap
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
-                                concat!("swp", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
+                                concat!("swp", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
                                 // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", $ptr_modifier, "}]"),
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
@@ -120,17 +127,17 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val_tmp
-                                concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val", $ptr_modifier, "}]"),
+                                concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val", ptr_modifier!(), "}]"),
                                 // (atomic) swap
                                 "2:",
                                     // load from dst to out_tmp
-                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
                                     // store val to dst
-                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {val_tmp", $val_modifier, "}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {val_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", $ptr_modifier, "}]"),
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 val_tmp = lateout(reg) _,
@@ -194,12 +201,6 @@ atomic!(usize, "", "");
 // - STLXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STLXP
 macro_rules! atomic128 {
     ($int_type:ident) => {
-        #[cfg(target_pointer_width = "32")]
-        atomic128!($int_type, ":w");
-        #[cfg(target_pointer_width = "64")]
-        atomic128!($int_type, "");
-    };
-    ($int_type:ident, $ptr_modifier:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -216,10 +217,10 @@ macro_rules! atomic128 {
                         ($acquire:tt) => {
                             asm!(
                                 // (atomic) load from src to tmp pair
-                                concat!("ldp {tmp_lo}, {tmp_hi}, [{src", $ptr_modifier, "}]"),
+                                concat!("ldp {tmp_lo}, {tmp_hi}, [{src", ptr_modifier!(), "}]"),
                                 $acquire,
                                 // store tmp pair to out
-                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", $ptr_modifier, "}]"),
+                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", ptr_modifier!(), "}]"),
                                 src = in(reg) src,
                                 out = in(reg) out,
                                 tmp_hi = out(reg) _,
@@ -244,13 +245,13 @@ macro_rules! atomic128 {
                                 // (atomic) load from src to tmp pair
                                 "2:",
                                     // load from src to tmp pair
-                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{src", $ptr_modifier, "}]"),
+                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{src", ptr_modifier!(), "}]"),
                                     // store tmp pair to src
-                                    concat!("st", $release, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{src", $ptr_modifier, "}]"),
+                                    concat!("st", $release, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{src", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 // store tmp pair to out
-                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", $ptr_modifier, "}]"),
+                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", ptr_modifier!(), "}]"),
                                 src = in(reg) src,
                                 out = in(reg) out,
                                 tmp_hi = out(reg) _,
@@ -285,10 +286,10 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val pair
-                                concat!("ldp {val_lo}, {val_hi}, [{val", $ptr_modifier, "}]"),
+                                concat!("ldp {val_lo}, {val_hi}, [{val", ptr_modifier!(), "}]"),
                                 // (atomic) store val pair to dst
                                 $release,
-                                concat!("stp {val_lo}, {val_hi}, [{dst", $ptr_modifier, "}]"),
+                                concat!("stp {val_lo}, {val_hi}, [{dst", ptr_modifier!(), "}]"),
                                 $acquire,
                                 dst = in(reg) dst,
                                 val = in(reg) val,
@@ -312,13 +313,13 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val pair
-                                concat!("ldp {val_lo}, {val_hi}, [{val", $ptr_modifier, "}]"),
+                                concat!("ldp {val_lo}, {val_hi}, [{val", ptr_modifier!(), "}]"),
                                 // (atomic) store val pair to dst
                                 "2:",
                                     // load from dst to tmp pair
-                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // store val pair to dst
-                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 dst = inout(reg) dst => _,
@@ -355,17 +356,17 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val pair
-                                concat!("ldp {val_lo}, {val_hi}, [{val", $ptr_modifier, "}]"),
+                                concat!("ldp {val_lo}, {val_hi}, [{val", ptr_modifier!(), "}]"),
                                 // (atomic) swap
                                 "2:",
                                     // load from dst to tmp pair
-                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // store val pair to dst
-                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", $ptr_modifier, "}]"),
+                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 // store tmp pair to out
-                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", $ptr_modifier, "}]"),
+                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
