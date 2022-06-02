@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support PowerPC.
+
 ## [0.2.5] - 2022-05-30
 
 - Support ARMv6-M. (#4)

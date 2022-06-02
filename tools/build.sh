@@ -66,6 +66,11 @@ default_targets=(
     # mips64
     mips64-unknown-linux-gnuabi64
     mips64el-unknown-linux-gnuabi64
+
+    # powerpc
+    powerpc-unknown-linux-gnu
+    powerpc64-unknown-linux-gnu
+    powerpc64le-unknown-linux-gnu
 )
 
 pre_args=()
@@ -122,7 +127,7 @@ build() {
     fi
     if [[ -z "${nightly}" ]]; then
         case "${target}" in
-            mips*)
+            mips* | powerpc*)
                 echo "target '${target}' requires nightly compiler"
                 return 0
                 ;;
