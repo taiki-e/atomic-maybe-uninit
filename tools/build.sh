@@ -71,6 +71,9 @@ default_targets=(
     powerpc-unknown-linux-gnu
     powerpc64-unknown-linux-gnu
     powerpc64le-unknown-linux-gnu
+
+    # s390x
+    s390x-unknown-linux-gnu
 )
 
 pre_args=()
@@ -127,7 +130,7 @@ build() {
     fi
     if [[ -z "${nightly}" ]]; then
         case "${target}" in
-            mips* | powerpc*)
+            mips* | powerpc* | s390*)
                 echo "target '${target}' requires nightly compiler"
                 return 0
                 ;;

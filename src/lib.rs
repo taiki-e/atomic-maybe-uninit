@@ -9,7 +9,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, ARM (v6-m, v7+), AArch64, RISC-V, MIPS32r2, MIPS64r2, and PowerPC are supported.
+Currently, x86, x86_64, ARM (v6-m, v7+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC, and s390x are supported.
 
 | target_arch                 | primitives                                          | [load]/[store] | [swap] |
 | --------------------------- | --------------------------------------------------- |:--------------:|:------:|
@@ -32,6 +32,7 @@ Currently, x86, x86_64, ARM (v6-m, v7+), AArch64, RISC-V, MIPS32r2, MIPS64r2, an
 | powerpc64 \[3]              | i8,u8,i16,u16                                       | ✓              |        |
 | powerpc64 (pwr8+) \[3] \[4] | i8,u8,i16,u16,i128,u128                             | ✓              | ✓      |
 | powerpc64 (le) \[3]         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              | ✓      |
+| s390x \[3]                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              |        |
 
 \[1] ARM's atomic swap is not available on v6-m (thumbv6m). RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.<br>
 \[2] If target features such as `lse` and `lse2` are enabled at compile-time, more efficient instructions are used.<br>

@@ -79,6 +79,8 @@ jobs:
             target: riscv64gc-unknown-linux-gnu
           - rust: nightly
             target: riscv64gc-unknown-linux-gnu
+          - rust: nightly
+            target: s390x-unknown-linux-gnu
           - rust: stable
             target: thumbv7neon-unknown-linux-gnueabihf
           - rust: nightly
