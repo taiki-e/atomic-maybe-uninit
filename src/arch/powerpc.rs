@@ -1,9 +1,8 @@
-// Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
-//
 // Generated asm:
 // - powerpc https://godbolt.org/z/3Phdaqhrj
 // - powerpc64 https://godbolt.org/z/jzcs4foM6
-// - powerpc64le https://godbolt.org/z/YT3cT1n85
+// - powerpc64le https://godbolt.org/z/exnqoPxTb
+// - powerpc64le(pwr8) https://godbolt.org/z/efG3W1j3Y
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -40,6 +39,7 @@ macro_rules! atomic_load_store {
                             asm!(
                                 // (atomic) load from src to tmp
                                 concat!("l", $ld_suffix, " {tmp}, 0({src})"),
+                                // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
                                 "cmpd 7, {tmp}, {tmp}",
                                 "bne- 7, 2f",
                                 "2:",
@@ -177,12 +177,16 @@ macro_rules! atomic {
     };
 }
 
+#[cfg(target_arch = "powerpc64")]
 #[cfg(target_endian = "little")]
 atomic!(i8, "bz", "b");
+#[cfg(target_arch = "powerpc64")]
 #[cfg(target_endian = "little")]
 atomic!(u8, "bz", "b");
+#[cfg(target_arch = "powerpc64")]
 #[cfg(target_endian = "little")]
 atomic!(i16, "hz", "h");
+#[cfg(target_arch = "powerpc64")]
 #[cfg(target_endian = "little")]
 atomic!(u16, "hz", "h");
 #[cfg(target_endian = "big")]
@@ -207,6 +211,176 @@ atomic!(usize, "wz", "w");
 atomic!(isize, "d", "d");
 #[cfg(target_pointer_width = "64")]
 atomic!(usize, "d", "d");
+
+// https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
+// https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/test/CodeGen/PowerPC/atomics-i128-ldst.ll
+// https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/test/CodeGen/PowerPC/atomics-i128.ll
+#[cfg(target_arch = "powerpc64")]
+#[cfg(target_endian = "little")]
+#[cfg(any(
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
+macro_rules! atomic128 {
+    ($int_type:ident) => {
+        impl AtomicLoad for $int_type {
+            #[inline]
+            unsafe fn atomic_load(
+                src: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                unsafe {
+                    match order {
+                        Ordering::Relaxed => {
+                            asm!(
+                                // (atomic) load from src to tmp
+                                "lq 4, 0({src})",
+                                // store tmp to out
+                                "stq 4, 0({out})",
+                                src = in(reg) src,
+                                out = inout(reg) out => _,
+                                out("r0") _,
+                                // lq loads value into the pair of specified register and subsequent register.
+                                // We cannot use r1 and r2, so starting with r4.
+                                out("r4") _,
+                                out("r5") _,
+                                options(nostack),
+                            )
+                        }
+                        // Acquire and SeqCst loads are equivalent.
+                        Ordering::Acquire | Ordering::SeqCst => {
+                            asm!(
+                                // (atomic) load from src to tmp
+                                "lq 4, 0({src})",
+                                "cmpd 7, 4, 4",
+                                "bne- 7, 2f",
+                                "2:",
+                                "isync",
+                                // store tmp to out
+                                "stq 4, 0({out})",
+                                src = in(reg) src,
+                                out = inout(reg) out => _,
+                                out("r0") _,
+                                // lq loads value into the pair of specified register and subsequent register.
+                                // We cannot use r1 and r2, so starting with r4.
+                                out("r4") _,
+                                out("r5") _,
+                                out("r7") _,
+                                options(nostack),
+                            )
+                        }
+                        _ => unreachable_unchecked!("{:?}", order),
+                    }
+                }
+            }
+        }
+        impl AtomicStore for $int_type {
+            #[inline]
+            unsafe fn atomic_store(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                unsafe {
+                    macro_rules! atomic_store {
+                        ($release:tt) => {
+                            asm!(
+                                // load from val to tmp
+                                "lq 4, 0({val})",
+                                // (atomic) store tmp to dst
+                                $release,
+                                "stq 4, 0({dst})",
+                                dst = inout(reg) dst => _,
+                                val = in(reg) val,
+                                out("r0") _,
+                                // lq loads value into the pair of specified register and subsequent register.
+                                // We cannot use r1 and r2, so starting with r4.
+                                out("r4") _,
+                                out("r5") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => atomic_store!(""),
+                        Ordering::Release => atomic_store!("lwsync"),
+                        Ordering::SeqCst => atomic_store!("sync"),
+                        _ => unreachable_unchecked!("{:?}", order),
+                    }
+                }
+            }
+        }
+        impl AtomicSwap for $int_type {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                unsafe {
+                    macro_rules! atomic_swap {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // load from val to val_tmp
+                                "lq 4, 0({val})",
+                                // (atomic) swap
+                                $release,
+                                "2:",
+                                    // load from dst to out_tmp
+                                    "lqarx 6, 0, {dst}",
+                                    // store val to dst
+                                    "stqcx. 4, 0, {dst}",
+                                    "bne 0, 2b",
+                                $acquire,
+                                // store out_tmp to out
+                                "stq 6, 0({out})",
+                                dst = inout(reg) dst => _,
+                                val = in(reg) val,
+                                out = inout(reg) out => _,
+                                out("r0") _,
+                                // lq loads value into the pair of specified register and subsequent register.
+                                // We cannot use r1 and r2, so starting with r4.
+                                out("r4") _,
+                                out("r5") _,
+                                out("r6") _,
+                                out("r7") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => atomic_swap!("", ""),
+                        Ordering::Acquire => atomic_swap!("lwsync", ""),
+                        Ordering::Release => atomic_swap!("", "lwsync"),
+                        Ordering::AcqRel => atomic_swap!("lwsync", "lwsync"),
+                        Ordering::SeqCst => atomic_swap!("lwsync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", order),
+                    }
+                }
+            }
+        }
+    };
+}
+
+#[cfg(target_arch = "powerpc64")]
+#[cfg(target_endian = "little")]
+#[cfg(any(
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
+atomic128!(i128);
+#[cfg(target_arch = "powerpc64")]
+#[cfg(target_endian = "little")]
+#[cfg(any(
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
+atomic128!(u128);
 
 #[cfg(test)]
 mod tests {
@@ -234,6 +408,42 @@ mod tests {
     test_atomic!(i64);
     #[cfg(target_arch = "powerpc64")]
     test_atomic!(u64);
+
+    #[cfg(not(qemu))]
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(target_endian = "little")]
+    #[cfg(any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics"
+    ))]
+    test_atomic!(i128);
+    #[cfg(not(qemu))]
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(target_endian = "little")]
+    #[cfg(any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics"
+    ))]
+    test_atomic!(u128);
+    // As of qemu 7.0.0 , using lqarx/stqcx. with qemu-user hangs.
+    // To test this, use real powerpc64le hardware or use POWER Functional
+    // Simulator. See DEVELOPMENT.md for more.
+    #[cfg(qemu)]
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(target_endian = "little")]
+    #[cfg(any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics"
+    ))]
+    test_atomic_load_store!(i128);
+    #[cfg(qemu)]
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(target_endian = "little")]
+    #[cfg(any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics"
+    ))]
+    test_atomic_load_store!(u128);
 
     stress_test_load_store!();
     stress_test_load_swap!();
