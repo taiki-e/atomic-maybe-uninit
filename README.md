@@ -19,27 +19,27 @@ This crate provides a way to soundly perform such operations.
 
 Currently, x86, x86_64, ARM (v6-m, v7+), AArch64, RISC-V, MIPS32r2, MIPS64r2, and PowerPC are supported.
 
-| target_arch                     | primitives                                          | [load]/[store] | [swap] |
-| ------------------------------- | --------------------------------------------------- |:--------------:|:------:|
-| x86                             | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓      |
-| x86_64                          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓              | ✓      |
-| arm (v6-m, v7+)                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓\[1]  |
-| arm (v7-a)                      | i64,u64                                             | ✓              | ✓      |
-| aarch64 \[2]                    | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              | ✓      |
-| riscv32                         | isize,usize,i32,u32                                 | ✓              | ✓\[1]  |
-| riscv32                         | i8,u8,i16,u16                                       | ✓              |        |
-| riscv64                         | isize,usize,i32,u32,i64,u64                         | ✓              | ✓\[1]  |
-| riscv64                         | i8,u8,i16,u16                                       | ✓              |        |
-| mips \[3]                       | isize,usize,i32,u32                                 | ✓              | ✓      |
-| mips \[3]                       | i8,u8,i16,u16                                       | ✓              |        |
-| mips64 \[3]                     | isize,usize,i32,u32,i64,u64                         | ✓              | ✓      |
-| mips64 \[3]                     | i8,u8,i16,u16                                       | ✓              |        |
-| powerpc \[3]                    | isize,usize,i32,u32                                 | ✓              | ✓      |
-| powerpc \[3]                    | i8,u8,i16,u16                                       | ✓              |        |
-| powerpc64 \[3]                  | isize,usize,i32,u32,i64,u64                         | ✓              | ✓      |
-| powerpc64 \[3]                  | i8,u8,i16,u16                                       | ✓              |        |
-| powerpc64 (le) \[3]             | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓              | ✓      |
-| powerpc64 (le, pwr8+) \[3] \[4] | i128,u128                                           | ✓              | ✓      |
+| target_arch                 | primitives                                          | [load]/[store] | [swap] |
+| --------------------------- | --------------------------------------------------- |:--------------:|:------:|
+| x86                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓      |
+| x86_64                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓              | ✓      |
+| arm (v6-m, v7+)             | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓\[1]  |
+| arm (v7-a)                  | i64,u64                                             | ✓              | ✓      |
+| aarch64 \[2]                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              | ✓      |
+| riscv32                     | isize,usize,i32,u32                                 | ✓              | ✓\[1]  |
+| riscv32                     | i8,u8,i16,u16                                       | ✓              |        |
+| riscv64                     | isize,usize,i32,u32,i64,u64                         | ✓              | ✓\[1]  |
+| riscv64                     | i8,u8,i16,u16                                       | ✓              |        |
+| mips \[3]                   | isize,usize,i32,u32                                 | ✓              | ✓      |
+| mips \[3]                   | i8,u8,i16,u16                                       | ✓              |        |
+| mips64 \[3]                 | isize,usize,i32,u32,i64,u64                         | ✓              | ✓      |
+| mips64 \[3]                 | i8,u8,i16,u16                                       | ✓              |        |
+| powerpc \[3]                | isize,usize,i32,u32                                 | ✓              | ✓      |
+| powerpc \[3]                | i8,u8,i16,u16                                       | ✓              |        |
+| powerpc64 \[3]              | isize,usize,i32,u32,i64,u64                         | ✓              | ✓      |
+| powerpc64 \[3]              | i8,u8,i16,u16                                       | ✓              |        |
+| powerpc64 (pwr8+) \[3] \[4] | i8,u8,i16,u16,i128,u128                             | ✓              | ✓      |
+| powerpc64 (le) \[3]         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              | ✓      |
 
 \[1] ARM's atomic swap is not available on v6-m (thumbv6m). RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.<br>
 \[2] If target features such as `lse` and `lse2` are enabled at compile-time, more efficient instructions are used.<br>

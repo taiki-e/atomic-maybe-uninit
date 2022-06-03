@@ -133,11 +133,12 @@ fn main() {
             println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"a\"");
         }
     }
-    if target.starts_with("powerpc64") {
+    // Only check powerpc64 (be) -- powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/lib/Target/PowerPC/PPC.td#L652
+    if target.starts_with("powerpc64-") {
         if let Some(cpu) = target_cpu().as_deref() {
             // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
             if matches!(cpu, "pwr8" | "pwr9" | "pwr10") {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"quadword-atomics\"");
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_pwr8");
             }
         }
     }

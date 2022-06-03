@@ -162,7 +162,7 @@ build() {
         RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2" \
             x cargo "${args[@]}" --target-dir target/lse2 "$@"
     fi
-    if [[ "${target}" == "powerpc64le"* ]]; then
+    if [[ "${target}" == "powerpc64-"* ]]; then
         RUSTFLAGS="${target_rustflags} -C target-cpu=pwr8" \
             x cargo "${args[@]}" --target-dir target/pwr8 "$@"
     fi

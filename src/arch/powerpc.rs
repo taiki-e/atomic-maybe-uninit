@@ -1,8 +1,8 @@
 // Generated asm:
-// - powerpc https://godbolt.org/z/3Phdaqhrj
-// - powerpc64 https://godbolt.org/z/jzcs4foM6
-// - powerpc64le https://godbolt.org/z/exnqoPxTb
-// - powerpc64le(pwr8) https://godbolt.org/z/efG3W1j3Y
+// - powerpc https://godbolt.org/z/6dq8hrn5n
+// - powerpc64 https://godbolt.org/z/r9jKneczo
+// - powerpc64 (pwr8) https://godbolt.org/z/9v47E16T4
+// - powerpc64le https://godbolt.org/z/s8jTaE8b9
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -40,8 +40,8 @@ macro_rules! atomic_load_store {
                                 // (atomic) load from src to tmp
                                 concat!("l", $ld_suffix, " {tmp}, 0({src})"),
                                 // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
-                                "cmpd 7, {tmp}, {tmp}",
-                                "bne- 7, 2f",
+                                "cmpd %cr7, {tmp}, {tmp}",
+                                "bne- %cr7, 2f",
                                 "2:",
                                 "isync",
                                 // store tmp to out
@@ -50,7 +50,6 @@ macro_rules! atomic_load_store {
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
                                 out("r0") _,
-                                out("r7") _,
                                 options(nostack),
                             )
                         }
@@ -149,7 +148,7 @@ macro_rules! atomic {
                                     concat!("l", $asm_suffix, "arx {out_tmp}, 0, {dst}"),
                                     // store val to dst
                                     concat!("st", $asm_suffix, "cx. {val_tmp}, 0, {dst}"),
-                                    "bne 0, 2b",
+                                    "bne %cr0, 2b",
                                 $acquire,
                                 // store out_tmp to out
                                 concat!("st", $asm_suffix, " {out_tmp}, 0({out})"),
@@ -178,24 +177,28 @@ macro_rules! atomic {
 }
 
 #[cfg(target_arch = "powerpc64")]
-#[cfg(target_endian = "little")]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
 atomic!(i8, "bz", "b");
 #[cfg(target_arch = "powerpc64")]
-#[cfg(target_endian = "little")]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
 atomic!(u8, "bz", "b");
 #[cfg(target_arch = "powerpc64")]
-#[cfg(target_endian = "little")]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
 atomic!(i16, "hz", "h");
 #[cfg(target_arch = "powerpc64")]
-#[cfg(target_endian = "little")]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
 atomic!(u16, "hz", "h");
 #[cfg(target_endian = "big")]
+#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
 atomic_load_store!(i8, "bz", "b");
 #[cfg(target_endian = "big")]
+#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
 atomic_load_store!(u8, "bz", "b");
 #[cfg(target_endian = "big")]
+#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
 atomic_load_store!(i16, "hz", "h");
 #[cfg(target_endian = "big")]
+#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
 atomic_load_store!(u16, "hz", "h");
 atomic!(i32, "wz", "w");
 atomic!(u32, "wz", "w");
@@ -216,11 +219,8 @@ atomic!(usize, "d", "d");
 // https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/test/CodeGen/PowerPC/atomics-i128-ldst.ll
 // https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/test/CodeGen/PowerPC/atomics-i128.ll
 #[cfg(target_arch = "powerpc64")]
-#[cfg(target_endian = "little")]
-#[cfg(any(
-    target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
-))]
+// powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/lib/Target/PowerPC/PPC.td#L652
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
 macro_rules! atomic128 {
     ($int_type:ident) => {
         impl AtomicLoad for $int_type {
@@ -235,10 +235,10 @@ macro_rules! atomic128 {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                // (atomic) load from src to tmp
-                                "lq 4, 0({src})",
-                                // store tmp to out
-                                "stq 4, 0({out})",
+                                // (atomic) load from src to r4-r5 pair
+                                "lq %r4, 0({src})",
+                                // store r4-r5 pair to out
+                                "stq %r4, 0({out})",
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 out("r0") _,
@@ -252,14 +252,15 @@ macro_rules! atomic128 {
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => {
                             asm!(
-                                // (atomic) load from src to tmp
-                                "lq 4, 0({src})",
-                                "cmpd 7, 4, 4",
-                                "bne- 7, 2f",
+                                // (atomic) load from src to r4-r5 pair
+                                "lq %r4, 0({src})",
+                                // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
+                                "cmpd %cr7, %r4, %r4",
+                                "bne- %cr7, 2f",
                                 "2:",
                                 "isync",
-                                // store tmp to out
-                                "stq 4, 0({out})",
+                                // store r4-r5 to out
+                                "stq %r4, 0({out})",
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 out("r0") _,
@@ -267,7 +268,6 @@ macro_rules! atomic128 {
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
-                                out("r7") _,
                                 options(nostack),
                             )
                         }
@@ -289,10 +289,10 @@ macro_rules! atomic128 {
                         ($release:tt) => {
                             asm!(
                                 // load from val to tmp
-                                "lq 4, 0({val})",
+                                "lq %r4, 0({val})",
                                 // (atomic) store tmp to dst
                                 $release,
-                                "stq 4, 0({dst})",
+                                "stq %r4, 0({dst})",
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out("r0") _,
@@ -327,18 +327,18 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val_tmp
-                                "lq 4, 0({val})",
+                                "lq %r4, 0({val})",
                                 // (atomic) swap
                                 $release,
                                 "2:",
                                     // load from dst to out_tmp
-                                    "lqarx 6, 0, {dst}",
+                                    "lqarx %r6, 0, {dst}",
                                     // store val to dst
-                                    "stqcx. 4, 0, {dst}",
-                                    "bne 0, 2b",
+                                    "stqcx. %r4, 0, {dst}",
+                                    "bne %cr0, 2b",
                                 $acquire,
                                 // store out_tmp to out
-                                "stq 6, 0({out})",
+                                "stq %r6, 0({out})",
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
@@ -368,18 +368,10 @@ macro_rules! atomic128 {
 }
 
 #[cfg(target_arch = "powerpc64")]
-#[cfg(target_endian = "little")]
-#[cfg(any(
-    target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
-))]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
 atomic128!(i128);
 #[cfg(target_arch = "powerpc64")]
-#[cfg(target_endian = "little")]
-#[cfg(any(
-    target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
-))]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
 atomic128!(u128);
 
 #[cfg(test)]
@@ -411,38 +403,22 @@ mod tests {
 
     #[cfg(not(qemu))]
     #[cfg(target_arch = "powerpc64")]
-    #[cfg(target_endian = "little")]
-    #[cfg(any(
-        target_feature = "quadword-atomics",
-        atomic_maybe_uninit_target_feature = "quadword-atomics"
-    ))]
+    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
     test_atomic!(i128);
     #[cfg(not(qemu))]
     #[cfg(target_arch = "powerpc64")]
-    #[cfg(target_endian = "little")]
-    #[cfg(any(
-        target_feature = "quadword-atomics",
-        atomic_maybe_uninit_target_feature = "quadword-atomics"
-    ))]
+    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
     test_atomic!(u128);
     // As of qemu 7.0.0 , using lqarx/stqcx. with qemu-user hangs.
     // To test this, use real powerpc64le hardware or use POWER Functional
     // Simulator. See DEVELOPMENT.md for more.
     #[cfg(qemu)]
     #[cfg(target_arch = "powerpc64")]
-    #[cfg(target_endian = "little")]
-    #[cfg(any(
-        target_feature = "quadword-atomics",
-        atomic_maybe_uninit_target_feature = "quadword-atomics"
-    ))]
+    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
     test_atomic_load_store!(i128);
     #[cfg(qemu)]
     #[cfg(target_arch = "powerpc64")]
-    #[cfg(target_endian = "little")]
-    #[cfg(any(
-        target_feature = "quadword-atomics",
-        atomic_maybe_uninit_target_feature = "quadword-atomics"
-    ))]
+    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
     test_atomic_load_store!(u128);
 
     stress_test_load_store!();

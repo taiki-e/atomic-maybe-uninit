@@ -51,8 +51,7 @@ Build tests for powerpc64le and get path to test binary.
 # binaries for other tests, you need to adjust the script or copy paths from
 # cargo's "Executable ..." output.
 binary_path=$(
-  RUSTFLAGS='-C target-cpu=pwr8' \
-    CARGO_TARGET_POWERPC64LE_UNKNOWN_LINUX_GNU_LINKER=powerpc64le-linux-gnu-gcc \
+  CARGO_TARGET_POWERPC64LE_UNKNOWN_LINUX_GNU_LINKER=powerpc64le-linux-gnu-gcc \
     cargo test --no-run --target powerpc64le-unknown-linux-gnu --message-format=json --release \
     | jq -r "select(.manifest_path == \"$(cargo locate-project --message-format=plain)\") | select(.executable != null) | .executable"
 )
