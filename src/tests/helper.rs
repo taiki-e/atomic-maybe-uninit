@@ -242,7 +242,7 @@ macro_rules! __stress_test_coherence {
 
         use crate::AtomicMaybeUninit;
 
-        const N: usize = if cfg!(debug_assertions) { 500_000 } else { 4_000_000 };
+        const N: usize = if cfg!(debug_assertions) { 500_000 } else { 5_000_000 };
 
         #[allow(clippy::undocumented_unsafe_blocks)]
         unsafe {
