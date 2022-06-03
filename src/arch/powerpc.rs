@@ -259,7 +259,7 @@ macro_rules! atomic128 {
                                 "bne- %cr7, 2f",
                                 "2:",
                                 "isync",
-                                // store r4-r5 to out
+                                // store r4-r5 pair to out
                                 "stq %r4, 0({out})",
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
@@ -288,9 +288,9 @@ macro_rules! atomic128 {
                     macro_rules! atomic_store {
                         ($release:tt) => {
                             asm!(
-                                // load from val to tmp
+                                // load from val to r4-r5 pair
                                 "lq %r4, 0({val})",
-                                // (atomic) store tmp to dst
+                                // (atomic) store r4-r5 pair to dst
                                 $release,
                                 "stq %r4, 0({dst})",
                                 dst = inout(reg) dst => _,
@@ -326,18 +326,18 @@ macro_rules! atomic128 {
                     macro_rules! atomic_swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from val to val_tmp
+                                // load from val to r4-r5 pair
                                 "lq %r4, 0({val})",
                                 // (atomic) swap
                                 $release,
                                 "2:",
-                                    // load from dst to out_tmp
+                                    // load from dst to r6-r7 pair
                                     "lqarx %r6, 0, {dst}",
-                                    // store val to dst
+                                    // store r4-r5 pair to dst
                                     "stqcx. %r4, 0, {dst}",
                                     "bne %cr0, 2b",
                                 $acquire,
-                                // store out_tmp to out
+                                // store r6-r7 pair to out
                                 "stq %r6, 0({out})",
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,

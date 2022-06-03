@@ -23,6 +23,7 @@
     target_arch = "mips64",
     target_arch = "powerpc",
     target_arch = "powerpc64",
+    target_arch = "s390x",
 )))]
 compile_error!("this target is not supported yet");
 
@@ -52,5 +53,7 @@ mod mips;
 mod powerpc;
 #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
 mod riscv;
+#[cfg(target_arch = "s390x")]
+mod s390x;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86;

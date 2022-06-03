@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Support PowerPC.
 
+- Support s390x.
+
 ## [0.2.5] - 2022-05-30
 
 - Support ARMv6-M. (#4)
