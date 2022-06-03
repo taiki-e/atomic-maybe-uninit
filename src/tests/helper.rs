@@ -26,7 +26,13 @@ macro_rules! test_atomic {
 
 macro_rules! __test_atomic {
     (load_store, $int_type:ident) => {
-        use std::mem::MaybeUninit;
+        use std::{
+            collections::HashSet,
+            mem::MaybeUninit,
+            vec::Vec,
+        };
+
+        use crossbeam_utils::thread;
 
         use crate::{tests::helper::*, AtomicMaybeUninit};
 
@@ -47,7 +53,8 @@ macro_rules! __test_atomic {
             test_load_ordering(|order| VAR.load(order));
             test_store_ordering(|order| VAR.store(MaybeUninit::new(10), order));
             unsafe {
-                for (load_order, store_order) in load_orderings().into_iter().zip(store_orderings())
+                for (load_order, store_order) in
+                    load_orderings().into_iter().zip(store_orderings())
                 {
                     assert_eq!(VAR.load(load_order).assume_init(), 10);
                     VAR.store(MaybeUninit::new(5), store_order);
@@ -89,6 +96,45 @@ macro_rules! __test_atomic {
                 true
             }
         }
+        #[test]
+        fn stress_load_store() {
+            unsafe {
+                let iterations = if cfg!(valgrind) && cfg!(debug_assertions) {
+                    5_000
+                } else {
+                    25_000
+                };
+                let threads = if cfg!(debug_assertions) { 2 } else { fastrand::usize(2..=8) };
+                let data1 = (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>();
+                let set = data1.iter().copied().collect::<HashSet<_>>();
+                let a = AtomicMaybeUninit::<$int_type>::from(data1[fastrand::usize(0..iterations)]);
+                std::eprintln!("threads={}", threads);
+                let now = &std::time::Instant::now();
+                thread::scope(|s| {
+                    for _ in 0..threads {
+                        s.spawn(|_| {
+                            let now = *now;
+                            for i in 0..iterations {
+                                a.store(MaybeUninit::new(data1[i]), rand_store_ordering());
+                            }
+                            std::eprintln!("store end={:?}", now.elapsed());
+                        });
+                        s.spawn(|_| {
+                            let now = *now;
+                            let mut v = std::vec![0; iterations];
+                            for i in 0..iterations {
+                                v[i] = a.load(rand_load_ordering()).assume_init();
+                            }
+                            std::eprintln!("load end={:?}", now.elapsed());
+                            for v in v {
+                                assert!(set.contains(&v), "v={}", v);
+                            }
+                        });
+                    }
+                })
+                .unwrap();
+            }
+        }
     };
     (swap, $int_type:ident) => {
         #[test]
@@ -121,10 +167,73 @@ macro_rules! __test_atomic {
                 true
             }
         }
+        #[test]
+        fn stress() {
+            unsafe {
+                let iterations = if cfg!(valgrind) && cfg!(debug_assertions) {
+                    5_000
+                } else {
+                    25_000
+                };
+                let threads = if cfg!(debug_assertions) { 2 } else { fastrand::usize(2..=8) };
+                let data1 = &(0..threads)
+                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .collect::<Vec<_>>();
+                let data2 = &(0..threads)
+                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .collect::<Vec<_>>();
+                let set = &data1
+                    .iter()
+                    .flat_map(|v| v.iter().copied())
+                    .chain(data2.iter().flat_map(|v| v.iter().copied()))
+                    .collect::<HashSet<_>>();
+                let a = &AtomicMaybeUninit::<$int_type>::from(
+                    data2[0][fastrand::usize(0..iterations)],
+                );
+                std::eprintln!("threads={}", threads);
+                let now = &std::time::Instant::now();
+                thread::scope(|s| {
+                    for thread in 0..threads {
+                        s.spawn(move |_| {
+                            let now = *now;
+                            for i in 0..iterations {
+                                a.store(MaybeUninit::new(data1[thread][i]), rand_store_ordering());
+                            }
+                            std::eprintln!("store end={:?}", now.elapsed());
+                        });
+                        s.spawn(|_| {
+                            let now = *now;
+                            let mut v = std::vec![0; iterations];
+                            for i in 0..iterations {
+                                v[i] = a.load(rand_load_ordering()).assume_init();
+                            }
+                            std::eprintln!("load end={:?}", now.elapsed());
+                            for v in v {
+                                assert!(set.contains(&v), "v={}", v);
+                            }
+                        });
+                        s.spawn(move |_| {
+                            let now = *now;
+                            let mut v = std::vec![data2[0][0]; iterations];
+                            for i in 0..iterations {
+                                v[i] = a.swap(
+                                    MaybeUninit::new(data2[thread][i]), rand_swap_ordering()
+                                ).assume_init();
+                            }
+                            std::eprintln!("compare_exchange end={:?}", now.elapsed());
+                            for v in v {
+                                assert!(set.contains(&v), "v={}", v);
+                            }
+                        });
+                    }
+                })
+                .unwrap();
+            }
+        }
     };
 }
 
-macro_rules! __stress_test {
+macro_rules! __stress_test_coherence {
     ($write:ident, $load_order:ident, $store_order:ident) => {
         use core::{mem::MaybeUninit, sync::atomic::AtomicUsize};
         use std::{sync::atomic::Ordering, vec::Vec};
@@ -168,29 +277,29 @@ macro_rules! stress_test_load_store {
         // not seem to support weak memory emulation.
         // Therefore, explicitly enable should_panic only on actual aarch64 hardware.
         #[cfg_attr(weak_memory, should_panic)]
-        fn stress_load_relaxed_store_relaxed() {
-            __stress_test!(store, Relaxed, Relaxed);
+        fn stress_coherence_load_relaxed_store_relaxed() {
+            __stress_test_coherence!(store, Relaxed, Relaxed);
         }
         #[test]
         // `asm!` implies a compiler fence, so it seems the relaxed load written in
         // `asm!` behaves like a consume load on architectures with weak memory models.
         // #[cfg_attr(weak_memory, should_panic)]
-        fn stress_load_relaxed_store_release() {
-            __stress_test!(store, Relaxed, Release);
+        fn stress_coherence_load_relaxed_store_release() {
+            __stress_test_coherence!(store, Relaxed, Release);
         }
         // This test should panic on architectures with weak memory models.
         #[test]
         #[cfg_attr(weak_memory, should_panic)]
-        fn stress_load_acquire_store_relaxed() {
-            __stress_test!(store, Acquire, Relaxed);
+        fn stress_coherence_load_acquire_store_relaxed() {
+            __stress_test_coherence!(store, Acquire, Relaxed);
         }
         #[test]
-        fn stress_load_acquire_store_release() {
-            __stress_test!(store, Acquire, Release);
+        fn stress_coherence_load_acquire_store_release() {
+            __stress_test_coherence!(store, Acquire, Release);
         }
         #[test]
-        fn stress_load_seqcst_store_seqcst() {
-            __stress_test!(store, SeqCst, SeqCst);
+        fn stress_coherence_load_seqcst_store_seqcst() {
+            __stress_test_coherence!(store, SeqCst, SeqCst);
         }
     };
 }
@@ -200,33 +309,33 @@ macro_rules! stress_test_load_swap {
         // This test should panic on architectures with weak memory models.
         #[test]
         #[cfg_attr(weak_memory, should_panic)]
-        fn stress_load_relaxed_swap_relaxed() {
-            __stress_test!(swap, Relaxed, Relaxed);
+        fn stress_coherence_load_relaxed_swap_relaxed() {
+            __stress_test_coherence!(swap, Relaxed, Relaxed);
         }
         #[test]
         // `asm!` implies a compiler fence, so it seems the relaxed load written in
         // `asm!` behaves like a consume load on architectures with weak memory models.
         // #[cfg_attr(weak_memory, should_panic)]
-        fn stress_load_relaxed_swap_release() {
-            __stress_test!(swap, Relaxed, Release);
+        fn stress_coherence_load_relaxed_swap_release() {
+            __stress_test_coherence!(swap, Relaxed, Release);
         }
         // This test should panic on architectures with weak memory models.
         #[test]
         #[cfg_attr(weak_memory, should_panic)]
-        fn stress_load_acquire_swap_relaxed() {
-            __stress_test!(swap, Acquire, Relaxed);
+        fn stress_coherence_load_acquire_swap_relaxed() {
+            __stress_test_coherence!(swap, Acquire, Relaxed);
         }
         #[test]
-        fn stress_load_acquire_swap_release() {
-            __stress_test!(swap, Acquire, Release);
+        fn stress_coherence_load_acquire_swap_release() {
+            __stress_test_coherence!(swap, Acquire, Release);
         }
         #[test]
-        fn stress_load_acquire_swap_acqrel() {
-            __stress_test!(swap, Acquire, AcqRel);
+        fn stress_coherence_load_acquire_swap_acqrel() {
+            __stress_test_coherence!(swap, Acquire, AcqRel);
         }
         #[test]
-        fn stress_load_seqcst_swap_seqcst() {
-            __stress_test!(swap, SeqCst, SeqCst);
+        fn stress_coherence_load_seqcst_swap_seqcst() {
+            __stress_test_coherence!(swap, SeqCst, SeqCst);
         }
     };
 }
@@ -251,6 +360,9 @@ fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::Strin
 pub(crate) fn load_orderings() -> [Ordering; 3] {
     [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst]
 }
+pub(crate) fn rand_load_ordering() -> Ordering {
+    load_orderings()[fastrand::usize(0..load_orderings().len())]
+}
 #[track_caller]
 pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
     for order in load_orderings() {
@@ -269,6 +381,9 @@ pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) 
 pub(crate) fn store_orderings() -> [Ordering; 3] {
     [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst]
 }
+pub(crate) fn rand_store_ordering() -> Ordering {
+    store_orderings()[fastrand::usize(0..store_orderings().len())]
+}
 #[track_caller]
 pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
     for order in store_orderings() {
@@ -286,6 +401,9 @@ pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T)
 }
 pub(crate) fn swap_orderings() -> [Ordering; 5] {
     [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst]
+}
+pub(crate) fn rand_swap_ordering() -> Ordering {
+    swap_orderings()[fastrand::usize(0..swap_orderings().len())]
 }
 pub(crate) fn test_swap_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
     for order in swap_orderings() {

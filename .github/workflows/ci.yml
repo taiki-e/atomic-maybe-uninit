@@ -98,7 +98,7 @@ jobs:
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
           CARGO_PROFILE_RELEASE_LTO: fat
 
-      # lse+
+      # +lse
       - run: cargo test -vv --workspace --all-features $DOCTEST_XCOMPILE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
@@ -115,10 +115,28 @@ jobs:
         if: startsWith(matrix.target, 'aarch64')
       # TODO: it seems qemu-user has not yet properly implemented FEAT_LSE2: https://github.com/taiki-e/portable-atomic/pull/11#issuecomment-1114044327
 
-      - run: tools/build.sh
-        if: matrix.target == ''
       - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private
         if: startsWith(matrix.rust, 'nightly')
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rust: stable
+          - rust: beta
+          - rust: nightly
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          toolchain: ${{ matrix.rust }}
+          component: rust-src
+      - uses: taiki-e/install-action@cargo-hack
+      - run: tools/build.sh
 
   no-std:
     runs-on: ubuntu-latest
@@ -203,6 +221,7 @@ jobs:
     if: success()
     needs:
       - test
+      - build
       - no-std
       - msrv
       - valgrind
