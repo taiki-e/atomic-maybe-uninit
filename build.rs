@@ -133,6 +133,14 @@ fn main() {
             println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"a\"");
         }
     }
+    if target.starts_with("powerpc64") {
+        if let Some(cpu) = target_cpu().as_deref() {
+            // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
+            if matches!(cpu, "pwr8" | "pwr9" | "pwr10") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"quadword-atomics\"");
+            }
+        }
+    }
 }
 
 struct Version {
@@ -208,4 +216,20 @@ fn has_target_feature(
         }
     }
     has_target_feature
+}
+
+fn target_cpu() -> Option<String> {
+    let rustflags = env::var_os("CARGO_ENCODED_RUSTFLAGS")?;
+    let rustflags = rustflags.to_string_lossy();
+    let mut cpu = None;
+    for mut flag in rustflags.split('\x1f') {
+        if flag.starts_with("-C") {
+            flag = &flag["-C".len()..];
+        }
+        if flag.starts_with("target-cpu=") {
+            flag = &flag["target-cpu=".len()..];
+            cpu = Some(flag);
+        }
+    }
+    cpu.map(str::to_owned)
 }
