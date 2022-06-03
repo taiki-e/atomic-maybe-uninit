@@ -220,6 +220,7 @@ atomic!(usize, "d", "d");
 // https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/test/CodeGen/PowerPC/atomics-i128.ll
 #[cfg(target_arch = "powerpc64")]
 // powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/lib/Target/PowerPC/PPC.td#L652
+// See also https://github.com/rust-lang/rust/issues/59932
 #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
 macro_rules! atomic128 {
     ($int_type:ident) => {
@@ -378,21 +379,29 @@ atomic128!(u128);
 mod tests {
     test_atomic!(isize);
     test_atomic!(usize);
-    #[cfg(target_endian = "little")]
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
     test_atomic!(i8);
-    #[cfg(target_endian = "little")]
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
     test_atomic!(u8);
-    #[cfg(target_endian = "little")]
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
     test_atomic!(i16);
-    #[cfg(target_endian = "little")]
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
     test_atomic!(u16);
     #[cfg(target_endian = "big")]
+    #[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
     test_atomic_load_store!(i8);
     #[cfg(target_endian = "big")]
+    #[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
     test_atomic_load_store!(u8);
     #[cfg(target_endian = "big")]
+    #[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
     test_atomic_load_store!(i16);
     #[cfg(target_endian = "big")]
+    #[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
     test_atomic_load_store!(u16);
     test_atomic!(i32);
     test_atomic!(u32);
