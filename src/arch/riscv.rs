@@ -193,7 +193,7 @@ macro_rules! atomic {
                             asm!(
                                 // load val to val_tmp
                                 concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
-                                // (atomic) swap
+                                // (atomic) swap (AMO)
                                 // - load value from dst and store it to out_tmp
                                 // - store value of val_tmp to dst
                                 concat!("amoswap.", $asm_suffix, $order, " {out_tmp}, {val_tmp}, 0({dst})"),
@@ -223,7 +223,7 @@ macro_rules! atomic {
 }
 
 #[rustfmt::skip]
-macro_rules! atomic_8 {
+macro_rules! atomic8 {
     ($int_type:ident, $asm_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix);
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
@@ -253,7 +253,7 @@ macro_rules! atomic_8 {
                                 "li a4, 255",
                                 concat!(sllw!(), " a4, a4, a0"),
                                 concat!(sllw!(), " a1, a1, a0"),
-                                // (atomic) swap (L/SC loop)
+                                // (atomic) swap (LR/SC)
                                 "2:",
                                     concat!("lr.w", $acquire, " a5, 0(a6)"),
                                     "mv a3, a1",
@@ -291,7 +291,7 @@ macro_rules! atomic_8 {
 }
 
 #[rustfmt::skip]
-macro_rules! atomic_16 {
+macro_rules! atomic16 {
     ($int_type:ident, $asm_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix);
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
@@ -322,7 +322,7 @@ macro_rules! atomic_16 {
                                 concat!(addiw!(), " a4, a4, -1"),
                                 concat!(sllw!(), " a4, a4, a0"),
                                 concat!(sllw!(), " a1, a1, a0"),
-                                // (atomic) swap (L/SC loop)
+                                // (atomic) swap (LR/SC)
                                 "2:",
                                     concat!("lr.w", $acquire, " a5, 0(a6)"),
                                     "mv a3, a1",
@@ -359,10 +359,10 @@ macro_rules! atomic_16 {
     };
 }
 
-atomic_8!(i8, "b");
-atomic_8!(u8, "b");
-atomic_16!(i16, "h");
-atomic_16!(u16, "h");
+atomic8!(i8, "b");
+atomic8!(u8, "b");
+atomic16!(i16, "h");
+atomic16!(u16, "h");
 atomic!(i32, "w");
 atomic!(u32, "w");
 #[cfg(target_arch = "riscv64")]

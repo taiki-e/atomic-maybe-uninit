@@ -28,10 +28,8 @@ Currently, x86, x86_64, ARM (v6-m, v7+), AArch64, RISC-V, MIPS32r2, MIPS64r2, Po
 | aarch64 \[2]                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              | ✓      |
 | riscv32                     | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓\[1]  |
 | riscv64                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓              | ✓\[1]  |
-| mips \[3]                   | isize,usize,i32,u32                                 | ✓              | ✓      |
-| mips \[3]                   | i8,u8,i16,u16                                       | ✓              |        |
-| mips64 \[3]                 | isize,usize,i32,u32,i64,u64                         | ✓              | ✓      |
-| mips64 \[3]                 | i8,u8,i16,u16                                       | ✓              |        |
+| mips \[3]                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓              | ✓      |
+| mips64 \[3]                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓              | ✓      |
 | powerpc \[3]                | isize,usize,i32,u32                                 | ✓              | ✓      |
 | powerpc \[3]                | i8,u8,i16,u16                                       | ✓              |        |
 | powerpc64 \[3]              | isize,usize,i32,u32,i64,u64                         | ✓              | ✓      |
@@ -40,7 +38,7 @@ Currently, x86, x86_64, ARM (v6-m, v7+), AArch64, RISC-V, MIPS32r2, MIPS64r2, Po
 | powerpc64 (le) \[3]         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              | ✓      |
 | s390x \[3]                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓              |        |
 
-\[1] ARM's atomic swap is not available on v6-m (thumbv6m). RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i-unknown-none-elf, riscv32imc-unknown-none-elf, etc.<br>
+\[1] ARM's atomic swap is not available on v6-m (thumbv6m). RISC-V's atomic swap is not available on targets without the A (or G) extension such as riscv32i, riscv32imc, etc.<br>
 \[2] If target features such as `lse` and `lse2` are enabled at compile-time, more efficient instructions are used.<br>
 \[3] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 \[4] target-cpu `pwr8`, `pwr9`, or `pwr10`.<br>

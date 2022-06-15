@@ -61,6 +61,7 @@ default_targets=(
     riscv32imac-unknown-none-elf
 
     # mips
+    # rustc --print target-list | grep -E '^mips' | grep -E '(-unknown-linux|-none)'
     mips-unknown-linux-gnu
     mipsel-unknown-linux-gnu
     # mips64
@@ -68,11 +69,13 @@ default_targets=(
     mips64el-unknown-linux-gnuabi64
 
     # powerpc
+    # rustc --print target-list | grep -E '^powerpc' | grep -E '(-unknown-linux|-none)'
     powerpc-unknown-linux-gnu
     powerpc64-unknown-linux-gnu
     powerpc64le-unknown-linux-gnu
 
     # s390x
+    # rustc --print target-list | grep -E '^s390' | grep -E '(-unknown-linux|-none)'
     s390x-unknown-linux-gnu
 )
 

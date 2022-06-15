@@ -85,7 +85,7 @@ pub trait AtomicStore: Primitive {
 /// Atomic swap.
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
-pub trait AtomicSwap: Primitive {
+pub trait AtomicSwap: AtomicLoad + AtomicStore {
     /// Stores a value from `val` into `dst`, writes the previous value to `out`.
     ///
     /// `atomic_swap` takes an [`Ordering`] argument which describes the memory ordering

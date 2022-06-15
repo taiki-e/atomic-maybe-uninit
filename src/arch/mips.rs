@@ -1,10 +1,51 @@
 // Generated asm:
-// - mipsel https://godbolt.org/z/reYMdcd9z
-// - mips64el https://godbolt.org/z/hn7Yraav5
+// - mips https://godbolt.org/z/on6Yj8qdj
+// - mipsel https://godbolt.org/z/hqYvxP4KW
+// - mips64 https://godbolt.org/z/j6fsWPz9q
+// - mips64el https://godbolt.org/z/38KdW57Gr
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+
+#[cfg(target_endian = "little")]
+macro_rules! if_le {
+    ($($tt:tt)*) => {
+        $($tt)*
+    };
+}
+#[cfg(target_endian = "big")]
+macro_rules! if_le {
+    ($($tt:tt)*) => {
+        ""
+    };
+}
+
+#[cfg(target_endian = "little")]
+macro_rules! if_be {
+    ($($tt:tt)*) => {
+        ""
+    };
+}
+#[cfg(target_endian = "big")]
+macro_rules! if_be {
+    ($($tt:tt)*) => {
+        $($tt)*
+    };
+}
+
+#[cfg(target_arch = "mips")]
+macro_rules! daddiu {
+    () => {
+        "addiu"
+    };
+}
+#[cfg(target_arch = "mips64")]
+macro_rules! daddiu {
+    () => {
+        "daddiu"
+    };
+}
 
 macro_rules! atomic_load_store {
     ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
@@ -174,10 +215,160 @@ macro_rules! atomic {
     };
 }
 
-atomic_load_store!(i8, "b", "u");
-atomic_load_store!(u8, "b", "u");
-atomic_load_store!(i16, "h", "u");
-atomic_load_store!(u16, "h", "u");
+#[rustfmt::skip]
+macro_rules! atomic8 {
+    ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
+        atomic_load_store!($int_type, $asm_suffix, $asm_u_suffix);
+        impl AtomicSwap for $int_type {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                unsafe {
+                    macro_rules! atomic_swap {
+                        ($acquire:expr, $release:expr) => {
+                            asm!(
+                                ".set noat",
+                                // create aligned address and masks
+                                // https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                                if_be!("andi $3, $4, 3"),
+                                concat!(daddiu!(), " $2, $zero, -4"),
+                                if_le!("andi $3, $4, 3"),
+                                "lbu {tmp}, 0($5)",
+                                $release,
+                                if_be!("xori $3, $3, 3"),
+                                "and $2, $4, $2",
+                                if_le!("sll $3, $3, 3"),
+                                "ori $4, $zero, 255",
+                                if_be!("sll $3, $3, 3"),
+                                "sllv $4, $4, $3",
+                                "sllv $7, {tmp}, $3",
+                                "nor $5, $zero, $4",
+                                // (atomic) swap
+                                "2:",
+                                    "ll $8, 0($2)",
+                                    "and $9, $7, $4",
+                                    "and $10, $8, $5",
+                                    "or $10, $10, $9",
+                                    "sc $10, 0($2)",
+                                    "beqz $10, 2b",
+                                    "and {tmp}, $8, $4",
+                                    "srlv {tmp}, {tmp}, $3",
+                                    "seb {tmp}, {tmp}",
+                                $acquire,
+                                "sb {tmp}, 0($6)",
+                                ".set at",
+                                tmp = out(reg) _,
+                                out("$2") _,
+                                out("$3") _,
+                                inout("$4") dst => _,
+                                inout("$5") val => _,
+                                in("$6") out,
+                                out("$7") _,
+                                out("$8") _,
+                                out("$9") _,
+                                out("$10") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => atomic_swap!("", ""),
+                        Ordering::Acquire => atomic_swap!("sync", ""),
+                        Ordering::Release => atomic_swap!("", "sync"),
+                        // AcqRel and SeqCst swaps are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("sync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", order),
+                    }
+                }
+            }
+        }
+    };
+}
+
+#[rustfmt::skip]
+macro_rules! atomic16 {
+    ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
+        atomic_load_store!($int_type, $asm_suffix, $asm_u_suffix);
+        impl AtomicSwap for $int_type {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                unsafe {
+                    macro_rules! atomic_swap {
+                        ($acquire:expr, $release:expr) => {
+                            asm!(
+                                ".set noat",
+                                // create aligned address and masks
+                                // https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                                if_be!("andi $3, $4, 3"),
+                                concat!(daddiu!(), " $2, $zero, -4"),
+                                if_le!("andi $3, $4, 3"),
+                                "lhu {tmp}, 0($5)",
+                                $release,
+                                if_be!("xori $3, $3, 2"),
+                                "and $2, $4, $2",
+                                if_le!("sll $3, $3, 3"),
+                                "ori $4, $zero, 65535",
+                                if_be!("sll $3, $3, 3"),
+                                "sllv $4, $4, $3",
+                                "sllv $7, {tmp}, $3",
+                                "nor $5, $zero, $4",
+                                // (atomic) swap
+                                "2:",
+                                    "ll $8, 0($2)",
+                                    "and $9, $7, $4",
+                                    "and $10, $8, $5",
+                                    "or $10, $10, $9",
+                                    "sc $10, 0($2)",
+                                    "beqz $10, 2b",
+                                    "and {tmp}, $8, $4",
+                                    "srlv {tmp}, {tmp}, $3",
+                                    "seh {tmp}, {tmp}",
+                                $acquire,
+                                "sh {tmp}, 0($6)",
+                                ".set at",
+                                tmp = out(reg) _,
+                                out("$2") _,
+                                out("$3") _,
+                                inout("$4") dst => _,
+                                inout("$5") val => _,
+                                in("$6") out,
+                                out("$7") _,
+                                out("$8") _,
+                                out("$9") _,
+                                out("$10") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => atomic_swap!("", ""),
+                        Ordering::Acquire => atomic_swap!("sync", ""),
+                        Ordering::Release => atomic_swap!("", "sync"),
+                        // AcqRel and SeqCst swaps are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("sync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", order),
+                    }
+                }
+            }
+        }
+    };
+}
+
+atomic8!(i8, "b", "u");
+atomic8!(u8, "b", "u");
+atomic16!(i16, "h", "u");
+atomic16!(u16, "h", "u");
 atomic!(i32, "w", "", "");
 atomic!(u32, "w", "", "");
 #[cfg(target_arch = "mips64")]
@@ -197,10 +388,10 @@ atomic!(usize, "d", "", "d");
 mod tests {
     test_atomic!(isize);
     test_atomic!(usize);
-    test_atomic_load_store!(i8);
-    test_atomic_load_store!(u8);
-    test_atomic_load_store!(i16);
-    test_atomic_load_store!(u16);
+    test_atomic!(i8);
+    test_atomic!(u8);
+    test_atomic!(i16);
+    test_atomic!(u16);
     test_atomic!(i32);
     test_atomic!(u32);
     #[cfg(target_arch = "mips64")]

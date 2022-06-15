@@ -168,7 +168,7 @@ macro_rules! __test_atomic {
             }
         }
         #[test]
-        fn stress() {
+        fn stress_swap() {
             unsafe {
                 let iterations = if cfg!(valgrind) && cfg!(debug_assertions) {
                     5_000
