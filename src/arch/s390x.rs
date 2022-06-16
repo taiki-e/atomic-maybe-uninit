@@ -2,7 +2,7 @@
 // - https://www.ibm.com/support/pages/zarchitecture-reference-summary
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/xc5j1W91o
+// - s390x https://godbolt.org/z/Ye5GPfq7z
 
 use core::{
     arch::asm,
@@ -85,7 +85,7 @@ macro_rules! atomic {
                     asm!(
                         // load from val to val_tmp
                         concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
-                        // (atomic) swap (cas loop)
+                        // (atomic) swap (CAS loop)
                         concat!("l", $asm_suffix, " %r0, 0({dst})"),
                         "2:",
                             concat!("cs", $asm_suffix, " %r0, {val_tmp}, 0({dst})"),
@@ -272,6 +272,42 @@ macro_rules! atomic128 {
                 }
             }
         }
+        impl AtomicSwap for $int_type {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                _order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                unsafe {
+                    // atomic swap is always SeqCst.
+                    asm!(
+                        // load from val to r0-r1 pair
+                        "lg %r1, 8({val})",
+                        "lg %r0, 0({val})",
+                        // (atomic) swap (CAS loop)
+                        "lpq %r2, 0({dst})",
+                        "2:",
+                            "cdsg %r2, %r0, 0({dst})",
+                            "jl 2b",
+                        // store r2-r3 pair to out
+                        "stg %r3, 8({out})",
+                        "stg %r2, 0({out})",
+                        dst = in(reg) dst,
+                        val = in(reg) val,
+                        out = in(reg) out,
+                        // stpq stores value from the pair of specified register and subsequent register.
+                        out("r0") _,
+                        out("r1") _,
+                        out("r2") _,
+                        out("r3") _,
+                        options(nostack),
+                    );
+                }
+            }
+        }
     };
 }
 
@@ -290,8 +326,8 @@ mod tests {
     test_atomic!(u32);
     test_atomic!(i64);
     test_atomic!(u64);
-    test_atomic_load_store!(i128);
-    test_atomic_load_store!(u128);
+    test_atomic!(i128);
+    test_atomic!(u128);
 
     stress_test_load_store!();
     stress_test_load_swap!();
