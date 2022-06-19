@@ -3,9 +3,9 @@
 //
 // Generated asm:
 // - powerpc https://godbolt.org/z/Pnaja5hG4
-// - powerpc64 https://godbolt.org/z/1vTb3vbab
-// - powerpc64 (pwr8) https://godbolt.org/z/bdhqnr1hP
-// - powerpc64le https://godbolt.org/z/Yx36Yj96E
+// - powerpc64 https://godbolt.org/z/843vzWM5Y
+// - powerpc64 (pwr8) https://godbolt.org/z/9hMv5Wd4M
+// - powerpc64le https://godbolt.org/z/Gsxb3nf57
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -37,9 +37,27 @@ macro_rules! atomic_load_store {
                                 options(nostack),
                             )
                         }
-                        // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => {
+                        Ordering::Acquire => {
                             asm!(
+                                // (atomic) load from src to tmp
+                                concat!("l", $ld_suffix, " {tmp}, 0({src})"),
+                                // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
+                                "cmpd %cr7, {tmp}, {tmp}",
+                                "bne- %cr7, 2f",
+                                "2:",
+                                "isync",
+                                // store tmp to out
+                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
+                                src = in(reg) src,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
+                                out("r0") _,
+                                options(nostack),
+                            )
+                        }
+                        Ordering::SeqCst => {
+                            asm!(
+                                "sync",
                                 // (atomic) load from src to tmp
                                 concat!("l", $ld_suffix, " {tmp}, 0({src})"),
                                 // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
@@ -462,15 +480,14 @@ macro_rules! atomic128 {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 out("r0") _,
-                                // lq loads value into the pair of specified register and subsequent register.
+                                // lq loads value into even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
                                 options(nostack),
                             )
                         }
-                        // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => {
+                        Ordering::Acquire => {
                             asm!(
                                 // (atomic) load from src to r4-r5 pair
                                 "lq %r4, 0({src})",
@@ -484,7 +501,29 @@ macro_rules! atomic128 {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 out("r0") _,
-                                // lq loads value into the pair of specified register and subsequent register.
+                                // lq loads value into even/odd pair of specified register and subsequent register.
+                                // We cannot use r1 and r2, so starting with r4.
+                                out("r4") _,
+                                out("r5") _,
+                                options(nostack),
+                            )
+                        }
+                        Ordering::SeqCst => {
+                            asm!(
+                                "sync",
+                                // (atomic) load from src to r4-r5 pair
+                                "lq %r4, 0({src})",
+                                // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
+                                "cmpd %cr7, %r4, %r4",
+                                "bne- %cr7, 2f",
+                                "2:",
+                                "isync",
+                                // store r4-r5 pair to out
+                                "stq %r4, 0({out})",
+                                src = in(reg) src,
+                                out = inout(reg) out => _,
+                                out("r0") _,
+                                // lq loads value into even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
@@ -516,7 +555,7 @@ macro_rules! atomic128 {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out("r0") _,
-                                // lq loads value into the pair of specified register and subsequent register.
+                                // lq loads value into even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
@@ -563,7 +602,7 @@ macro_rules! atomic128 {
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
                                 out("r0") _,
-                                // lq loads value into the pair of specified register and subsequent register.
+                                // lq loads value into even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
