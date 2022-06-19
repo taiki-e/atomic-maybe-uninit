@@ -44,6 +44,12 @@ cd /opt/ibm/systemsim-<version>/run/p10/linux
 
 ### Run tests
 
+Install Rust target.
+
+```sh
+rustup target add powerpc64le-unknown-linux-gnu
+```
+
 Build tests for powerpc64le and get path to test binary.
 
 ```sh
@@ -52,12 +58,12 @@ Build tests for powerpc64le and get path to test binary.
 # cargo's "Executable ..." output.
 binary_path=$(
   CARGO_TARGET_POWERPC64LE_UNKNOWN_LINUX_GNU_LINKER=powerpc64le-linux-gnu-gcc \
-    cargo test --no-run --target powerpc64le-unknown-linux-gnu --message-format=json --release \
+    cargo test --no-run --all-features --target powerpc64le-unknown-linux-gnu --message-format=json --release \
     | jq -r "select(.manifest_path == \"$(cargo locate-project --message-format=plain)\") | select(.executable != null) | .executable"
 )
 ```
 
-Copy test binary to tmp (to easily type in simulator's console).
+Copy test binary to `/tmp` (to easily type in simulator's console).
 
 ```sh
 cp "$binary_path" /tmp/t
