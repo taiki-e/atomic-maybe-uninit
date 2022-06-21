@@ -10,7 +10,13 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix bug in powerpc64 128-bit atomics.
+
+- Documentation improvements.
+
 ## [0.2.7] - 2022-06-19
+
+**Note:** This release has been yanked due to a bug fixed in 0.2.8.
 
 - Fix bug in powerpc64 SeqCst atomic load.
 
