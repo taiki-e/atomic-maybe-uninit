@@ -1,6 +1,6 @@
 // Generated asm:
-// - armv8-m baseline https://godbolt.org/z/8jTfqMPce
-// - armv8-m mainline https://godbolt.org/z/vzvz88v4s
+// - armv8-m baseline https://godbolt.org/z/xsPrKj88T
+// - armv8-m mainline https://godbolt.org/z/zjbddd9Es
 
 use core::{
     arch::asm,

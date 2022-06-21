@@ -1,5 +1,5 @@
 // Generated asm:
-// - x86_64 https://godbolt.org/z/Y4jvdx3hj
+// - x86_64 https://godbolt.org/z/5jf8je3hT
 
 use core::{
     arch::asm,

@@ -1,11 +1,12 @@
 // Refs:
+// - https://openpowerfoundation.org/specifications/isa
 // - https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/Pnaja5hG4
-// - powerpc64 https://godbolt.org/z/843vzWM5Y
-// - powerpc64 (pwr8) https://godbolt.org/z/9hMv5Wd4M
-// - powerpc64le https://godbolt.org/z/Gsxb3nf57
+// - powerpc https://godbolt.org/z/en6cvhq9r
+// - powerpc64 https://godbolt.org/z/oav69v8fc
+// - powerpc64 (pwr8) https://godbolt.org/z/8Tc5qM13T
+// - powerpc64le https://godbolt.org/z/MK3j5evjh
 
 use core::{
     arch::asm,
@@ -14,6 +15,39 @@ use core::{
 };
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+
+#[cfg(target_arch = "powerpc64")]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(target_endian = "big")]
+macro_rules! p128h {
+    () => {
+        "0"
+    };
+}
+#[cfg(target_arch = "powerpc64")]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(target_endian = "big")]
+macro_rules! p128l {
+    () => {
+        "8"
+    };
+}
+#[cfg(target_arch = "powerpc64")]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(target_endian = "little")]
+macro_rules! p128h {
+    () => {
+        "8"
+    };
+}
+#[cfg(target_arch = "powerpc64")]
+#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(target_endian = "little")]
+macro_rules! p128l {
+    () => {
+        "0"
+    };
+}
 
 macro_rules! atomic_load_store {
     ($int_type:ident, $ld_suffix:tt, $asm_suffix:tt) => {
@@ -59,6 +93,7 @@ macro_rules! atomic_load_store {
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
                                 out("r0") _,
+                                out("cr7") _,
                                 options(nostack),
                             )
                         }
@@ -78,6 +113,7 @@ macro_rules! atomic_load_store {
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
                                 out("r0") _,
+                                out("cr7") _,
                                 options(nostack),
                             )
                         }
@@ -191,8 +227,9 @@ macro_rules! atomic {
                                 val = in(reg) val,
                                 val_tmp = lateout(reg) _,
                                 out = inout(reg) out => _,
-                                out_tmp = out(reg) _,
+                                out_tmp = lateout(reg) _,
                                 out("r0") _,
+                                out("cr0") _,
                                 options(nostack),
                             )
                         };
@@ -265,9 +302,10 @@ macro_rules! atomic8 {
                                 inout("r4") val => _,
                                 in("r5") out,
                                 out("r6") _,
-                                out("r7") _,
+                                out("r7") _, // dst ptr (aligned)
                                 out("r8") _,
                                 out("r9") _,
+                                out("cr0") _,
                                 options(nostack),
                             )
                         };
@@ -298,12 +336,13 @@ macro_rules! atomic8 {
                                 "stb %r3, 0(%r5)",
                                 out("r0") _,
                                 inout("r3") dst => _,
-                                inout("r4") val => _,
+                                inout("r4") val => _, // val ptr -> dst ptr (aligned)
                                 in("r5") out,
                                 out("r6") _,
                                 out("r7") _,
                                 out("r8") _,
                                 out("r9") _,
+                                out("cr0") _,
                                 options(nostack),
                             )
                         };
@@ -377,9 +416,10 @@ macro_rules! atomic16 {
                                 inout("r4") val => _,
                                 in("r5") out,
                                 out("r6") _,
-                                out("r7") _,
+                                out("r7") _,  // dst ptr (aligned)
                                 out("r8") _,
                                 out("r9") _,
+                                out("cr0") _,
                                 options(nostack),
                             )
                         };
@@ -411,12 +451,13 @@ macro_rules! atomic16 {
                                 "sth %r3, 0(%r5)",
                                 out("r0") _,
                                 inout("r3") dst => _,
-                                inout("r4") val => _,
+                                inout("r4") val => _, // val ptr -> dst ptr (aligned)
                                 in("r5") out,
                                 out("r6") _,
                                 out("r7") _,
                                 out("r8") _,
                                 out("r9") _,
+                                out("cr0") _,
                                 options(nostack),
                             )
                         };
@@ -501,7 +542,8 @@ macro_rules! atomic128 {
                                 // (atomic) load from src to r4-r5 pair
                                 "lq %r4, 0({src})",
                                 // store r4-r5 pair to out
-                                "stq %r4, 0({out})",
+                                concat!("std %r4, ", p128h!(), "({out})"),
+                                concat!("std %r5, ", p128l!(), "({out})"),
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 out("r0") _,
@@ -522,7 +564,8 @@ macro_rules! atomic128 {
                                 "2:",
                                 "isync",
                                 // store r4-r5 pair to out
-                                "stq %r4, 0({out})",
+                                concat!("std %r4, ", p128h!(), "({out})"),
+                                concat!("std %r5, ", p128l!(), "({out})"),
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 out("r0") _,
@@ -530,6 +573,7 @@ macro_rules! atomic128 {
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
+                                out("cr7") _,
                                 options(nostack),
                             )
                         }
@@ -544,7 +588,8 @@ macro_rules! atomic128 {
                                 "2:",
                                 "isync",
                                 // store r4-r5 pair to out
-                                "stq %r4, 0({out})",
+                                concat!("std %r4, ", p128h!(), "({out})"),
+                                concat!("std %r5, ", p128l!(), "({out})"),
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 out("r0") _,
@@ -552,6 +597,7 @@ macro_rules! atomic128 {
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
+                                out("cr7") _,
                                 options(nostack),
                             )
                         }
@@ -576,7 +622,8 @@ macro_rules! atomic128 {
                         ($release:tt) => {
                             asm!(
                                 // load from val to r4-r5 pair
-                                "lq %r4, 0({val})",
+                                concat!("ld %r4, ", p128h!(), "({val})"),
+                                concat!("ld %r5, ", p128l!(), "({val})"),
                                 // (atomic) store r4-r5 pair to dst
                                 $release,
                                 "stq %r4, 0({dst})",
@@ -618,28 +665,35 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to r4-r5 pair
-                                "lq %r4, 0({val})",
+                                concat!("ld %r4, ", p128h!(), "({val})"),
+                                concat!("ld %r5, ", p128l!(), "({val})"),
                                 // (atomic) swap
                                 $release,
                                 "2:",
                                     // load from dst to r6-r7 pair
                                     "lqarx %r6, 0, {dst}",
-                                    // store r4-r5 pair to dst
-                                    "stqcx. %r4, 0, {dst}",
+                                    "mr %r9, %r5",
+                                    "mr %r8, %r4",
+                                    // store r8-r9 pair to dst
+                                    "stqcx. %r8, 0, {dst}",
                                     "bne %cr0, 2b",
                                 $acquire,
                                 // store r6-r7 pair to out
-                                "stq %r6, 0({out})",
+                                concat!("std %r6, ", p128h!(), "({out})"),
+                                concat!("std %r7, ", p128l!(), "({out})"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
                                 out("r0") _,
                                 // lq loads value into even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
-                                out("r4") _,
-                                out("r5") _,
-                                out("r6") _,
-                                out("r7") _,
+                                out("r4") _, // val (hi)
+                                out("r5") _, // val (lo)
+                                out("r6") _, // out (hi)
+                                out("r7") _, // out (lo)
+                                out("r8") _,
+                                out("r9") _,
+                                out("cr0") _,
                                 options(nostack),
                             )
                         };

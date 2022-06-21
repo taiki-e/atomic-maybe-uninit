@@ -5,8 +5,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/fjv1r86ds
-// - riscv32imac https://godbolt.org/z/bq9raornj
+// - riscv64gc https://godbolt.org/z/Ge5ozMEf3
+// - riscv32imac https://godbolt.org/z/s7PYcjnh4
 
 use core::{
     arch::asm,
@@ -289,7 +289,7 @@ macro_rules! atomic8 {
                                 out("a3") _,
                                 out("a4") _,
                                 out("a5") _,
-                                out("a6") _,
+                                out("a6") _, // dst ptr (aligned)
                                 options(nostack),
                             )
                         };
@@ -362,7 +362,7 @@ macro_rules! atomic16 {
                                 out("a3") _,
                                 out("a4") _,
                                 out("a5") _,
-                                out("a6") _,
+                                out("a6") _, // dst ptr (aligned)
                                 options(nostack),
                             )
                         };

@@ -1,8 +1,8 @@
 // Generated asm:
-// - armv7-a https://godbolt.org/z/xfxqvKGbM
-// - armv7-r https://godbolt.org/z/5vqYjhMhb
-// - armv6-m https://godbolt.org/z/9GfjKeKKP
-// - armv7-m https://godbolt.org/z/aa5j15ra6
+// - armv7-a https://godbolt.org/z/T9cnP84EM
+// - armv7-r https://godbolt.org/z/x8sheaP1Y
+// - armv6-m https://godbolt.org/z/Pen5ej4fj
+// - armv7-m https://godbolt.org/z/YY54PP3jz
 
 use core::{
     arch::asm,
@@ -197,7 +197,7 @@ macro_rules! atomic64 {
                                 // store tmp pair to out
                                 "strd r2, r3, [{out}]",
                                 src = in(reg) src,
-                                out = inout(reg) out => _,
+                                out = in(reg) out,
                                 // tmp pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -288,7 +288,7 @@ macro_rules! atomic64 {
                                 // (atomic) swap
                                 $release, // release fence
                                 "2:",
-                                    // load from dst to tmp pair
+                                    // load from dst to out pair
                                     "ldrexd r4, r5, [{dst}]",
                                     // store val pair to dst
                                     "strexd {r}, r2, r3, [{dst}]",
@@ -296,7 +296,7 @@ macro_rules! atomic64 {
                                     "cmp {r}, 0x0",
                                     "bne 2b",
                                 $acquire, // acquire fence
-                                // store tmp pair to out
+                                // store out pair to out
                                 "strd r4, r5, [{out}]",
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
@@ -305,7 +305,7 @@ macro_rules! atomic64 {
                                 // val pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
-                                // tmp pair - must be even-numbered and not R14
+                                // out pair - must be even-numbered and not R14
                                 lateout("r4") _,
                                 lateout("r5") _,
                                 options(nostack),

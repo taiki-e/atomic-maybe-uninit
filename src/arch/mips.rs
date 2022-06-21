@@ -1,8 +1,8 @@
 // Generated asm:
-// - mips https://godbolt.org/z/on6Yj8qdj
-// - mipsel https://godbolt.org/z/hqYvxP4KW
-// - mips64 https://godbolt.org/z/j6fsWPz9q
-// - mips64el https://godbolt.org/z/38KdW57Gr
+// - mips https://godbolt.org/z/fExesqqWb
+// - mipsel https://godbolt.org/z/q8rrhb4MT
+// - mips64 https://godbolt.org/z/7jhvvWxEx
+// - mips64el https://godbolt.org/z/dK5n56qd8
 
 use core::{
     arch::asm,
@@ -11,19 +11,6 @@ use core::{
 };
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
-
-#[cfg(target_endian = "little")]
-macro_rules! if_le {
-    ($($tt:tt)*) => {
-        $($tt)*
-    };
-}
-#[cfg(target_endian = "big")]
-macro_rules! if_le {
-    ($($tt:tt)*) => {
-        ""
-    };
-}
 
 #[cfg(target_endian = "little")]
 macro_rules! if_be {
@@ -75,8 +62,8 @@ macro_rules! atomic_load_store {
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 ".set at",
                                 src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
                                 options(nostack),
                             );
                         }
@@ -91,8 +78,8 @@ macro_rules! atomic_load_store {
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 ".set at",
                                 src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
                                 options(nostack),
                             );
                         }
@@ -122,9 +109,9 @@ macro_rules! atomic_load_store {
                                 // (atomic) store tmp to dst
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
                                 ".set at",
-                                dst = inout(reg) dst => _,
+                                dst = in(reg) dst,
                                 val = in(reg) val,
-                                tmp = lateout(reg) _,
+                                tmp = out(reg) _,
                                 options(nostack),
                             );
                         }
@@ -137,9 +124,9 @@ macro_rules! atomic_load_store {
                                 "sync",
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
                                 ".set at",
-                                dst = inout(reg) dst => _,
+                                dst = in(reg) dst,
                                 val = in(reg) val,
-                                tmp = lateout(reg) _,
+                                tmp = out(reg) _,
                                 options(nostack),
                             );
                         }
@@ -153,9 +140,9 @@ macro_rules! atomic_load_store {
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
                                 "sync",
                                 ".set at",
-                                dst = inout(reg) dst => _,
+                                dst = in(reg) dst,
                                 val = in(reg) val,
-                                tmp = lateout(reg) _,
+                                tmp = out(reg) _,
                                 options(nostack),
                             );
                         }
@@ -210,7 +197,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 r = lateout(reg) _,
                                 out_tmp = lateout(reg) _,
-                                val_tmp = lateout(reg) _,
+                                val_tmp = out(reg) _,
                                 options(nostack),
                             )
                         };
@@ -258,16 +245,14 @@ macro_rules! atomic8 {
                                 ".set noat",
                                 // create aligned address and masks
                                 // https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
-                                if_be!("andi $3, $4, 3"),
                                 concat!(daddiu!(), " $2, $zero, -4"),
-                                if_le!("andi $3, $4, 3"),
+                                "andi $3, $4, 3",
                                 "lbu {tmp}, 0($5)",
                                 $release,
                                 if_be!("xori $3, $3, 3"),
                                 "and $2, $4, $2",
-                                if_le!("sll $3, $3, 3"),
+                                "sll $3, $3, 3",
                                 "ori $4, $zero, 255",
-                                if_be!("sll $3, $3, 3"),
                                 "sllv $4, $4, $3",
                                 "sllv $7, {tmp}, $3",
                                 "nor $5, $zero, $4",
@@ -286,7 +271,7 @@ macro_rules! atomic8 {
                                 "sb {tmp}, 0($6)",
                                 ".set at",
                                 tmp = out(reg) _,
-                                out("$2") _,
+                                out("$2") _, // dst ptr (aligned)
                                 out("$3") _,
                                 inout("$4") dst => _,
                                 inout("$5") val => _,
@@ -342,16 +327,14 @@ macro_rules! atomic16 {
                                 ".set noat",
                                 // create aligned address and masks
                                 // https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
-                                if_be!("andi $3, $4, 3"),
                                 concat!(daddiu!(), " $2, $zero, -4"),
-                                if_le!("andi $3, $4, 3"),
+                                "andi $3, $4, 3",
                                 "lhu {tmp}, 0($5)",
                                 $release,
                                 if_be!("xori $3, $3, 2"),
                                 "and $2, $4, $2",
-                                if_le!("sll $3, $3, 3"),
+                                "sll $3, $3, 3",
                                 "ori $4, $zero, 65535",
-                                if_be!("sll $3, $3, 3"),
                                 "sllv $4, $4, $3",
                                 "sllv $7, {tmp}, $3",
                                 "nor $5, $zero, $4",
@@ -370,7 +353,7 @@ macro_rules! atomic16 {
                                 "sh {tmp}, 0($6)",
                                 ".set at",
                                 tmp = out(reg) _,
-                                out("$2") _,
+                                out("$2") _, // dst ptr (aligned)
                                 out("$3") _,
                                 inout("$4") dst => _,
                                 inout("$5") val => _,

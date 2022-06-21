@@ -2,12 +2,12 @@
 // - https://www.ibm.com/support/pages/zarchitecture-reference-summary
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/Ye5GPfq7z
+// - s390x https://godbolt.org/z/3n97znqd3
 
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
-    sync::atomic::{self, Ordering},
+    sync::atomic::Ordering,
 };
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
@@ -52,20 +52,33 @@ macro_rules! atomic_load_store {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
-                    asm!(
-                        // load from val to r0
-                        concat!("l", $asm_suffix, " %r0, 0({val})"),
-                        // (atomic) store r0 to dst
-                        concat!("st", $st_suffix, " %r0, 0({dst})"),
-                        dst = in(reg) dst,
-                        val = in(reg) val,
-                        out("r0") _,
-                        options(nostack),
-                    );
                     match order {
                         // Relaxed and Release stores are equivalent.
-                        Ordering::Relaxed | Ordering::Release => {}
-                        Ordering::SeqCst => atomic::fence(Ordering::SeqCst),
+                        Ordering::Relaxed | Ordering::Release => {
+                            asm!(
+                                // load from val to r0
+                                concat!("l", $asm_suffix, " %r0, 0({val})"),
+                                // (atomic) store r0 to dst
+                                concat!("st", $st_suffix, " %r0, 0({dst})"),
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                out("r0") _,
+                                options(nostack),
+                            );
+                        }
+                        Ordering::SeqCst => {
+                            asm!(
+                                // load from val to r0
+                                concat!("l", $asm_suffix, " %r0, 0({val})"),
+                                // (atomic) store r0 to dst
+                                concat!("st", $st_suffix, " %r0, 0({dst})"),
+                                "bcr 15, %r0",
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                out("r0") _,
+                                options(nostack),
+                            );
+                        },
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
@@ -153,7 +166,7 @@ macro_rules! atomic8 {
                         "rll %r0, %r3, 8(%r2)",
                         "stc %r0, 0(%r4)",
                         out("r0") _,
-                        out("r1") _,
+                        out("r1") _, // dst ptr (aligned)
                         inout("r2") dst => _,
                         inout("r3") val => _,
                         in("r4") out,
@@ -205,7 +218,7 @@ macro_rules! atomic16 {
                         "rll %r0, %r3, 16(%r2)",
                         "sth %r0, 0(%r4)",
                         out("r0") _,
-                        out("r1") _,
+                        out("r1") _, // dst ptr (aligned)
                         inout("r2") dst => _,
                         inout("r3") val => _,
                         in("r4") out,
@@ -254,7 +267,7 @@ macro_rules! atomic128 {
                         "stg %r0, 0({out})",
                         src = in(reg) src,
                         out = in(reg) out,
-                        // lpq loads value into the pair of specified register and subsequent register.
+                        // lpq loads value into even/odd pair of specified register and subsequent register.
                         out("r0") _,
                         out("r1") _,
                         options(nostack),
@@ -274,23 +287,39 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
-                    asm!(
-                        // load from val to r0-r1 pair
-                        "lg %r1, 8({val})",
-                        "lg %r0, 0({val})",
-                        // (atomic) store r0-r1 pair to dst
-                        "stpq %r0, 0({dst})",
-                        dst = in(reg) dst,
-                        val = in(reg) val,
-                        // stpq stores value from the pair of specified register and subsequent register.
-                        out("r0") _,
-                        out("r1") _,
-                        options(nostack),
-                    );
                     match order {
                         // Relaxed and Release stores are equivalent.
-                        Ordering::Relaxed | Ordering::Release => {}
-                        Ordering::SeqCst => atomic::fence(Ordering::SeqCst),
+                        Ordering::Relaxed | Ordering::Release => {
+                            asm!(
+                                // load from val to r0-r1 pair
+                                "lg %r1, 8({val})",
+                                "lg %r0, 0({val})",
+                                // (atomic) store r0-r1 pair to dst
+                                "stpq %r0, 0({dst})",
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                // stpq stores value from even/odd pair of specified register and subsequent register.
+                                out("r0") _,
+                                out("r1") _,
+                                options(nostack),
+                            );
+                        }
+                        Ordering::SeqCst => {
+                            asm!(
+                                // load from val to r0-r1 pair
+                                "lg %r1, 8({val})",
+                                "lg %r0, 0({val})",
+                                // (atomic) store r0-r1 pair to dst
+                                "stpq %r0, 0({dst})",
+                                "bcr 15, %r0",
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                // stpq stores value from even/odd pair of specified register and subsequent register.
+                                out("r0") _,
+                                out("r1") _,
+                                options(nostack),
+                            );
+                        }
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
@@ -326,11 +355,11 @@ macro_rules! atomic128 {
                         dst = in(reg) dst,
                         val = in(reg) val,
                         out = in(reg) out,
-                        // stpq stores value from the pair of specified register and subsequent register.
-                        out("r0") _,
-                        out("r1") _,
-                        out("r2") _,
-                        out("r3") _,
+                        // lpq loads value into even/odd pair of specified register and subsequent register.
+                        out("r0") _, // val (hi)
+                        out("r1") _, // val (lo)
+                        out("r2") _, // out (hi)
+                        out("r3") _, // out (lo)
                         options(nostack),
                     );
                 }
