@@ -6,7 +6,7 @@
 
 use core::{
     arch::asm,
-    mem::MaybeUninit,
+    mem::{self, MaybeUninit},
     sync::atomic::{self, Ordering},
 };
 
@@ -21,6 +21,9 @@ macro_rules! atomic_load_store {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     // atomic load is always SeqCst.
@@ -44,6 +47,9 @@ macro_rules! atomic_load_store {
                 val: *const MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     asm!(
@@ -79,6 +85,10 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     // atomic swap is always SeqCst.
@@ -116,6 +126,10 @@ macro_rules! atomic8 {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     // atomic swap is always SeqCst.
@@ -164,6 +178,10 @@ macro_rules! atomic16 {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     // atomic swap is always SeqCst.
@@ -222,6 +240,9 @@ macro_rules! atomic128 {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     // atomic load is always SeqCst.
@@ -248,6 +269,9 @@ macro_rules! atomic128 {
                 val: *const MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     asm!(
@@ -280,6 +304,10 @@ macro_rules! atomic128 {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     // atomic swap is always SeqCst.

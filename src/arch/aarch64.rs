@@ -10,7 +10,11 @@
 // - aarch64+lse https://godbolt.org/z/1vv6MzKfK
 // - aarch64+lse+lse2 https://godbolt.org/z/nKMjhYGW8
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
@@ -36,6 +40,9 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
@@ -68,6 +75,9 @@ macro_rules! atomic {
                 val: *const MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
@@ -101,6 +111,10 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
@@ -208,6 +222,9 @@ macro_rules! atomic128 {
                 out: *mut MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
                 // SAFETY: the caller must guarantee that `dst` is valid for reads,
                 // 16-byte aligned, that there are no concurrent non-atomic operations.
@@ -277,6 +294,9 @@ macro_rules! atomic128 {
                 val: *const MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+
                 #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
                 // SAFETY: the caller must guarantee that `dst` is valid for writes,
                 // 16-byte aligned, that there are no concurrent non-atomic operations.
@@ -350,6 +370,10 @@ macro_rules! atomic128 {
                 out: *mut MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {

@@ -1,7 +1,11 @@
 // Generated asm:
 // - x86_64 https://godbolt.org/z/Y4jvdx3hj
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
@@ -27,6 +31,9 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     // atomic load is always SeqCst.
@@ -50,6 +57,9 @@ macro_rules! atomic {
                 val: *const MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     match order {
@@ -91,6 +101,10 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     // atomic swap is always SeqCst.
