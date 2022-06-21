@@ -182,24 +182,30 @@ macro_rules! __test_atomic {
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
-                        s.spawn(move |_| {
-                            let now = *now;
-                            for i in 0..iterations {
-                                a.store(MaybeUninit::new(data1[thread][i]), rand_store_ordering());
-                            }
-                            std::eprintln!("store end={:?}", now.elapsed());
-                        });
-                        s.spawn(|_| {
-                            let now = *now;
-                            let mut v = vec![0; iterations];
-                            for i in 0..iterations {
-                                v[i] = a.load(rand_load_ordering()).assume_init();
-                            }
-                            std::eprintln!("load end={:?}", now.elapsed());
-                            for v in v {
-                                assert!(set.contains(&v), "v={}", v);
-                            }
-                        });
+                        if thread % 2 == 0 {
+                            s.spawn(move |_| {
+                                let now = *now;
+                                for i in 0..iterations {
+                                    a.store(
+                                        MaybeUninit::new(data1[thread][i]),
+                                        rand_store_ordering(),
+                                    );
+                                }
+                                std::eprintln!("store end={:?}", now.elapsed());
+                            });
+                        } else {
+                            s.spawn(|_| {
+                                let now = *now;
+                                let mut v = vec![0; iterations];
+                                for i in 0..iterations {
+                                    v[i] = a.load(rand_load_ordering()).assume_init();
+                                }
+                                std::eprintln!("load end={:?}", now.elapsed());
+                                for v in v {
+                                    assert!(set.contains(&v), "v={}", v);
+                                }
+                            });
+                        }
                         s.spawn(move |_| {
                             let now = *now;
                             let mut v = vec![0; iterations];
