@@ -127,6 +127,7 @@ pub struct AtomicMaybeUninit<T: Primitive> {
 }
 
 impl<T: Primitive> From<MaybeUninit<T>> for AtomicMaybeUninit<T> {
+    /// Creates a new atomic value from a potentially uninitialized integer.
     #[inline]
     fn from(v: MaybeUninit<T>) -> Self {
         Self::new(v)
@@ -134,6 +135,7 @@ impl<T: Primitive> From<MaybeUninit<T>> for AtomicMaybeUninit<T> {
 }
 
 impl<T: Primitive> From<T> for AtomicMaybeUninit<T> {
+    /// Creates a new atomic value from an initialized integer.
     #[inline]
     fn from(v: T) -> Self {
         Self::new(MaybeUninit::new(v))
@@ -155,9 +157,22 @@ unsafe impl<T: Primitive> Sync for AtomicMaybeUninit<T> {}
 impl<T: Primitive> core::panic::RefUnwindSafe for AtomicMaybeUninit<T> {}
 
 impl<T: Primitive> AtomicMaybeUninit<T> {
-    /// Creates a new atomic integer.
+    /// Creates a new atomic value from a potentially uninitialized integer.
     ///
     /// This is `const fn` on Rust 1.61+. See also `const_new` function.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    ///
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// let v = AtomicMaybeUninit::new(MaybeUninit::new(5_i32));
+    ///
+    /// // Equivalent to:
+    /// let v = AtomicMaybeUninit::from(5_i32);
+    /// ```
     #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
     #[inline]
     #[must_use]
@@ -165,9 +180,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         Self { v: UnsafeCell::new(v), _align: [] }
     }
 
-    /// Creates a new atomic integer.
+    /// Creates a new atomic value from a potentially uninitialized integer.
     ///
-    /// This is `const fn` on Rust 1.61+.
+    /// This is `const fn` on Rust 1.61+. See also `const_new` function.
     #[cfg(atomic_maybe_uninit_no_const_fn_trait_bound)]
     #[inline]
     #[must_use]
@@ -179,6 +194,19 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///
     /// This is safe because the mutable reference guarantees that no other threads are
     /// concurrently accessing the atomic data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    ///
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// let mut v = AtomicMaybeUninit::from(5_i32);
+    /// unsafe { assert_eq!((*v.get_mut()).assume_init(), 5) }
+    /// *v.get_mut() = MaybeUninit::new(10);
+    /// unsafe { assert_eq!((*v.get_mut()).assume_init(), 10) }
+    /// ```
     #[inline]
     pub fn get_mut(&mut self) -> &mut MaybeUninit<T> {
         self.v.get_mut()
@@ -188,6 +216,15 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///
     /// This is safe because passing `self` by value guarantees that no other threads are
     /// concurrently accessing the atomic data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// let v = AtomicMaybeUninit::from(5_i32);
+    /// unsafe { assert_eq!(v.into_inner().assume_init(), 5) }
+    /// ```
     #[inline]
     pub fn into_inner(self) -> MaybeUninit<T> {
         self.v.into_inner()
@@ -201,6 +238,17 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// # Panics
     ///
     /// Panics if `order` is [`Release`] or [`AcqRel`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::sync::atomic::Ordering;
+    ///
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// let v = AtomicMaybeUninit::from(5_i32);
+    /// unsafe { assert_eq!(v.load(Ordering::Relaxed).assume_init(), 5) }
+    /// ```
     #[inline]
     pub fn load(&self, order: Ordering) -> MaybeUninit<T>
     where
@@ -223,6 +271,18 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// # Panics
     ///
     /// Panics if `order` is [`Acquire`] or [`AcqRel`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::{mem::MaybeUninit, sync::atomic::Ordering};
+    ///
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// let v = AtomicMaybeUninit::from(5_i32);
+    /// v.store(MaybeUninit::new(10), Ordering::Relaxed);
+    /// unsafe { assert_eq!(v.load(Ordering::Relaxed).assume_init(), 10) }
+    /// ```
     #[inline]
     pub fn store(&self, val: MaybeUninit<T>, order: Ordering)
     where
@@ -241,6 +301,20 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// of this operation. All ordering modes are possible. Note that using
     /// [`Acquire`] makes the store part of this operation [`Relaxed`], and
     /// using [`Release`] makes the load part [`Relaxed`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::{mem::MaybeUninit, sync::atomic::Ordering};
+    ///
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// let v = AtomicMaybeUninit::from(5_i32);
+    /// unsafe {
+    ///     assert_eq!(v.swap(MaybeUninit::new(10), Ordering::Relaxed).assume_init(), 5);
+    ///     assert_eq!(v.load(Ordering::Relaxed).assume_init(), 10);
+    /// }
+    /// ```
     #[inline]
     pub fn swap(&self, val: MaybeUninit<T>, order: Ordering) -> MaybeUninit<T>
     where
@@ -262,7 +336,8 @@ macro_rules! int {
             type Align = crate::private::$align;
         }
         impl AtomicMaybeUninit<$ty> {
-            /// Creates a new atomic integer. Unlike [`new`](Self::new), this is always `const fn`.
+            /// Creates a new atomic value from a potentially uninitialized integer.
+            /// Unlike [`new`](Self::new), this is always `const fn`.
             #[inline]
             #[must_use]
             pub const fn const_new(v: MaybeUninit<$ty>) -> Self {
