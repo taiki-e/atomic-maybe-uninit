@@ -1,6 +1,6 @@
 // Generated asm:
-// - armv8-m baseline https://godbolt.org/z/xsPrKj88T
-// - armv8-m mainline https://godbolt.org/z/zjbddd9Es
+// - armv8-m baseline https://godbolt.org/z/crb989Te3
+// - armv8-m mainline https://godbolt.org/z/PrezjhsY6
 
 use core::{
     arch::asm,
@@ -8,7 +8,7 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 macro_rules! atomic {
     ($int_type:ident, $asm_suffix:tt) => {
@@ -130,6 +130,135 @@ macro_rules! atomic {
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("a", "l"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
+                }
+            }
+        }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: i32;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // load from old/new to old_tmp/new_tmp
+                                concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
+                                concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
+                                "2:",
+                                    // load from dst to out_tmp
+                                    concat!("ld", $acquire, "ex", $asm_suffix, " {out_tmp}, [{dst}]"),
+                                    "cmp {out_tmp}, {old_tmp}",
+                                    "bne 3f",
+                                    // store val to dst
+                                    concat!("st", $release, "ex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cmp {r}, #0",
+                                    "bne 2b",
+                                    "b 4f",
+                                "3:",
+                                    "movs {r}, #1",
+                                "4:",
+                                // store out_tmp to out
+                                concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                new = inout(reg) new => _,
+                                out = inout(reg) out => _,
+                                r = lateout(reg) r,
+                                out_tmp = lateout(reg) _,
+                                old_tmp = lateout(reg) _,
+                                new_tmp = lateout(reg) _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("r", "r"),
+                        Ordering::Acquire => atomic_cmpxchg!("a", "r"),
+                        Ordering::Release => atomic_cmpxchg!("r", "l"),
+                        // AcqRel and SeqCst swaps are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    // 0 if the store was successful, 1 if no store was performed
+                    r == 0
+                }
+            }
+            #[inline]
+            unsafe fn atomic_compare_exchange_weak(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
+                unsafe {
+                    let mut r: i32;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // load from old/new to old_tmp/new_tmp
+                                concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
+                                concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
+                                // load from dst to out_tmp
+                                concat!("ld", $acquire, "ex", $asm_suffix, " {out_tmp}, [{dst}]"),
+                                "cmp {out_tmp}, {old_tmp}",
+                                "bne 3f",
+                                // store val to dst
+                                concat!("st", $release, "ex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
+                                "b 4f",
+                                "3:",
+                                    "clrex",
+                                    "movs {r}, #1",
+                                "4:",
+                                // store out_tmp to out
+                                concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                new = inout(reg) new => _,
+                                out = inout(reg) out => _,
+                                r = lateout(reg) r,
+                                out_tmp = lateout(reg) _,
+                                old_tmp = lateout(reg) _,
+                                new_tmp = lateout(reg) _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("r", "r"),
+                        Ordering::Acquire => atomic_cmpxchg!("a", "r"),
+                        Ordering::Release => atomic_cmpxchg!("r", "l"),
+                        // AcqRel and SeqCst swaps are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    // 0 if the store was successful, 1 if no store was performed
+                    r == 0
                 }
             }
         }

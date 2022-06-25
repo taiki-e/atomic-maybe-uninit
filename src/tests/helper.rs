@@ -18,7 +18,7 @@ macro_rules! test_atomic {
             #[allow(clippy::undocumented_unsafe_blocks)]
             mod [<test_atomic_ $int_type>] {
                 __test_atomic!(load_store, $int_type);
-                __test_atomic!(swap, $int_type);
+                __test_atomic!(rmw, $int_type);
             }
         }
     };
@@ -128,7 +128,7 @@ macro_rules! __test_atomic {
             }
         }
     };
-    (swap, $int_type:ident) => {
+    (rmw, $int_type:ident) => {
         #[test]
         fn swap() {
             unsafe {
@@ -145,6 +145,135 @@ macro_rules! __test_atomic {
                 }
             }
         }
+        #[test]
+        fn compare_exchange() {
+            unsafe {
+                let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                test_compare_exchange_ordering(|success, failure| {
+                    a.compare_exchange(MaybeUninit::new(5), MaybeUninit::new(5), success, failure)
+                });
+                for (success, failure) in compare_exchange_orderings() {
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                    assert_eq!(
+                        a.compare_exchange(
+                            MaybeUninit::new(5),
+                            MaybeUninit::new(10),
+                            success,
+                            failure
+                        )
+                        .unwrap()
+                        .assume_init(),
+                        5
+                    );
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
+                    assert_eq!(
+                        a.compare_exchange(
+                            MaybeUninit::new(6),
+                            MaybeUninit::new(12),
+                            success,
+                            failure
+                        )
+                        .unwrap_err()
+                        .assume_init(),
+                        10
+                    );
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
+
+                    if !cfg!(valgrind) {
+                        let mut u = MaybeUninit::uninit();
+                        let a = AtomicMaybeUninit::<$int_type>::new(u);
+                        while let Err(e) =
+                            a.compare_exchange(u, MaybeUninit::new(10), success, failure)
+                        {
+                            u = e;
+                        }
+                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
+                        assert_eq!(
+                            a.compare_exchange(
+                                MaybeUninit::new(10),
+                                MaybeUninit::uninit(),
+                                success,
+                                failure
+                            )
+                            .unwrap()
+                            .assume_init(),
+                            10
+                        );
+                        let _v = a.load(Ordering::Relaxed);
+                    }
+                }
+            }
+        }
+        #[test]
+        fn compare_exchange_weak() {
+            unsafe {
+                let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                test_compare_exchange_ordering(|success, failure| {
+                    a.compare_exchange_weak(
+                        MaybeUninit::new(5),
+                        MaybeUninit::new(5),
+                        success,
+                        failure,
+                    )
+                });
+                for (success, failure) in compare_exchange_orderings() {
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(4));
+                    assert_eq!(
+                        a.compare_exchange_weak(
+                            MaybeUninit::new(6),
+                            MaybeUninit::new(8),
+                            success,
+                            failure
+                        )
+                        .unwrap_err()
+                        .assume_init(),
+                        4
+                    );
+                    let mut old = a.load(Ordering::Relaxed);
+                    loop {
+                        let new = MaybeUninit::new(old.assume_init() * 2);
+                        match a.compare_exchange_weak(old, new, success, failure) {
+                            Ok(_) => break,
+                            Err(x) => old = x,
+                        }
+                    }
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 8);
+                }
+            }
+        }
+        #[test]
+        fn fetch_update() {
+            unsafe {
+                let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(7));
+                test_compare_exchange_ordering(|set, fetch| {
+                    a.fetch_update(set, fetch, |x| Some(x))
+                });
+                for (success, failure) in compare_exchange_orderings() {
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(7));
+                    assert_eq!(
+                        a.fetch_update(success, failure, |_| None).unwrap_err().assume_init(),
+                        7
+                    );
+                    assert_eq!(
+                        a.fetch_update(success, failure, |x| Some(MaybeUninit::new(
+                            x.assume_init() + 1
+                        )))
+                        .unwrap()
+                        .assume_init(),
+                        7
+                    );
+                    assert_eq!(
+                        a.fetch_update(success, failure, |x| Some(MaybeUninit::new(
+                            x.assume_init() + 1
+                        )))
+                        .unwrap()
+                        .assume_init(),
+                        8
+                    );
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 9);
+                }
+            }
+        }
         #[cfg(not(all(valgrind, target_arch = "aarch64")))] // TODO: flaky
         ::quickcheck::quickcheck! {
             fn quickcheck_swap(x: $int_type, y: $int_type) -> bool {
@@ -154,6 +283,83 @@ macro_rules! __test_atomic {
                         assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
                         assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
                         assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
+                    }
+                }
+                true
+            }
+            fn quickcheck_compare_exchange(x: $int_type, y: $int_type) -> bool {
+                unsafe {
+                    let z = loop {
+                        let z = fastrand::$int_type(..);
+                        if z != y {
+                            break z;
+                        }
+                    };
+                    for (success, failure) in compare_exchange_orderings() {
+                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
+                        assert_eq!(
+                            a.compare_exchange(
+                                MaybeUninit::new(x),
+                                MaybeUninit::new(y),
+                                success,
+                                failure
+                            )
+                            .unwrap()
+                            .assume_init(),
+                            x
+                        );
+                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                        assert_eq!(
+                            a.compare_exchange(
+                                MaybeUninit::new(z),
+                                MaybeUninit::new(z),
+                                success,
+                                failure
+                            )
+                            .unwrap_err()
+                            .assume_init(),
+                            y
+                        );
+                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                        assert_eq!(
+                            a.compare_exchange(
+                                MaybeUninit::new(y),
+                                MaybeUninit::uninit(),
+                                success,
+                                failure
+                            )
+                            .unwrap()
+                            .assume_init(),
+                            y
+                        );
+                        let _v = a.load(Ordering::Relaxed);
+                    }
+                }
+                true
+            }
+            fn quickcheck_fetch_update(x: $int_type, y: $int_type) -> bool {
+                unsafe {
+                    let z = loop {
+                        let z = fastrand::$int_type(..);
+                        if z != y {
+                            break z;
+                        }
+                    };
+                    for (success, failure) in compare_exchange_orderings() {
+                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
+                        assert_eq!(
+                            a.fetch_update(success, failure, |_| Some(MaybeUninit::new(y)))
+                            .unwrap()
+                            .assume_init(),
+                            x
+                        );
+                        assert_eq!(
+                            a.fetch_update(success, failure, |_| Some(MaybeUninit::new(z)))
+                            .unwrap()
+                            .assume_init(),
+                            y
+                        );
+                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
                     }
                 }
                 true
@@ -215,6 +421,79 @@ macro_rules! __test_atomic {
                                     .assume_init();
                             }
                             std::eprintln!("swap end={:?}", now.elapsed());
+                            for v in v {
+                                assert!(set.contains(&v), "v={}", v);
+                            }
+                        });
+                    }
+                })
+                .unwrap();
+            }
+        }
+        #[test]
+        fn stress_compare_exchange() {
+            unsafe {
+                let iterations =
+                    if cfg!(valgrind) && cfg!(debug_assertions) { 5_000 } else { 25_000 };
+                let threads = if cfg!(debug_assertions) { 2 } else { fastrand::usize(2..=8) };
+                let data1 = &(0..threads)
+                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .collect::<Vec<_>>();
+                let data2 = &(0..threads)
+                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .collect::<Vec<_>>();
+                let set = &data1
+                    .iter()
+                    .flat_map(|v| v.iter().copied())
+                    .chain(data2.iter().flat_map(|v| v.iter().copied()))
+                    .collect::<HashSet<_>>();
+                let a =
+                    &AtomicMaybeUninit::<$int_type>::from(data2[0][fastrand::usize(0..iterations)]);
+                std::eprintln!("threads={}", threads);
+                let now = &std::time::Instant::now();
+                thread::scope(|s| {
+                    for thread in 0..threads {
+                        if thread % 2 == 0 {
+                            s.spawn(move |_| {
+                                let now = *now;
+                                for i in 0..iterations {
+                                    a.store(
+                                        MaybeUninit::new(data1[thread][i]),
+                                        rand_store_ordering(),
+                                    );
+                                }
+                                std::eprintln!("store end={:?}", now.elapsed());
+                            });
+                        } else {
+                            s.spawn(|_| {
+                                let now = *now;
+                                let mut v = vec![0; iterations];
+                                for i in 0..iterations {
+                                    v[i] = a.load(rand_load_ordering()).assume_init();
+                                }
+                                std::eprintln!("load end={:?}", now.elapsed());
+                                for v in v {
+                                    assert!(set.contains(&v), "v={}", v);
+                                }
+                            });
+                        }
+                        s.spawn(move |_| {
+                            let now = *now;
+                            let mut v = vec![data2[0][0]; iterations];
+                            for i in 0..iterations {
+                                let old = if i % 2 == 0 {
+                                    MaybeUninit::new(fastrand::$int_type(..))
+                                } else {
+                                    a.load(Ordering::Relaxed)
+                                };
+                                let new = MaybeUninit::new(data2[thread][i]);
+                                let o = rand_compare_exchange_ordering();
+                                match a.compare_exchange(old, new, o.0, o.1) {
+                                    Ok(r) => assert_eq!(old.assume_init(), r.assume_init()),
+                                    Err(r) => v[i] = r.assume_init(),
+                                }
+                            }
+                            std::eprintln!("compare_exchange end={:?}", now.elapsed());
                             for v in v {
                                 assert!(set.contains(&v), "v={}", v);
                             }
@@ -402,6 +681,55 @@ pub(crate) fn rand_swap_ordering() -> Ordering {
 pub(crate) fn test_swap_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
     for order in swap_orderings() {
         f(order);
+    }
+}
+pub(crate) fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
+    [
+        (Ordering::Relaxed, Ordering::Relaxed),
+        (Ordering::Relaxed, Ordering::Acquire),
+        (Ordering::Relaxed, Ordering::SeqCst),
+        (Ordering::Acquire, Ordering::Relaxed),
+        (Ordering::Acquire, Ordering::Acquire),
+        (Ordering::Acquire, Ordering::SeqCst),
+        (Ordering::Release, Ordering::Relaxed),
+        (Ordering::Release, Ordering::Acquire),
+        (Ordering::Release, Ordering::SeqCst),
+        (Ordering::AcqRel, Ordering::Relaxed),
+        (Ordering::AcqRel, Ordering::Acquire),
+        (Ordering::AcqRel, Ordering::SeqCst),
+        (Ordering::SeqCst, Ordering::Relaxed),
+        (Ordering::SeqCst, Ordering::Acquire),
+        (Ordering::SeqCst, Ordering::SeqCst),
+    ]
+}
+pub(crate) fn rand_compare_exchange_ordering() -> (Ordering, Ordering) {
+    compare_exchange_orderings()[fastrand::usize(0..compare_exchange_orderings().len())]
+}
+pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
+    f: impl Fn(Ordering, Ordering) -> T,
+) {
+    for &(success, failure) in &compare_exchange_orderings() {
+        f(success, failure);
+    }
+
+    if skip_should_panic_test() {
+        return;
+    }
+    for &order in &swap_orderings() {
+        let msg = assert_panic(|| f(order, Ordering::AcqRel));
+        assert!(
+            msg == "there is no such thing as an acquire/release failure ordering"
+                || msg == "there is no such thing as an acquire/release load",
+            "{}",
+            msg
+        );
+        let msg = assert_panic(|| f(order, Ordering::Release));
+        assert!(
+            msg == "there is no such thing as a release failure ordering"
+                || msg == "there is no such thing as a release load",
+            "{}",
+            msg
+        );
     }
 }
 fn skip_should_panic_test() -> bool {
