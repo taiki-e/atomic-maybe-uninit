@@ -281,7 +281,7 @@ macro_rules! atomic128 {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    // atomic store is always SeqCst.
+                    // atomic swap is always SeqCst.
                     asm!(
                         // rbx is reserved by LLVM
                         "xchg {rbx_tmp}, rbx",
@@ -292,7 +292,7 @@ macro_rules! atomic128 {
                         // operations of different sizes.
                         concat!("mov rax, qword ptr [", $rdi, "]"),
                         concat!("mov rdx, qword ptr [", $rdi, " + 8]"),
-                        // (atomic) store by CAS loop
+                        // (atomic) swap by CAS loop
                         "2:",
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                             "jne 2b",
