@@ -149,6 +149,12 @@ atomic!(usize, reg, "", "qword");
 
 #[cfg(target_arch = "x86_64")]
 macro_rules! atomic128 {
+    ($int_type:ident) => {
+        #[cfg(target_pointer_width = "32")]
+        atomic128!($int_type, "edi", "esi", "r8d");
+        #[cfg(target_pointer_width = "64")]
+        atomic128!($int_type, "rdi", "rsi", "r8");
+    };
     ($int_type:ident, $rdi:tt, $rsi:tt, $r8:tt) => {
         #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
         impl AtomicLoad for $int_type {
@@ -311,17 +317,9 @@ macro_rules! atomic128 {
 }
 
 #[cfg(target_arch = "x86_64")]
-#[cfg(target_pointer_width = "32")]
-atomic128!(i128, "edi", "esi", "r8d");
+atomic128!(i128);
 #[cfg(target_arch = "x86_64")]
-#[cfg(target_pointer_width = "32")]
-atomic128!(u128, "edi", "esi", "r8d");
-#[cfg(target_arch = "x86_64")]
-#[cfg(target_pointer_width = "64")]
-atomic128!(i128, "rdi", "rsi", "r8");
-#[cfg(target_arch = "x86_64")]
-#[cfg(target_pointer_width = "64")]
-atomic128!(u128, "rdi", "rsi", "r8");
+atomic128!(u128);
 
 #[cfg(test)]
 mod tests {
