@@ -54,6 +54,98 @@ macro_rules! __test_atomic {
                 }
             }
         }
+        compare_exchange();
+        fn compare_exchange() {
+            #[cfg(target_has_atomic = "ptr")]
+            unsafe {
+                for (success, failure) in compare_exchange_orderings() {
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                    assert_eq!(
+                        a.compare_exchange(
+                            MaybeUninit::new(5),
+                            MaybeUninit::new(10),
+                            success,
+                            failure
+                        )
+                        .unwrap()
+                        .assume_init(),
+                        5
+                    );
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
+                    assert_eq!(
+                        a.compare_exchange(
+                            MaybeUninit::new(6),
+                            MaybeUninit::new(12),
+                            success,
+                            failure
+                        )
+                        .unwrap_err()
+                        .assume_init(),
+                        10
+                    );
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
+                }
+            }
+        }
+        compare_exchange_weak();
+        fn compare_exchange_weak() {
+            #[cfg(target_has_atomic = "ptr")]
+            unsafe {
+                for (success, failure) in compare_exchange_orderings() {
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(4));
+                    assert_eq!(
+                        a.compare_exchange_weak(
+                            MaybeUninit::new(6),
+                            MaybeUninit::new(8),
+                            success,
+                            failure
+                        )
+                        .unwrap_err()
+                        .assume_init(),
+                        4
+                    );
+                    let mut old = a.load(Ordering::Relaxed);
+                    loop {
+                        let new = MaybeUninit::new(old.assume_init() * 2);
+                        match a.compare_exchange_weak(old, new, success, failure) {
+                            Ok(_) => break,
+                            Err(x) => old = x,
+                        }
+                    }
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 8);
+                }
+            }
+        }
+        fetch_update();
+        fn fetch_update() {
+            #[cfg(target_has_atomic = "ptr")]
+            unsafe {
+                for (success, failure) in compare_exchange_orderings() {
+                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(7));
+                    assert_eq!(
+                        a.fetch_update(success, failure, |_| None).unwrap_err().assume_init(),
+                        7
+                    );
+                    assert_eq!(
+                        a.fetch_update(success, failure, |x| Some(MaybeUninit::new(
+                            x.assume_init() + 1
+                        )))
+                        .unwrap()
+                        .assume_init(),
+                        7
+                    );
+                    assert_eq!(
+                        a.fetch_update(success, failure, |x| Some(MaybeUninit::new(
+                            x.assume_init() + 1
+                        )))
+                        .unwrap()
+                        .assume_init(),
+                        8
+                    );
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 9);
+                }
+            }
+        }
     };
 }
 
@@ -66,6 +158,26 @@ fn store_orderings() -> [Ordering; 3] {
 #[cfg(target_has_atomic = "ptr")]
 fn swap_orderings() -> [Ordering; 5] {
     [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst]
+}
+#[cfg(target_has_atomic = "ptr")]
+fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
+    [
+        (Ordering::Relaxed, Ordering::Relaxed),
+        (Ordering::Relaxed, Ordering::Acquire),
+        (Ordering::Relaxed, Ordering::SeqCst),
+        (Ordering::Acquire, Ordering::Relaxed),
+        (Ordering::Acquire, Ordering::Acquire),
+        (Ordering::Acquire, Ordering::SeqCst),
+        (Ordering::Release, Ordering::Relaxed),
+        (Ordering::Release, Ordering::Acquire),
+        (Ordering::Release, Ordering::SeqCst),
+        (Ordering::AcqRel, Ordering::Relaxed),
+        (Ordering::AcqRel, Ordering::Acquire),
+        (Ordering::AcqRel, Ordering::SeqCst),
+        (Ordering::SeqCst, Ordering::Relaxed),
+        (Ordering::SeqCst, Ordering::Acquire),
+        (Ordering::SeqCst, Ordering::SeqCst),
+    ]
 }
 
 #[entry]

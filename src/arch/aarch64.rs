@@ -6,9 +6,9 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/hhKxn4b6j
-// - aarch64 (+lse) https://godbolt.org/z/acK5a1rxb
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/oe3754brh
+// - aarch64 https://godbolt.org/z/z841Wjz67
+// - aarch64 (+lse) https://godbolt.org/z/fzz4E1K6h
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/6G5x748Yj
 
 use core::{
     arch::asm,
@@ -16,7 +16,7 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 #[cfg(target_pointer_width = "32")]
 macro_rules! ptr_modifier {
@@ -170,6 +170,166 @@ macro_rules! atomic {
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("a", "l"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
+                }
+            }
+        }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: i32;
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {{
+                            asm!(
+                                // load from old/new to old_tmp/new_tmp
+                                concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old", ptr_modifier!(), "}]"),
+                                concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new", ptr_modifier!(), "}]"),
+                                // cas writes the current value to the first register,
+                                // so copy the `old`'s value for later comparison.
+                                concat!("mov {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
+                                // (atomic) compare and exchange
+                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASA--CASAL--CAS--CASL--CASAL--CAS--CASL
+                                concat!("cas", $acquire, $release, $asm_suffix, " {out_tmp", $val_modifier, "}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
+                                "cset {r:w}, eq",
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                old_tmp = lateout(reg) _,
+                                new = inout(reg) new => _,
+                                new_tmp = lateout(reg) _,
+                                out = inout(reg) out => _,
+                                out_tmp = lateout(reg) _,
+                                r = lateout(reg) r,
+                                options(nostack),
+                            );
+                            debug_assert!(r == 0 || r == 1, "r={}", r);
+                            r != 0
+                        }};
+                    }
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {{
+                            asm!(
+                                // load from old/new to old_tmp/new_tmp
+                                concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new", ptr_modifier!(), "}]"),
+                                concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old", ptr_modifier!(), "}]"),
+                                // (atomic) compare and exchange
+                                "2:",
+                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
+                                    "b.ne 3f",
+                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cbnz {r:w}, 2b",
+                                    "b 4f",
+                                "3:",
+                                    "mov {r:w}, #1",
+                                    "clrex",
+                                "4:",
+                                // store out_tmp to out
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                old_tmp = lateout(reg) _,
+                                new = inout(reg) new => _,
+                                new_tmp = lateout(reg) _,
+                                out = inout(reg) out => _,
+                                out_tmp = lateout(reg) _,
+                                r = lateout(reg) r,
+                                options(nostack),
+                            );
+                            debug_assert!(r == 0 || r == 1, "r={}", r);
+                            // 0 if the store was successful, 1 if no store was performed
+                            r == 0
+                        }};
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("a", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "l"),
+                        // AcqRel and SeqCst compare_exchange are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                }
+            }
+            #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+            #[inline]
+            unsafe fn atomic_compare_exchange_weak(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
+                unsafe {
+                    let r: i32;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // load from old/new to old_tmp/new_tmp
+                                concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new", ptr_modifier!(), "}]"),
+                                concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old", ptr_modifier!(), "}]"),
+                                // (atomic) compare and exchange
+                                concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
+                                "b.ne 3f",
+                                concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                "b 4f",
+                                "3:",
+                                    "mov {r:w}, #1",
+                                    "clrex",
+                                "4:",
+                                // store out_tmp to out
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                old_tmp = lateout(reg) _,
+                                new = inout(reg) new => _,
+                                new_tmp = lateout(reg) _,
+                                out = inout(reg) out => _,
+                                out_tmp = lateout(reg) _,
+                                r = lateout(reg) r,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("a", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "l"),
+                        // AcqRel and SeqCst compare_exchange are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    // 0 if the store was successful, 1 if no store was performed
+                    r == 0
                 }
             }
         }
@@ -410,6 +570,124 @@ macro_rules! atomic128 {
                         // AcqRel and SeqCst swaps are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("a", "l"),
                         _ => unreachable_unchecked!("{:?}", order),
+                    }
+                }
+            }
+        }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let r: i32;
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {{
+                            asm!(
+                                // load from old/new to x6-x7/x4-x5 pairs
+                                concat!("ldp x6, x7, [{old", ptr_modifier!(), "}]"),
+                                concat!("ldp x4, x5, [{new", ptr_modifier!(), "}]"),
+                                // casp writes the current value to the first register pair,
+                                // so copy the `old`'s value for later comparison.
+                                "mov x8, x6",
+                                "mov x9, x7",
+                                // (atomic) compare and exchange
+                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
+                                concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst", ptr_modifier!(), "}]"),
+                                "eor {tmp_hi}, x9, x7",
+                                "eor {tmp_lo}, x8, x6",
+                                "orr {tmp_hi}, {tmp_lo}, {tmp_hi}",
+                                // store tmp to out
+                                concat!("stp x8, x9, [{out", ptr_modifier!(), "}]"),
+                                "cmp {tmp_hi}, #0",
+                                "cset {r:w}, eq",
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                new = inout(reg) new => _,
+                                out = inout(reg) out => _,
+                                r = lateout(reg) r,
+                                tmp_hi = lateout(reg) _,
+                                tmp_lo = lateout(reg) _,
+                                // must be allocated to even/odd register pair
+                                lateout("x6") _,
+                                lateout("x7") _,
+                                // must be allocated to even/odd register pair
+                                lateout("x4") _,
+                                lateout("x5") _,
+                                // must be allocated to even/odd register pair
+                                lateout("x8") _,
+                                lateout("x9") _,
+                                options(nostack),
+                            );
+                            debug_assert!(r == 0 || r == 1, "r={}", r);
+                            r != 0
+                        }};
+                    }
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {{
+                            asm!(
+                                // load from old/new to old/new pair
+                                concat!("ldp {new_lo}, {new_hi}, [{new", ptr_modifier!(), "}]"),
+                                concat!("ldp {old_lo}, {old_hi}, [{old", ptr_modifier!(), "}]"),
+                                // (atomic) compare and exchange
+                                "2:",
+                                    concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    "cmp {out_lo}, {old_lo}",
+                                    "cset {r:w}, ne",
+                                    "cmp {out_hi}, {old_hi}",
+                                    "cinc {r:w}, {r:w}, ne",
+                                    "cbz {r:w}, 3f",
+                                    concat!("st", $release, "xp {r:w}, {out_lo}, {out_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cbnz {r:w}, 2b",
+                                    "mov {r:w}, #1",
+                                    "b 4f",
+                                "3:",
+                                    concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cbnz {r:w}, 2b",
+                                "4:",
+                                // store out_tmp to out
+                                concat!("stp {out_lo}, {out_hi}, [{out", ptr_modifier!(), "}]"),
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                old_hi = lateout(reg) _,
+                                old_lo = lateout(reg) _,
+                                new = inout(reg) new => _,
+                                new_hi = lateout(reg) _,
+                                new_lo = lateout(reg) _,
+                                out = inout(reg) out => _,
+                                out_hi = lateout(reg) _,
+                                out_lo = lateout(reg) _,
+                                r = lateout(reg) r,
+                                options(nostack),
+                            );
+                            debug_assert!(r == 0 || r == 1, "r={}", r);
+                            // 0 if the store was successful, 1 if no store was performed
+                            r == 0
+                        }};
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("a", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "l"),
+                        // AcqRel and SeqCst compare_exchange are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
+                        _ => unreachable_unchecked!("{:?}", success),
                     }
                 }
             }

@@ -3,10 +3,10 @@
 // - https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/en6cvhq9r
-// - powerpc64 https://godbolt.org/z/oav69v8fc
-// - powerpc64 (pwr8) https://godbolt.org/z/8Tc5qM13T
-// - powerpc64le https://godbolt.org/z/MK3j5evjh
+// - powerpc https://godbolt.org/z/ja7s8hdTs
+// - powerpc64 https://godbolt.org/z/eqvzzKcTa
+// - powerpc64 (pwr8) https://godbolt.org/z/5ssdef73T
+// - powerpc64le https://godbolt.org/z/o8xxzajqY
 
 use core::{
     arch::asm,
@@ -14,8 +14,16 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
+macro_rules! if_d {
+    ("d", $then:expr, $else:expr) => {
+        $then
+    };
+    ($asm_suffix:tt, $then:expr, $else:expr) => {
+        $else
+    };
+}
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
 #[cfg(target_endian = "big")]
@@ -191,7 +199,7 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident, $ld_suffix:tt, $asm_suffix:tt) => {
+    ($int_type:ident, $ld_suffix:tt, $asm_suffix:tt, $cmp_suffix:tt) => {
         atomic_load_store!($int_type, $ld_suffix, $asm_suffix);
         impl AtomicSwap for $int_type {
             #[inline]
@@ -242,6 +250,76 @@ macro_rules! atomic {
                         Ordering::SeqCst => atomic_swap!("lwsync", "sync"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
+                }
+            }
+        }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // load from old/new to old_tmp/new_tmp pairs
+                                concat!("l", $ld_suffix, " {old_tmp}, 0({old})"),
+                                concat!("l", $ld_suffix, " {new_tmp}, 0({new})"),
+                                // (atomic) compare and exchange
+                                $release,
+                                "2:",
+                                    concat!("l", $asm_suffix, "arx {out_tmp}, 0, {dst}"),
+                                    concat!("cmp", $cmp_suffix, " {old_tmp}, {out_tmp}"),
+                                    "bne %cr0, 3f",
+                                    concat!("st", $asm_suffix, "cx. {new_tmp}, 0, {dst}"),
+                                    "bne %cr0, 2b",
+                                    "b 4f",
+                                "3:",
+                                    concat!("st", $asm_suffix, "cx. {out_tmp}, 0, {dst}"),
+                                "4:",
+                                "xor {r}, {out_tmp}, {old_tmp}",
+                                $acquire,
+                                // store out_tmp pair to out
+                                concat!("st", $asm_suffix, " {out_tmp}, 0({out})"),
+                                concat!("cntlz", $cmp_suffix, " {r}, {r}"),
+                                if_d!($asm_suffix, "rldicl {r}, {r}, 58, 63", "srwi {r}, {r}, 5"),
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                old_tmp = lateout(reg) _,
+                                new = inout(reg) new => _,
+                                new_tmp = lateout(reg) _,
+                                out = inout(reg) out => _,
+                                out_tmp = lateout(reg) _,
+                                r = lateout(reg) r,
+                                out("r0") _,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("lwsync", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "lwsync"),
+                        Ordering::AcqRel => atomic_cmpxchg!("lwsync", "lwsync"),
+                        Ordering::SeqCst => atomic_cmpxchg!("lwsync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
                 }
             }
         }
@@ -355,6 +433,148 @@ macro_rules! atomic8 {
                         Ordering::SeqCst => atomic_swap!("lwsync", "sync"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
+                }
+            }
+        }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // Based on assemblies generated by rustc/LLVM.
+                    // Refs:
+                    // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                    // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/test/CodeGen/PowerPC/atomics.ll
+                    #[cfg(target_arch = "powerpc64")]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                "lbz %r4, 0(%r4)",
+                                "lbz %r5, 0(%r5)",
+                                "rlwinm %r7, %r3, 3, 27, 28",
+                                "li %r8, 255",
+                                "xori %r7, %r7, 24",
+                                "rldicr %r3, %r3, 0, 61",
+                                "slw %r8, %r8, %r7",
+                                "slw %r10, %r4, %r7",
+                                "slw %r5, %r5, %r7",
+                                "and %r10, %r10, %r8",
+                                $release,
+                                "and %r9, %r5, %r8",
+                                "2:",
+                                    "lwarx %r11, 0, %r3",
+                                    "and %r5, %r11, %r8",
+                                    "cmpw %r5, %r10",
+                                    "bne %cr0, 3f",
+                                    "andc %r11, %r11, %r8",
+                                    "or %r11, %r11, %r9",
+                                    "stwcx. %r11, 0, %r3",
+                                    "bne %cr0, 2b",
+                                    "b 4f",
+                                "3:",
+                                    "stwcx. %r11, 0, %r3",
+                                "4:",
+                                "srw %r5, %r5, %r7",
+                                $acquire,
+                                "xor %r3, %r5, %r4",
+                                "cntlzw  %r3, %r3",
+                                "srwi %r3, %r3, 5",
+                                "stb %r5, 0(%r6)",
+                                out("r0") _,
+                                inout("r3") dst => r,
+                                inout("r4") old => _,
+                                inout("r5") new => _,
+                                in("r6") out,
+                                out("r7") _,
+                                out("r8") _,
+                                out("r9") _,
+                                out("r10") _,
+                                out("r11") _,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    #[cfg(target_arch = "powerpc")]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                "lbz %r4, 0(%r4)",
+                                "lbz %r8, 0(%r5)",
+                                "rlwinm %r9, %r3, 3, 27, 28",
+                                "li %r7, 255",
+                                "rlwinm %r5, %r3, 0, 0, 29",
+                                "xori %r3, %r9, 24",
+                                "slw %r7, %r7, %r3",
+                                "slw %r8, %r8, %r3",
+                                "slw %r9, %r4, %r3",
+                                "and %r8, %r8, %r7",
+                                "and %r10, %r9, %r7",
+                                $release,
+                                "2:",
+                                    "lwarx %r11, 0, %r5",
+                                    "and %r9, %r11, %r7",
+                                    "cmpw %r9, %r10",
+                                    "bne %cr0, 3f",
+                                    "andc %r11, %r11, %r7",
+                                    "or %r11, %r11, %r8",
+                                    "stwcx. %r11, 0, %r5",
+                                    "bne %cr0, 2b",
+                                    "b 4f",
+                                "3:",
+                                    "stwcx. %r11, 0, %r5",
+                                "4:",
+                                    "srw %r5, %r9, %r3",
+                                    "li %r3, 0",
+                                    "cmpw 5, 4",
+                                    "li %r4, 1",
+                                    "bc 12, 2, 5f",
+                                    "b 6f",
+                                "5:",
+                                    "addi %r3, %r4, 0",
+                                "6:",
+                                $acquire,
+                                "stb %r5, 0(%r6)",
+                                out("r0") _,
+                                inout("r3") dst => r,
+                                inout("r4") old => _,
+                                inout("r5") new => _,
+                                in("r6") out,
+                                out("r7") _,
+                                out("r8") _,
+                                out("r9") _,
+                                out("r10") _,
+                                out("r11") _,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("lwsync", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "lwsync"),
+                        Ordering::AcqRel => atomic_cmpxchg!("lwsync", "lwsync"),
+                        Ordering::SeqCst => atomic_cmpxchg!("lwsync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
                 }
             }
         }
@@ -473,21 +693,165 @@ macro_rules! atomic16 {
                 }
             }
         }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // Based on assemblies generated by rustc/LLVM.
+                    // Refs:
+                    // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                    // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/test/CodeGen/PowerPC/atomics.ll
+                    #[cfg(target_arch = "powerpc64")]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                "lhz %r4, 0(%r4)",
+                                "lhz %r10, 0(%r5)",
+                                "li %r7, 0",
+                                "rlwinm %r8, %r3, 3, 27, 27",
+                                "ori %r9, %r7, 65535",
+                                "xori %r7, %r8, 16",
+                                "rldicr %r5, %r3, 0, 61",
+                                "slw %r8, %r9, %r7",
+                                "slw %r3, %r10, %r7",
+                                "slw %r10, %r4, %r7",
+                                $release,
+                                "and %r9, %r3, %r8",
+                                "and %r10, %r10, %r8",
+                                "2:",
+                                    "lwarx %r11, 0, %r5",
+                                    "and %r3, %r11, %r8",
+                                    "cmpw %r3, %r10",
+                                    "bne %cr0, 3f",
+                                    "andc %r11, %r11, %r8",
+                                    "or %r11, %r11, %r9",
+                                    "stwcx. %r11, 0, %r5",
+                                    "bne %cr0, 2b",
+                                    "b 4f",
+                                "3:",
+                                    "stwcx. %r11, 0, %r5",
+                                "4:",
+                                "srw %r5, %r3, %r7",
+                                $acquire,
+                                "xor %r3, %r5, %r4",
+                                "cntlzw %r3, %r3",
+                                "srwi %r3, %r3, 5",
+                                "sth %r5, 0(%r6)",
+                                out("r0") _,
+                                inout("r3") dst => r,
+                                inout("r4") old => _,
+                                inout("r5") new => _,
+                                in("r6") out,
+                                out("r7") _,
+                                out("r8") _,
+                                out("r9") _,
+                                out("r10") _,
+                                out("r11") _,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    #[cfg(target_arch = "powerpc")]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                "lhz %r4, 0(%r4)",
+                                "lhz %r8, 0(%r5)",
+                                "li %r7, 0",
+                                "rlwinm %r5, %r3, 3, 27, 27",
+                                "ori %r7, %r7, 65535",
+                                "xori %r5, %r5, 16",
+                                "slw %r7, %r7, %r5",
+                                "slw %r8, %r8, %r5",
+                                "slw %r9, %r4, %r5",
+                                "rlwinm %r3, %r3, 0, 0, 29",
+                                "and %r8, %r8, %r7",
+                                "and %r10, %r9, %r7",
+                                $release,
+                                "2:",
+                                    "lwarx %r11, 0, %r3",
+                                    "and %r9, %r11, %r7",
+                                    "cmpw %r9, %r10",
+                                    "bne %cr0, 3f",
+                                    "andc %r11, %r11, %r7",
+                                    "or %r11, %r11, %r8",
+                                    "stwcx. %r11, 0, %r3",
+                                    "bne %cr0, 2b",
+                                    "b 4f",
+                                "3:",
+                                    "stwcx. %r11, 0, %r3",
+                                "4:",
+                                    "srw %r5, %r9, %r5",
+                                    "li %r3, 0",
+                                    "cmpw %r5, %r4",
+                                    "li %r4, 1",
+                                    "bc 12, 2, 5f",
+                                    "b 6f",
+                                "5:",
+                                    "addi %r3, %r4, 0",
+                                "6:",
+                                $acquire,
+                                "sth %r5, 0(%r6)",
+                                out("r0") _,
+                                inout("r3") dst => r,
+                                inout("r4") old => _,
+                                inout("r5") new => _,
+                                in("r6") out,
+                                out("r7") _,
+                                out("r8") _,
+                                out("r9") _,
+                                out("r10") _,
+                                out("r11") _,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("lwsync", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "lwsync"),
+                        Ordering::AcqRel => atomic_cmpxchg!("lwsync", "lwsync"),
+                        Ordering::SeqCst => atomic_cmpxchg!("lwsync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
+                }
+            }
+        }
     };
 }
 
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
-atomic!(i8, "bz", "b");
+atomic!(i8, "bz", "b", "w");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
-atomic!(u8, "bz", "b");
+atomic!(u8, "bz", "b", "w");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
-atomic!(i16, "hz", "h");
+atomic!(i16, "hz", "h", "w");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
-atomic!(u16, "hz", "h");
+atomic!(u16, "hz", "h", "w");
 #[cfg(target_endian = "big")]
 #[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
 atomic8!(i8, "bz", "b");
@@ -500,20 +864,20 @@ atomic16!(i16, "hz", "h");
 #[cfg(target_endian = "big")]
 #[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
 atomic16!(u16, "hz", "h");
-atomic!(i32, "wz", "w");
-atomic!(u32, "wz", "w");
+atomic!(i32, "wz", "w", "w");
+atomic!(u32, "wz", "w", "w");
 #[cfg(target_arch = "powerpc64")]
-atomic!(i64, "d", "d");
+atomic!(i64, "d", "d", "d");
 #[cfg(target_arch = "powerpc64")]
-atomic!(u64, "d", "d");
+atomic!(u64, "d", "d", "d");
 #[cfg(target_pointer_width = "32")]
-atomic!(isize, "wz", "w");
+atomic!(isize, "wz", "w", "w");
 #[cfg(target_pointer_width = "32")]
-atomic!(usize, "wz", "w");
+atomic!(usize, "wz", "w", "w");
 #[cfg(target_pointer_width = "64")]
-atomic!(isize, "d", "d");
+atomic!(isize, "d", "d", "d");
 #[cfg(target_pointer_width = "64")]
-atomic!(usize, "d", "d");
+atomic!(usize, "d", "d", "d");
 
 // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
 // https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/test/CodeGen/PowerPC/atomics-i128-ldst.ll
@@ -706,6 +1070,91 @@ macro_rules! atomic128 {
                         Ordering::SeqCst => atomic_swap!("lwsync", "sync"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
+                }
+            }
+        }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // load from old/new to r4-r5/r6-r7 pairs
+                                concat!("ld %r4, ", p128h!(), "({old})"),
+                                concat!("ld %r5, ", p128l!(), "({old})"),
+                                concat!("ld %r6, ", p128h!(), "({new})"),
+                                concat!("ld %r7, ", p128l!(), "({new})"),
+                                // (atomic) compare and exchange
+                                $release,
+                                "2:",
+                                    "lqarx %r8, 0, {dst}",
+                                    "xor %r11, %r9, %r5",
+                                    "xor %r10, %r8, %r4",
+                                    "or. %r11, %r11, %r10",
+                                    "bne %cr0, 3f",
+                                    "mr %r11, %r7",
+                                    "mr %r10, %r6",
+                                    "stqcx. %r10, 0, {dst}",
+                                    "bne %cr0, 2b",
+                                    "b 4f",
+                                "3:",
+                                    "stqcx. %r8, 0, {dst}",
+                                "4:",
+                                $acquire,
+                                // store r8-r9 pair to out
+                                concat!("std %r8, ", p128h!(), "({out})"),
+                                concat!("std %r9, ", p128l!(), "({out})"),
+                                "xor %r11, %r9, %r5",
+                                "xor %r10, %r8, %r4",
+                                "or. %r11, %r11, %r10",
+                                "cntlzd %r11, %r11",
+                                "rldicl %r11, %r11, 58, 63",
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                new = inout(reg) new => _,
+                                out = inout(reg) out => _,
+                                out("r0") _,
+                                // lq loads value into even/odd pair of specified register and subsequent register.
+                                // We cannot use r1 and r2, so starting with r4.
+                                out("r4") _, // old (hi)
+                                out("r5") _, // old (lo)
+                                out("r6") _, // new (hi)
+                                out("r7") _, // new (lo)
+                                out("r8") _, // out (hi)
+                                out("r9") _, // out (lo)
+                                out("r10") _,
+                                out("r11") r,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("lwsync", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "lwsync"),
+                        Ordering::AcqRel => atomic_cmpxchg!("lwsync", "lwsync"),
+                        Ordering::SeqCst => atomic_cmpxchg!("lwsync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
                 }
             }
         }

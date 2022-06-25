@@ -5,8 +5,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/Ge5ozMEf3
-// - riscv32imac https://godbolt.org/z/s7PYcjnh4
+// - riscv64gc https://godbolt.org/z/cfvqr9eTh
+// - riscv32imac https://godbolt.org/z/jKdTPW16v
 
 use core::{
     arch::asm,
@@ -15,8 +15,23 @@ use core::{
 };
 
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-use crate::raw::AtomicSwap;
+use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
+
+#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+#[cfg(target_arch = "riscv32")]
+macro_rules! if_64 {
+    ($($tt:tt)*) => {
+        ""
+    };
+}
+#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+#[cfg(target_arch = "riscv64")]
+macro_rules! if_64 {
+    ($($tt:tt)*) => {
+        $($tt)*
+    };
+}
 
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
 #[cfg(target_arch = "riscv32")]
@@ -233,6 +248,68 @@ macro_rules! atomic {
                 }
             }
         }
+        #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:expr, $release:expr) => {
+                            asm!(
+                                // load old/new to old_tmp/new_tmp
+                                concat!("l", $asm_suffix, " {old_tmp}, 0({old})"),
+                                concat!("l", $asm_suffix, " {new_tmp}, 0({new})"),
+                                // (atomic) compare and exchange
+                                "2:",
+                                    concat!("lr.", $asm_suffix, $acquire, " {out_tmp}, 0({dst})"),
+                                    "bne {out_tmp}, {old_tmp}, 3f",
+                                    concat!("sc.", $asm_suffix, $release, " {r}, {new_tmp}, 0({dst})"),
+                                    "bnez {r}, 2b",
+                                "3:",
+                                "xor {r}, {out_tmp}, {old_tmp}",
+                                "seqz {r}, {r}",
+                                // store out_tmp to out
+                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                old_tmp = lateout(reg) _,
+                                new = inout(reg) new => _,
+                                new_tmp = lateout(reg) _,
+                                out = inout(reg) out => _,
+                                out_tmp = lateout(reg) _,
+                                r = out(reg) r,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!(".aq", ""),
+                        Ordering::Release => atomic_cmpxchg!("", ".rl"),
+                        Ordering::AcqRel => atomic_cmpxchg!(".aq", ".rl"),
+                        Ordering::SeqCst => atomic_cmpxchg!(".aqrl", ".aqrl"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
+                }
+            }
+        }
     };
 }
 
@@ -302,6 +379,86 @@ macro_rules! atomic8 {
                         Ordering::SeqCst => atomic_swap!(".aqrl", ".aqrl"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
+                }
+            }
+        }
+        #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:expr, $release:expr) => {
+                            asm!(
+                                // Implement sub-word atomic operations using word-sized LL/SC loop.
+                                // Based on assemblies generated by rustc/LLVM.
+                                // Refs:
+                                // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                                // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/test/CodeGen/RISCV/atomic-rmw.ll
+                                "lbu a1, 0(a1)",
+                                "lbu a2, 0(a2)",
+                                // create aligned address and masks
+                                // https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                                "andi a6, a0, -4",
+                                concat!(slliw!(), " a0, a0, 3"),
+                                "li a5, 255",
+                                concat!(sllw!(), " a5, a5, a0"),
+                                concat!(sllw!(), " a7, a1, a0"),
+                                concat!(sllw!(), " a2, a2, a0"),
+                                // (atomic) compare and exchange (LR/SC loop)
+                                "2:",
+                                    concat!("lr.w", $acquire, " a4, 0(a6)"),
+                                    "and a1, a4, a5",
+                                    "bne a1, a7, 3f",
+                                    "xor a1, a4, a2",
+                                    "and a1, a1, a5",
+                                    "xor a1, a1, a4",
+                                    concat!("sc.w", $release, " a1, a1, 0(a6)"),
+                                    "bnez a1, 2b",
+                                "3:",
+                                concat!(srlw!(), " a1, a4, a0"),
+                                "and a0, a4, a5",
+                                if_64!("sext.w a0, a0"),
+                                "xor a0, a7, a0",
+                                "seqz a0, a0",
+                                "sb a1, 0({out})",
+                                out = inout(reg) out => _,
+                                inout("a0") dst => r,
+                                inout("a1") old => _,
+                                inout("a2") new => _,
+                                out("a4") _,
+                                out("a5") _,
+                                out("a6") _,
+                                out("a7") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!(".aq", ""),
+                        Ordering::Release => atomic_cmpxchg!("", ".rl"),
+                        Ordering::AcqRel => atomic_cmpxchg!(".aq", ".rl"),
+                        Ordering::SeqCst => atomic_cmpxchg!(".aqrl", ".aqrl"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
                 }
             }
         }
@@ -375,6 +532,87 @@ macro_rules! atomic16 {
                         Ordering::SeqCst => atomic_swap!(".aqrl", ".aqrl"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
+                }
+            }
+        }
+        #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:expr, $release:expr) => {
+                            asm!(
+                                // Implement sub-word atomic operations using word-sized LL/SC loop.
+                                // Based on assemblies generated by rustc/LLVM.
+                                // Refs:
+                                // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                                // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/test/CodeGen/RISCV/atomic-rmw.ll
+                                "lhu a1, 0(a1)",
+                                "lhu a2, 0(a2)",
+                                // create aligned address and masks
+                                // https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                                "andi a6, a0, -4",
+                                concat!(slliw!(), " a0, a0, 3"),
+                                "lui a5, 16",
+                                concat!(addiw!(), " a5, a5, -1"),
+                                concat!(sllw!(), " a5, a5, a0"),
+                                concat!(sllw!(), " a7, a1, a0"),
+                                concat!(sllw!(), " a2, a2, a0"),
+                                // (atomic) compare and exchange (LR/SC loop)
+                                "2:",
+                                    concat!("lr.w", $acquire, " a4, 0(a6)"),
+                                    "and a1, a4, a5",
+                                    "bne a1, a7, 3f",
+                                    "xor a1, a4, a2",
+                                    "and a1, a1, a5",
+                                    "xor a1, a1, a4",
+                                    concat!("sc.w", $release, " a1, a1, 0(a6)"),
+                                    "bnez a1, 2b",
+                                "3:",
+                                concat!(srlw!(), " a1, a4, a0"),
+                                "and a0, a4, a5",
+                                if_64!("sext.w a0, a0"),
+                                "xor a0, a7, a0",
+                                "seqz a0, a0",
+                                "sh a1, 0({out})",
+                                out = inout(reg) out => _,
+                                inout("a0") dst => r,
+                                inout("a1") old => _,
+                                inout("a2") new => _,
+                                out("a4") _,
+                                out("a5") _,
+                                out("a6") _,
+                                out("a7") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!(".aq", ""),
+                        Ordering::Release => atomic_cmpxchg!("", ".rl"),
+                        Ordering::AcqRel => atomic_cmpxchg!(".aq", ".rl"),
+                        Ordering::SeqCst => atomic_cmpxchg!(".aqrl", ".aqrl"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
                 }
             }
         }

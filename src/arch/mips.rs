@@ -1,8 +1,8 @@
 // Generated asm:
-// - mips https://godbolt.org/z/fExesqqWb
-// - mipsel https://godbolt.org/z/q8rrhb4MT
-// - mips64 https://godbolt.org/z/7jhvvWxEx
-// - mips64el https://godbolt.org/z/dK5n56qd8
+// - mips https://godbolt.org/z/877bMEs75
+// - mipsel https://godbolt.org/z/P3dqK1Pos
+// - mips64 https://godbolt.org/z/W8EaaaYeo
+// - mips64el https://godbolt.org/z/n35shYWEE
 
 use core::{
     arch::asm,
@@ -10,7 +10,7 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 #[cfg(target_endian = "little")]
 macro_rules! if_be {
@@ -213,6 +213,74 @@ macro_rules! atomic {
                 }
             }
         }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:expr, $release:expr) => {
+                            asm!(
+                                ".set noat",
+                                // load from old/new to old_tmp/new_tmp
+                                concat!("l", $asm_suffix, " {old_tmp}, 0({old})"),
+                                concat!("l", $asm_suffix, " {new_tmp}, 0({new})"),
+                                $release, // release fence
+                                "2:",
+                                    // load from dst to out_tmp
+                                    concat!("ll", $asm_ll_suffix, " {out_tmp}, 0({dst})"),
+                                    "bne {out_tmp}, {old_tmp}, 3f",
+                                    "move {r}, {new_tmp}",
+                                    // store new to dst
+                                    concat!("sc", $asm_ll_suffix, " {r}, 0({dst})"),
+                                    // 1 if the store was successful, 0 if no store was performed
+                                    "beqz {r}, 2b",
+                                "3:",
+                                $acquire, // acquire fence
+                                "xor {new_tmp}, {out_tmp}, {old_tmp}",
+                                // store out_tmp to out
+                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
+                                "sltiu {r}, {new_tmp}, 1",
+                                ".set at",
+                                dst = inout(reg) dst => _,
+                                old = in(reg) old,
+                                new = inout(reg) new => _,
+                                out = inout(reg) out => _,
+                                r = lateout(reg) r,
+                                out_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new_tmp = lateout(reg) _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("sync", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "sync"),
+                        // AcqRel and SeqCst swaps are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
+                }
+            }
+        }
     };
 }
 
@@ -295,6 +363,93 @@ macro_rules! atomic8 {
                 }
             }
         }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:expr, $release:expr) => {
+                            asm!(
+                                // Implement sub-word atomic operations using word-sized LL/SC loop.
+                                // Based on assemblies generated by rustc/LLVM.
+                                // Refs:
+                                // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                                // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/test/CodeGen/Mips/atomic.ll
+                                ".set noat",
+                                concat!(daddiu!(), " $3, $zero, -4"),
+                                "lbu $2, 0($6)", // new
+                                "lb {tmp}, 0($5)",  // old
+                                "ori $5, $zero, 255",
+                                $release,
+                                "and $3, $4, $3",
+                                "andi $4, $4, 3",
+                                if_be!("xori $4, $4, 3"),
+                                "sll $4, $4, 3",
+                                "andi $8, {tmp}, 255",
+                                "andi $2, $2, 255",
+                                "sllv $5, $5, $4",
+                                "sllv $8, $8, $4",
+                                "sllv $9, $2, $4",
+                                "nor $6, $zero, $5",
+                                "2:",
+                                    "ll $10, 0($3)",
+                                    "and $11, $10, $5",
+                                    "bne $11, $8, 3f",
+                                    "and $10, $10, $6",
+                                    "or $10, $10, $9",
+                                    "sc $10, 0($3)",
+                                    "beqz $10, 2b",
+                                "3:",
+                                "srlv $2, $11, $4",
+                                "seb $2, $2",
+                                $acquire,
+                                "xor {tmp}, $2, {tmp}",
+                                "sb $2, 0($7)",
+                                "sltiu $2, {tmp}, 1",
+                                ".set at",
+                                tmp = out(reg) _,
+                                out("$2") r,
+                                out("$3") _, // dst (aligned)
+                                inout("$4") dst => _,
+                                inout("$5") old => _,
+                                inout("$6") new => _,
+                                in("$7") out,
+                                out("$8") _,
+                                out("$9") _,
+                                out("$10") _,
+                                out("$11") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("sync", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "sync"),
+                        // AcqRel and SeqCst swaps are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
+                }
+            }
+        }
     };
 }
 
@@ -374,6 +529,93 @@ macro_rules! atomic16 {
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("sync", "sync"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
+                }
+            }
+        }
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let success = crate::utils::upgrade_success_ordering(success, failure);
+
+                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                unsafe {
+                    let mut r: usize;
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:expr, $release:expr) => {
+                            asm!(
+                                // Implement sub-word atomic operations using word-sized LL/SC loop.
+                                // Based on assemblies generated by rustc/LLVM.
+                                // Refs:
+                                // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/lib/CodeGen/AtomicExpandPass.cpp#L677
+                                // - https://github.com/llvm/llvm-project/blob/03c066ab134f02289df1b61db00294c1da579f9c/llvm/test/CodeGen/Mips/atomic.ll
+                                ".set noat",
+                                concat!(daddiu!(), " $3, $zero, -4"),
+                                "lhu $2, 0($6)", // new
+                                "lh {tmp}, 0($5)", // old
+                                "ori $5, $zero, 65535",
+                                $release,
+                                "and $3, $4, $3",
+                                "andi $4, $4, 3",
+                                if_be!("xori $4, $4, 2"),
+                                "sll $4, $4, 3",
+                                "andi $8, {tmp}, 65535",
+                                "andi $2, $2, 65535",
+                                "sllv $5, $5, $4",
+                                "sllv $8, $8, $4",
+                                "sllv $9, $2, $4",
+                                "nor $6, $zero, $5",
+                                "2:",
+                                    "ll $10, 0($3)",
+                                    "and $11, $10, $5",
+                                    "bne $11, $8, 3f",
+                                    "and $10, $10, $6",
+                                    "or $10, $10, $9",
+                                    "sc $10, 0($3)",
+                                    "beqz $10, 2b",
+                                "3:",
+                                "srlv $2, $11, $4",
+                                "seh $2, $2",
+                                $acquire,
+                                "xor {tmp}, $2, {tmp}",
+                                "sh $2, 0($7)",
+                                "sltiu $2, {tmp}, 1",
+                                ".set at",
+                                tmp = out(reg) _,
+                                out("$2") r,
+                                out("$3") _, // dst (aligned)
+                                inout("$4") dst => _,
+                                inout("$5") old => _,
+                                inout("$6") new => _,
+                                in("$7") out,
+                                out("$8") _,
+                                out("$9") _,
+                                out("$10") _,
+                                out("$11") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    match success {
+                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg!("sync", ""),
+                        Ordering::Release => atomic_cmpxchg!("", "sync"),
+                        // AcqRel and SeqCst swaps are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
+                        _ => unreachable_unchecked!("{:?}", success),
+                    }
+                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    r != 0
                 }
             }
         }
