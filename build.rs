@@ -51,6 +51,13 @@ fn main() {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
     }
 
+    if target.starts_with("x86_64") {
+        // x86_64 macos always support cmpxchg16b: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L7
+        let is_x86_64_macos = target == "x86_64-apple-darwin";
+        if has_target_feature("cmpxchg16b", is_x86_64_macos, &version, None, true) {
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"cmpxchg16b\"");
+        }
+    }
     if target.starts_with("aarch64") {
         // aarch64 macos always support lse and lse2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
         let is_aarch64_macos = target == "aarch64-apple-darwin";

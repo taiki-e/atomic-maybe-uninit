@@ -11,6 +11,10 @@ default_targets=(
     x86_64-unknown-linux-gnu
     # x86_64 X32 ABI
     x86_64-unknown-linux-gnux32
+    # x86_64 always support cmpxchg16b
+    x86_64-apple-darwin
+    # x86_64 without SSE
+    x86_64-unknown-none
 
     # x86
     # rustc --print target-list | grep -E '^i.86' | grep -E '(-unknown-linux|-none)'
@@ -162,6 +166,10 @@ build() {
     )
     RUSTFLAGS="${target_rustflags}" \
         x cargo "${args[@]}" "$@"
+    if [[ "${target}" == "x86_64"* ]]; then
+        RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
+            x cargo "${args[@]}" --target-dir target/cmpxchg16b "$@"
+    fi
     if [[ "${target}" == "aarch64"* ]]; then
         RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
             x cargo "${args[@]}" --target-dir target/lse "$@"

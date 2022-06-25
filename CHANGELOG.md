@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support x86_64 128-bit atomics when the `cmpxchg16b` target feature is enabled at compile-time.
+
 ## [0.2.8] - 2022-06-21
 
 - Fix bug in powerpc64 128-bit atomics.

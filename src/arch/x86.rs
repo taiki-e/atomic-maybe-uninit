@@ -1,5 +1,6 @@
 // Generated asm:
-// - x86_64 https://godbolt.org/z/5jf8je3hT
+// - x86_64 https://godbolt.org/z/vMMbTGeM1
+// - x86_64 (+cmpxchg16b) https://godbolt.org/z/hr8o9rPP3
 
 use core::{
     arch::asm,
@@ -34,7 +35,7 @@ macro_rules! atomic {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
@@ -146,6 +147,182 @@ atomic!(isize, reg, "", "qword");
 #[cfg(target_pointer_width = "64")]
 atomic!(usize, reg, "", "qword");
 
+#[cfg(target_arch = "x86_64")]
+macro_rules! atomic128 {
+    ($int_type:ident, $rdi:tt, $rsi:tt, $r8:tt) => {
+        #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+        impl AtomicLoad for $int_type {
+            #[inline]
+            unsafe fn atomic_load(
+                src: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                _order: Ordering,
+            ) {
+                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
+                // SAFETY: the caller must guarantee that `src` is valid for both writes and
+                // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
+                // cfg guarantees that the CPU supports cmpxchg16b.
+                //
+                // If the value at `dst` (destination operand) and rdx:rax are equal, the
+                // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
+                // `dst` is loaded to rdx:rax.
+                //
+                // The ZF flag is set if the value at `dst` and rdx:rax are equal,
+                // otherwise it is cleared. Other flags are unaffected.
+                //
+                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+                unsafe {
+                    // atomic load is always SeqCst.
+                    asm!(
+                        // rbx is reserved by LLVM
+                        "xchg {rbx_tmp}, rbx",
+                        // (atomic) load by cmpxchg(0, 0)
+                        concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
+                        // store current value to out
+                        concat!("mov qword ptr [", $rsi, "], rax"),
+                        concat!("mov qword ptr [", $rsi, " + 8], rdx"),
+                        // restore rbx
+                        "mov rbx, {rbx_tmp}",
+                        // set old/new args of cmpxchg to 0
+                        rbx_tmp = inout(reg) 0_u64 => _,
+                        inout("rax") 0_u64 => _,
+                        inout("rcx") 0_u64 => _,
+                        inout("rdx") 0_u64 => _,
+                        in($rdi) src,
+                        in($rsi) out,
+                        options(nostack),
+                    );
+                }
+            }
+        }
+        #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+        impl AtomicStore for $int_type {
+            #[inline]
+            unsafe fn atomic_store(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                _order: Ordering,
+            ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+
+                // SAFETY: the caller must guarantee that `dst` is valid for both writes and
+                // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
+                // cfg guarantees that the CPU supports cmpxchg16b.
+                //
+                // If the value at `dst` (destination operand) and rdx:rax are equal, the
+                // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
+                // `dst` is loaded to rdx:rax.
+                //
+                // The ZF flag is set if the value at `dst` and rdx:rax are equal,
+                // otherwise it is cleared. Other flags are unaffected.
+                //
+                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+                unsafe {
+                    // atomic store is always SeqCst.
+                    asm!(
+                        // rbx is reserved by LLVM
+                        "xchg {rbx_tmp}, rbx",
+                        concat!("mov rbx, qword ptr [", $rsi, "]"),
+                        concat!("mov rcx, qword ptr [", $rsi, " + 8]"),
+                        // This is based on the code generated by LLVM, but it is
+                        // interesting that they generate code that mixes atomic
+                        // operations of different sizes.
+                        concat!("mov rax, qword ptr [", $rdi, "]"),
+                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),
+                        // (atomic) store by CAS loop
+                        "2:",
+                            concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
+                            "jne 2b",
+                        // restore rbx
+                        "mov rbx, {rbx_tmp}",
+                        rbx_tmp = out(reg) _,
+                        out("rax") _,
+                        out("rcx") _,
+                        out("rdx") _,
+                        in($rdi) dst,
+                        in($rsi) val,
+                        options(nostack),
+                    );
+                }
+            }
+        }
+        #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+        impl AtomicSwap for $int_type {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                _order: Ordering,
+            ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
+                // SAFETY: the caller must guarantee that `dst` is valid for both writes and
+                // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
+                // cfg guarantees that the CPU supports cmpxchg16b.
+                //
+                // If the value at `dst` (destination operand) and rdx:rax are equal, the
+                // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
+                // `dst` is loaded to rdx:rax.
+                //
+                // The ZF flag is set if the value at `dst` and rdx:rax are equal,
+                // otherwise it is cleared. Other flags are unaffected.
+                //
+                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+                unsafe {
+                    // atomic store is always SeqCst.
+                    asm!(
+                        // rbx is reserved by LLVM
+                        "xchg {rbx_tmp}, rbx",
+                        concat!("mov rbx, qword ptr [", $rsi, "]"),
+                        concat!("mov rcx, qword ptr [", $rsi, " + 8]"),
+                        // This is based on the code generated by LLVM, but it is
+                        // interesting that they generate code that mixes atomic
+                        // operations of different sizes.
+                        concat!("mov rax, qword ptr [", $rdi, "]"),
+                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),
+                        // (atomic) store by CAS loop
+                        "2:",
+                            concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
+                            "jne 2b",
+                        // store previous value to out
+                        concat!("mov qword ptr [", $r8, "], rax"),
+                        concat!("mov qword ptr [", $r8, " + 8], rdx"),
+                        // restore rbx
+                        "mov rbx, {rbx_tmp}",
+                        rbx_tmp = out(reg) _,
+                        out("rax") _,
+                        out("rcx") _,
+                        out("rdx") _,
+                        in($rdi) dst,
+                        in($rsi) val,
+                        in($r8) out,
+                        options(nostack),
+                    );
+                }
+            }
+        }
+    };
+}
+
+#[cfg(target_arch = "x86_64")]
+#[cfg(target_pointer_width = "32")]
+atomic128!(i128, "edi", "esi", "r8d");
+#[cfg(target_arch = "x86_64")]
+#[cfg(target_pointer_width = "32")]
+atomic128!(u128, "edi", "esi", "r8d");
+#[cfg(target_arch = "x86_64")]
+#[cfg(target_pointer_width = "64")]
+atomic128!(i128, "rdi", "rsi", "r8");
+#[cfg(target_arch = "x86_64")]
+#[cfg(target_pointer_width = "64")]
+atomic128!(u128, "rdi", "rsi", "r8");
+
 #[cfg(test)]
 mod tests {
     test_atomic!(isize);
@@ -160,6 +337,12 @@ mod tests {
     test_atomic!(i64);
     #[cfg(target_arch = "x86_64")]
     test_atomic!(u64);
+    #[cfg(target_arch = "x86_64")]
+    #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+    test_atomic!(i128);
+    #[cfg(target_arch = "x86_64")]
+    #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+    test_atomic!(u128);
 
     stress_test_load_store!();
     stress_test_load_swap!();
