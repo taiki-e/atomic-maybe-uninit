@@ -12,7 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.9] - 2022-06-30
 
-- Add `compare_exchange`, `compare_exchange_weak`, and `fetch_update`.
+- Add `compare_exchange`, `compare_exchange_weak`, and `fetch_update`. ([#7](https://github.com/taiki-e/atomic-maybe-uninit/pull/7))
 
 - Support x86_64 128-bit atomics when the `cmpxchg16b` target feature is enabled at compile-time.
 
@@ -46,7 +46,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.5] - 2022-05-30
 
-- Support ARMv6-M. (#4)
+- Support ARMv6-M.
 
 - Optimize AArch64 128-bit atomic load/store when the `lse2` target feature is enabled at compile-time.
 
