@@ -57,8 +57,9 @@ fn main() {
         if has_target_feature("cmpxchg16b", is_x86_64_macos, &version, None, true) {
             println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"cmpxchg16b\"");
         }
-    }
-    if target.starts_with('i') && env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default() == "x86" {
+    } else if target.starts_with('i')
+        && env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default() == "x86"
+    {
         // i486 doesn't have cmpxchg8b.
         // i386 is additionally missing bswap, cmpxchg, and xadd.
         // See also https://reviews.llvm.org/D18802.
@@ -82,8 +83,7 @@ fn main() {
         if no_cmpxchg8b {
             println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg8b");
         }
-    }
-    if target.starts_with("aarch64") {
+    } else if target.starts_with("aarch64") {
         // aarch64 macos always support lse and lse2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
         let is_aarch64_macos = target == "aarch64-apple-darwin";
         // aarch64_target_feature stabilized in Rust 1.61.
@@ -95,9 +95,10 @@ fn main() {
         if has_target_feature("lse2", is_aarch64_macos, &version, None, false) {
             println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"lse2\"");
         }
-    }
-    // #[cfg(target_feature = "v7")] and others don't work on stable.
-    if let Some(mut arch) = target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")) {
+    } else if let Some(mut arch) =
+        target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb"))
+    {
+        // #[cfg(target_feature = "v7")] and others don't work on stable.
         // armv7-unknown-linux-gnueabihf
         //    ^^
         arch = arch.split_once('-').unwrap().0;
@@ -154,9 +155,8 @@ fn main() {
                 }
             }
         }
-    }
-    // #[cfg(target_feature = "a")] doesn't work on stable.
-    if let Some(target) = target.strip_prefix("riscv") {
+    } else if let Some(target) = target.strip_prefix("riscv") {
+        // #[cfg(target_feature = "a")] doesn't work on stable.
         // riscv64gc-unknown-linux-gnu
         //      ^^^^
         let arch = target.split_once('-').unwrap().0;
@@ -164,9 +164,8 @@ fn main() {
         if arch.contains('a') || arch.contains('g') {
             println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"a\"");
         }
-    }
-    // Only check powerpc64 (be) -- powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/lib/Target/PowerPC/PPC.td#L652
-    if target.starts_with("powerpc64-") {
+    } else if target.starts_with("powerpc64-") {
+        // Only check powerpc64 (be) -- powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/lib/Target/PowerPC/PPC.td#L652
         if let Some(cpu) = target_cpu().as_deref() {
             // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
             if matches!(cpu, "pwr8" | "pwr9" | "pwr10") {
