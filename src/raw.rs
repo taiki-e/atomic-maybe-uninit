@@ -7,7 +7,7 @@ use core::{
 };
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
-// TODO: merge traits and rename to AtomicLoadStore and AtomicRMW?
+// TODO: merge AtomicLoad and AtomicStore and rename to AtomicLoadStore?
 
 /// Primitive types that may support atomic operations.
 ///

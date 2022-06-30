@@ -58,6 +58,31 @@ fn main() {
             println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"cmpxchg16b\"");
         }
     }
+    if target.starts_with('i') && env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default() == "x86" {
+        // i486 doesn't have cmpxchg8b.
+        // i386 is additionally missing bswap, cmpxchg, and xadd.
+        // See also https://reviews.llvm.org/D18802.
+        let mut no_cmpxchg8b = false;
+        let mut no_cmpxchg = false;
+        if target.starts_with("i486") {
+            no_cmpxchg8b = true;
+        } else if target.starts_with("i386") {
+            no_cmpxchg = true;
+        } else if let Some(cpu) = target_cpu() {
+            if cpu == "i486" {
+                no_cmpxchg8b = true;
+            } else if cpu == "i386" {
+                no_cmpxchg = true;
+            }
+        }
+        if no_cmpxchg {
+            no_cmpxchg8b = true;
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg");
+        }
+        if no_cmpxchg8b {
+            println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg8b");
+        }
+    }
     if target.starts_with("aarch64") {
         // aarch64 macos always support lse and lse2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
         let is_aarch64_macos = target == "aarch64-apple-darwin";
