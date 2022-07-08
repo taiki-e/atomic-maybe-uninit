@@ -716,6 +716,6 @@ mod private {
     pub(crate) type AlignPtr = Align4;
     #[cfg(target_pointer_width = "64")]
     pub(crate) type AlignPtr = Align8;
-    #[cfg(target_pointer_width = "128")]
-    pub(crate) type AlignPtr = Align16;
+    // #[cfg(target_pointer_width = "128")]
+    // pub(crate) type AlignPtr = Align16;
 }
