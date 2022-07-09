@@ -1,11 +1,11 @@
 // Generated asm:
-// - x86_64 https://godbolt.org/z/bPaTcc155
-// - x86_64 (+cmpxchg16b) https://godbolt.org/z/9Y5zherqE
-// - x86 (i686) https://godbolt.org/z/9bcoEzY1x
-// - x86 (i686,-sse2) https://godbolt.org/z/Wj8h3Pcdv
-// - x86 (i586) https://godbolt.org/z/8W65E8ohs
-// - x86 (i486) https://godbolt.org/z/63feGWrne
-// - x86 (i386) https://godbolt.org/z/6qnf41j68
+// - x86_64 https://godbolt.org/z/Y3W6sGKso
+// - x86_64 (+cmpxchg16b) https://godbolt.org/z/8YcY3Wf96
+// - x86 (i686) https://godbolt.org/z/q91E8ze7M
+// - x86 (i686,-sse2) https://godbolt.org/z/TYnP7461P
+// - x86 (i586) https://godbolt.org/z/44MqsrEPj
+// - x86 (i486) https://godbolt.org/z/WsbWWobdY
+// - x86 (i386) https://godbolt.org/z/W6z3o19h4
 
 use core::{
     arch::asm,

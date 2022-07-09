@@ -1,8 +1,8 @@
 // Generated asm:
-// - mips https://godbolt.org/z/877bMEs75
-// - mipsel https://godbolt.org/z/P3dqK1Pos
-// - mips64 https://godbolt.org/z/W8EaaaYeo
-// - mips64el https://godbolt.org/z/n35shYWEE
+// - mips https://godbolt.org/z/dYEKfYfz5
+// - mipsel https://godbolt.org/z/GbsoaKz8x
+// - mips64 https://godbolt.org/z/T51cG4Wsq
+// - mips64el https://godbolt.org/z/338d978rn
 
 use core::{
     arch::asm,
@@ -272,7 +272,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_cmpxchg!("", ""),
                         Ordering::Acquire => atomic_cmpxchg!("sync", ""),
                         Ordering::Release => atomic_cmpxchg!("", "sync"),
-                        // AcqRel and SeqCst swaps are equivalent.
+                        // AcqRel and SeqCst compare_exchange are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
                         _ => unreachable_unchecked!("{:?}", success),
                     }
@@ -441,7 +441,7 @@ macro_rules! atomic8 {
                         Ordering::Relaxed => atomic_cmpxchg!("", ""),
                         Ordering::Acquire => atomic_cmpxchg!("sync", ""),
                         Ordering::Release => atomic_cmpxchg!("", "sync"),
-                        // AcqRel and SeqCst swaps are equivalent.
+                        // AcqRel and SeqCst compare_exchange are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
                         _ => unreachable_unchecked!("{:?}", success),
                     }
@@ -610,7 +610,7 @@ macro_rules! atomic16 {
                         Ordering::Relaxed => atomic_cmpxchg!("", ""),
                         Ordering::Acquire => atomic_cmpxchg!("sync", ""),
                         Ordering::Release => atomic_cmpxchg!("", "sync"),
-                        // AcqRel and SeqCst swaps are equivalent.
+                        // AcqRel and SeqCst compare_exchange are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
                         _ => unreachable_unchecked!("{:?}", success),
                     }

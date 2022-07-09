@@ -6,9 +6,9 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/z841Wjz67
-// - aarch64 (+lse) https://godbolt.org/z/fzz4E1K6h
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/6G5x748Yj
+// - aarch64 https://godbolt.org/z/4z1dcf683
+// - aarch64 (+lse) https://godbolt.org/z/PqW4eabc1
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/1WW9xjj9n
 
 use core::{
     arch::asm,
@@ -289,7 +289,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
                 unsafe {
                     let r: i32;
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! atomic_cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from old/new to old_tmp/new_tmp
@@ -320,11 +320,11 @@ macro_rules! atomic {
                         };
                     }
                     match success {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("a", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "l"),
-                        // AcqRel and SeqCst compare_exchange are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
+                        Ordering::Relaxed => atomic_cmpxchg_weak!("", ""),
+                        Ordering::Acquire => atomic_cmpxchg_weak!("a", ""),
+                        Ordering::Release => atomic_cmpxchg_weak!("", "l"),
+                        // AcqRel and SeqCst compare_exchange_weak are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg_weak!("a", "l"),
                         _ => unreachable_unchecked!("{:?}", success),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);

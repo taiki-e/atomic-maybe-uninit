@@ -5,8 +5,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/cfvqr9eTh
-// - riscv32imac https://godbolt.org/z/jKdTPW16v
+// - riscv64gc https://godbolt.org/z/rPzrTvMso
+// - riscv32imac https://godbolt.org/z/Gor953oMM
 
 use core::{
     arch::asm,

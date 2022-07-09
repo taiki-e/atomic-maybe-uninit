@@ -2,7 +2,7 @@
 // - https://www.ibm.com/support/pages/zarchitecture-reference-summary
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/c3s5dT15P
+// - s390x https://godbolt.org/z/rTqaG88Tb
 
 use core::{
     arch::asm,

@@ -1,6 +1,8 @@
+// ARMv8-M
+//
 // Generated asm:
-// - armv8-m baseline https://godbolt.org/z/crb989Te3
-// - armv8-m mainline https://godbolt.org/z/PrezjhsY6
+// - armv8-m baseline https://godbolt.org/z/hrxGad9o1
+// - armv8-m mainline https://godbolt.org/z/Eefse3q4s
 
 use core::{
     arch::asm,
@@ -190,7 +192,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_cmpxchg!("r", "r"),
                         Ordering::Acquire => atomic_cmpxchg!("a", "r"),
                         Ordering::Release => atomic_cmpxchg!("r", "l"),
-                        // AcqRel and SeqCst swaps are equivalent.
+                        // AcqRel and SeqCst compare_exchange are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
                         _ => unreachable_unchecked!("{:?}", success),
                     }
@@ -217,7 +219,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
                 unsafe {
                     let mut r: i32;
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! atomic_cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from old/new to old_tmp/new_tmp
@@ -249,11 +251,11 @@ macro_rules! atomic {
                         };
                     }
                     match success {
-                        Ordering::Relaxed => atomic_cmpxchg!("r", "r"),
-                        Ordering::Acquire => atomic_cmpxchg!("a", "r"),
-                        Ordering::Release => atomic_cmpxchg!("r", "l"),
-                        // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
+                        Ordering::Relaxed => atomic_cmpxchg_weak!("r", "r"),
+                        Ordering::Acquire => atomic_cmpxchg_weak!("a", "r"),
+                        Ordering::Release => atomic_cmpxchg_weak!("r", "l"),
+                        // AcqRel and SeqCst compare_exchange_weak are equivalent.
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg_weak!("a", "l"),
                         _ => unreachable_unchecked!("{:?}", success),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);

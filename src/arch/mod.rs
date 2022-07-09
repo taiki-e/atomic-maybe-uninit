@@ -4,6 +4,7 @@
 // - feature(asm_experimental_arch): https://doc.rust-lang.org/nightly/unstable-book/language-features/asm-experimental-arch.html
 // - asm module in rustc_target: https://github.com/rust-lang/rust/tree/1aabd8a4a6e1871f14e804302bd60dfcbffd5761/compiler/rustc_target/src/asm
 // - asm module in rustc_codegen_llvm: https://github.com/rust-lang/rust/blob/1aabd8a4a6e1871f14e804302bd60dfcbffd5761/compiler/rustc_codegen_llvm/src/asm.rs
+// - inline assembly related issues in rust-lang/rust: https://github.com/rust-lang/rust/labels/A-inline-assembly
 
 #[cfg(not(any(
     target_arch = "x86",

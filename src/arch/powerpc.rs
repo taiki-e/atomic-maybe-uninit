@@ -1,12 +1,13 @@
 // Refs:
 // - https://openpowerfoundation.org/specifications/isa
 // - https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
+// - http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/ja7s8hdTs
-// - powerpc64 https://godbolt.org/z/eqvzzKcTa
-// - powerpc64 (pwr8) https://godbolt.org/z/5ssdef73T
-// - powerpc64le https://godbolt.org/z/o8xxzajqY
+// - powerpc https://godbolt.org/z/GrbWMzdoo
+// - powerpc64 https://godbolt.org/z/9hGeKsnM9
+// - powerpc64 (pwr8) https://godbolt.org/z/75Y6xdPav
+// - powerpc64le https://godbolt.org/z/PWq4EjT16
 
 use core::{
     arch::asm,
