@@ -44,6 +44,16 @@ jobs:
           - rust: nightly
             target: aarch64-unknown-linux-gnu
           - rust: stable
+            target: arm-unknown-linux-gnueabi
+          - rust: nightly
+            target: arm-unknown-linux-gnueabi
+          # TODO: setup-cross-toolchain-action doesn't support them yet.
+          # cross miscompiles them as armv7.
+          # - rust: stable
+          #   target: arm-unknown-linux-gnueabihf
+          # - rust: nightly
+          #   target: arm-unknown-linux-gnueabihf
+          - rust: stable
             target: armv7-unknown-linux-gnueabi
           - rust: nightly
             target: armv7-unknown-linux-gnueabi

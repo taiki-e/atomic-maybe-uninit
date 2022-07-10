@@ -21,6 +21,17 @@ fn main() {
             return;
         }
     };
+    let target_arch = match env::var("CARGO_CFG_TARGET_ARCH") {
+        Ok(target) => target,
+        Err(e) => {
+            println!(
+                "cargo:warning={}: unable to get CARGO_CFG_TARGET_ARCH environment variable: {}",
+                env!("CARGO_PKG_NAME"),
+                e
+            );
+            return;
+        }
+    };
     // HACK: If --target is specified, rustflags is not applied to the build
     // script itself, so the build script will not be rerun when these are changed.
     //
@@ -51,127 +62,141 @@ fn main() {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
     }
 
-    if target.starts_with("x86_64") {
-        // x86_64 macos always support cmpxchg16b: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L7
-        let is_x86_64_macos = target == "x86_64-apple-darwin";
-        if has_target_feature("cmpxchg16b", is_x86_64_macos, &version, None, true) {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"cmpxchg16b\"");
-        }
-    } else if target.starts_with('i')
-        && env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default() == "x86"
-    {
-        // i486 doesn't have cmpxchg8b.
-        // i386 is additionally missing bswap, cmpxchg, and xadd.
-        // See also https://reviews.llvm.org/D18802.
-        let mut no_cmpxchg8b = false;
-        let mut no_cmpxchg = false;
-        if target.starts_with("i486") {
-            no_cmpxchg8b = true;
-        } else if target.starts_with("i386") {
-            no_cmpxchg = true;
-        } else if let Some(cpu) = target_cpu() {
-            if cpu == "i486" {
-                no_cmpxchg8b = true;
-            } else if cpu == "i386" {
-                no_cmpxchg = true;
+    match &*target_arch {
+        "x86_64" => {
+            // x86_64 macos always support cmpxchg16b: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L7
+            let is_x86_64_macos = target == "x86_64-apple-darwin";
+            if has_target_feature("cmpxchg16b", is_x86_64_macos, &version, None, true) {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"cmpxchg16b\"");
             }
         }
-        if no_cmpxchg {
-            no_cmpxchg8b = true;
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg");
+        "x86" => {
+            // i486 doesn't have cmpxchg8b.
+            // i386 is additionally missing bswap, cmpxchg, and xadd.
+            // See also https://reviews.llvm.org/D18802.
+            let mut no_cmpxchg8b = false;
+            let mut no_cmpxchg = false;
+            if target.starts_with("i486") {
+                no_cmpxchg8b = true;
+            } else if target.starts_with("i386") {
+                no_cmpxchg = true;
+            } else if let Some(cpu) = target_cpu() {
+                if cpu == "i486" {
+                    no_cmpxchg8b = true;
+                } else if cpu == "i386" {
+                    no_cmpxchg = true;
+                }
+            }
+            if no_cmpxchg {
+                no_cmpxchg8b = true;
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg");
+            }
+            if no_cmpxchg8b {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg8b");
+            }
         }
-        if no_cmpxchg8b {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg8b");
+        "aarch64" => {
+            // aarch64 macos always support lse and lse2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
+            let is_aarch64_macos = target == "aarch64-apple-darwin";
+            // aarch64_target_feature stabilized in Rust 1.61.
+            if has_target_feature("lse", is_aarch64_macos, &version, Some(61), true) {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"lse\"");
+            }
+            // As of rustc 1.61.0, target_feature "lse2" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
+            if has_target_feature("lse2", is_aarch64_macos, &version, None, false) {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"lse2\"");
+            }
         }
-    } else if target.starts_with("aarch64") {
-        // aarch64 macos always support lse and lse2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
-        let is_aarch64_macos = target == "aarch64-apple-darwin";
-        // aarch64_target_feature stabilized in Rust 1.61.
-        if has_target_feature("lse", is_aarch64_macos, &version, Some(61), true) {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"lse\"");
-        }
-        // As of rustc 1.61.0, target_feature "lse2" is not available on rustc side:
-        // https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
-        if has_target_feature("lse2", is_aarch64_macos, &version, None, false) {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"lse2\"");
-        }
-    } else if let Some(mut arch) =
-        target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb"))
-    {
-        // #[cfg(target_feature = "v7")] and others don't work on stable.
-        // armv7-unknown-linux-gnueabihf
-        //    ^^
-        arch = arch.split_once('-').unwrap().0;
-        arch = arch.split_once('.').unwrap_or((arch, "")).0; // ignore .base/.main suffix
-        arch = arch.strip_prefix("eb").unwrap_or(arch); // ignore endianness
-        let mut known = true;
-        // As of rustc 1.63.0-nightly (2022-05-27), there are the following "vN*" patterns:
-        // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort | uniq | sed -E 's/^/"/g' | sed -E 's/$/"/g'
-        // ""
-        // "v4t"
-        // "v5te"
-        // "v6"
-        // "v6k"
-        // "v6m"
-        // "v7"
-        // "v7a"
-        // "v7em"
-        // "v7m"
-        // "v7neon"
-        // "v7r"
-        // "v7s"
-        // "v8m"
-        //
-        // - v7, v7a, v7neon, and v7s are "aclass"
-        // - v6m, v7em, v7m, and v8m are "mclass"
-        // - v7r is "rclass"
-        //
-        // Other targets (we don't currently support them) don't have *class target feature.
-        // For example:
-        // $ rustc +nightly --print cfg --target arm-unknown-linux-gnueabi | grep target_feature
-        // target_feature="llvm14-builtins-abi"
-        // target_feature="v5te"
-        // target_feature="v6"
-        if matches!(arch, "v7" | "v7a" | "v7neon" | "v7s") {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"aclass\"");
-        } else if matches!(arch, "v6m" | "v7em" | "v7m" | "v8m") {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"mclass\"");
-        } else if matches!(arch, "v7r") {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"rclass\"");
-        } else {
-            known = false;
-            println!(
-                "cargo:warning={}: unrecognized arm target: {}",
-                env!("CARGO_PKG_NAME"),
-                target
-            );
-        }
-        if known {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v6\"");
-            if arch.starts_with("v7") || arch.starts_with("v8") {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v7\"");
-                if arch.starts_with("v8") {
-                    println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v8\"");
+        "arm" => {
+            // #[cfg(target_feature = "v7")] and others don't work on stable.
+            // armv7-unknown-linux-gnueabihf
+            //    ^^
+            let mut arch =
+                target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")).unwrap();
+            arch = arch.split_once('-').unwrap().0;
+            arch = arch.split_once('.').unwrap_or((arch, "")).0; // ignore .base/.main suffix
+            arch = arch.strip_prefix("eb").unwrap_or(arch); // ignore endianness
+            let mut known = true;
+            // As of rustc nightly-2022-07-09, there are the following "vN*" patterns:
+            // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort | uniq | sed -E 's/^/"/g' | sed -E 's/$/"/g'
+            // ""
+            // "64_32"
+            // "v4t"
+            // "v5te"
+            // "v6"
+            // "v6k"
+            // "v6m"
+            // "v7"
+            // "v7a"
+            // "v7em"
+            // "v7k"
+            // "v7m"
+            // "v7neon"
+            // "v7r"
+            // "v7s"
+            // "v8m"
+            //
+            // - v7, v7a, v7neon, v7s, and v7k are "aclass"
+            // - v6m, v7em, v7m, and v8m are "mclass"
+            // - v7r is "rclass"
+            // - 64_32 is aarch64 https://github.com/rust-lang/rust/blob/1aabd8a4a6e1871f14e804302bd60dfcbffd5761/compiler/rustc_target/src/spec/arm64_32_apple_watchos.rs#L10
+            //
+            // Other targets don't have *class target feature.
+            // For example:
+            // $ rustc +nightly --print cfg --target arm-unknown-linux-gnueabi | grep target_feature
+            // target_feature="llvm14-builtins-abi"
+            // target_feature="v5te"
+            // target_feature="v6"
+            if matches!(arch, "v7" | "v7a" | "v7neon" | "v7s" | "v7k") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"aclass\"");
+            } else if matches!(arch, "v6m" | "v7em" | "v7m" | "v8m") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"mclass\"");
+            } else if matches!(arch, "v7r") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"rclass\"");
+            } else if matches!(arch, "" | "v6" | "v6k") {
+                // v6 targets other than v6m don't have *class target feature.
+            } else {
+                known = false;
+                println!(
+                    "cargo:warning={}: unrecognized arm target: {}",
+                    env!("CARGO_PKG_NAME"),
+                    target
+                );
+            }
+            if known {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v6\"");
+                if arch.starts_with("v7") || arch.starts_with("v8") {
+                    println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v7\"");
+                    if arch.starts_with("v8") {
+                        println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v8\"");
+                    }
                 }
             }
         }
-    } else if let Some(target) = target.strip_prefix("riscv") {
-        // #[cfg(target_feature = "a")] doesn't work on stable.
-        // riscv64gc-unknown-linux-gnu
-        //      ^^^^
-        let arch = target.split_once('-').unwrap().0;
-        // G = IMAFD
-        if arch.contains('a') || arch.contains('g') {
-            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"a\"");
-        }
-    } else if target.starts_with("powerpc64-") {
-        // Only check powerpc64 (be) -- powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/lib/Target/PowerPC/PPC.td#L652
-        if let Some(cpu) = target_cpu().as_deref() {
-            // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
-            if matches!(cpu, "pwr8" | "pwr9" | "pwr10") {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_pwr8");
+        "riscv32" | "riscv64" => {
+            let arch = target.strip_prefix("riscv").unwrap();
+            // #[cfg(target_feature = "a")] doesn't work on stable.
+            // riscv64gc-unknown-linux-gnu
+            //      ^^^^
+            let arch = arch.split_once('-').unwrap().0;
+            // G = IMAFD
+            if arch.contains('a') || arch.contains('g') {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"a\"");
             }
         }
+        "powerpc64" => {
+            if target.starts_with("powerpc64-") {
+                // Only check powerpc64 (be) -- powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/lib/Target/PowerPC/PPC.td#L652
+                if let Some(cpu) = target_cpu().as_deref() {
+                    // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
+                    if matches!(cpu, "pwr8" | "pwr9" | "pwr10") {
+                        println!("cargo:rustc-cfg=atomic_maybe_uninit_pwr8");
+                    }
+                }
+            }
+        }
+        _ => {}
     }
 }
 

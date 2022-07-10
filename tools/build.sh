@@ -35,6 +35,9 @@ default_targets=(
 
     # arm
     # rustc --print target-list | grep -E '^(arm(eb)?|thumb)(v6m|v7|v8|v9)' | grep -E '(-unknown-linux|-none)'
+    # armv6
+    arm-unknown-linux-gnueabi
+    arm-unknown-linux-gnueabihf
     # armv7-a
     armv7-unknown-linux-gnueabi
     armv7-unknown-linux-gnueabihf

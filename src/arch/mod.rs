@@ -11,13 +11,7 @@
     target_arch = "x86_64",
     all(
         target_arch = "arm",
-        any(
-            any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-            all(
-                any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"),
-            )
-        )
+        any(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
     ),
     target_arch = "aarch64",
     target_arch = "riscv32",
@@ -44,6 +38,17 @@ mod aarch64;
     not(any(target_feature = "v8", atomic_maybe_uninit_target_feature = "v8"))
 ))]
 mod arm;
+#[cfg(all(
+    target_arch = "arm",
+    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+    not(any(
+        target_feature = "v7",
+        atomic_maybe_uninit_target_feature = "v7",
+        target_feature = "mclass",
+        atomic_maybe_uninit_target_feature = "mclass"
+    )),
+))]
+mod armv6;
 #[cfg(all(
     target_arch = "arm",
     any(target_feature = "v8", atomic_maybe_uninit_target_feature = "v8"),

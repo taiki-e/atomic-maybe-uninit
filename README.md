@@ -17,15 +17,15 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, ARM (v6-m, v7+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC, and s390x are supported.
+Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC, and s390x are supported.
 
 | target_arch                       | primitives                                          | load/store | swap  | CAS   |
 | --------------------------------- | --------------------------------------------------- |:----------:|:-----:|:-----:|
 | x86                               | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓\[1] |
 | x86_64                            | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
 | x86_64 (+cmpxchg16b)              | i128,u128                                           | ✓          | ✓     | ✓     |
-| arm (v6-m, v7+)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1] | ✓\[1] |
-| arm (v7-a)                        | i64,u64                                             | ✓          | ✓     | ✓     |
+| arm (v6+)                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1] | ✓\[1] |
+| arm (v6 except v6-m, v7-a)        | i64,u64                                             | ✓          | ✓     | ✓     |
 | aarch64 \[2]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓     | ✓     |
 | riscv32                           | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1] | ✓\[1] |
 | riscv64                           | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1] | ✓\[1] |

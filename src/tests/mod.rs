@@ -34,7 +34,10 @@ macro_rules! test_common {
                     unsafe {
                         let a = AtomicMaybeUninit::<$int_type>::from(MaybeUninit::new(0));
                         let b = AtomicMaybeUninit::<$int_type>::from(0);
-                        let _f = std::format!("{:?}", a);
+                        assert_eq!(
+                            std::format!("{:?}", a),
+                            concat!("atomic_maybe_uninit::AtomicMaybeUninit<", stringify!($int_type), ">"),
+                        );
                         assert_eq!(a.into_inner().assume_init(), b.into_inner().assume_init());
                     }
                 }
