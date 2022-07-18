@@ -362,9 +362,9 @@ atomic!(usize, "", "");
 // If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.
 // Otherwise, use LDXP/STXP loop.
 //
-// Note: As of rustc 1.61.0, -C target-feature=+lse2 does not implicitly enable lse.
+// Note: As of rustc 1.62.0, -C target-feature=+lse2 does not implicitly enable lse.
 // Also, target_feature "lse2" is not available on rustc side:
-// https://github.com/rust-lang/rust/blob/1.61.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
+// https://github.com/rust-lang/rust/blob/1.62.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
 //
 // Refs:
 // - LDP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/LDP
