@@ -5,7 +5,7 @@
 use std::{env, process::Command, str};
 
 // rustc +stable -Vv | grep -E '^(commit-date|release)'
-const LATEST_STABLE: Version = Version { minor: 61, nightly: false };
+const LATEST_STABLE: Version = Version { minor: 62, nightly: false };
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
@@ -22,7 +22,7 @@ fn main() {
         }
     };
     let target_arch = match env::var("CARGO_CFG_TARGET_ARCH") {
-        Ok(target) => target,
+        Ok(target_arch) => target_arch,
         Err(e) => {
             println!(
                 "cargo:warning={}: unable to get CARGO_CFG_TARGET_ARCH environment variable: {}",
