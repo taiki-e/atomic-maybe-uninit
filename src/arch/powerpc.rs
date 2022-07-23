@@ -26,7 +26,11 @@ macro_rules! if_d {
     };
 }
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
 #[cfg(target_endian = "big")]
 macro_rules! p128h {
     () => {
@@ -34,7 +38,11 @@ macro_rules! p128h {
     };
 }
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
 #[cfg(target_endian = "big")]
 macro_rules! p128l {
     () => {
@@ -42,7 +50,11 @@ macro_rules! p128l {
     };
 }
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
 #[cfg(target_endian = "little")]
 macro_rules! p128h {
     () => {
@@ -50,7 +62,11 @@ macro_rules! p128h {
     };
 }
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
 #[cfg(target_endian = "little")]
 macro_rules! p128l {
     () => {
@@ -328,7 +344,10 @@ macro_rules! atomic {
 }
 
 #[cfg(target_endian = "big")]
-#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
+#[cfg(not(all(
+    target_arch = "powerpc64",
+    any(target_feature = "partword-atomics", atomic_maybe_uninit_target_feature = "partword-atomics")
+)))]
 #[rustfmt::skip]
 macro_rules! atomic8 {
     ($int_type:ident, $ld_suffix:tt, $asm_suffix:tt) => {
@@ -583,7 +602,10 @@ macro_rules! atomic8 {
 }
 
 #[cfg(target_endian = "big")]
-#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
+#[cfg(not(all(
+    target_arch = "powerpc64",
+    any(target_feature = "partword-atomics", atomic_maybe_uninit_target_feature = "partword-atomics")
+)))]
 #[rustfmt::skip]
 macro_rules! atomic16 {
     ($int_type:ident, $ld_suffix:tt, $asm_suffix:tt) => {
@@ -842,28 +864,68 @@ macro_rules! atomic16 {
 }
 
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "partword-atomics",
+    atomic_maybe_uninit_target_feature = "partword-atomics"
+))]
 atomic!(i8, "bz", "b", "w");
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "partword-atomics",
+    atomic_maybe_uninit_target_feature = "partword-atomics"
+))]
 atomic!(u8, "bz", "b", "w");
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "partword-atomics",
+    atomic_maybe_uninit_target_feature = "partword-atomics"
+))]
 atomic!(i16, "hz", "h", "w");
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "partword-atomics",
+    atomic_maybe_uninit_target_feature = "partword-atomics"
+))]
 atomic!(u16, "hz", "h", "w");
 #[cfg(target_endian = "big")]
-#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
+#[cfg(not(all(
+    target_arch = "powerpc64",
+    any(
+        target_feature = "partword-atomics",
+        atomic_maybe_uninit_target_feature = "partword-atomics"
+    )
+)))]
 atomic8!(i8, "bz", "b");
 #[cfg(target_endian = "big")]
-#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
+#[cfg(not(all(
+    target_arch = "powerpc64",
+    any(
+        target_feature = "partword-atomics",
+        atomic_maybe_uninit_target_feature = "partword-atomics"
+    )
+)))]
 atomic8!(u8, "bz", "b");
 #[cfg(target_endian = "big")]
-#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
+#[cfg(not(all(
+    target_arch = "powerpc64",
+    any(
+        target_feature = "partword-atomics",
+        atomic_maybe_uninit_target_feature = "partword-atomics"
+    )
+)))]
 atomic16!(i16, "hz", "h");
 #[cfg(target_endian = "big")]
-#[cfg(not(all(target_arch = "powerpc64", atomic_maybe_uninit_pwr8)))]
+#[cfg(not(all(
+    target_arch = "powerpc64",
+    any(
+        target_feature = "partword-atomics",
+        atomic_maybe_uninit_target_feature = "partword-atomics"
+    )
+)))]
 atomic16!(u16, "hz", "h");
 atomic!(i32, "wz", "w", "w");
 atomic!(u32, "wz", "w", "w");
@@ -886,7 +948,11 @@ atomic!(usize, "d", "d", "d");
 #[cfg(target_arch = "powerpc64")]
 // powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/2ba5d820e2b0e5016ec706e324060a329f9a83a3/llvm/lib/Target/PowerPC/PPC.td#L652
 // See also https://github.com/rust-lang/rust/issues/59932
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
 macro_rules! atomic128 {
     ($int_type:ident) => {
         impl AtomicLoad for $int_type {
@@ -1163,10 +1229,18 @@ macro_rules! atomic128 {
 }
 
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
 atomic128!(i128);
 #[cfg(target_arch = "powerpc64")]
-#[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+#[cfg(any(
+    target_endian = "little",
+    target_feature = "quadword-atomics",
+    atomic_maybe_uninit_target_feature = "quadword-atomics"
+))]
 atomic128!(u128);
 
 #[cfg(test)]
@@ -1186,22 +1260,38 @@ mod tests {
 
     #[cfg(not(qemu))]
     #[cfg(target_arch = "powerpc64")]
-    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+    #[cfg(any(
+        target_endian = "little",
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics"
+    ))]
     test_atomic!(i128);
     #[cfg(not(qemu))]
     #[cfg(target_arch = "powerpc64")]
-    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+    #[cfg(any(
+        target_endian = "little",
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics"
+    ))]
     test_atomic!(u128);
     // As of qemu 7.0.0 , using lqarx/stqcx. with qemu-user hangs.
     // To test this, use real powerpc64le hardware or use POWER Functional
     // Simulator. See DEVELOPMENT.md for more.
     #[cfg(qemu)]
     #[cfg(target_arch = "powerpc64")]
-    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+    #[cfg(any(
+        target_endian = "little",
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics"
+    ))]
     test_atomic_load_store!(i128);
     #[cfg(qemu)]
     #[cfg(target_arch = "powerpc64")]
-    #[cfg(any(target_endian = "little", atomic_maybe_uninit_pwr8))]
+    #[cfg(any(
+        target_endian = "little",
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics"
+    ))]
     test_atomic_load_store!(u128);
 
     stress_test_load_store!();
