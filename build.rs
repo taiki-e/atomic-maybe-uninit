@@ -2,10 +2,7 @@
 
 #![warn(rust_2018_idioms, single_use_lifetimes)]
 
-use std::{env, process::Command, str};
-
-// rustc +stable -Vv | grep -E '^(commit-date|release)'
-const LATEST_STABLE: Version = Version { minor: 62, nightly: false };
+use std::{env, str};
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
@@ -37,13 +34,13 @@ fn main() {
     //
     // Ideally, the build script should be rebuilt when CARGO_ENCODED_RUSTFLAGS
     // is changed, but since it is an environment variable set by cargo,
-    // as of 1.62.0-nightly, it is not useful to specify it as rerun-if-env-changed.
+    // as of 1.62.0-nightly, specifying it as rerun-if-env-changed does not work.
+    println!("cargo:rerun-if-env-changed=CARGO_ENCODED_RUSTFLAGS");
     println!("cargo:rerun-if-env-changed=RUSTFLAGS");
     println!("cargo:rerun-if-env-changed=CARGO_BUILD_RUSTFLAGS");
-    println!(
-        "cargo:rerun-if-env-changed=CARGO_TARGET_{}_RUSTFLAGS",
-        target.to_uppercase().replace('-', "_").replace('.', "_")
-    );
+    let mut target_upper = target.replace(|c: char| c == '-' || c == '.', "_");
+    target_upper.make_ascii_uppercase();
+    println!("cargo:rerun-if-env-changed=CARGO_TARGET_{}_RUSTFLAGS", target_upper);
 
     let version = match rustc_version() {
         Some(version) => version,
@@ -51,14 +48,17 @@ fn main() {
             println!(
                 "cargo:warning={}: unable to determine rustc version; assuming rustc 1.{}",
                 env!("CARGO_PKG_NAME"),
-                LATEST_STABLE.minor
+                Version::LATEST.minor
             );
-            LATEST_STABLE
+            Version::LATEST
         }
     };
 
-    // const_fn_trait_bound stabilized in Rust 1.61.
-    if version.minor < 61 {
+    // Note that this is `no_`*, not `has_*`. This allows treating as the latest
+    // stable rustc is used when the build script doesn't run. This is useful
+    // for non-cargo build systems that don't run the build script.
+    // aarch64_target_feature stabilized in Rust 1.61 (nightly-2022-03-16): https://github.com/rust-lang/rust/pull/90621
+    if !version.probe(61, 2022, 3, 15) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
     }
 
@@ -80,7 +80,10 @@ fn main() {
                 no_cmpxchg8b = true;
             } else if target.starts_with("i386") {
                 no_cmpxchg = true;
-            } else if let Some(cpu) = target_cpu() {
+            }
+            // target-cpu is preferred over arch in target triple.
+            // e.g., --target=i486 --target-cpu=i386
+            if let Some(cpu) = target_cpu() {
                 if cpu == "i486" {
                     no_cmpxchg8b = true;
                 } else if cpu == "i386" {
@@ -154,8 +157,15 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"mclass\"");
             } else if matches!(arch, "v7r") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"rclass\"");
+            } else if target == "arm-linux-androideabi" {
+                // arm-linux-androideabi is v5te
+                // https://github.com/rust-lang/rust/blob/1.62.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
+                arch = "v5te";
             } else if matches!(arch, "" | "v6" | "v6k") {
                 // v6 targets other than v6m don't have *class target feature.
+                arch = "v6";
+            } else if matches!(arch, "v4t" | "v5te") {
+                // Other targets don't have *class target feature.
             } else {
                 known = false;
                 println!(
@@ -165,11 +175,16 @@ fn main() {
                 );
             }
             if known {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v6\"");
-                if arch.starts_with("v7") || arch.starts_with("v8") {
-                    println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v7\"");
-                    if arch.starts_with("v8") {
-                        println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v8\"");
+                let v6 = arch.starts_with("v6");
+                let v7 = arch.starts_with("v7");
+                let v8 = arch.starts_with("v8");
+                if v6 || v7 || v8 {
+                    println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v6\"");
+                    if v7 || v8 {
+                        println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v7\"");
+                        if v8 {
+                            println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"v8\"");
+                        }
                     }
                 }
             }
@@ -198,36 +213,6 @@ fn main() {
         }
         _ => {}
     }
-}
-
-struct Version {
-    minor: u32,
-    nightly: bool,
-}
-
-fn rustc_version() -> Option<Version> {
-    let rustc = env::var_os("RUSTC")?;
-    // Use verbose version output because the packagers add extra strings to the normal version output.
-    let output = Command::new(rustc).args(&["--version", "--verbose"]).output().ok()?;
-    let output = str::from_utf8(&output.stdout).ok()?;
-
-    let mut release = output
-        .lines()
-        .find(|line| line.starts_with("release: "))
-        .map(|line| &line["release: ".len()..])?
-        .splitn(2, '-');
-    let version = release.next().unwrap();
-    let channel = release.next().unwrap_or_default();
-    let mut digits = version.splitn(3, '.');
-    let major = digits.next()?.parse::<u32>().ok()?;
-    if major != 1 {
-        return None;
-    }
-    let minor = digits.next()?.parse::<u32>().ok()?;
-    let _patch = digits.next().unwrap_or("0").parse::<u32>().ok()?;
-    let nightly = channel == "nightly" || channel == "dev";
-
-    Some(Version { minor, nightly })
 }
 
 fn has_target_feature(
@@ -260,12 +245,12 @@ fn has_target_feature(
             }
             if flag.starts_with("target-feature=") {
                 flag = &flag["target-feature=".len()..];
-                for s in flag.split(',').filter(|s| !s.is_empty()) {
+                for s in flag.split(',') {
                     // TODO: Handles cases where a specific target feature
                     // implicitly enables another target feature.
-                    match (s.as_bytes()[0] as char, &s.as_bytes()[1..]) {
-                        ('+', f) if f == name.as_bytes() => has_target_feature = true,
-                        ('-', f) if f == name.as_bytes() => has_target_feature = false,
+                    match (s.as_bytes().first(), s.as_bytes().get(1..)) {
+                        (Some(b'+'), Some(f)) if f == name.as_bytes() => has_target_feature = true,
+                        (Some(b'-'), Some(f)) if f == name.as_bytes() => has_target_feature = false,
                         _ => {}
                     }
                 }
@@ -290,3 +275,80 @@ fn target_cpu() -> Option<String> {
     }
     cpu.map(str::to_owned)
 }
+
+mod version {
+    use std::{env, process::Command, str};
+
+    pub(crate) struct Version {
+        pub(crate) minor: u32,
+        pub(crate) nightly: bool,
+        commit_date: Date,
+    }
+
+    impl Version {
+        pub(crate) const LATEST: Self = Self::stable(62);
+
+        const fn stable(minor: u32) -> Self {
+            Self { minor, nightly: false, commit_date: Date::new(0, 0, 0) }
+        }
+
+        pub(crate) fn probe(&self, minor: u32, year: u16, month: u8, day: u8) -> bool {
+            self.minor >= minor
+                && (!self.nightly || self.commit_date >= Date::new(year, month, day))
+        }
+    }
+
+    #[derive(PartialEq, Eq, PartialOrd, Ord)]
+    struct Date {
+        year: u16,
+        month: u8,
+        day: u8,
+    }
+
+    impl Date {
+        const fn new(year: u16, month: u8, day: u8) -> Self {
+            Self { year, month, day }
+        }
+    }
+
+    pub(crate) fn rustc_version() -> Option<Version> {
+        let rustc = env::var_os("RUSTC")?;
+        // Use verbose version output because the packagers add extra strings to the normal version output.
+        let output = Command::new(rustc).args(&["--version", "--verbose"]).output().ok()?;
+        let output = str::from_utf8(&output.stdout).ok()?;
+
+        let mut release = output
+            .lines()
+            .find(|line| line.starts_with("release: "))
+            .map(|line| &line["release: ".len()..])?
+            .splitn(2, '-');
+        let version = release.next().unwrap();
+        let channel = release.next().unwrap_or_default();
+        let mut digits = version.splitn(3, '.');
+        let major = digits.next()?.parse::<u32>().ok()?;
+        if major != 1 {
+            return None;
+        }
+        let minor = digits.next()?.parse::<u32>().ok()?;
+        let _patch = digits.next().unwrap_or("0").parse::<u32>().ok()?;
+        let nightly = channel == "nightly" || channel == "dev";
+
+        if nightly {
+            let mut commit_date = output
+                .lines()
+                .find(|line| line.starts_with("commit-date: "))
+                .map(|line| &line["commit-date: ".len()..])?
+                .splitn(3, '-');
+            let year = commit_date.next()?.parse::<u16>().ok()?;
+            let month = commit_date.next()?.parse::<u8>().ok()?;
+            let day = commit_date.next()?.parse::<u8>().ok()?;
+            if month > 12 || day > 31 {
+                return None;
+            }
+            Some(Version { minor, nightly, commit_date: Date::new(year, month, day) })
+        } else {
+            Some(Version::stable(minor))
+        }
+    }
+}
+use version::{rustc_version, Version};
