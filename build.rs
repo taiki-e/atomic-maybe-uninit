@@ -57,8 +57,8 @@ fn main() {
     // Note that this is `no_`*, not `has_*`. This allows treating as the latest
     // stable rustc is used when the build script doesn't run. This is useful
     // for non-cargo build systems that don't run the build script.
-    // aarch64_target_feature stabilized in Rust 1.61 (nightly-2022-03-16): https://github.com/rust-lang/rust/pull/90621
-    if !version.probe(61, 2022, 3, 15) {
+    // const_fn_trait_bound stabilized in Rust 1.61 (nightly-2022-03-08): https://github.com/rust-lang/rust/pull/93827
+    if !version.probe(61, 2022, 3, 7) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
     }
 
