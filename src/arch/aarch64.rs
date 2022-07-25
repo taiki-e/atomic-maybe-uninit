@@ -607,6 +607,7 @@ macro_rules! atomic128 {
                                 // (atomic) compare and exchange
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
                                 concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst", ptr_modifier!(), "}]"),
+                                // compare x6-x7 pair and x8-x9 pair
                                 "eor {tmp_hi}, x9, x7",
                                 "eor {tmp_lo}, x8, x6",
                                 "orr {tmp_hi}, {tmp_lo}, {tmp_hi}",
@@ -622,14 +623,14 @@ macro_rules! atomic128 {
                                 tmp_hi = lateout(reg) _,
                                 tmp_lo = lateout(reg) _,
                                 // must be allocated to even/odd register pair
-                                lateout("x6") _,
-                                lateout("x7") _,
+                                lateout("x6") _, // old_lo
+                                lateout("x7") _, // old_hi
                                 // must be allocated to even/odd register pair
-                                lateout("x4") _,
-                                lateout("x5") _,
+                                lateout("x4") _, // new_lo
+                                lateout("x5") _, // new_hi
                                 // must be allocated to even/odd register pair
-                                lateout("x8") _,
-                                lateout("x9") _,
+                                lateout("x8") _, // out_lo
+                                lateout("x9") _, // out_hi
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
