@@ -70,7 +70,7 @@ macro_rules! atomic {
                         src = in(reg) src,
                         out = inout(reg) out => _,
                         tmp = lateout($val_reg) _,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }
@@ -98,7 +98,7 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout($val_reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         Ordering::SeqCst => {
@@ -110,7 +110,7 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout($val_reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         _ => unreachable_unchecked!("{:?}", order),
@@ -144,7 +144,7 @@ macro_rules! atomic {
                         val = in(reg) val,
                         out = inout(reg) out => _,
                         tmp = lateout($val_reg) _,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }
@@ -180,7 +180,7 @@ macro_rules! atomic {
                         // - If equal, ZF is set and tmp_new is loaded into dst.
                         // - Else, clear ZF and load dst into $cmpxchg_cmp_reg.
                         concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp_new", $val_modifier, "}"),
-                        // load ZF to dl
+                        // load ZF to r
                         "sete {r}",
                         // store $cmpxchg_cmp_reg to out
                         concat!("mov ", $ptr_size, " ptr [{out", ptr_modifier!(), "}], ", $cmpxchg_cmp_reg, ""),
@@ -191,6 +191,7 @@ macro_rules! atomic {
                         tmp_new = out($val_reg) _,
                         r = out(reg_byte) r,
                         out($cmpxchg_cmp_reg) _,
+                        // Do not use `preserves_flags` because cmpxchg modifies the ZF flag.
                         options(nostack),
                     );
                     debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -239,15 +240,16 @@ macro_rules! atomic64 {
                 // cfg guarantees that the CPU supports SSE.
                 //
                 // Refs:
-                // - https://www.felixcloutier.com/x86/movlps (SSE)
-                // - https://www.felixcloutier.com/x86/shufps (SSE)
-                // - https://www.felixcloutier.com/x86/movq (SSE2)
-                // - https://www.felixcloutier.com/x86/pshufd (SSE2)
                 // - https://github.com/llvm/llvm-project/blob/016342e319fd31e41cf5ed16a6140a8ea2de74dd/llvm/lib/Target/X86/X86ISelLowering.cpp
                 unsafe {
                     if cfg!(target_feature = "sse2") {
                         // atomic load is always SeqCst.
                         asm!(
+                            // Refs:
+                            // - https://www.felixcloutier.com/x86/movq (SSE2)
+                            // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
+                            // - https://www.felixcloutier.com/x86/pshufd (SSE2)
+                            // - https://github.com/llvm/llvm-project/blob/016342e319fd31e41cf5ed16a6140a8ea2de74dd/llvm/lib/Target/X86/X86ISelLowering.cpp
                             // (atomic) load from src to tmp0
                             "movq {tmp0}, qword ptr [{src}]",
                             // extract lower 64-bits
@@ -259,11 +261,16 @@ macro_rules! atomic64 {
                             out = in(reg) out,
                             tmp0 = out(xmm_reg) _,
                             tmp1 = out(xmm_reg) _,
-                            options(nostack),
+                            options(nostack, preserves_flags),
                         );
                     } else {
                         // atomic load is always SeqCst.
                         asm!(
+                            // Refs:
+                            // - https://www.felixcloutier.com/x86/xorps (SSE)
+                            // - https://www.felixcloutier.com/x86/movlps (SSE)
+                            // - https://www.felixcloutier.com/x86/movss (SSE)
+                            // - https://www.felixcloutier.com/x86/shufps (SSE)
                             "xorps {tmp}, {tmp}",
                             // (atomic) load from src to tmp
                             "movlps {tmp}, qword ptr [{src}]",
@@ -274,7 +281,7 @@ macro_rules! atomic64 {
                             src = in(reg) src,
                             out = in(reg) out,
                             tmp = out(xmm_reg) _,
-                            options(nostack),
+                            options(nostack, preserves_flags),
                         );
                     }
                 }
@@ -301,6 +308,7 @@ macro_rules! atomic64 {
                         inout("ecx") 0_u32 => _,
                         inout("edx") 0_u32 => _,
                         in("edi") src,
+                        // Do not use `preserves_flags` because cmpxchg8b modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -322,7 +330,10 @@ macro_rules! atomic64 {
                 //
                 // Refs:
                 // - https://www.felixcloutier.com/x86/movlps (SSE)
+                // - https://www.felixcloutier.com/x86/xorps (SSE)
                 // - https://www.felixcloutier.com/x86/movsd (SSE2)
+                // - https://www.felixcloutier.com/x86/lock
+                // - https://www.felixcloutier.com/x86/or
                 // - https://github.com/llvm/llvm-project/blob/016342e319fd31e41cf5ed16a6140a8ea2de74dd/llvm/lib/Target/X86/X86ISelLowering.cpp
                 unsafe {
                     match order {
@@ -337,7 +348,7 @@ macro_rules! atomic64 {
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 tmp = out(xmm_reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         Ordering::SeqCst => {
@@ -353,6 +364,7 @@ macro_rules! atomic64 {
                                 val = in(reg) val,
                                 tmp = out(xmm_reg) _,
                                 p = in(reg) p.get(),
+                                // Do not use `preserves_flags` because OR modifies the OF, CF, SF, ZF, and PF flags.
                                 options(nostack),
                             );
                         }
@@ -383,6 +395,7 @@ macro_rules! atomic64 {
                         out("ecx") _,
                         out("edx") _,
                         in("edi") dst,
+                        // Do not use `preserves_flags` because cmpxchg8b modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -430,6 +443,7 @@ macro_rules! atomic64 {
                         out("ecx") _,
                         out("edx") _,
                         in("edi") dst,
+                        // Do not use `preserves_flags` because cmpxchg8b modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -477,6 +491,7 @@ macro_rules! atomic64 {
                         inout("ecx") new => r,
                         inout("edx") old => _,
                         in("edi") dst,
+                        // Do not use `preserves_flags` because cmpxchg8b modifies the ZF flag.
                         options(nostack),
                     );
                     debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);
@@ -545,6 +560,7 @@ macro_rules! atomic128 {
                         inout("rdx") 0_u64 => _,
                         in($rdi) src,
                         in($rsi) out,
+                        // Do not use `preserves_flags` because cmpxchg16b modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -596,6 +612,7 @@ macro_rules! atomic128 {
                         out("rdx") _,
                         in($rdi) dst,
                         in($rsi) val,
+                        // Do not use `preserves_flags` because cmpxchg16b modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -653,6 +670,7 @@ macro_rules! atomic128 {
                         in($rdi) dst,
                         in($rsi) val,
                         in($r8) out,
+                        // Do not use `preserves_flags` because cmpxchg16b modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -713,6 +731,7 @@ macro_rules! atomic128 {
                         in($rsi) old,
                         in($rdx) new,
                         in($r8) out,
+                        // Do not use `preserves_flags` because cmpxchg16b modifies the ZF flag.
                         options(nostack),
                     );
                     debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);
