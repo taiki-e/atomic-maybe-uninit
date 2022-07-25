@@ -117,7 +117,7 @@ macro_rules! atomic_load_store {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         Ordering::Acquire => {
@@ -130,7 +130,7 @@ macro_rules! atomic_load_store {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         Ordering::SeqCst => {
@@ -144,7 +144,7 @@ macro_rules! atomic_load_store {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         _ => unreachable_unchecked!("{:?}", order),
@@ -174,7 +174,7 @@ macro_rules! atomic_load_store {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         // Release and SeqCst stores are equivalent.
@@ -188,7 +188,7 @@ macro_rules! atomic_load_store {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         _ => unreachable_unchecked!("{:?}", order),
@@ -233,7 +233,7 @@ macro_rules! atomic {
                                 val_tmp = lateout(reg) _,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -293,7 +293,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = out(reg) r,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -367,7 +367,7 @@ macro_rules! atomic8 {
                                 out("a4") _,
                                 out("a5") _,
                                 out("a6") _, // dst ptr (aligned)
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -445,7 +445,7 @@ macro_rules! atomic8 {
                                 out("a5") _,
                                 out("a6") _,
                                 out("a7") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -520,7 +520,7 @@ macro_rules! atomic16 {
                                 out("a4") _,
                                 out("a5") _,
                                 out("a6") _, // dst ptr (aligned)
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -599,7 +599,7 @@ macro_rules! atomic16 {
                                 out("a5") _,
                                 out("a6") _,
                                 out("a7") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
