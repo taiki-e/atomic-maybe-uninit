@@ -567,6 +567,7 @@ macro_rules! stress_test_load_store {
         // not seem to support weak memory emulation.
         // Therefore, explicitly enable should_panic only on actual aarch64 hardware.
         #[cfg_attr(weak_memory, should_panic)]
+        #[cfg(target_os = "linux")] // flaky on aarch64 macOS
         fn stress_coherence_load_relaxed_store_relaxed() {
             __stress_test_coherence!(store, Relaxed, Relaxed);
         }
@@ -580,6 +581,7 @@ macro_rules! stress_test_load_store {
         // This test should panic on architectures with weak memory models.
         #[test]
         #[cfg_attr(weak_memory, should_panic)]
+        #[cfg(target_os = "linux")] // flaky on aarch64 macOS
         fn stress_coherence_load_acquire_store_relaxed() {
             __stress_test_coherence!(store, Acquire, Relaxed);
         }
@@ -599,6 +601,7 @@ macro_rules! stress_test_load_swap {
         // This test should panic on architectures with weak memory models.
         #[test]
         #[cfg_attr(weak_memory, should_panic)]
+        #[cfg(target_os = "linux")] // flaky on aarch64 macOS
         fn stress_coherence_load_relaxed_swap_relaxed() {
             __stress_test_coherence!(swap, Relaxed, Relaxed);
         }
@@ -612,6 +615,7 @@ macro_rules! stress_test_load_swap {
         // This test should panic on architectures with weak memory models.
         #[test]
         #[cfg_attr(weak_memory, should_panic)]
+        #[cfg(target_os = "linux")] // flaky on aarch64 macOS
         fn stress_coherence_load_acquire_swap_relaxed() {
             __stress_test_coherence!(swap, Acquire, Relaxed);
         }
