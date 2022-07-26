@@ -359,7 +359,7 @@ macro_rules! atomic64 {
                                 if_sse2!("movsd {tmp}, qword ptr [{val}]", "movlps {tmp}, qword ptr [{val}]"),
                                 // (atomic) store tmp to dst
                                 "movlps qword ptr [{dst}], {tmp}",
-                                "lock or dword ptr [{p}], 0", // equivalent to mfence
+                                "lock or dword ptr [{p}], 0", // equivalent to mfence, but doesn't require SSE2
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 tmp = out(xmm_reg) _,
