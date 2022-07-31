@@ -55,7 +55,7 @@ macro_rules! atomic {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -90,7 +90,7 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -132,7 +132,7 @@ macro_rules! atomic {
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -158,7 +158,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -217,6 +217,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -253,6 +254,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -315,6 +317,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -402,7 +405,7 @@ macro_rules! atomic128 {
                                 out = in(reg) out,
                                 tmp_hi = out(reg) _,
                                 tmp_lo = out(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -434,7 +437,7 @@ macro_rules! atomic128 {
                                 tmp_hi = out(reg) _,
                                 tmp_lo = out(reg) _,
                                 r = out(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -475,7 +478,7 @@ macro_rules! atomic128 {
                                 val = in(reg) val,
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -509,7 +512,7 @@ macro_rules! atomic128 {
                                 tmp_hi = lateout(reg) _,
                                 tmp_lo = lateout(reg) _,
                                 r = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -559,7 +562,7 @@ macro_rules! atomic128 {
                                 tmp_hi = lateout(reg) _,
                                 tmp_lo = lateout(reg) _,
                                 r = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -631,6 +634,7 @@ macro_rules! atomic128 {
                                 // must be allocated to even/odd register pair
                                 lateout("x8") _, // out_lo
                                 lateout("x9") _, // out_hi
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -675,6 +679,7 @@ macro_rules! atomic128 {
                                 out_hi = lateout(reg) _,
                                 out_lo = lateout(reg) _,
                                 r = lateout(reg) r,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
