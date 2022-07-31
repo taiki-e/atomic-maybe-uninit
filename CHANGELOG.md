@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Optimize inline assemblies on x86, x86_64, ARM, AArch64, and RISC-V.
+
 ## [0.2.10] - 2022-07-16
 
 - Support ARMv6.
