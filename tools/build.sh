@@ -60,7 +60,9 @@ default_targets=(
     # riscv
     # rustc --print target-list | grep -E '^riscv' | grep -E '(-unknown-linux|-none)'
     riscv64gc-unknown-linux-gnu
-    # no atomic load/store
+    # riscv64 no atomic load/store
+    riscv64i-unknown-none-elf
+    # riscv32 no atomic load/store
     riscv32i-unknown-none-elf
     riscv32im-unknown-none-elf
     riscv32imc-unknown-none-elf
@@ -131,12 +133,18 @@ x() {
 build() {
     local target="$1"
     shift
-    local args=("${base_args[@]}" --target "${target}")
+    local args=("${base_args[@]}")
     local target_rustflags="${RUSTFLAGS:-} ${check_cfg:-}"
     if ! grep <<<"${rustc_target_list}" -Eq "^${target}$"; then
-        echo "target '${target}' not available on ${rustc_version}"
-        return 0
+        if [[ ! -f "target-specs/${target}.json" ]]; then
+            echo "target '${target}' not available on ${rustc_version}"
+            return 0
+        fi
+        target_flags=(--target "$(pwd)/target-specs/${target}.json")
+    else
+        target_flags=(--target "${target}")
     fi
+    args+=("${target_flags[@]}")
     if [[ -z "${nightly}" ]]; then
         case "${target}" in
             mips* | powerpc* | s390*)
