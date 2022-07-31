@@ -36,7 +36,7 @@ macro_rules! atomic {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -71,7 +71,7 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -120,6 +120,7 @@ macro_rules! atomic {
                                 r = lateout(reg) _,
                                 out_tmp = lateout(reg) _,
                                 val_tmp = lateout(reg) _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -184,6 +185,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -246,6 +248,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };

@@ -11,7 +11,9 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
-// Refs: https://reviews.llvm.org/D5386
+// Refs:
+// - https://reviews.llvm.org/D5386
+// - https://developer.arm.com/documentation/ddi0360/e/control-coprocessor-cp15/register-descriptions/c7--cache-operations-register?lang=en
 macro_rules! dmb {
     () => {
         "mcr p15, #0, r0, c7, c10, #5"
@@ -44,7 +46,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
                                 inout("r0") 0 => _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -82,7 +84,7 @@ macro_rules! atomic {
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
                                 inout("r0") 0 => _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -134,6 +136,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 val_tmp = lateout(reg) _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -199,6 +202,7 @@ macro_rules! atomic {
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -236,6 +240,7 @@ macro_rules! atomic {
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -276,6 +281,7 @@ macro_rules! atomic {
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -342,6 +348,7 @@ macro_rules! atomic {
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -378,6 +385,7 @@ macro_rules! atomic {
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -413,6 +421,7 @@ macro_rules! atomic {
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -479,7 +488,7 @@ macro_rules! atomic64 {
                                 out("r2") _,
                                 out("r3") _,
                                 inout("r0") 0 => _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -530,6 +539,7 @@ macro_rules! atomic64 {
                                 lateout("r4") _,
                                 lateout("r5") _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -586,6 +596,7 @@ macro_rules! atomic64 {
                                 lateout("r4") _,
                                 lateout("r5") _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -660,6 +671,7 @@ macro_rules! atomic64 {
                                 lateout("r8") _,
                                 lateout("r9") _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -708,6 +720,7 @@ macro_rules! atomic64 {
                                 lateout("r8") _,
                                 lateout("r9") _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -759,6 +772,7 @@ macro_rules! atomic64 {
                                 lateout("r8") _,
                                 lateout("r9") _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -834,6 +848,7 @@ macro_rules! atomic64 {
                                 lateout("r8") _,
                                 lateout("r9") _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because orrs modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -879,6 +894,7 @@ macro_rules! atomic64 {
                                 lateout("r8") _,
                                 lateout("r9") _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -923,6 +939,7 @@ macro_rules! atomic64 {
                                 lateout("r8") _,
                                 lateout("r9") _,
                                 inout("r0") 0 => _,
+                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
                                 options(nostack),
                             )
                         };
