@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.2.11] - 2022-07-31
+
 - Optimize inline assemblies on x86, x86_64, ARM, AArch64, and RISC-V.
 
 ## [0.2.10] - 2022-07-16
@@ -90,7 +92,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.10...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.11...HEAD
+[0.2.11]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.7...v0.2.8
