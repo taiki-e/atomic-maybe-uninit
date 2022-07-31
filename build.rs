@@ -38,7 +38,7 @@ fn main() {
     println!("cargo:rerun-if-env-changed=CARGO_ENCODED_RUSTFLAGS");
     println!("cargo:rerun-if-env-changed=RUSTFLAGS");
     println!("cargo:rerun-if-env-changed=CARGO_BUILD_RUSTFLAGS");
-    let mut target_upper = target.replace(|c: char| c == '-' || c == '.', "_");
+    let mut target_upper = target.replace(['-', '.'], "_");
     target_upper.make_ascii_uppercase();
     println!("cargo:rerun-if-env-changed=CARGO_TARGET_{}_RUSTFLAGS", target_upper);
 
@@ -242,11 +242,8 @@ fn has_target_feature(
             .map_or(false, |s| s.split(',').any(|s| s == name));
     } else if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
         for mut flag in rustflags.to_string_lossy().split('\x1f') {
-            if flag.starts_with("-C") {
-                flag = &flag["-C".len()..];
-            }
-            if flag.starts_with("target-feature=") {
-                flag = &flag["target-feature=".len()..];
+            flag = flag.strip_prefix("-C").unwrap_or(flag);
+            if let Some(flag) = flag.strip_prefix("target-feature=") {
                 for s in flag.split(',') {
                     // TODO: Handles cases where a specific target feature
                     // implicitly enables another target feature.
@@ -267,11 +264,8 @@ fn target_cpu() -> Option<String> {
     let rustflags = rustflags.to_string_lossy();
     let mut cpu = None;
     for mut flag in rustflags.split('\x1f') {
-        if flag.starts_with("-C") {
-            flag = &flag["-C".len()..];
-        }
-        if flag.starts_with("target-cpu=") {
-            flag = &flag["target-cpu=".len()..];
+        flag = flag.strip_prefix("-C").unwrap_or(flag);
+        if let Some(flag) = flag.strip_prefix("target-cpu=") {
             cpu = Some(flag);
         }
     }
@@ -319,11 +313,8 @@ mod version {
         let output = Command::new(rustc).args(&["--version", "--verbose"]).output().ok()?;
         let output = str::from_utf8(&output.stdout).ok()?;
 
-        let mut release = output
-            .lines()
-            .find(|line| line.starts_with("release: "))
-            .map(|line| &line["release: ".len()..])?
-            .splitn(2, '-');
+        let mut release =
+            output.lines().find_map(|line| line.strip_prefix("release: "))?.splitn(2, '-');
         let version = release.next().unwrap();
         let channel = release.next().unwrap_or_default();
         let mut digits = version.splitn(3, '.');
@@ -336,11 +327,8 @@ mod version {
         let nightly = channel == "nightly" || channel == "dev";
 
         if nightly {
-            let mut commit_date = output
-                .lines()
-                .find(|line| line.starts_with("commit-date: "))
-                .map(|line| &line["commit-date: ".len()..])?
-                .splitn(3, '-');
+            let mut commit_date =
+                output.lines().find_map(|line| line.strip_prefix("commit-date: "))?.splitn(3, '-');
             let year = commit_date.next()?.parse::<u16>().ok()?;
             let month = commit_date.next()?.parse::<u8>().ok()?;
             let day = commit_date.next()?.parse::<u8>().ok()?;
