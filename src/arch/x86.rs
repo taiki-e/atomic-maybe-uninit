@@ -240,7 +240,7 @@ macro_rules! atomic64 {
                 // cfg guarantees that the CPU supports SSE.
                 //
                 // Refs:
-                // - https://github.com/llvm/llvm-project/blob/016342e319fd31e41cf5ed16a6140a8ea2de74dd/llvm/lib/Target/X86/X86ISelLowering.cpp
+                // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/Target/X86/X86ISelLowering.cpp
                 unsafe {
                     if cfg!(target_feature = "sse2") {
                         // atomic load is always SeqCst.
@@ -249,7 +249,7 @@ macro_rules! atomic64 {
                             // - https://www.felixcloutier.com/x86/movq (SSE2)
                             // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
                             // - https://www.felixcloutier.com/x86/pshufd (SSE2)
-                            // - https://github.com/llvm/llvm-project/blob/016342e319fd31e41cf5ed16a6140a8ea2de74dd/llvm/lib/Target/X86/X86ISelLowering.cpp
+                            // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/Target/X86/X86ISelLowering.cpp
                             // (atomic) load from src to tmp0
                             "movq {tmp0}, qword ptr [{src}]",
                             // extract lower 64-bits
@@ -334,7 +334,7 @@ macro_rules! atomic64 {
                 // - https://www.felixcloutier.com/x86/movsd (SSE2)
                 // - https://www.felixcloutier.com/x86/lock
                 // - https://www.felixcloutier.com/x86/or
-                // - https://github.com/llvm/llvm-project/blob/016342e319fd31e41cf5ed16a6140a8ea2de74dd/llvm/lib/Target/X86/X86ISelLowering.cpp
+                // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/Target/X86/X86ISelLowering.cpp
                 unsafe {
                     match order {
                         // Relaxed and Release stores are equivalent.
