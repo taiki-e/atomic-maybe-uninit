@@ -79,7 +79,15 @@ fn main() {
             if target.starts_with("i486") {
                 no_cmpxchg8b = true;
             } else if target.starts_with("i386") {
-                no_cmpxchg = true;
+                if target.contains("-ios")
+                    || target.contains("-tvos")
+                    || target.contains("-watchos")
+                {
+                    // Apple's i386 simulator is actually i686.
+                    // https://github.com/rust-lang/rust/blob/1.62.0/compiler/rustc_target/src/spec/apple_sdk_base.rs#L31
+                } else {
+                    no_cmpxchg = true;
+                }
             }
             // target-cpu is preferred over arch in target triple.
             // e.g., --target=i486 --target-cpu=i386
