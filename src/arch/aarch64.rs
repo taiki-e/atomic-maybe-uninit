@@ -187,7 +187,7 @@ macro_rules! atomic {
                 debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-                let success = crate::utils::upgrade_success_ordering(success, failure);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
@@ -262,13 +262,13 @@ macro_rules! atomic {
                             r == 0
                         }};
                     }
-                    match success {
+                    match order {
                         Ordering::Relaxed => atomic_cmpxchg!("", ""),
                         Ordering::Acquire => atomic_cmpxchg!("a", ""),
                         Ordering::Release => atomic_cmpxchg!("", "l"),
                         // AcqRel and SeqCst compare_exchange are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}", success),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                 }
             }
@@ -286,7 +286,7 @@ macro_rules! atomic {
                 debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-                let success = crate::utils::upgrade_success_ordering(success, failure);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
                 unsafe {
@@ -322,13 +322,13 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match success {
+                    match order {
                         Ordering::Relaxed => atomic_cmpxchg_weak!("", ""),
                         Ordering::Acquire => atomic_cmpxchg_weak!("a", ""),
                         Ordering::Release => atomic_cmpxchg_weak!("", "l"),
                         // AcqRel and SeqCst compare_exchange_weak are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg_weak!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}", success),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
@@ -591,7 +591,7 @@ macro_rules! atomic128 {
                 debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-                let success = crate::utils::upgrade_success_ordering(success, failure);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
@@ -687,13 +687,13 @@ macro_rules! atomic128 {
                             r == 0
                         }};
                     }
-                    match success {
+                    match order {
                         Ordering::Relaxed => atomic_cmpxchg!("", ""),
                         Ordering::Acquire => atomic_cmpxchg!("a", ""),
                         Ordering::Release => atomic_cmpxchg!("", "l"),
                         // AcqRel and SeqCst compare_exchange are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}", success),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                 }
             }

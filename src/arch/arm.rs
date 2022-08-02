@@ -305,7 +305,7 @@ macro_rules! atomic {
                         // AcqRel and SeqCst compare_exchange are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!(""),
                         (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
-                        _ => unreachable_unchecked!("{:?}", (success, failure)),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
@@ -445,7 +445,7 @@ macro_rules! atomic {
                         // AcqRel and SeqCst compare_exchange_weak are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_weak_fail_load_relaxed!(dmb!()),
                         (AcqRel | SeqCst, _) => cmpxchg_weak!(dmb!(), dmb!()),
-                        _ => unreachable_unchecked!("{:?}", (success, failure)),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
@@ -798,7 +798,7 @@ macro_rules! atomic64 {
                         // AcqRel and SeqCst compare_exchange are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!(""),
                         (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
-                        _ => unreachable_unchecked!("{:?}", (success, failure)),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
@@ -965,7 +965,7 @@ macro_rules! atomic64 {
                         // AcqRel and SeqCst compare_exchange_weak are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_weak_fail_load_relaxed!(dmb!()),
                         (AcqRel | SeqCst, _) => cmpxchg_weak!(dmb!(), dmb!()),
-                        _ => unreachable_unchecked!("{:?}", (success, failure)),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed

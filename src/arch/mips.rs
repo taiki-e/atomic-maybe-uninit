@@ -227,7 +227,7 @@ macro_rules! atomic {
                 debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-                let success = crate::utils::upgrade_success_ordering(success, failure);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
@@ -268,13 +268,13 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match success {
+                    match order {
                         Ordering::Relaxed => atomic_cmpxchg!("", ""),
                         Ordering::Acquire => atomic_cmpxchg!("sync", ""),
                         Ordering::Release => atomic_cmpxchg!("", "sync"),
                         // AcqRel and SeqCst compare_exchange are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", success),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
@@ -377,7 +377,7 @@ macro_rules! atomic8 {
                 debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-                let success = crate::utils::upgrade_success_ordering(success, failure);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
@@ -437,13 +437,13 @@ macro_rules! atomic8 {
                             )
                         };
                     }
-                    match success {
+                    match order {
                         Ordering::Relaxed => atomic_cmpxchg!("", ""),
                         Ordering::Acquire => atomic_cmpxchg!("sync", ""),
                         Ordering::Release => atomic_cmpxchg!("", "sync"),
                         // AcqRel and SeqCst compare_exchange are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", success),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
@@ -546,7 +546,7 @@ macro_rules! atomic16 {
                 debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-                let success = crate::utils::upgrade_success_ordering(success, failure);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
@@ -606,13 +606,13 @@ macro_rules! atomic16 {
                             )
                         };
                     }
-                    match success {
+                    match order {
                         Ordering::Relaxed => atomic_cmpxchg!("", ""),
                         Ordering::Acquire => atomic_cmpxchg!("sync", ""),
                         Ordering::Release => atomic_cmpxchg!("", "sync"),
                         // AcqRel and SeqCst compare_exchange are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", success),
+                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
