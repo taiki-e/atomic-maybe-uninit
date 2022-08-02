@@ -4,6 +4,7 @@
 // Generated asm:
 // - x86_64 https://godbolt.org/z/YT36cWKbf
 // - x86_64 (+cmpxchg16b) https://godbolt.org/z/boq3x39e4
+// - x86_64 (+cmpxchg16b,+avx,intel_cpu) https://godbolt.org/z/6TnxM5hnj
 // - x86 (i686) https://godbolt.org/z/zPPWPTMsE
 // - x86 (i686,-sse2) https://godbolt.org/z/d8WEYo94c
 // - x86 (i586) https://godbolt.org/z/PYT66nMeG
@@ -537,6 +538,30 @@ macro_rules! atomic128 {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
+                // VMOVDQA is atomic on on Intel CPU with AVX.
+                // See https://gcc.gnu.org/bugzilla//show_bug.cgi?id=104688 for details.
+                //
+                // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
+                //
+                // Do not use vector registers on targets such as x86_64-unknown-none unless SSE is explicitly enabled.
+                // https://doc.rust-lang.org/nightly/rustc/platform-support/x86_64-unknown-none.html
+                #[cfg(all(atomic_maybe_uninit_intel_cpu, target_feature = "sse", target_feature = "avx"))]
+                // SAFETY: the caller must guarantee that `src` is valid for reads,
+                // 16-byte aligned, and that there are no concurrent non-atomic operations.
+                // cfg guarantees that the CPU supports AVX and is Intel chip.
+                unsafe {
+                    asm!(
+                        // (atomic) load from src to tmp
+                        concat!("vmovdqa {tmp}, xmmword ptr [{src", ptr_modifier!(), "}]"),
+                        // store tmp to out
+                        concat!("vmovdqu xmmword ptr [{out", ptr_modifier!(), "}], {tmp}"),
+                        src = in(reg) src,
+                        out = in(reg) out,
+                        tmp = out(xmm_reg) _,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                #[cfg(not(all(atomic_maybe_uninit_intel_cpu, target_feature = "sse", target_feature = "avx")))]
                 // SAFETY: the caller must guarantee that `src` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
@@ -579,11 +604,53 @@ macro_rules! atomic128 {
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
                 val: *const MaybeUninit<Self>,
-                _order: Ordering,
+                order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
 
+                // VMOVDQA is atomic on on Intel CPU with AVX.
+                // See https://gcc.gnu.org/bugzilla//show_bug.cgi?id=104688 for details.
+                //
+                // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
+                //
+                // Do not use vector registers on targets such as x86_64-unknown-none unless SSE is explicitly enabled.
+                // https://doc.rust-lang.org/nightly/rustc/platform-support/x86_64-unknown-none.html
+                #[cfg(all(atomic_maybe_uninit_intel_cpu, target_feature = "sse", target_feature = "avx"))]
+                // SAFETY: the caller must guarantee that `dst` is valid for writes,
+                // 16-byte aligned, and that there are no concurrent non-atomic operations.
+                // cfg guarantees that the CPU supports AVX and is Intel chip.
+                unsafe {
+                    match order {
+                        Ordering::Relaxed | Ordering::Release => {
+                            asm!(
+                                // load from val to tmp
+                                concat!("vmovdqu {tmp}, xmmword ptr [{val", ptr_modifier!(), "}]"),
+                                // (atomic) store tmp to dst
+                                concat!("vmovdqa xmmword ptr [{dst", ptr_modifier!(), "}], {tmp}"),
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                tmp = out(xmm_reg) _,
+                                options(nostack, preserves_flags),
+                            );
+                        }
+                        Ordering::SeqCst => {
+                            asm!(
+                                // load from val to tmp
+                                concat!("vmovdqu {tmp}, xmmword ptr [{val", ptr_modifier!(), "}]"),
+                                // (atomic) store tmp to dst
+                                concat!("vmovdqa xmmword ptr [{dst", ptr_modifier!(), "}], {tmp}"),
+                                "mfence",
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                tmp = out(xmm_reg) _,
+                                options(nostack, preserves_flags),
+                            );
+                        }
+                        _ => unreachable_unchecked!("{:?}", order),
+                    }
+                }
+                #[cfg(not(all(atomic_maybe_uninit_intel_cpu, target_feature = "sse", target_feature = "avx")))]
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
@@ -597,6 +664,7 @@ macro_rules! atomic128 {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
+                    let _ = order;
                     // atomic store is always SeqCst.
                     asm!(
                         // rbx is reserved by LLVM

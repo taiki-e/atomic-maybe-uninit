@@ -46,9 +46,25 @@ fn main() {
     match target_arch {
         "x86_64" => {
             // x86_64 macos always support CMPXCHG16B: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L7
-            let has_cmpxchg16b = target_os == "macos";
+            let mut has_cmpxchg16b = target_os == "macos";
             // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/o4Y8W1hcb
             // It is unlikely that rustc will support that name, so we will ignore it for now.
+            if let Some(cpu) = target_cpu() {
+                // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0/llvm/include/llvm/Support/X86TargetParser.def#L31-L92
+                match &*cpu {
+                    "bonnell" | "core2" | "corei7" | "silvermont" | "knl" | "knm" | "goldmont"
+                    | "goldmont-plus" | "tremont" | "atom" | "slm" | "nehalem" | "westmere"
+                    | "sandybridge" | "ivybridge" | "haswell" | "broadwell" | "skylake"
+                    | "skylake-avx512" | "cannonlake" | "icelake-client" | "icelake-server"
+                    | "cascadelake" | "tigerlake" | "cooperlake" | "sapphirerapids"
+                    | "alderlake" | "rocketlake" => {
+                        println!("cargo:rustc-cfg=atomic_maybe_uninit_intel_cpu");
+                        // Intel chips always support cmpxchg16b.
+                        has_cmpxchg16b = true;
+                    }
+                    _ => {}
+                }
+            }
             target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, None, true);
         }
         "x86" => {
