@@ -12,7 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.12] - 2022-08-03
 
-- Optimize aarch64 128-bit load when the `lse` target feature is enabled at compile-time.
+- Optimize AArch64 128-bit atomic load when the `lse` target feature is enabled at compile-time.
 
 ## [0.2.11] - 2022-07-31
 
