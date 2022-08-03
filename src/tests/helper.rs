@@ -5,7 +5,12 @@ pub(crate) use std::sync::atomic::Ordering;
 macro_rules! test_atomic_load_store {
     ($int_type:ident) => {
         paste::paste! {
-            #[allow(clippy::undocumented_unsafe_blocks)]
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks,
+            )]
             mod [<test_atomic_ $int_type>] {
                 __test_atomic!(load_store, $int_type);
             }
@@ -15,7 +20,12 @@ macro_rules! test_atomic_load_store {
 macro_rules! test_atomic_load_store_swap {
     ($int_type:ident) => {
         paste::paste! {
-            #[allow(clippy::undocumented_unsafe_blocks)]
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks,
+            )]
             mod [<test_atomic_ $int_type>] {
                 __test_atomic!(load_store, $int_type);
                 __test_atomic!(swap, $int_type);
@@ -26,7 +36,12 @@ macro_rules! test_atomic_load_store_swap {
 macro_rules! test_atomic {
     ($int_type:ident) => {
         paste::paste! {
-            #[allow(clippy::undocumented_unsafe_blocks)]
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks,
+            )]
             mod [<test_atomic_ $int_type>] {
                 __test_atomic!(load_store, $int_type);
                 __test_atomic!(swap, $int_type);
@@ -525,16 +540,8 @@ macro_rules! __test_atomic {
 
 macro_rules! __stress_test_coherence {
     ($write:ident, $load_order:ident, $store_order:ident) => {
-        use core::{mem::MaybeUninit, sync::atomic::AtomicUsize};
-        use std::{sync::atomic::Ordering, vec::Vec};
-
-        use crossbeam_utils::thread;
-
-        use crate::AtomicMaybeUninit;
-
         const N: usize = if cfg!(debug_assertions) { 500_000 } else { 5_000_000 };
 
-        #[allow(clippy::undocumented_unsafe_blocks)]
         unsafe {
             let v = &(0..N).map(|_| AtomicUsize::new(0)).collect::<Vec<_>>();
             let a = &AtomicMaybeUninit::from(0_usize);
@@ -561,75 +568,111 @@ macro_rules! __stress_test_coherence {
 
 macro_rules! stress_test_load_store {
     () => {
-        // This test should panic on architectures with weak memory models.
-        #[test]
-        // This should be `any(target_arch = ...)`, but qemu-user running on x86_64 does
-        // not seem to support weak memory emulation.
-        // Therefore, explicitly enable should_panic only on actual aarch64 hardware.
-        #[cfg_attr(weak_memory, should_panic)]
-        #[cfg(target_os = "linux")] // flaky on aarch64 macOS
-        fn stress_coherence_load_relaxed_store_relaxed() {
-            __stress_test_coherence!(store, Relaxed, Relaxed);
-        }
-        #[test]
-        // `asm!` implies a compiler fence, so it seems the relaxed load written in
-        // `asm!` behaves like a consume load on architectures with weak memory models.
-        // #[cfg_attr(weak_memory, should_panic)]
-        fn stress_coherence_load_relaxed_store_release() {
-            __stress_test_coherence!(store, Relaxed, Release);
-        }
-        // This test should panic on architectures with weak memory models.
-        #[test]
-        #[cfg_attr(weak_memory, should_panic)]
-        #[cfg(target_os = "linux")] // flaky on aarch64 macOS
-        fn stress_coherence_load_acquire_store_relaxed() {
-            __stress_test_coherence!(store, Acquire, Relaxed);
-        }
-        #[test]
-        fn stress_coherence_load_acquire_store_release() {
-            __stress_test_coherence!(store, Acquire, Release);
-        }
-        #[test]
-        fn stress_coherence_load_seqcst_store_seqcst() {
-            __stress_test_coherence!(store, SeqCst, SeqCst);
+        #[allow(
+            clippy::alloc_instead_of_core,
+            clippy::std_instead_of_alloc,
+            clippy::std_instead_of_core,
+            clippy::undocumented_unsafe_blocks
+        )]
+        mod stress_coherence_load_store {
+            use std::{
+                mem::MaybeUninit,
+                sync::atomic::{AtomicUsize, Ordering},
+                vec::Vec,
+            };
+
+            use crossbeam_utils::thread;
+
+            use crate::AtomicMaybeUninit;
+
+            // This test should panic on architectures with weak memory models.
+            #[test]
+            // This should be `any(target_arch = ...)`, but qemu-user running on x86_64 does
+            // not seem to support weak memory emulation.
+            // Therefore, explicitly enable should_panic only on actual aarch64 hardware.
+            #[cfg_attr(weak_memory, should_panic)]
+            #[cfg(target_os = "linux")] // flaky on aarch64 macOS
+            fn load_relaxed_store_relaxed() {
+                __stress_test_coherence!(store, Relaxed, Relaxed);
+            }
+            #[test]
+            // `asm!` implies a compiler fence, so it seems the relaxed load written in
+            // `asm!` behaves like a consume load on architectures with weak memory models.
+            // #[cfg_attr(weak_memory, should_panic)]
+            fn load_relaxed_store_release() {
+                __stress_test_coherence!(store, Relaxed, Release);
+            }
+            // This test should panic on architectures with weak memory models.
+            #[test]
+            #[cfg_attr(weak_memory, should_panic)]
+            #[cfg(target_os = "linux")] // flaky on aarch64 macOS
+            fn load_acquire_store_relaxed() {
+                __stress_test_coherence!(store, Acquire, Relaxed);
+            }
+            #[test]
+            fn load_acquire_store_release() {
+                __stress_test_coherence!(store, Acquire, Release);
+            }
+            #[test]
+            fn load_seqcst_store_seqcst() {
+                __stress_test_coherence!(store, SeqCst, SeqCst);
+            }
         }
     };
 }
 
 macro_rules! stress_test_load_swap {
     () => {
-        // This test should panic on architectures with weak memory models.
-        #[test]
-        #[cfg_attr(weak_memory, should_panic)]
-        #[cfg(target_os = "linux")] // flaky on aarch64 macOS
-        fn stress_coherence_load_relaxed_swap_relaxed() {
-            __stress_test_coherence!(swap, Relaxed, Relaxed);
-        }
-        #[test]
-        // `asm!` implies a compiler fence, so it seems the relaxed load written in
-        // `asm!` behaves like a consume load on architectures with weak memory models.
-        // #[cfg_attr(weak_memory, should_panic)]
-        fn stress_coherence_load_relaxed_swap_release() {
-            __stress_test_coherence!(swap, Relaxed, Release);
-        }
-        // This test should panic on architectures with weak memory models.
-        #[test]
-        #[cfg_attr(weak_memory, should_panic)]
-        #[cfg(target_os = "linux")] // flaky on aarch64 macOS
-        fn stress_coherence_load_acquire_swap_relaxed() {
-            __stress_test_coherence!(swap, Acquire, Relaxed);
-        }
-        #[test]
-        fn stress_coherence_load_acquire_swap_release() {
-            __stress_test_coherence!(swap, Acquire, Release);
-        }
-        #[test]
-        fn stress_coherence_load_acquire_swap_acqrel() {
-            __stress_test_coherence!(swap, Acquire, AcqRel);
-        }
-        #[test]
-        fn stress_coherence_load_seqcst_swap_seqcst() {
-            __stress_test_coherence!(swap, SeqCst, SeqCst);
+        #[allow(
+            clippy::alloc_instead_of_core,
+            clippy::std_instead_of_alloc,
+            clippy::std_instead_of_core,
+            clippy::undocumented_unsafe_blocks
+        )]
+        mod stress_coherence_load_swap {
+            use std::{
+                mem::MaybeUninit,
+                sync::atomic::{AtomicUsize, Ordering},
+                vec::Vec,
+            };
+
+            use crossbeam_utils::thread;
+
+            use crate::AtomicMaybeUninit;
+
+            // This test should panic on architectures with weak memory models.
+            #[test]
+            #[cfg_attr(weak_memory, should_panic)]
+            #[cfg(target_os = "linux")] // flaky on aarch64 macOS
+            fn stress_coherence_load_relaxed_swap_relaxed() {
+                __stress_test_coherence!(swap, Relaxed, Relaxed);
+            }
+            #[test]
+            // `asm!` implies a compiler fence, so it seems the relaxed load written in
+            // `asm!` behaves like a consume load on architectures with weak memory models.
+            // #[cfg_attr(weak_memory, should_panic)]
+            fn stress_coherence_load_relaxed_swap_release() {
+                __stress_test_coherence!(swap, Relaxed, Release);
+            }
+            // This test should panic on architectures with weak memory models.
+            #[test]
+            #[cfg_attr(weak_memory, should_panic)]
+            #[cfg(target_os = "linux")] // flaky on aarch64 macOS
+            fn stress_coherence_load_acquire_swap_relaxed() {
+                __stress_test_coherence!(swap, Acquire, Relaxed);
+            }
+            #[test]
+            fn stress_coherence_load_acquire_swap_release() {
+                __stress_test_coherence!(swap, Acquire, Release);
+            }
+            #[test]
+            fn stress_coherence_load_acquire_swap_acqrel() {
+                __stress_test_coherence!(swap, Acquire, AcqRel);
+            }
+            #[test]
+            fn stress_coherence_load_seqcst_swap_seqcst() {
+                __stress_test_coherence!(swap, SeqCst, SeqCst);
+            }
         }
     };
 }

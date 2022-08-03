@@ -1,4 +1,10 @@
-#![allow(clippy::undocumented_unsafe_blocks, clippy::wildcard_imports)]
+#![allow(
+    clippy::alloc_instead_of_core,
+    clippy::std_instead_of_alloc,
+    clippy::std_instead_of_core,
+    clippy::undocumented_unsafe_blocks,
+    clippy::wildcard_imports
+)]
 
 #[macro_use]
 pub(crate) mod helper;
@@ -6,7 +12,12 @@ pub(crate) mod helper;
 macro_rules! test_common {
     ($int_type:ident) => {
         paste::paste! {
-            #[allow(clippy::undocumented_unsafe_blocks)]
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks,
+            )]
             mod [<test_common_ $int_type>] {
                 use std::mem::MaybeUninit;
 
