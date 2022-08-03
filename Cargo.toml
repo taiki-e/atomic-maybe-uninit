@@ -7,7 +7,7 @@ license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/atomic-maybe-uninit"
 keywords = ["atomic"]
 categories = ["concurrency", "data-structures", "embedded", "hardware-support", "no-std"]
-exclude = ["/.*", "/tools"]
+exclude = ["/.*", "/tools", "/target-specs"]
 description = """
 Atomic operations on potentially uninitialized integers.
 """
