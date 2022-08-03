@@ -6,9 +6,9 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/4z1dcf683
-// - aarch64 (+lse) https://godbolt.org/z/PqW4eabc1
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/1WW9xjj9n
+// - aarch64 https://godbolt.org/z/3a43ThEqT
+// - aarch64 (+lse) https://godbolt.org/z/vr3eod575
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/6j1jqEEq9
 
 use core::{
     arch::asm,
@@ -419,6 +419,27 @@ macro_rules! atomic128 {
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    macro_rules! atomic_load {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // (atomic) load (CAS)
+                                // Refs:
+                                // - https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
+                                // - https://github.com/taiki-e/portable-atomic/pull/20
+                                concat!("casp", $acquire, $release, " x4, x5, x4, x5, [{src", ptr_modifier!(), "}]"),
+                                // store out pair to out
+                                concat!("stp x4, x5, [{out", ptr_modifier!(), "}]"),
+                                src = in(reg) src,
+                                out = in(reg) out,
+                                // must be allocated to even/odd register pair
+                                inout("x4") 0_u64 => _, // out_lo
+                                inout("x5") 0_u64 => _, // out_lo
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
