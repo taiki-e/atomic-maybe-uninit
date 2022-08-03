@@ -266,7 +266,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@nightly
       - uses: taiki-e/install-action@valgrind
-      # doctests with valgrind are very slow
+      # doctests on Valgrind are very slow
       - run: cargo test -vv --workspace --all-features --tests
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg valgrind
