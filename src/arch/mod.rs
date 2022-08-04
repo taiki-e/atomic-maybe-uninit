@@ -5,6 +5,7 @@
 // - asm module in rustc_target: https://github.com/rust-lang/rust/tree/1.62.0/compiler/rustc_target/src/asm
 // - asm module in rustc_codegen_llvm: https://github.com/rust-lang/rust/blob/1.62.0/compiler/rustc_codegen_llvm/src/asm.rs
 //   - preserves_flags https://github.com/rust-lang/rust/blob/1.62.0/compiler/rustc_codegen_llvm/src/asm.rs#L206-L241
+// - LLVM LangRef: https://llvm.org/docs/LangRef.html#inline-assembler-expressions
 // - inline assembly related issues in rust-lang/rust: https://github.com/rust-lang/rust/labels/A-inline-assembly
 
 #[cfg(not(any(
