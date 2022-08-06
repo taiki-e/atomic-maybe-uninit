@@ -4,10 +4,10 @@
 // - http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/GrbWMzdoo
-// - powerpc64 https://godbolt.org/z/9hGeKsnM9
-// - powerpc64 (pwr8) https://godbolt.org/z/75Y6xdPav
-// - powerpc64le https://godbolt.org/z/PWq4EjT16
+// - powerpc https://godbolt.org/z/Wce1bc8nj
+// - powerpc64 https://godbolt.org/z/1ejoYn4TP
+// - powerpc64 (pwr8) https://godbolt.org/z/vxoMz5Was
+// - powerpc64le https://godbolt.org/z/Gvdnarbdc
 
 use core::{
     arch::asm,
@@ -89,6 +89,28 @@ macro_rules! atomic_load_store {
                 #[cfg(target_arch = "powerpc64")]
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
+                    macro_rules! atomic_load_acquire {
+                        ($release:tt) => {
+                            asm!(
+                                $release,
+                                // (atomic) load from src to tmp
+                                concat!("l", $ld_suffix, " {tmp}, 0({src})"),
+                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
+                                "cmpd %cr7, {tmp}, {tmp}",
+                                "bne- %cr7, 2f",
+                                "2:",
+                                "isync",
+                                // store tmp to out
+                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
+                                src = in(reg) src,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
+                                out("r0") _,
+                                out("cr7") _,
+                                options(nostack),
+                            )
+                        };
+                    }
                     match order {
                         Ordering::Relaxed => {
                             asm!(
@@ -103,45 +125,8 @@ macro_rules! atomic_load_store {
                                 options(nostack),
                             )
                         }
-                        Ordering::Acquire => {
-                            asm!(
-                                // (atomic) load from src to tmp
-                                concat!("l", $ld_suffix, " {tmp}, 0({src})"),
-                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
-                                "cmpd %cr7, {tmp}, {tmp}",
-                                "bne- %cr7, 2f",
-                                "2:",
-                                "isync",
-                                // store tmp to out
-                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
-                                out("r0") _,
-                                out("cr7") _,
-                                options(nostack),
-                            )
-                        }
-                        Ordering::SeqCst => {
-                            asm!(
-                                "sync",
-                                // (atomic) load from src to tmp
-                                concat!("l", $ld_suffix, " {tmp}, 0({src})"),
-                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
-                                "cmpd %cr7, {tmp}, {tmp}",
-                                "bne- %cr7, 2f",
-                                "2:",
-                                "isync",
-                                // store tmp to out
-                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
-                                out("r0") _,
-                                out("cr7") _,
-                                options(nostack),
-                            )
-                        }
+                        Ordering::Acquire => atomic_load_acquire!(""),
+                        Ordering::SeqCst =>  atomic_load_acquire!("sync"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
@@ -967,6 +952,32 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
+                    macro_rules! atomic_load_acquire {
+                        ($release:tt) => {
+                            asm!(
+                                $release,
+                                // (atomic) load from src to r4-r5 pair
+                                "lq %r4, 0({src})",
+                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
+                                "cmpd %cr7, %r4, %r4",
+                                "bne- %cr7, 2f",
+                                "2:",
+                                "isync",
+                                // store r4-r5 pair to out
+                                concat!("std %r4, ", p128h!(), "({out})"),
+                                concat!("std %r5, ", p128l!(), "({out})"),
+                                src = in(reg) src,
+                                out = inout(reg) out => _,
+                                out("r0") _,
+                                // lq loads value into even/odd pair of specified register and subsequent register.
+                                // We cannot use r1 and r2, so starting with r4.
+                                out("r4") _,
+                                out("r5") _,
+                                out("cr7") _,
+                                options(nostack),
+                            )
+                        };
+                    }
                     match order {
                         Ordering::Relaxed => {
                             asm!(
@@ -985,53 +996,8 @@ macro_rules! atomic128 {
                                 options(nostack),
                             )
                         }
-                        Ordering::Acquire => {
-                            asm!(
-                                // (atomic) load from src to r4-r5 pair
-                                "lq %r4, 0({src})",
-                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
-                                "cmpd %cr7, %r4, %r4",
-                                "bne- %cr7, 2f",
-                                "2:",
-                                "isync",
-                                // store r4-r5 pair to out
-                                concat!("std %r4, ", p128h!(), "({out})"),
-                                concat!("std %r5, ", p128l!(), "({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                out("r0") _,
-                                // lq loads value into even/odd pair of specified register and subsequent register.
-                                // We cannot use r1 and r2, so starting with r4.
-                                out("r4") _,
-                                out("r5") _,
-                                out("cr7") _,
-                                options(nostack),
-                            )
-                        }
-                        Ordering::SeqCst => {
-                            asm!(
-                                "sync",
-                                // (atomic) load from src to r4-r5 pair
-                                "lq %r4, 0({src})",
-                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
-                                "cmpd %cr7, %r4, %r4",
-                                "bne- %cr7, 2f",
-                                "2:",
-                                "isync",
-                                // store r4-r5 pair to out
-                                concat!("std %r4, ", p128h!(), "({out})"),
-                                concat!("std %r5, ", p128l!(), "({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                out("r0") _,
-                                // lq loads value into even/odd pair of specified register and subsequent register.
-                                // We cannot use r1 and r2, so starting with r4.
-                                out("r4") _,
-                                out("r5") _,
-                                out("cr7") _,
-                                options(nostack),
-                            )
-                        }
+                        Ordering::Acquire => atomic_load_acquire!(""),
+                        Ordering::SeqCst =>  atomic_load_acquire!("sync"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
