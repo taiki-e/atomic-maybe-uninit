@@ -5,8 +5,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/rPzrTvMso
-// - riscv32imac https://godbolt.org/z/Gor953oMM
+// - riscv64gc https://godbolt.org/z/Eh816jn73
+// - riscv32imac https://godbolt.org/z/nobzMW4a5
 
 use core::{
     arch::asm,
@@ -93,6 +93,7 @@ macro_rules! srlw {
     };
 }
 
+#[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($int_type:ident, $asm_suffix:tt) => {
         impl AtomicLoad for $int_type {
@@ -107,46 +108,26 @@ macro_rules! atomic_load_store {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
+                    macro_rules! atomic_load {
+                        ($acquire:expr, $release:expr) => {
+                            asm!(
+                                // (atomic) load from src to tmp
+                                $release,
+                                concat!("l", $asm_suffix, " {tmp}, 0({src})"),
+                                $acquire,
+                                // store tmp to out
+                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
+                                src = in(reg) src,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
                     match order {
-                        Ordering::Relaxed => {
-                            asm!(
-                                // (atomic) load from src to tmp
-                                concat!("l", $asm_suffix, " {tmp}, 0({src})"),
-                                // store tmp to out
-                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        Ordering::Acquire => {
-                            asm!(
-                                // (atomic) load from src to tmp
-                                concat!("l", $asm_suffix, " {tmp}, 0({src})"),
-                                "fence r, rw",
-                                // store tmp to out
-                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        Ordering::SeqCst => {
-                            asm!(
-                                // (atomic) load from src to tmp
-                                "fence rw, rw",
-                                concat!("l", $asm_suffix, " {tmp}, 0({src})"),
-                                "fence r, rw",
-                                // store tmp to out
-                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
+                        Ordering::Relaxed => atomic_load!("", ""),
+                        Ordering::Acquire => atomic_load!("fence r, rw", ""),
+                        Ordering::SeqCst => atomic_load!("fence r, rw", "fence rw, rw"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
@@ -164,33 +145,25 @@ macro_rules! atomic_load_store {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
+                    macro_rules! atomic_store {
+                        ($release:expr) => {
+                            asm!(
+                                // load from val to tmp
+                                concat!("l", $asm_suffix, " {tmp}, 0({val})"),
+                                // (atomic) store tmp to dst
+                                $release,
+                                concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
+                                dst = inout(reg) dst => _,
+                                val = in(reg) val,
+                                tmp = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
                     match order {
-                        Ordering::Relaxed => {
-                            asm!(
-                                // load from val to tmp
-                                concat!("l", $asm_suffix, " {tmp}, 0({val})"),
-                                // (atomic) store tmp to dst
-                                concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                tmp = lateout(reg) _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
+                        Ordering::Relaxed => atomic_store!(""),
                         // Release and SeqCst stores are equivalent.
-                        Ordering::Release | Ordering::SeqCst => {
-                            asm!(
-                                // load from val to tmp
-                                concat!("l", $asm_suffix, " {tmp}, 0({val})"),
-                                // (atomic) store tmp to dst
-                                "fence rw, w",
-                                concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                tmp = lateout(reg) _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
+                        Ordering::Release | Ordering::SeqCst => atomic_store!("fence rw, w"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
