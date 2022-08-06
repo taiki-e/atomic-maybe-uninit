@@ -1,8 +1,8 @@
 // Generated asm:
-// - mips https://godbolt.org/z/dYEKfYfz5
-// - mipsel https://godbolt.org/z/GbsoaKz8x
-// - mips64 https://godbolt.org/z/T51cG4Wsq
-// - mips64el https://godbolt.org/z/338d978rn
+// - mips https://godbolt.org/z/1ovj4bv9c
+// - mipsel https://godbolt.org/z/fKTxEKGh7
+// - mips64 https://godbolt.org/z/qr5GqWK56
+// - mips64el https://godbolt.org/z/aWYx7jeve
 
 use core::{
     arch::asm,

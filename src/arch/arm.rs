@@ -1,10 +1,10 @@
 // ARMv6-M and ARMv7
 //
 // Generated asm:
-// - armv7-a https://godbolt.org/z/x4cbadvT3
-// - armv7-r https://godbolt.org/z/Y87jGfP1q
-// - armv7-m https://godbolt.org/z/c1rTPh313
-// - armv6-m https://godbolt.org/z/sfMnvET7K
+// - armv7-a https://godbolt.org/z/esc3Y7hv9
+// - armv7-r https://godbolt.org/z/nrfoY7sKr
+// - armv7-m https://godbolt.org/z/xT1Pj56hd
+// - armv6-m https://godbolt.org/z/b3r793Gxz
 
 use core::{
     arch::asm,

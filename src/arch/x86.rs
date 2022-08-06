@@ -2,13 +2,14 @@
 // - https://www.felixcloutier.com/x86
 //
 // Generated asm:
-// - x86_64 https://godbolt.org/z/Y3W6sGKso
-// - x86_64 (+cmpxchg16b) https://godbolt.org/z/8YcY3Wf96
-// - x86 (i686) https://godbolt.org/z/q91E8ze7M
-// - x86 (i686,-sse2) https://godbolt.org/z/TYnP7461P
-// - x86 (i586) https://godbolt.org/z/44MqsrEPj
-// - x86 (i486) https://godbolt.org/z/WsbWWobdY
-// - x86 (i386) https://godbolt.org/z/W6z3o19h4
+// - x86_64 https://godbolt.org/z/sEzrxGrd1
+// - x86_64 (+cmpxchg16b) https://godbolt.org/z/6h8sWrdxY
+// - x86 (i686) https://godbolt.org/z/9EWxf73EM
+// - x86 (i686,-sse2) https://godbolt.org/z/MEM43x9qG
+// - x86 (i586) https://godbolt.org/z/onzxoe8rs
+// - x86 (i586,-x87) https://godbolt.org/z/3M9brzoY5
+// - x86 (i486) https://godbolt.org/z/5dsvEazzf
+// - x86 (i386) https://godbolt.org/z/e6d734aP6
 
 use core::{
     arch::asm,

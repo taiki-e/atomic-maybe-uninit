@@ -6,9 +6,9 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/3a43ThEqT
-// - aarch64 (+lse) https://godbolt.org/z/vr3eod575
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/6j1jqEEq9
+// - aarch64 https://godbolt.org/z/fznYxTej9
+// - aarch64 (+lse) https://godbolt.org/z/afrqoGdoz
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/fhxahM7e1
 
 use core::{
     arch::asm,
