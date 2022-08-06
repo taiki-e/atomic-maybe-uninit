@@ -120,7 +120,7 @@ macro_rules! atomic {
                                 r = lateout(reg) _,
                                 out_tmp = lateout(reg) _,
                                 val_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -165,15 +165,15 @@ macro_rules! atomic {
                                     // load from dst to out_tmp
                                     concat!("ld", $acquire, "ex", $asm_suffix, " {out_tmp}, [{dst}]"),
                                     "cmp {out_tmp}, {old_tmp}",
-                                    "bne 3f",
+                                    "bne 3f", // jump if compare failed
                                     // store val to dst
                                     concat!("st", $release, "ex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, #0",
-                                    "bne 2b",
+                                    "bne 2b", // continue loop if store failed
                                     "b 4f",
                                 "3:",
-                                    "movs {r}, #1",
+                                    "movs {r}, #1", // mark as failed
                                 "4:",
                                 // store out_tmp to out
                                 concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
@@ -185,7 +185,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -248,7 +248,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };

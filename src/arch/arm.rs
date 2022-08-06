@@ -144,7 +144,7 @@ macro_rules! atomic {
                                 r = lateout(reg) _,
                                 out_tmp = lateout(reg) _,
                                 val_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -211,7 +211,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -249,7 +249,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -290,7 +290,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -357,7 +357,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -394,7 +394,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -430,7 +430,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -549,7 +549,7 @@ macro_rules! atomic64 {
                                 // tmp pair - must be even-numbered and not R14
                                 lateout("r4") _,
                                 lateout("r5") _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -606,7 +606,7 @@ macro_rules! atomic64 {
                                 // out pair - must be even-numbered and not R14
                                 lateout("r4") _,
                                 lateout("r5") _,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -682,7 +682,7 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -731,7 +731,7 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -783,7 +783,7 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -859,7 +859,7 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because orrs modifies the condition flags.
+                                // Do not use `preserves_flags` because ORRS modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -905,7 +905,7 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -950,7 +950,7 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because cmp and orrs modify the condition flags.
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
                         };

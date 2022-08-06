@@ -277,9 +277,9 @@ macro_rules! atomic {
                                 // (atomic) compare and exchange
                                 "2:",
                                     concat!("lr.", $asm_suffix, $acquire, " {out_tmp}, 0({dst})"),
-                                    "bne {out_tmp}, {old_tmp}, 3f",
+                                    "bne {out_tmp}, {old_tmp}, 3f", // compare and jump if compare failed
                                     concat!("sc.", $asm_suffix, $release, " {r}, {new_tmp}, 0({dst})"),
-                                    "bnez {r}, 2b",
+                                    "bnez {r}, 2b", // continue loop if store failed
                                 "3:",
                                 "xor {r}, {out_tmp}, {old_tmp}",
                                 "seqz {r}, {r}",

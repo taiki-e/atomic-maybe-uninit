@@ -1,3 +1,6 @@
+// Refs:
+// - https://www.felixcloutier.com/x86
+//
 // Generated asm:
 // - x86_64 https://godbolt.org/z/Y3W6sGKso
 // - x86_64 (+cmpxchg16b) https://godbolt.org/z/8YcY3Wf96
@@ -191,7 +194,7 @@ macro_rules! atomic {
                         tmp_new = out($val_reg) _,
                         r = out(reg_byte) r,
                         out($cmpxchg_cmp_reg) _,
-                        // Do not use `preserves_flags` because cmpxchg modifies the ZF flag.
+                        // Do not use `preserves_flags` because CMPXCHG modifies the ZF flag.
                         options(nostack),
                     );
                     debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -308,7 +311,7 @@ macro_rules! atomic64 {
                         inout("ecx") 0_u32 => _,
                         inout("edx") 0_u32 => _,
                         in("edi") src,
-                        // Do not use `preserves_flags` because cmpxchg8b modifies the ZF flag.
+                        // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -397,7 +400,7 @@ macro_rules! atomic64 {
                         out("ecx") _,
                         out("edx") _,
                         in("edi") dst,
-                        // Do not use `preserves_flags` because cmpxchg8b modifies the ZF flag.
+                        // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -447,7 +450,7 @@ macro_rules! atomic64 {
                         out("ecx") _,
                         out("edx") _,
                         in("edi") dst,
-                        // Do not use `preserves_flags` because cmpxchg8b modifies the ZF flag.
+                        // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -495,7 +498,7 @@ macro_rules! atomic64 {
                         inout("ecx") new => r,
                         inout("edx") old => _,
                         in("edi") dst,
-                        // Do not use `preserves_flags` because cmpxchg8b modifies the ZF flag.
+                        // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
                     debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);
@@ -535,7 +538,7 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must guarantee that `src` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
-                // cfg guarantees that the CPU supports cmpxchg16b.
+                // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
                 // If the value at `dst` (destination operand) and rdx:rax are equal, the
                 // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
@@ -564,7 +567,7 @@ macro_rules! atomic128 {
                         inout("rdx") 0_u64 => _,
                         in($rdi) src,
                         in($rsi) out,
-                        // Do not use `preserves_flags` because cmpxchg16b modifies the ZF flag.
+                        // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -582,7 +585,7 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
-                // cfg guarantees that the CPU supports cmpxchg16b.
+                // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
                 // If the value at `dst` (destination operand) and rdx:rax are equal, the
                 // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
@@ -618,7 +621,7 @@ macro_rules! atomic128 {
                         out("rdx") _,
                         in($rdi) dst,
                         in($rsi) val,
-                        // Do not use `preserves_flags` because cmpxchg16b modifies the ZF flag.
+                        // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -638,7 +641,7 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
-                // cfg guarantees that the CPU supports cmpxchg16b.
+                // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
                 // If the value at `dst` (destination operand) and rdx:rax are equal, the
                 // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
@@ -678,7 +681,7 @@ macro_rules! atomic128 {
                         in($rdi) dst,
                         in($rsi) val,
                         in($r8) out,
-                        // Do not use `preserves_flags` because cmpxchg16b modifies the ZF flag.
+                        // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
                 }
@@ -701,7 +704,7 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
-                // cfg guarantees that the CPU supports cmpxchg16b.
+                // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
                 // If the value at `dst` (destination operand) and rdx:rax are equal, the
                 // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
@@ -739,7 +742,7 @@ macro_rules! atomic128 {
                         in($rsi) old,
                         in($rdx) new,
                         in($r8) out,
-                        // Do not use `preserves_flags` because cmpxchg16b modifies the ZF flag.
+                        // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
                     debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);

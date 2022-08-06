@@ -107,7 +107,7 @@ macro_rules! atomic_load_store {
                             asm!(
                                 // (atomic) load from src to tmp
                                 concat!("l", $ld_suffix, " {tmp}, 0({src})"),
-                                // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
+                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
                                 "cmpd %cr7, {tmp}, {tmp}",
                                 "bne- %cr7, 2f",
                                 "2:",
@@ -127,7 +127,7 @@ macro_rules! atomic_load_store {
                                 "sync",
                                 // (atomic) load from src to tmp
                                 concat!("l", $ld_suffix, " {tmp}, 0({src})"),
-                                // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
+                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
                                 "cmpd %cr7, {tmp}, {tmp}",
                                 "bne- %cr7, 2f",
                                 "2:",
@@ -300,9 +300,9 @@ macro_rules! atomic {
                                 "2:",
                                     concat!("l", $asm_suffix, "arx {out_tmp}, 0, {dst}"),
                                     concat!("cmp", $cmp_suffix, " {old_tmp}, {out_tmp}"),
-                                    "bne %cr0, 3f",
+                                    "bne %cr0, 3f", // jump if compare failed
                                     concat!("st", $asm_suffix, "cx. {new_tmp}, 0, {dst}"),
-                                    "bne %cr0, 2b",
+                                    "bne %cr0, 2b", // continue loop if store failed
                                     "b 4f",
                                 "3:",
                                     concat!("st", $asm_suffix, "cx. {out_tmp}, 0, {dst}"),
@@ -989,7 +989,7 @@ macro_rules! atomic128 {
                             asm!(
                                 // (atomic) load from src to r4-r5 pair
                                 "lq %r4, 0({src})",
-                                // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
+                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
                                 "cmpd %cr7, %r4, %r4",
                                 "bne- %cr7, 2f",
                                 "2:",
@@ -1013,7 +1013,7 @@ macro_rules! atomic128 {
                                 "sync",
                                 // (atomic) load from src to r4-r5 pair
                                 "lq %r4, 0({src})",
-                                // Refs: https://github.com/boostorg/atomic/blob/a17267547071e0dd60c81945bcb6bf0162a5db07/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp
+                                // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
                                 "cmpd %cr7, %r4, %r4",
                                 "bne- %cr7, 2f",
                                 "2:",
@@ -1174,11 +1174,11 @@ macro_rules! atomic128 {
                                     "xor %r11, %r9, %r5",
                                     "xor %r10, %r8, %r4",
                                     "or. %r11, %r11, %r10",
-                                    "bne %cr0, 3f",
+                                    "bne %cr0, 3f", // jump if compare failed
                                     "mr %r11, %r7",
                                     "mr %r10, %r6",
                                     "stqcx. %r10, 0, {dst}",
-                                    "bne %cr0, 2b",
+                                    "bne %cr0, 2b", // continue loop if store failed
                                     "b 4f",
                                 "3:",
                                     "stqcx. %r8, 0, {dst}",

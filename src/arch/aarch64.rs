@@ -217,7 +217,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -235,13 +235,13 @@ macro_rules! atomic {
                                 "2:",
                                     concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
                                     concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
-                                    "b.ne 3f",
+                                    "b.ne 3f", // jump if compare failed
                                     concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b",
+                                    "cbnz {r:w}, 2b", // continue loop if store failed
                                     "b 4f",
                                 "3:",
-                                    "mov {r:w}, #1",
+                                    "mov {r:w}, #1", // mark as failed
                                     "clrex",
                                 "4:",
                                 // store out_tmp to out
@@ -254,7 +254,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -317,7 +317,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
@@ -365,7 +365,7 @@ atomic!(usize, "", "");
 // If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.
 // Otherwise, use LDXP/STXP loop.
 //
-// Note: As of rustc 1.62.0, -C target-feature=+lse2 does not implicitly enable lse.
+// Note: As of rustc 1.62.0, -C target-feature=+lse2 does not implicitly enable target_feature "lse".
 // Also, target_feature "lse2" is not available on rustc side:
 // https://github.com/rust-lang/rust/blob/1.62.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
 //
@@ -376,6 +376,12 @@ atomic!(usize, "", "");
 // - STP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STP
 // - STXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STXP
 // - STLXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STLXP
+//
+// Note: Load-Exclusive pair (by itself) does not guarantee atomicity; to complete an atomic
+// operation (even load/store), a corresponding Store-Exclusive pair must succeed.
+// See Arm Architecture Reference Manual for A-profile architecture
+// Section B2.2.1 "Requirements for single-copy atomicity", and
+// Section B2.9 "Synchronization and semaphores" for more.
 macro_rules! atomic128 {
     ($int_type:ident) => {
         impl AtomicLoad for $int_type {
@@ -655,7 +661,7 @@ macro_rules! atomic128 {
                                 // must be allocated to even/odd register pair
                                 lateout("x8") _, // out_lo
                                 lateout("x9") _, // out_hi
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -676,16 +682,16 @@ macro_rules! atomic128 {
                                     "cset {r:w}, ne",
                                     "cmp {out_hi}, {old_hi}",
                                     "cinc {r:w}, {r:w}, ne",
-                                    "cbz {r:w}, 3f",
+                                    "cbz {r:w}, 3f", // jump if compare succeed
                                     concat!("st", $release, "xp {r:w}, {out_lo}, {out_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b",
-                                    "mov {r:w}, #1",
+                                    "cbnz {r:w}, 2b", // continue loop if store failed
+                                    "mov {r:w}, #1", // mark as failed
                                     "b 4f",
                                 "3:",
                                     concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b",
+                                    "cbnz {r:w}, 2b", // continue loop if store failed
                                 "4:",
                                 // store out_tmp to out
                                 concat!("stp {out_lo}, {out_hi}, [{out", ptr_modifier!(), "}]"),
@@ -700,7 +706,7 @@ macro_rules! atomic128 {
                                 out_hi = lateout(reg) _,
                                 out_lo = lateout(reg) _,
                                 r = lateout(reg) r,
-                                // Do not use `preserves_flags` because cmp modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);

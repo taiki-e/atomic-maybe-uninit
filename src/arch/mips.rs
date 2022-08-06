@@ -243,12 +243,12 @@ macro_rules! atomic {
                                 "2:",
                                     // load from dst to out_tmp
                                     concat!("ll", $asm_ll_suffix, " {out_tmp}, 0({dst})"),
-                                    "bne {out_tmp}, {old_tmp}, 3f",
+                                    "bne {out_tmp}, {old_tmp}, 3f", // compare and jump if compare failed
                                     "move {r}, {new_tmp}",
                                     // store new to dst
                                     concat!("sc", $asm_ll_suffix, " {r}, 0({dst})"),
                                     // 1 if the store was successful, 0 if no store was performed
-                                    "beqz {r}, 2b",
+                                    "beqz {r}, 2b", // continue loop if store failed
                                 "3:",
                                 $acquire, // acquire fence
                                 "xor {new_tmp}, {out_tmp}, {old_tmp}",
