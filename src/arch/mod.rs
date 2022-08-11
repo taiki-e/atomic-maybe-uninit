@@ -2,9 +2,9 @@
 // - inline assembly reference: https://doc.rust-lang.org/nightly/reference/inline-assembly.html
 // - inline assembly rust by example: https://doc.rust-lang.org/nightly/rust-by-example/unsafe/asm.html
 // - feature(asm_experimental_arch): https://doc.rust-lang.org/nightly/unstable-book/language-features/asm-experimental-arch.html
-// - asm module in rustc_target: https://github.com/rust-lang/rust/tree/1.62.0/compiler/rustc_target/src/asm
-// - asm module in rustc_codegen_llvm: https://github.com/rust-lang/rust/blob/1.62.0/compiler/rustc_codegen_llvm/src/asm.rs
-//   - preserves_flags https://github.com/rust-lang/rust/blob/1.62.0/compiler/rustc_codegen_llvm/src/asm.rs#L206-L241
+// - asm module in rustc_target: https://github.com/rust-lang/rust/tree/1.63.0/compiler/rustc_target/src/asm
+// - asm module in rustc_codegen_llvm: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_codegen_llvm/src/asm.rs
+//   - preserves_flags https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_codegen_llvm/src/asm.rs#L206-L241
 // - LLVM LangRef: https://llvm.org/docs/LangRef.html#inline-assembler-expressions
 // - inline assembly related issues in rust-lang/rust: https://github.com/rust-lang/rust/labels/A-inline-assembly
 
