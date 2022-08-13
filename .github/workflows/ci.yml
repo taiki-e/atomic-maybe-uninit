@@ -117,11 +117,9 @@ jobs:
         with:
           target: ${{ matrix.target }}
         if: matrix.target != ''
-      - run: |
-          echo "RUSTFLAGS=${RUSTFLAGS} --cfg qemu" >>"${GITHUB_ENV}"
+      - run: echo "RUSTFLAGS=${RUSTFLAGS} --cfg qemu" >>"${GITHUB_ENV}"
         if: startsWith(matrix.target, 'powerpc64')
-      - run: |
-          echo "TARGET=--target ${{ matrix.target }}" >>"${GITHUB_ENV}"
+      - run: echo "TARGET=--target ${{ matrix.target }}" >>"${GITHUB_ENV}"
         if: matrix.target != ''
 
       - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
@@ -297,6 +295,15 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg valgrind -C target-feature=+cmpxchg16b
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg valgrind -C target-feature=+cmpxchg16b
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo doc --workspace --all-features --document-private-items
+
   tidy:
     runs-on: ubuntu-latest
     steps:
@@ -307,35 +314,22 @@ jobs:
         with:
           components: clippy,rustfmt
       - uses: taiki-e/install-action@shellcheck
+      - run: pip3 install yq
       - run: cargo fmt --all --check
         if: always()
       - run: cargo clippy --workspace --all-features --all-targets
         if: always()
       - run: shellcheck $(git ls-files '*.sh')
         if: always()
-
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-      - uses: dtolnay/rust-toolchain@nightly
-      - run: cargo doc --workspace --all-features
+      - run: tools/check-workflow.sh
+        if: always()
 
   # ALL THE PREVIOUS JOBS NEEDS TO BE ADDED TO THE `needs` SECTION OF THIS JOB!
 
   ci-success:
     name: ci
     if: github.event_name == 'push' && success()
-    needs:
-      - test
-      - build
-      - no-std
-      - msrv
-      - valgrind
-      - tidy
-      - docs
+    needs: [test, build, no-std, msrv, valgrind, docs, tidy] # tidy:needs
     runs-on: ubuntu-latest
     steps:
       - name: Mark the job as a success
