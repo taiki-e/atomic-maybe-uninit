@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Use track_caller when debug assertions are enabled.
+
 ## [0.2.12] - 2022-08-03
 
 - Optimize AArch64 128-bit atomic load when the `lse` target feature is enabled at compile-time.
