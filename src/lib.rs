@@ -261,6 +261,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// unsafe { assert_eq!(v.load(Ordering::Relaxed).assume_init(), 5) }
     /// ```
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn load(&self, order: Ordering) -> MaybeUninit<T>
     where
         T: AtomicLoad,
@@ -295,6 +296,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// unsafe { assert_eq!(v.load(Ordering::Relaxed).assume_init(), 10) }
     /// ```
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn store(&self, val: MaybeUninit<T>, order: Ordering)
     where
         T: AtomicStore,
@@ -485,6 +487,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// }
     /// ```
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn compare_exchange(
         &self,
         current: MaybeUninit<T>,
@@ -563,6 +566,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// }
     /// ```
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn compare_exchange_weak(
         &self,
         current: MaybeUninit<T>,
@@ -640,6 +644,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// }
     /// ```
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn fetch_update<F>(
         &self,
         set_order: Ordering,
