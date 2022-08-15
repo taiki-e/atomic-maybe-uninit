@@ -23,6 +23,7 @@ macro_rules! static_assert {
 /// # Safety
 ///
 /// Reaching this function is completely undefined behavior.
+#[allow(unused_macros)]
 macro_rules! unreachable_unchecked {
     ($($tt:tt)*) => {
         if cfg!(debug_assertions) {

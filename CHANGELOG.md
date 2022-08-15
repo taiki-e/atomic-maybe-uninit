@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support MSP430 atomic load/store.
+
 - Use track_caller when debug assertions are enabled.
 
 ## [0.2.12] - 2022-08-03

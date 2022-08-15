@@ -86,6 +86,10 @@ default_targets=(
     # s390x
     # rustc --print target-list | grep -E '^s390' | grep -E '(-unknown-linux|-none)'
     s390x-unknown-linux-gnu
+
+    # msp430
+    # rustc --print target-list | grep -E '^msp430'
+    msp430-none-elf
 )
 
 pre_args=()
@@ -147,7 +151,7 @@ build() {
     args+=("${target_flags[@]}")
     if [[ -z "${nightly}" ]]; then
         case "${target}" in
-            mips* | powerpc* | s390*)
+            mips* | powerpc* | s390* | msp430*)
                 echo "target '${target}' requires nightly compiler"
                 return 0
                 ;;
