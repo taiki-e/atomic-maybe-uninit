@@ -1,13 +1,13 @@
 // Refs:
-// - https://openpowerfoundation.org/specifications/isa
-// - https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
+// - Power ISA https://openpowerfoundation.org/specifications/isa
+// - AIX Assembler language reference https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
 // - http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/Wce1bc8nj
-// - powerpc64 https://godbolt.org/z/1ejoYn4TP
-// - powerpc64 (pwr8) https://godbolt.org/z/vxoMz5Was
-// - powerpc64le https://godbolt.org/z/Gvdnarbdc
+// - powerpc https://godbolt.org/z/nGx1bsGvr
+// - powerpc64 https://godbolt.org/z/8nPx6zcG7
+// - powerpc64 (pwr8) https://godbolt.org/z/vzWMfK1Y8
+// - powerpc64le https://godbolt.org/z/Ms9osbhdz
 
 use core::{
     arch::asm,
@@ -95,6 +95,7 @@ macro_rules! atomic_load_store {
                                 $release,
                                 // (atomic) load from src to tmp
                                 concat!("l", $ld_suffix, " {tmp}, 0({src})"),
+                                // Lightweight acquire sync
                                 // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
                                 "cmpd %cr7, {tmp}, {tmp}",
                                 "bne- %cr7, 2f",
@@ -969,7 +970,7 @@ macro_rules! atomic128 {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 out("r0") _,
-                                // lq loads value into even/odd pair of specified register and subsequent register.
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
@@ -989,7 +990,7 @@ macro_rules! atomic128 {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 out("r0") _,
-                                // lq loads value into even/odd pair of specified register and subsequent register.
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
@@ -1027,7 +1028,7 @@ macro_rules! atomic128 {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out("r0") _,
-                                // lq loads value into even/odd pair of specified register and subsequent register.
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
@@ -1082,7 +1083,7 @@ macro_rules! atomic128 {
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
                                 out("r0") _,
-                                // lq loads value into even/odd pair of specified register and subsequent register.
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _, // val (hi)
                                 out("r5") _, // val (lo)
@@ -1163,7 +1164,7 @@ macro_rules! atomic128 {
                                 new = inout(reg) new => _,
                                 out = inout(reg) out => _,
                                 out("r0") _,
-                                // lq loads value into even/odd pair of specified register and subsequent register.
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _, // old (hi)
                                 out("r5") _, // old (lo)

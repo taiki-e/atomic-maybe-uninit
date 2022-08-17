@@ -1,7 +1,7 @@
 // ARMv6 (see arm.rs for ARMv6-M)
 //
 // Generated asm:
-// - armv6 https://godbolt.org/z/v4zEr1TGP
+// - armv6 https://godbolt.org/z/75jPs3Yo1
 
 use core::{
     mem::{self, MaybeUninit},

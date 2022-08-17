@@ -2,7 +2,7 @@
 // - https://www.ibm.com/support/pages/zarchitecture-reference-summary
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/qb8zMYb7a
+// - s390x https://godbolt.org/z/o14qzdhK5
 
 use core::{
     arch::asm,
@@ -434,7 +434,7 @@ macro_rules! atomic128 {
                         "stg %r0, 0({out})",
                         src = in(reg) src,
                         out = in(reg) out,
-                        // lpq loads value into even/odd pair of specified register and subsequent register.
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") _,
                         out("r1") _,
                         options(nostack),
@@ -465,7 +465,7 @@ macro_rules! atomic128 {
                                 "stpq %r0, 0({dst})",
                                 dst = in(reg) dst,
                                 val = in(reg) val,
-                                // stpq stores value from even/odd pair of specified register and subsequent register.
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 out("r0") _,
                                 out("r1") _,
                                 options(nostack),
@@ -481,7 +481,7 @@ macro_rules! atomic128 {
                                 "bcr 15, %r0",
                                 dst = in(reg) dst,
                                 val = in(reg) val,
-                                // stpq stores value from even/odd pair of specified register and subsequent register.
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 out("r0") _,
                                 out("r1") _,
                                 options(nostack),
@@ -522,7 +522,7 @@ macro_rules! atomic128 {
                         dst = in(reg) dst,
                         val = in(reg) val,
                         out = in(reg) out,
-                        // lpq loads value into even/odd pair of specified register and subsequent register.
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") _, // val (hi)
                         out("r1") _, // val (lo)
                         out("r2") _, // out (hi)
@@ -571,7 +571,7 @@ macro_rules! atomic128 {
                         new = in(reg) new,
                         out = inout(reg) out => _,
                         r = lateout(reg) r,
-                        // lpq loads value into even/odd pair of specified register and subsequent register.
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") _, // old (hi) -> out (hi)
                         out("r1") _, // old (lo) -> out (lo)
                         out("r12") _, // new (hi)
