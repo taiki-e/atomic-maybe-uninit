@@ -65,8 +65,8 @@ fn main() {
     match &*target_arch {
         "x86_64" => {
             // x86_64 macos always support CMPXCHG16B: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L7
-            let is_x86_64_macos = target == "x86_64-apple-darwin";
-            if has_target_feature("cmpxchg16b", is_x86_64_macos, &version, None, true) {
+            let has_cmpxchg16b = target == "x86_64-apple-darwin";
+            if has_target_feature("cmpxchg16b", has_cmpxchg16b, &version, None, true) {
                 target_feature("cmpxchg16b");
             }
         }
@@ -123,11 +123,11 @@ fn main() {
             // #[cfg(target_feature = "v7")] and others don't work on stable.
             // armv7-unknown-linux-gnueabihf
             //    ^^
-            let mut arch =
+            let mut subarch =
                 target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")).unwrap();
-            arch = arch.split_once('-').unwrap().0;
-            arch = arch.split_once('.').unwrap_or((arch, "")).0; // ignore .base/.main suffix
-            arch = arch.strip_prefix("eb").unwrap_or(arch); // ignore endianness
+            subarch = subarch.split_once('-').unwrap().0;
+            subarch = subarch.split_once('.').unwrap_or((subarch, "")).0; // ignore .base/.main suffix
+            subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
             let mut known = true;
             // As of rustc nightly-2022-07-09, there are the following "vN*" patterns:
             // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort | uniq | sed -E 's/^/"/g' | sed -E 's/$/"/g'
@@ -159,30 +159,30 @@ fn main() {
             // target_feature="llvm14-builtins-abi"
             // target_feature="v5te"
             // target_feature="v6"
-            match arch {
+            match subarch {
                 "v7" | "v7a" | "v7neon" | "v7s" | "v7k" => target_feature("aclass"),
                 "v6m" | "v7em" | "v7m" | "v8m" => target_feature("mclass"),
                 "v7r" => target_feature("rclass"),
                 // arm-linux-androideabi is v5te
                 // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
-                _ if target == "arm-linux-androideabi" => arch = "v5te",
+                _ if target == "arm-linux-androideabi" => subarch = "v5te",
                 // v6 targets other than v6m don't have *class target feature.
-                "" | "v6" | "v6k" => arch = "v6",
+                "" | "v6" | "v6k" => subarch = "v6",
                 // Other targets don't have *class target feature.
                 "v4t" | "v5te" => {}
                 _ => {
                     known = false;
                     println!(
-                        "cargo:warning={}: unrecognized arm target: {}",
+                        "cargo:warning={}: unrecognized arm subarch: {}",
                         env!("CARGO_PKG_NAME"),
                         target
                     );
                 }
             }
             if known {
-                let v6 = arch.starts_with("v6");
-                let v7 = arch.starts_with("v7");
-                let v8 = arch.starts_with("v8");
+                let v6 = subarch.starts_with("v6");
+                let v7 = subarch.starts_with("v7");
+                let v8 = subarch.starts_with("v8");
                 if v6 || v7 || v8 {
                     target_feature("v6");
                     if v7 || v8 {
@@ -194,27 +194,45 @@ fn main() {
                 }
             }
         }
-        "riscv32" | "riscv64" => {
-            let arch = target.strip_prefix("riscv").unwrap();
+        _ if target_arch.starts_with("riscv") => {
             // #[cfg(target_feature = "a")] doesn't work on stable.
             // riscv64gc-unknown-linux-gnu
-            //      ^^^^
-            let arch = arch.split_once('-').unwrap().0;
+            //        ^^
+            let mut subarch = target.strip_prefix(&target_arch).unwrap();
+            subarch = subarch.split_once('-').unwrap().0;
             // G = IMAFD
-            if arch.contains('a') || arch.contains('g') {
+            if subarch.contains('a') || subarch.contains('g') {
                 target_feature("a");
             }
         }
         "powerpc64" => {
-            if target.starts_with("powerpc64-") {
-                // Only check powerpc64 (be) -- powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L652
-                if let Some(cpu) = target_cpu().as_deref() {
-                    // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
-                    if matches!(cpu, "pwr8" | "pwr9" | "pwr10") {
-                        target_feature("partword-atomics"); // l[bh]arx and st[bh]cx.
-                        target_feature("quadword-atomics"); // lqarx and stqcx.
+            // powerpc64le is pwr8+ by default https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L652
+            // See also https://github.com/rust-lang/rust/issues/59932
+            let mut has_partword_atomics = target.starts_with("powerpc64le-"); // l[bh]arx and st[bh]cx.
+            let mut has_quadword_atomics = has_partword_atomics; // lqarx and stqcx.
+            if let Some(cpu) = target_cpu().as_deref() {
+                if let Some(cpu_version) = cpu.strip_prefix("pwr") {
+                    if let Ok(cpu_version) = cpu_version.parse::<u32>() {
+                        // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
+                        if cpu_version >= 8 {
+                            has_quadword_atomics = true;
+                            has_partword_atomics = true;
+                        } else {
+                            has_quadword_atomics = false;
+                            has_partword_atomics = false;
+                        }
                     }
                 }
+            }
+            has_partword_atomics =
+                has_target_feature("partword-atomics", has_partword_atomics, &version, None, false);
+            has_quadword_atomics =
+                has_target_feature("quadword-atomics", has_quadword_atomics, &version, None, false);
+            if has_partword_atomics {
+                target_feature("partword-atomics");
+            }
+            if has_quadword_atomics {
+                target_feature("quadword-atomics");
             }
         }
         _ => {}

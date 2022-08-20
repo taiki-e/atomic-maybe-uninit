@@ -4,10 +4,11 @@
 // - http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/nGx1bsGvr
-// - powerpc64 https://godbolt.org/z/8nPx6zcG7
-// - powerpc64 (pwr8) https://godbolt.org/z/vzWMfK1Y8
-// - powerpc64le https://godbolt.org/z/Ms9osbhdz
+// - powerpc https://godbolt.org/z/sesGzGqrn
+// - powerpc64 https://godbolt.org/z/3Wav486WP
+// - powerpc64 (pwr8) https://godbolt.org/z/7qqEsnTY5
+// - powerpc64le https://godbolt.org/z/rr8fPqa7b
+// - powerpc64le (pwr7) https://godbolt.org/z/8hq8Ps5f1
 
 use core::{
     arch::asm,
@@ -27,7 +28,6 @@ macro_rules! if_d {
 }
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics"
 ))]
@@ -39,7 +39,6 @@ macro_rules! p128h {
 }
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics"
 ))]
@@ -51,7 +50,6 @@ macro_rules! p128l {
 }
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics"
 ))]
@@ -63,7 +61,6 @@ macro_rules! p128h {
 }
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics"
 ))]
@@ -329,7 +326,6 @@ macro_rules! atomic {
     };
 }
 
-#[cfg(target_endian = "big")]
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(target_feature = "partword-atomics", atomic_maybe_uninit_target_feature = "partword-atomics")
@@ -358,6 +354,7 @@ macro_rules! atomic8 {
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/CodeGen/AtomicExpandPass.cpp#L682
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/test/CodeGen/PowerPC/atomics.ll
                     #[cfg(target_arch = "powerpc64")]
+                    #[cfg(target_endian = "big")]
                     macro_rules! atomic_swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -387,6 +384,43 @@ macro_rules! atomic8 {
                                 in("r5") out,
                                 out("r6") _,
                                 out("r7") _, // dst ptr (aligned)
+                                out("r8") _,
+                                out("r9") _,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    #[cfg(target_arch = "powerpc64")]
+                    #[cfg(target_endian = "little")]
+                    macro_rules! atomic_swap {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                "lbz %r7, 0(%r4)",
+                                "li %r6, 255",
+                                "rlwinm %r4, %r3, 3, 27, 28",
+                                $release,
+                                "slw %r6, %r6, %r4",
+                                "rldicr %r3, %r3, 0, 61",
+                                "slw %r7, %r7, %r4",
+                                "and %r7, %r7, %r6",
+                                // (atomic) swap
+                                "2:",
+                                    "lwarx %r8, 0, %r3",
+                                    "andc %r9, %r8, %r6",
+                                    "or %r9, %r7, %r9",
+                                    "stwcx. %r9, 0, %r3",
+                                    "bne %cr0, 2b",
+                                "srw %r3, %r8, %r4",
+                                $acquire,
+                                "clrlwi %r3, %r3, 24",
+                                "stb %r3, 0(%r5)",
+                                out("r0") _,
+                                inout("r3") dst => _,
+                                inout("r4") val => _,
+                                in("r5") out,
+                                out("r6") _,
+                                out("r7") _,
                                 out("r8") _,
                                 out("r9") _,
                                 out("cr0") _,
@@ -467,6 +501,7 @@ macro_rules! atomic8 {
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/CodeGen/AtomicExpandPass.cpp#L682
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/test/CodeGen/PowerPC/atomics.ll
                     #[cfg(target_arch = "powerpc64")]
+                    #[cfg(target_endian = "big")]
                     macro_rules! atomic_cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -501,6 +536,56 @@ macro_rules! atomic8 {
                                 "cntlzw  %r3, %r3",
                                 "srwi %r3, %r3, 5",
                                 "stb %r5, 0(%r6)",
+                                out("r0") _,
+                                inout("r3") dst => r,
+                                inout("r4") old => _,
+                                inout("r5") new => _,
+                                in("r6") out,
+                                out("r7") _,
+                                out("r8") _,
+                                out("r9") _,
+                                out("r10") _,
+                                out("r11") _,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    #[cfg(target_arch = "powerpc64")]
+                    #[cfg(target_endian = "little")]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                "lbz %r8, 0(%r5)",
+                                "lbz %r4, 0(%r4)",
+                                "li %r7, 255",
+                                "rlwinm %r5, %r3, 3, 27, 28",
+                                $release,
+                                "slw %r7, %r7, %r5",
+                                "rldicr %r3, %r3, 0, 61",
+                                "slw %r8, %r8, %r5",
+                                "slw %r9, %r4, %r5",
+                                "and %r8, %r8, %r7",
+                                "and %r10, %r9, %r7",
+                                "2:",
+                                    "lwarx %r11, 0, %r3",
+                                    "and %r9, %r11, %r7",
+                                    "cmpw %r9, %r10",
+                                    "bne %cr0, 3f",
+                                    "andc %r11, %r11, %r7",
+                                    "or %r11, %r11, %r8",
+                                    "stwcx. %r11, 0, %r3",
+                                    "bne %cr0, 2b",
+                                    "b 4f",
+                                "3:",
+                                    "stwcx. %r11, 0, %r3",
+                                "4:",
+                                "srw %r5, %r9, %r5",
+                                $acquire,
+                                "xor %r3, %r5, %r4",
+                                "stb %r5, 0(%r6)",
+                                "cntlzw  %r3, %r3",
+                                "srwi %r3, %r3, 5",
                                 out("r0") _,
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
@@ -587,7 +672,6 @@ macro_rules! atomic8 {
     };
 }
 
-#[cfg(target_endian = "big")]
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(target_feature = "partword-atomics", atomic_maybe_uninit_target_feature = "partword-atomics")
@@ -616,6 +700,7 @@ macro_rules! atomic16 {
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/CodeGen/AtomicExpandPass.cpp#L682
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/test/CodeGen/PowerPC/atomics.ll
                     #[cfg(target_arch = "powerpc64")]
+                    #[cfg(target_endian = "big")]
                     macro_rules! atomic_swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -646,6 +731,44 @@ macro_rules! atomic16 {
                                 in("r5") out,
                                 out("r6") _,
                                 out("r7") _,  // dst ptr (aligned)
+                                out("r8") _,
+                                out("r9") _,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    #[cfg(target_arch = "powerpc64")]
+                    #[cfg(target_endian = "little")]
+                    macro_rules! atomic_swap {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                "li %r6, 0",
+                                "lhz %r7, 0(%r4)",
+                                "rlwinm %r4, %r3, 3, 27, 27",
+                                $release,
+                                "ori %r6, %r6, 65535",
+                                "rldicr %r3, %r3, 0, 61",
+                                "slw %r7, %r7, %r4",
+                                "slw %r6, %r6, %r4",
+                                "and %r7, %r7, %r6",
+                                // (atomic) swap
+                                "2:",
+                                    "lwarx %r8, 0, %r3",
+                                    "andc %r9, %r8, %r6",
+                                    "or %r9, %r7, %r9",
+                                    "stwcx. %r9, 0, %r3",
+                                    "bne %cr0, 2b",
+                                "srw %r3, %r8, %r4",
+                                $acquire,
+                                "clrlwi %r3, %r3, 16",
+                                "sth %r3, 0(%r5)",
+                                out("r0") _,
+                                inout("r3") dst => _,
+                                inout("r4") val => _,
+                                in("r5") out,
+                                out("r6") _,
+                                out("r7") _,
                                 out("r8") _,
                                 out("r9") _,
                                 out("cr0") _,
@@ -727,6 +850,7 @@ macro_rules! atomic16 {
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/CodeGen/AtomicExpandPass.cpp#L682
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/test/CodeGen/PowerPC/atomics.ll
                     #[cfg(target_arch = "powerpc64")]
+                    #[cfg(target_endian = "big")]
                     macro_rules! atomic_cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -762,6 +886,57 @@ macro_rules! atomic16 {
                                 "cntlzw %r3, %r3",
                                 "srwi %r3, %r3, 5",
                                 "sth %r5, 0(%r6)",
+                                out("r0") _,
+                                inout("r3") dst => r,
+                                inout("r4") old => _,
+                                inout("r5") new => _,
+                                in("r6") out,
+                                out("r7") _,
+                                out("r8") _,
+                                out("r9") _,
+                                out("r10") _,
+                                out("r11") _,
+                                out("cr0") _,
+                                options(nostack),
+                            )
+                        };
+                    }
+                    #[cfg(target_arch = "powerpc64")]
+                    #[cfg(target_endian = "little")]
+                    macro_rules! atomic_cmpxchg {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                "li %r7, 0",
+                                "lhz %r8, 0(%r5)",
+                                "lhz %r4, 0(%r4)",
+                                "rlwinm %r5, %r3, 3, 27, 27",
+                                $release,
+                                "ori %r7, %r7, 65535",
+                                "rldicr %r3, %r3, 0, 61",
+                                "slw %r8, %r8, %r5",
+                                "slw %r9, %r4, %r5",
+                                "slw %r7, %r7, %r5",
+                                "and %r8, %r8, %r7",
+                                "and %r10, %r9, %r7",
+                                "2:",
+                                    "lwarx %r11, 0, %r3",
+                                    "and %r9, %r11, %r7",
+                                    "cmpw %r9, %r10",
+                                    "bne %cr0, 3f",
+                                    "andc %r11, %r11, %r7",
+                                    "or %r11, %r11, %r8",
+                                    "stwcx. %r11, 0, %r3",
+                                    "bne %cr0, 2b",
+                                    "b 4f",
+                                "3:",
+                                    "stwcx. %r11, 0, %r3",
+                                "4:",
+                                "srw %r5, %r9, %r5",
+                                $acquire,
+                                "xor %r3, %r5, %r4",
+                                "sth %r5, 0(%r6)",
+                                "cntlzw %r3, %r3",
+                                "srwi %r3, %r3, 5",
                                 out("r0") _,
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
@@ -851,33 +1026,28 @@ macro_rules! atomic16 {
 
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "partword-atomics",
     atomic_maybe_uninit_target_feature = "partword-atomics"
 ))]
 atomic!(i8, "bz", "b", "w");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "partword-atomics",
     atomic_maybe_uninit_target_feature = "partword-atomics"
 ))]
 atomic!(u8, "bz", "b", "w");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "partword-atomics",
     atomic_maybe_uninit_target_feature = "partword-atomics"
 ))]
 atomic!(i16, "hz", "h", "w");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "partword-atomics",
     atomic_maybe_uninit_target_feature = "partword-atomics"
 ))]
 atomic!(u16, "hz", "h", "w");
-#[cfg(target_endian = "big")]
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(
@@ -886,7 +1056,6 @@ atomic!(u16, "hz", "h", "w");
     )
 )))]
 atomic8!(i8, "bz", "b");
-#[cfg(target_endian = "big")]
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(
@@ -895,7 +1064,6 @@ atomic8!(i8, "bz", "b");
     )
 )))]
 atomic8!(u8, "bz", "b");
-#[cfg(target_endian = "big")]
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(
@@ -904,7 +1072,6 @@ atomic8!(u8, "bz", "b");
     )
 )))]
 atomic16!(i16, "hz", "h");
-#[cfg(target_endian = "big")]
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(
@@ -932,10 +1099,7 @@ atomic!(usize, "d", "d", "d");
 // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/test/CodeGen/PowerPC/atomics-i128-ldst.ll
 // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/test/CodeGen/PowerPC/atomics-i128.ll
 #[cfg(target_arch = "powerpc64")]
-// powerpc64le is pwr8+ https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L652
-// See also https://github.com/rust-lang/rust/issues/59932
 #[cfg(any(
-    target_endian = "little",
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics"
 ))]
@@ -1197,14 +1361,12 @@ macro_rules! atomic128 {
 
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics"
 ))]
 atomic128!(i128);
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
-    target_endian = "little",
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics"
 ))]
@@ -1228,7 +1390,6 @@ mod tests {
     #[cfg(not(qemu))]
     #[cfg(target_arch = "powerpc64")]
     #[cfg(any(
-        target_endian = "little",
         target_feature = "quadword-atomics",
         atomic_maybe_uninit_target_feature = "quadword-atomics"
     ))]
@@ -1236,7 +1397,6 @@ mod tests {
     #[cfg(not(qemu))]
     #[cfg(target_arch = "powerpc64")]
     #[cfg(any(
-        target_endian = "little",
         target_feature = "quadword-atomics",
         atomic_maybe_uninit_target_feature = "quadword-atomics"
     ))]
@@ -1247,7 +1407,6 @@ mod tests {
     #[cfg(qemu)]
     #[cfg(target_arch = "powerpc64")]
     #[cfg(any(
-        target_endian = "little",
         target_feature = "quadword-atomics",
         atomic_maybe_uninit_target_feature = "quadword-atomics"
     ))]
@@ -1255,7 +1414,6 @@ mod tests {
     #[cfg(qemu)]
     #[cfg(target_arch = "powerpc64")]
     #[cfg(any(
-        target_endian = "little",
         target_feature = "quadword-atomics",
         atomic_maybe_uninit_target_feature = "quadword-atomics"
     ))]
