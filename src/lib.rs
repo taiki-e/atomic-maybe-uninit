@@ -157,7 +157,7 @@ impl<T: Primitive> From<T> for AtomicMaybeUninit<T> {
 impl<T: Primitive> fmt::Debug for AtomicMaybeUninit<T> {
     #[allow(clippy::missing_inline_in_public_items)] // fmt is not hot path
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.pad(core::any::type_name::<Self>())
+        f.write_str(core::any::type_name::<Self>())
     }
 }
 
