@@ -336,7 +336,7 @@ mod version {
     pub(crate) fn rustc_version() -> Option<Version> {
         let rustc = env::var_os("RUSTC")?;
         // Use verbose version output because the packagers add extra strings to the normal version output.
-        let output = Command::new(rustc).args(&["--version", "--verbose"]).output().ok()?;
+        let output = Command::new(rustc).args(["--version", "--verbose"]).output().ok()?;
         let output = str::from_utf8(&output.stdout).ok()?;
 
         let mut release =
