@@ -53,7 +53,9 @@ macro_rules! test_atomic {
 
 macro_rules! __test_atomic {
     (load_store, $int_type:ident) => {
-        use std::{collections::HashSet, mem::MaybeUninit, thread, vec, vec::Vec};
+        use std::{collections::HashSet, mem::MaybeUninit, vec, vec::Vec};
+
+        use crossbeam_utils::thread;
 
         use crate::{tests::helper::*, AtomicMaybeUninit};
 
@@ -129,14 +131,14 @@ macro_rules! __test_atomic {
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for _ in 0..threads {
-                        s.spawn(|| {
+                        s.spawn(|_| {
                             let now = *now;
                             for i in 0..iterations {
                                 a.store(MaybeUninit::new(data1[i]), rand_store_ordering());
                             }
                             std::eprintln!("store end={:?}", now.elapsed());
                         });
-                        s.spawn(|| {
+                        s.spawn(|_| {
                             let now = *now;
                             let mut v = vec![0; iterations];
                             for i in 0..iterations {
@@ -148,7 +150,8 @@ macro_rules! __test_atomic {
                             }
                         });
                     }
-                });
+                })
+                .unwrap();
             }
         }
     };
@@ -207,7 +210,7 @@ macro_rules! __test_atomic {
                 thread::scope(|s| {
                     for thread in 0..threads {
                         if thread % 2 == 0 {
-                            s.spawn(move || {
+                            s.spawn(move |_| {
                                 let now = *now;
                                 for i in 0..iterations {
                                     a.store(
@@ -218,7 +221,7 @@ macro_rules! __test_atomic {
                                 std::eprintln!("store end={:?}", now.elapsed());
                             });
                         } else {
-                            s.spawn(|| {
+                            s.spawn(|_| {
                                 let now = *now;
                                 let mut v = vec![0; iterations];
                                 for i in 0..iterations {
@@ -230,7 +233,7 @@ macro_rules! __test_atomic {
                                 }
                             });
                         }
-                        s.spawn(move || {
+                        s.spawn(move |_| {
                             let now = *now;
                             let mut v = vec![0; iterations];
                             for i in 0..iterations {
@@ -244,7 +247,8 @@ macro_rules! __test_atomic {
                             }
                         });
                     }
-                });
+                })
+                .unwrap();
             }
         }
     };
@@ -482,7 +486,7 @@ macro_rules! __test_atomic {
                 thread::scope(|s| {
                     for thread in 0..threads {
                         if thread % 2 == 0 {
-                            s.spawn(move || {
+                            s.spawn(move |_| {
                                 let now = *now;
                                 for i in 0..iterations {
                                     a.store(
@@ -493,7 +497,7 @@ macro_rules! __test_atomic {
                                 std::eprintln!("store end={:?}", now.elapsed());
                             });
                         } else {
-                            s.spawn(|| {
+                            s.spawn(|_| {
                                 let now = *now;
                                 let mut v = vec![0; iterations];
                                 for i in 0..iterations {
@@ -505,7 +509,7 @@ macro_rules! __test_atomic {
                                 }
                             });
                         }
-                        s.spawn(move || {
+                        s.spawn(move |_| {
                             let now = *now;
                             let mut v = vec![data2[0][0]; iterations];
                             for i in 0..iterations {
@@ -527,7 +531,8 @@ macro_rules! __test_atomic {
                             }
                         });
                     }
-                });
+                })
+                .unwrap();
             }
         }
     };
@@ -541,7 +546,7 @@ macro_rules! __stress_test_coherence {
             let v = &(0..N).map(|_| AtomicUsize::new(0)).collect::<Vec<_>>();
             let a = &AtomicMaybeUninit::from(0_usize);
             thread::scope(|s| {
-                s.spawn(|| {
+                s.spawn(|_| {
                     for i in 0..N {
                         if let Some(b) = (a.load(Ordering::$load_order).assume_init()
                             as *const AtomicUsize)
@@ -555,7 +560,8 @@ macro_rules! __stress_test_coherence {
                     b.store(1, Ordering::Relaxed);
                     a.$write(MaybeUninit::new(b as *const _ as usize), Ordering::$store_order);
                 }
-            });
+            })
+            .unwrap();
         }
     };
 }
@@ -572,9 +578,10 @@ macro_rules! stress_test_load_store {
             use std::{
                 mem::MaybeUninit,
                 sync::atomic::{AtomicUsize, Ordering},
-                thread,
                 vec::Vec,
             };
+
+            use crossbeam_utils::thread;
 
             use crate::AtomicMaybeUninit;
 
@@ -626,9 +633,10 @@ macro_rules! stress_test_load_swap {
             use std::{
                 mem::MaybeUninit,
                 sync::atomic::{AtomicUsize, Ordering},
-                thread,
                 vec::Vec,
             };
+
+            use crossbeam_utils::thread;
 
             use crate::AtomicMaybeUninit;
 
