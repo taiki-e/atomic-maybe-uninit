@@ -117,7 +117,7 @@ macro_rules! atomic {
                         concat!("st", $st_suffix, " %r0, 0({out})"),
                         dst = inout(reg) dst => _,
                         val = in(reg) val,
-                        val_tmp = lateout(reg) _,
+                        val_tmp = out(reg) _,
                         out = inout(reg) out => _,
                         out("r0") _,
                         options(nostack),
@@ -519,14 +519,14 @@ macro_rules! atomic128 {
                         // store r2-r3 pair to out
                         "stg %r3, 8({out})",
                         "stg %r2, 0({out})",
-                        dst = in(reg) dst,
+                        dst = inout(reg) dst => _,
                         val = in(reg) val,
-                        out = in(reg) out,
+                        out = inout(reg) out => _,
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") _, // val (hi)
                         out("r1") _, // val (lo)
-                        out("r2") _, // out (hi)
-                        out("r3") _, // out (lo)
+                        lateout("r2") _, // out (hi)
+                        lateout("r3") _, // out (lo)
                         options(nostack),
                     );
                 }
