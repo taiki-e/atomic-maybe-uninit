@@ -34,6 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - rust: '1.59'
           - rust: stable
           - rust: beta
           - rust: nightly
@@ -232,11 +233,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - rust: '1.59'
-          - rust: stable
-          - rust: beta
-          - rust: nightly
+        rust:
+          - '1.59'
+          - stable
+          - beta
+          - nightly
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
