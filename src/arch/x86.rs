@@ -491,7 +491,7 @@ macro_rules! atomic64 {
                         // store previous value to out
                         "mov dword ptr [esi], eax",
                         "mov dword ptr [esi + 4], edx",
-                        // restore rbx
+                        // restore esi
                         "mov esi, {esi_tmp}",
                         esi_tmp = inout(reg) out => _,
                         out("eax") _,
@@ -600,7 +600,7 @@ macro_rules! atomic128 {
                     // atomic store is always SeqCst.
                     asm!(
                         // rbx is reserved by LLVM
-                        "xchg {rbx_tmp}, rbx",
+                        "mov {rbx_tmp}, rbx",
                         concat!("mov rbx, qword ptr [", $rsi, "]"),
                         concat!("mov rcx, qword ptr [", $rsi, " + 8]"),
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
@@ -656,7 +656,7 @@ macro_rules! atomic128 {
                     // atomic swap is always SeqCst.
                     asm!(
                         // rbx is reserved by LLVM
-                        "xchg {rbx_tmp}, rbx",
+                        "mov {rbx_tmp}, rbx",
                         concat!("mov rbx, qword ptr [", $rsi, "]"),
                         concat!("mov rcx, qword ptr [", $rsi, " + 8]"),
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
@@ -720,7 +720,7 @@ macro_rules! atomic128 {
                     // compare_exchange is always SeqCst.
                     asm!(
                         // rbx is reserved by LLVM
-                        "xchg {rbx_tmp}, rbx",
+                        "mov {rbx_tmp}, rbx",
                         concat!("mov rax, qword ptr [", $rsi, "]"),
                         concat!("mov rsi, qword ptr [", $rsi, " + 8]"),
                         concat!("mov rbx, qword ptr [", $rdx, "]"),
