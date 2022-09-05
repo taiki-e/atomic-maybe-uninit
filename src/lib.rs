@@ -114,12 +114,7 @@ pub mod raw;
 
 #[cfg(doc)]
 use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
-use core::{
-    cell::UnsafeCell,
-    fmt,
-    mem::{self, MaybeUninit},
-    sync::atomic::Ordering,
-};
+use core::{cell::UnsafeCell, fmt, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Primitive};
 
@@ -682,8 +677,12 @@ macro_rules! int {
                 Self { v: UnsafeCell::new(v), _align: [] }
             }
         }
-        static_assert!(mem::size_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
-        static_assert!(mem::align_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
+        static_assert!(
+            core::mem::size_of::<AtomicMaybeUninit<$ty>>() == core::mem::size_of::<$ty>()
+        );
+        static_assert!(
+            core::mem::align_of::<AtomicMaybeUninit<$ty>>() == core::mem::size_of::<$ty>()
+        );
     };
 }
 int!(i8, Align1);
