@@ -206,7 +206,7 @@ fn main() {
             }
         }
         "powerpc64" => {
-            // powerpc64le is pwr8+ by default https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L652
+            // powerpc64le is pwr8+ by default https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0/llvm/lib/Target/PowerPC/PPC.td#L652
             // See also https://github.com/rust-lang/rust/issues/59932
             let mut has_partword_atomics = target.starts_with("powerpc64le-"); // l[bh]arx and st[bh]cx.
             let mut has_quadword_atomics = has_partword_atomics; // lqarx and stqcx.
