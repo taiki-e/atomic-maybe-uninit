@@ -91,6 +91,16 @@ default_targets=(
     # rustc --print target-list | grep -E '^msp430'
     msp430-none-elf
 )
+known_cfgs=()
+
+x() {
+    local cmd="$1"
+    shift
+    (
+        set -x
+        "${cmd}" "$@"
+    )
+}
 
 pre_args=()
 if [[ "${1:-}" == "+"* ]]; then
@@ -117,8 +127,8 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
         *)
             # TODO: handle key-value cfg from build script as --check-cfg=values(name, "value1", "value2", ... "valueN")
             # shellcheck disable=SC2207
-            build_script_cfg=($(grep -E 'cargo:rustc-cfg=' build.rs | sed -E 's/^.*cargo:rustc-cfg=//' | sed -E 's/(=\\)?".*$//' | LC_ALL=C sort | uniq))
-            check_cfg="-Z unstable-options --check-cfg=names($(IFS=',' && echo "${build_script_cfg[*]}")) --check-cfg=values(target_pointer_width,\"128\") --check-cfg=values(feature,\"cargo-clippy\")"
+            known_cfgs+=($(grep -E 'cargo:rustc-cfg=' build.rs | sed -E 's/^.*cargo:rustc-cfg=//' | sed -E 's/(=\\)?".*$//' | LC_ALL=C sort | uniq))
+            check_cfg="-Z unstable-options --check-cfg=names($(IFS=',' && echo "${known_cfgs[*]}")) --check-cfg=values(target_pointer_width,\"128\") --check-cfg=values(feature,\"cargo-clippy\")"
             rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
             base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy -Z check-cfg="names,values,output,features")
             ;;
@@ -126,14 +136,6 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
 fi
 echo "base rustflags='${RUSTFLAGS:-} ${check_cfg:-}'"
 
-x() {
-    local cmd="$1"
-    shift
-    (
-        set -x
-        "${cmd}" "$@"
-    )
-}
 build() {
     local target="$1"
     shift
@@ -141,7 +143,7 @@ build() {
     local target_rustflags="${RUSTFLAGS:-} ${check_cfg:-}"
     if ! grep <<<"${rustc_target_list}" -Eq "^${target}$"; then
         if [[ ! -f "target-specs/${target}.json" ]]; then
-            echo "target '${target}' not available on ${rustc_version}"
+            echo "target '${target}' not available on ${rustc_version} (skipped all checks)"
             return 0
         fi
         target_flags=(--target "$(pwd)/target-specs/${target}.json")
@@ -149,14 +151,6 @@ build() {
         target_flags=(--target "${target}")
     fi
     args+=("${target_flags[@]}")
-    if [[ -z "${nightly}" ]]; then
-        case "${target}" in
-            mips* | powerpc* | s390* | msp430*)
-                echo "target '${target}' requires nightly compiler"
-                return 0
-                ;;
-        esac
-    fi
     if grep <<<"${rustup_target_list}" -Eq "^${target}( |$)"; then
         x rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
     elif [[ -n "${nightly}" ]]; then
@@ -165,8 +159,16 @@ build() {
             *) args+=(-Z build-std) ;;
         esac
     else
-        echo "target '${target}' requires nightly compiler"
+        echo "target '${target}' requires nightly compiler (skipped all checks)"
         return 0
+    fi
+    if [[ -z "${nightly}" ]]; then
+        case "${target}" in
+            mips* | powerpc* | s390* | msp430*)
+                echo "target '${target}' requires nightly compiler (skipped all checks)"
+                return 0
+                ;;
+        esac
     fi
 
     args+=(
