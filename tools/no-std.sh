@@ -55,6 +55,7 @@ run() {
     local target="$1"
     shift
     local args=(${pre_args[@]+"${pre_args[@]}"})
+    local target_rustflags="${RUSTFLAGS:-}"
     if ! grep <<<"${rustc_target_list}" -Eq "^${target}$"; then
         if [[ ! -f "target-specs/${target}.json" ]]; then
             echo "target '${target}' not available on ${rustc_version} (skipped)"
@@ -78,9 +79,9 @@ run() {
         thumb*)
             (
                 cd tests/cortex-m
-                RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Tlink.x" \
+                RUSTFLAGS="${target_rustflags} -C link-arg=-Tlink.x" \
                     x cargo "${args[@]}" "$@"
-                RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Tlink.x" \
+                RUSTFLAGS="${target_rustflags} -C link-arg=-Tlink.x" \
                     x cargo "${args[@]}" --release "$@"
             )
             ;;

@@ -3,12 +3,28 @@
 #![warn(rust_2018_idioms, unsafe_op_in_unsafe_fn)]
 #![feature(panic_info_message)]
 
-use core::{fmt::Write, mem::MaybeUninit, panic::PanicInfo, sync::atomic::Ordering};
+use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
 use atomic_maybe_uninit::*;
-use cortex_m::asm;
 use cortex_m_rt::entry;
 use cortex_m_semihosting as semihosting;
+
+macro_rules! print {
+    ($($tt:tt)*) => {
+        if let Ok(mut hstdout) = cortex_m_semihosting::hio::hstdout() {
+            use core::fmt::Write as _;
+            let _ = write!(hstdout, $($tt)*);
+        }
+    };
+}
+macro_rules! println {
+    ($($tt:tt)*) => {
+        if let Ok(mut hstdout) = cortex_m_semihosting::hio::hstdout() {
+            use core::fmt::Write as _;
+            let _ = writeln!(hstdout, $($tt)*);
+        }
+    };
+}
 
 macro_rules! __test_atomic {
     ($int_type:ident) => {
@@ -182,19 +198,15 @@ fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
 
 #[entry]
 fn main() -> ! {
-    asm::nop();
-
-    let mut hstdout = semihosting::hio::hstdout().unwrap();
-
     macro_rules! test_atomic {
         ($int_type:ident) => {
             paste::paste! {
                 fn [<test_atomic_ $int_type>]() {
                     __test_atomic!($int_type);
                 }
-                let _ = write!(hstdout, "test test_atomic_{} ...", stringify!($int_type));
+                print!("test test_atomic_{} ... ", stringify!($int_type));
                 [<test_atomic_ $int_type>]();
-                let _ = write!(hstdout, " ok\n");
+                println!("ok");
             }
         };
     }
@@ -215,17 +227,15 @@ fn main() -> ! {
 
 #[inline(never)]
 #[panic_handler]
-fn panic(info: &PanicInfo<'_>) -> ! {
-    if let Ok(mut hstdout) = semihosting::hio::hstdout() {
-        if let Some(s) = info.message() {
-            if let Some(l) = info.location() {
-                let _ = writeln!(hstdout, "panicked at '{:?}', {}", s, l);
-            } else {
-                let _ = writeln!(hstdout, "panicked at '{:?}' (no location info)", s);
-            }
+fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
+    if let Some(s) = info.message() {
+        if let Some(l) = info.location() {
+            println!("panicked at '{:?}', {}", s, l);
         } else {
-            let _ = writeln!(hstdout, "panic occurred (no message)");
+            println!("panicked at '{:?}' (no location info)", s);
         }
+    } else {
+        println!("panic occurred (no message)");
     }
 
     loop {
