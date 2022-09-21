@@ -66,9 +66,7 @@ fn main() {
         "x86_64" => {
             // x86_64 macos always support CMPXCHG16B: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L7
             let has_cmpxchg16b = target == "x86_64-apple-darwin";
-            if has_target_feature("cmpxchg16b", has_cmpxchg16b, &version, None, true) {
-                target_feature("cmpxchg16b");
-            }
+            target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, None, true);
         }
         "x86" => {
             // i486 doesn't have cmpxchg8b.
@@ -110,14 +108,10 @@ fn main() {
             // aarch64 macos always support FEAT_LSE and FEAT_LSE2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
             let is_aarch64_macos = target == "aarch64-apple-darwin";
             // aarch64_target_feature stabilized in Rust 1.61.
-            if has_target_feature("lse", is_aarch64_macos, &version, Some(61), true) {
-                target_feature("lse");
-            }
+            target_feature_if("lse", is_aarch64_macos, &version, Some(61), true);
             // As of rustc 1.63, target_feature "lse2" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
-            if has_target_feature("lse2", is_aarch64_macos, &version, None, false) {
-                target_feature("lse2");
-            }
+            target_feature_if("lse2", is_aarch64_macos, &version, None, false);
         }
         "arm" => {
             // #[cfg(target_feature = "v7")] and others don't work on stable.
@@ -224,16 +218,8 @@ fn main() {
                     }
                 }
             }
-            has_partword_atomics =
-                has_target_feature("partword-atomics", has_partword_atomics, &version, None, false);
-            has_quadword_atomics =
-                has_target_feature("quadword-atomics", has_quadword_atomics, &version, None, false);
-            if has_partword_atomics {
-                target_feature("partword-atomics");
-            }
-            if has_quadword_atomics {
-                target_feature("quadword-atomics");
-            }
+            target_feature_if("partword-atomics", has_partword_atomics, &version, None, false);
+            target_feature_if("quadword-atomics", has_quadword_atomics, &version, None, false);
         }
         _ => {}
     }
@@ -243,13 +229,13 @@ fn target_feature(name: &str) {
     println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"{}\"", name);
 }
 
-fn has_target_feature(
+fn target_feature_if(
     name: &str,
     mut has_target_feature: bool,
     version: &Version,
     stabilized: Option<u32>,
     is_in_rustc: bool,
-) -> bool {
+) {
     // HACK: Currently, it seems that the only way to handle unstable target
     // features on the stable is to parse the `-C target-feature` in RUSTFLAGS.
     //
@@ -263,9 +249,8 @@ fn has_target_feature(
     if is_in_rustc
         && (version.nightly || stabilized.map_or(false, |stabilized| version.minor >= stabilized))
     {
-        has_target_feature = env::var("CARGO_CFG_TARGET_FEATURE")
-            .ok()
-            .map_or(false, |s| s.split(',').any(|s| s == name));
+        // In this case, cfg(target_feature = "...") would work, so skip emitting our own target_feature cfg.
+        return;
     } else if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
         for mut flag in rustflags.to_string_lossy().split('\x1f') {
             flag = flag.strip_prefix("-C").unwrap_or(flag);
@@ -282,7 +267,9 @@ fn has_target_feature(
             }
         }
     }
-    has_target_feature
+    if has_target_feature {
+        target_feature(name);
+    }
 }
 
 fn target_cpu() -> Option<String> {
