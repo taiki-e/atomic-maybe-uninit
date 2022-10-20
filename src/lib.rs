@@ -615,6 +615,15 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///
     /// Panics if `fetch_order` is [`Release`], [`AcqRel`].
     ///
+    /// # Considerations
+    ///
+    /// This method is not magic; it is not provided by the hardware.
+    /// It is implemented in terms of [`compare_exchange_weak`](Self::compare_exchange_weak),
+    /// and suffers from the same drawbacks.
+    /// In particular, this method will not circumvent the [ABA Problem].
+    ///
+    /// [ABA Problem]: https://en.wikipedia.org/wiki/ABA_problem
+    ///
     /// # Examples
     ///
     /// ```
