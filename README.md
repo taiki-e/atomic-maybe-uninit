@@ -21,7 +21,7 @@ Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC,
 
 | target_arch                       | primitives                                          | load/store | swap  | CAS   |
 | --------------------------------- | --------------------------------------------------- |:----------:|:-----:|:-----:|
-| x86                               | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓\[1] |
+| x86                               | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
 | x86_64                            | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
 | x86_64 (+cmpxchg16b)              | i128,u128                                           | ✓          | ✓     | ✓     |
 | arm (v6+)                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1] | ✓\[1] |
@@ -37,7 +37,7 @@ Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC,
 | s390x \[3]                        | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓     | ✓     |
 | msp430 \[3]                       | isize,usize,i8,u8,i16,u16                           | ✓          |       |       |
 
-\[1] ARM's atomic RMW operations are not available on v6-m (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc. x86's atomic CAS is not available on 80386 (target-cpu `i386`).<br>
+\[1] ARM's atomic RMW operations are not available on v6-m (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc.<br>
 \[2] If target features such as `lse` and `lse2` are enabled at compile-time, more efficient instructions are used.<br>
 \[3] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 \[4] target-cpu `pwr8`, `pwr9`, or `pwr10`. powerpc64le is `pwr8` by default.<br>
