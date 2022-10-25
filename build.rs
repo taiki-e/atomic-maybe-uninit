@@ -40,7 +40,7 @@ fn main() {
     println!("cargo:rerun-if-env-changed=CARGO_BUILD_RUSTFLAGS");
     let mut target_upper = target.replace(['-', '.'], "_");
     target_upper.make_ascii_uppercase();
-    println!("cargo:rerun-if-env-changed=CARGO_TARGET_{}_RUSTFLAGS", target_upper);
+    println!("cargo:rerun-if-env-changed=CARGO_TARGET_{target_upper}_RUSTFLAGS");
 
     let version = match rustc_version() {
         Some(version) => version,
@@ -226,7 +226,7 @@ fn main() {
 }
 
 fn target_feature(name: &str) {
-    println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"{}\"", name);
+    println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"{name}\"");
 }
 
 fn target_feature_if(
