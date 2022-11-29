@@ -7,28 +7,9 @@ use std::{env, str};
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
-    let target = match env::var("TARGET") {
-        Ok(target) => target,
-        Err(e) => {
-            println!(
-                "cargo:warning={}: unable to get TARGET environment variable: {}",
-                env!("CARGO_PKG_NAME"),
-                e
-            );
-            return;
-        }
-    };
-    let target_arch = match env::var("CARGO_CFG_TARGET_ARCH") {
-        Ok(target_arch) => target_arch,
-        Err(e) => {
-            println!(
-                "cargo:warning={}: unable to get CARGO_CFG_TARGET_ARCH environment variable: {}",
-                env!("CARGO_PKG_NAME"),
-                e
-            );
-            return;
-        }
-    };
+    let target = &*env::var("TARGET").expect("TARGET not set");
+    let target_arch = &*env::var("CARGO_CFG_TARGET_ARCH").expect("CARGO_CFG_TARGET_ARCH not set");
+    let target_os = &*env::var("CARGO_CFG_TARGET_OS").expect("CARGO_CFG_TARGET_OS not set");
     // HACK: If --target is specified, rustflags is not applied to the build
     // script itself, so the build script will not be rerun when these are changed.
     //
@@ -62,10 +43,12 @@ fn main() {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
     }
 
-    match &*target_arch {
+    match target_arch {
         "x86_64" => {
             // x86_64 macos always support CMPXCHG16B: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L7
-            let has_cmpxchg16b = target == "x86_64-apple-darwin";
+            let has_cmpxchg16b = target_os == "macos";
+            // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/o4Y8W1hcb
+            // It is unlikely that rustc will support that name, so we will ignore it for now.
             target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, None, true);
         }
         "x86" => {
@@ -74,18 +57,13 @@ fn main() {
             // See also https://reviews.llvm.org/D18802.
             let mut no_cmpxchg8b = false;
             let mut no_cmpxchg = false;
-            if target.starts_with("i486") {
+            if target_os == "ios" || target_os == "tvos" || target_os == "watchos" {
+                // Apple's i386 simulator is actually i686 (yonah).
+                // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/apple_sdk_base.rs#L35
+            } else if target.starts_with("i486") {
                 no_cmpxchg8b = true;
             } else if target.starts_with("i386") {
-                if target.contains("-ios")
-                    || target.contains("-tvos")
-                    || target.contains("-watchos")
-                {
-                    // Apple's i386 simulator is actually i686.
-                    // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/apple_sdk_base.rs#L35
-                } else {
-                    no_cmpxchg = true;
-                }
+                no_cmpxchg = true;
             }
             // target-cpu is preferred over arch in target triple.
             // e.g., --target=i486 --target-cpu=i386
@@ -94,24 +72,31 @@ fn main() {
                     no_cmpxchg8b = true;
                 } else if cpu == "i386" {
                     no_cmpxchg = true;
+                } else {
+                    // Only i386 and i486 disables cmpxchg8b.
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0/llvm/lib/Target/X86/X86.td#L1260-L1593
+                    no_cmpxchg8b = false;
+                    no_cmpxchg = false;
                 }
             }
             if no_cmpxchg {
                 no_cmpxchg8b = true;
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg");
             }
+            // LLVM recognizes this also as cx8 target feature: https://godbolt.org/z/7qhr5TMPo
+            // It is unlikely that rustc will support that name, so we will ignore it for now.
             if no_cmpxchg8b {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg8b");
             }
         }
         "aarch64" => {
             // aarch64 macos always support FEAT_LSE and FEAT_LSE2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
-            let is_aarch64_macos = target == "aarch64-apple-darwin";
+            let is_macos = target == "macos";
             // aarch64_target_feature stabilized in Rust 1.61.
-            target_feature_if("lse", is_aarch64_macos, &version, Some(61), true);
+            target_feature_if("lse", is_macos, &version, Some(61), true);
             // As of rustc 1.63, target_feature "lse2" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
-            target_feature_if("lse2", is_aarch64_macos, &version, None, false);
+            target_feature_if("lse2", is_macos, &version, None, false);
         }
         "arm" => {
             // #[cfg(target_feature = "v7")] and others don't work on stable.
@@ -119,7 +104,7 @@ fn main() {
             //    ^^
             let mut subarch =
                 target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")).unwrap();
-            subarch = subarch.split_once('-').unwrap().0;
+            subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
             subarch = subarch.split_once('.').unwrap_or((subarch, "")).0; // ignore .base/.main suffix
             subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
             let mut known = true;
@@ -192,7 +177,7 @@ fn main() {
             // #[cfg(target_feature = "a")] doesn't work on stable.
             // riscv64gc-unknown-linux-gnu
             //        ^^
-            let mut subarch = target.strip_prefix(&target_arch).unwrap();
+            let mut subarch = target.strip_prefix(target_arch).unwrap();
             subarch = subarch.split_once('-').unwrap().0;
             // G = IMAFD
             if subarch.contains('a') || subarch.contains('g') {
@@ -200,26 +185,28 @@ fn main() {
             }
         }
         "powerpc64" => {
+            let target_endian =
+                env::var("CARGO_CFG_TARGET_ENDIAN").expect("CARGO_CFG_TARGET_ENDIAN not set");
             // powerpc64le is pwr8+ by default https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0/llvm/lib/Target/PowerPC/PPC.td#L652
             // See also https://github.com/rust-lang/rust/issues/59932
-            let mut has_partword_atomics = target.starts_with("powerpc64le-"); // l[bh]arx and st[bh]cx.
-            let mut has_quadword_atomics = has_partword_atomics; // lqarx and stqcx.
+            let mut has_pwr8_features = target_endian == "little";
+            // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
             if let Some(cpu) = target_cpu().as_deref() {
-                if let Some(cpu_version) = cpu.strip_prefix("pwr") {
+                if let Some(mut cpu_version) = cpu.strip_prefix("pwr") {
+                    cpu_version = cpu_version.strip_suffix('x').unwrap_or(cpu_version); // for pwr5x and pwr6x
                     if let Ok(cpu_version) = cpu_version.parse::<u32>() {
-                        // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
-                        if cpu_version >= 8 {
-                            has_quadword_atomics = true;
-                            has_partword_atomics = true;
-                        } else {
-                            has_quadword_atomics = false;
-                            has_partword_atomics = false;
-                        }
+                        has_pwr8_features = cpu_version >= 8;
                     }
+                } else {
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0/llvm/lib/Target/PowerPC/PPC.td#L652
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0/llvm/lib/Target/PowerPC/PPC.td#L434-L436
+                    has_pwr8_features = cpu == "ppc64le" || cpu == "future";
                 }
             }
-            target_feature_if("partword-atomics", has_partword_atomics, &version, None, false);
-            target_feature_if("quadword-atomics", has_quadword_atomics, &version, None, false);
+            // l[bh]arx and st[bh]cx.
+            target_feature_if("partword-atomics", has_pwr8_features, &version, None, false);
+            // lqarx and stqcx.
+            target_feature_if("quadword-atomics", has_pwr8_features, &version, None, false);
         }
         _ => {}
     }
