@@ -109,7 +109,7 @@ fn main() {
             subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
             let mut known = true;
             // As of rustc nightly-2022-07-09, there are the following "vN*" patterns:
-            // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort | uniq | sed -E 's/^/"/g' | sed -E 's/$/"/g'
+            // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g' | sed -E 's/$/"/g'
             // ""
             // "64_32"
             // "v4t"
