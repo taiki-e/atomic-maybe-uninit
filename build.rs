@@ -91,7 +91,7 @@ fn main() {
         }
         "aarch64" => {
             // aarch64 macos always support FEAT_LSE and FEAT_LSE2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
-            let is_macos = target == "macos";
+            let is_macos = target_os == "macos";
             // aarch64_target_feature stabilized in Rust 1.61.
             target_feature_if("lse", is_macos, &version, Some(61), true);
             // As of rustc 1.63, target_feature "lse2" is not available on rustc side:
