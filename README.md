@@ -4,7 +4,7 @@
 [![docs.rs](https://img.shields.io/badge/docs.rs-atomic--maybe--uninit-blue?style=flat-square&logo=docs.rs)](https://docs.rs/atomic-maybe-uninit)
 [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
 [![rustc](https://img.shields.io/badge/rustc-1.59+-blue?style=flat-square&logo=rust)](https://www.rust-lang.org)
-[![build status](https://img.shields.io/github/workflow/status/taiki-e/atomic-maybe-uninit/CI/main?style=flat-square&logo=github)](https://github.com/taiki-e/atomic-maybe-uninit/actions)
+[![build status](https://img.shields.io/github/actions/workflow/status/taiki-e/atomic-maybe-uninit/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/taiki-e/atomic-maybe-uninit/actions)
 [![build status](https://img.shields.io/cirrus/github/taiki-e/atomic-maybe-uninit/main?style=flat-square&logo=cirrusci)](https://cirrus-ci.com/github/taiki-e/atomic-maybe-uninit)
 
 Atomic operations on potentially uninitialized integers.
