@@ -47,6 +47,7 @@
   ],
   "ignorePaths": [
     // TODO
-    "src/arch/**"
+    "src/arch/**",
+    "target-specs/**"
   ]
 }
