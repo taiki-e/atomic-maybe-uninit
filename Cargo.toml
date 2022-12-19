@@ -24,6 +24,9 @@ targets = [
 [workspace]
 resolver = "2"
 
+[lib]
+doc-scrape-examples = false
+
 [dev-dependencies]
 crossbeam-utils = "0.8"
 fastrand = "1"
