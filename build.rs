@@ -300,7 +300,7 @@ mod version {
         }
     }
 
-    #[derive(PartialEq, Eq, PartialOrd, Ord)]
+    #[derive(PartialEq, PartialOrd)]
     struct Date {
         year: u16,
         month: u8,
