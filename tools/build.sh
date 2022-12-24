@@ -7,9 +7,12 @@ cd "$(dirname "$0")"/..
 trap 's=$?; echo >&2 "$0: Error on line "${LINENO}": ${BASH_COMMAND}"; exit ${s}' ERR
 trap -- 'exit 0' SIGINT
 
+# USAGE:
+#    ./tools/build.sh [+toolchain] [target]...
+
 default_targets=(
     # x86_64
-    # rustc --print target-list | grep -E '^x86_64' | grep -E '(-unknown-linux|-none)'
+    # rustc --print target-list | grep -E '^x86_64'
     x86_64-unknown-linux-gnu
     # x86_64 X32 ABI
     x86_64-unknown-linux-gnux32
@@ -19,12 +22,12 @@ default_targets=(
     x86_64-unknown-none
 
     # x86
-    # rustc --print target-list | grep -E '^i.86' | grep -E '(-unknown-linux|-none)'
+    # rustc --print target-list | grep -E '^i.86'
     i586-unknown-linux-gnu
     i686-unknown-linux-gnu
 
     # aarch64
-    # rustc --print target-list | grep -E '^aarch64' | grep -E '(-unknown-linux|-none)'
+    # rustc --print target-list | grep -E '^aarch64'
     aarch64-unknown-linux-gnu
     # aarch64 big endian
     aarch64_be-unknown-linux-gnu
@@ -36,7 +39,7 @@ default_targets=(
     aarch64-apple-darwin
 
     # arm
-    # rustc --print target-list | grep -E '^(arm(eb)?|thumb)(v6m|v7|v8|v9)' | grep -E '(-unknown-linux|-none)'
+    # rustc --print target-list | grep -E '^(arm|thumb)(eb)?(v(6|7|8|9)|-)'
     # armv6
     arm-unknown-linux-gnueabi
     arm-unknown-linux-gnueabihf
@@ -60,10 +63,10 @@ default_targets=(
     thumbv8m.main-none-eabihf
 
     # riscv
-    # rustc --print target-list | grep -E '^riscv' | grep -E '(-unknown-linux|-none)'
+    # rustc --print target-list | grep -E '^riscv'
     riscv64gc-unknown-linux-gnu
     # riscv64 no atomic load/store
-    riscv64i-unknown-none-elf
+    riscv64i-unknown-none-elf # custom target
     # riscv32 no atomic load/store
     riscv32i-unknown-none-elf
     riscv32im-unknown-none-elf
@@ -72,7 +75,7 @@ default_targets=(
     riscv32imac-unknown-none-elf
 
     # mips
-    # rustc --print target-list | grep -E '^mips' | grep -E '(-unknown-linux|-none)'
+    # rustc --print target-list | grep -E '^mips'
     mips-unknown-linux-gnu
     mipsel-unknown-linux-gnu
     # mips64
@@ -80,13 +83,13 @@ default_targets=(
     mips64el-unknown-linux-gnuabi64
 
     # powerpc
-    # rustc --print target-list | grep -E '^powerpc' | grep -E '(-unknown-linux|-none)'
+    # rustc --print target-list | grep -E '^powerpc'
     powerpc-unknown-linux-gnu
     powerpc64-unknown-linux-gnu
     powerpc64le-unknown-linux-gnu
 
     # s390x
-    # rustc --print target-list | grep -E '^s390' | grep -E '(-unknown-linux|-none)'
+    # rustc --print target-list | grep -E '^s390'
     s390x-unknown-linux-gnu
 
     # msp430
@@ -102,6 +105,14 @@ x() {
         set -x
         "${cmd}" "$@"
     )
+}
+x_cargo() {
+    if [[ -n "${RUSTFLAGS:-}" ]]; then
+        echo "+ RUSTFLAGS='${RUSTFLAGS}' \\"
+    fi
+    RUSTFLAGS="${RUSTFLAGS:-} ${check_cfg:-}" \
+        x cargo "$@"
+    echo
 }
 
 pre_args=()
@@ -119,7 +130,7 @@ rustup_target_list=$(rustup ${pre_args[@]+"${pre_args[@]}"} target list)
 rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -Vv | grep 'release: ' | sed 's/release: //')
 rustc_minor_version="${rustc_version#*.}"
-rustc_minor_version="${rustc_minor_version%.*}"
+rustc_minor_version="${rustc_minor_version%%.*}"
 base_args=(${pre_args[@]+"${pre_args[@]}"} hack build)
 nightly=''
 if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]]; then
@@ -135,21 +146,20 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
         base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy -Z check-cfg="names,values,output,features")
     fi
 fi
-echo "base rustflags='${RUSTFLAGS:-} ${check_cfg:-}'"
 
 build() {
     local target="$1"
     shift
     local args=("${base_args[@]}")
     local target_rustflags="${RUSTFLAGS:-} ${check_cfg:-}"
-    if ! grep <<<"${rustc_target_list}" -Eq "^${target}$"; then
+    if ! grep <<<"${rustc_target_list}" -Eq "^${target}$" || [[ -f "target-specs/${target}.json" ]]; then
         if [[ ! -f "target-specs/${target}.json" ]]; then
             echo "target '${target}' not available on ${rustc_version} (skipped all checks)"
             return 0
         fi
-        target_flags=(--target "$(pwd)/target-specs/${target}.json")
+        local target_flags=(--target "$(pwd)/target-specs/${target}.json")
     else
-        target_flags=(--target "${target}")
+        local target_flags=(--target "${target}")
     fi
     args+=("${target_flags[@]}")
     if grep <<<"${rustup_target_list}" -Eq "^${target}( |$)"; then
@@ -177,25 +187,39 @@ build() {
         --feature-powerset --optional-deps
     )
     RUSTFLAGS="${target_rustflags}" \
-        x cargo "${args[@]}" "$@"
+        x_cargo "${args[@]}" "$@"
     case "${target}" in
         x86_64*)
-            RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
-                x cargo "${args[@]}" --target-dir target/cmpxchg16b "$@"
+            # macOS is skipped because it is +cmpxchg16b by default
+            case "${target}" in
+                *-darwin) ;;
+                *)
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
+                        x_cargo "${args[@]}" --target-dir target/cmpxchg16b "$@"
+                    ;;
+            esac
             ;;
         aarch64* | arm64*)
-            RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
-                x cargo "${args[@]}" --target-dir target/lse "$@"
-            RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2" \
-                x cargo "${args[@]}" --target-dir target/lse2 "$@"
+            # macOS is skipped because it is +lse,+lse2 by default
+            case "${target}" in
+                *-darwin) ;;
+                *)
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
+                        x_cargo "${args[@]}" --target-dir target/lse "$@"
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2" \
+                        x_cargo "${args[@]}" --target-dir target/lse2 "$@"
+                    ;;
+            esac
             ;;
         powerpc64-*)
+            # powerpc64le- (little-endian) is skipped because it is pwr8 by default
             RUSTFLAGS="${target_rustflags} -C target-cpu=pwr8" \
-                x cargo "${args[@]}" --target-dir target/pwr8 "$@"
+                x_cargo "${args[@]}" --target-dir target/pwr8 "$@"
             ;;
         powerpc64le-*)
+            # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
             RUSTFLAGS="${target_rustflags} -C target-cpu=pwr7" \
-                x cargo "${args[@]}" --target-dir target/pwr7 "$@"
+                x_cargo "${args[@]}" --target-dir target/pwr7 "$@"
             ;;
     esac
 }

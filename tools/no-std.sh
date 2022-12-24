@@ -7,6 +7,9 @@ cd "$(dirname "$0")"/..
 trap 's=$?; echo >&2 "$0: Error on line "${LINENO}": ${BASH_COMMAND}"; exit ${s}' ERR
 trap -- 'exit 0' SIGINT
 
+# USAGE:
+#    ./tools/no-std.sh [+toolchain] [target]...
+
 default_targets=(
     # armv6-m
     thumbv6m-none-eabi
@@ -27,6 +30,14 @@ x() {
         set -x
         "${cmd}" "$@"
     )
+}
+x_cargo() {
+    if [[ -n "${RUSTFLAGS:-}" ]]; then
+        echo "+ RUSTFLAGS='${RUSTFLAGS}' \\"
+    fi
+    RUSTFLAGS="${RUSTFLAGS:-}" \
+        x cargo "$@"
+    echo
 }
 bail() {
     echo "error: $*" >&2
@@ -58,7 +69,7 @@ run() {
     shift
     local args=(${pre_args[@]+"${pre_args[@]}"})
     local target_rustflags="${RUSTFLAGS:-}"
-    if ! grep <<<"${rustc_target_list}" -Eq "^${target}$"; then
+    if ! grep <<<"${rustc_target_list}" -Eq "^${target}$" || [[ -f "target-specs/${target}.json" ]]; then
         if [[ ! -f "target-specs/${target}.json" ]]; then
             echo "target '${target}' not available on ${rustc_version} (skipped)"
             return 0
@@ -77,18 +88,22 @@ run() {
         return 0
     fi
 
+    local test_dir
     case "${target}" in
         thumb*)
-            (
-                cd tests/cortex-m
-                RUSTFLAGS="${target_rustflags} -C link-arg=-Tlink.x" \
-                    x cargo "${args[@]}" "$@"
-                RUSTFLAGS="${target_rustflags} -C link-arg=-Tlink.x" \
-                    x cargo "${args[@]}" --release "$@"
-            )
+            test_dir=tests/cortex-m
+            target_rustflags="${target_rustflags} -C link-arg=-Tlink.x"
             ;;
         *) bail "unrecognized target '${target}'" ;;
     esac
+
+    (
+        cd "${test_dir}"
+        RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" "$@"
+        RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --release "$@"
+    )
 }
 
 for target in "${targets[@]}"; do
