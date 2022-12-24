@@ -1,25 +1,41 @@
-// ARMv6-M and ARMv7
+// ARMv6 and ARMv7
 //
 // Generated asm:
-// - armv7-a https://godbolt.org/z/ezPWhd1vb
-// - armv7-r https://godbolt.org/z/7xr9o167M
-// - armv7-m https://godbolt.org/z/rTjzcb61T
-// - armv6-m https://godbolt.org/z/3r8PPPqTn
+// - armv7-a https://godbolt.org/z/TPffzs496
+// - armv7-r https://godbolt.org/z/43YvvWTPv
+// - armv7-m https://godbolt.org/z/oT3Kj1sqb
+// - armv6 https://godbolt.org/z/9ceads1jG
+// - armv6-m https://godbolt.org/z/qeezqGr8E
 
 use core::{
-    arch::asm,
     mem::{self, MaybeUninit},
     sync::atomic::Ordering,
 };
 
-#[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
+#[cfg(any(
+    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+))]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
+#[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! dmb {
     () => {
         "dmb ish"
+    };
+}
+// ARMv6 does not support `dmb ish`, so use use special instruction equivalent to a DMB.
+//
+// Refs:
+// - https://reviews.llvm.org/D5386
+// - https://developer.arm.com/documentation/ddi0360/e/control-coprocessor-cp15/register-descriptions/c7--cache-operations-register?lang=en
+#[cfg(not(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")))]
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+macro_rules! dmb {
+    () => {
+        "mcr p15, #0, r0, c7, c10, #5"
     };
 }
 // Only a full system barrier exists in the M-class architectures.
@@ -27,6 +43,66 @@ macro_rules! dmb {
 macro_rules! dmb {
     () => {
         "dmb sy"
+    };
+}
+
+#[cfg(any(
+    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+))]
+#[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
+macro_rules! clrex {
+    () => {
+        "clrex"
+    };
+}
+#[cfg(any(
+    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+))]
+#[cfg(not(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")))]
+macro_rules! clrex {
+    () => {
+        ""
+    };
+}
+
+// On ARMv6, dmb! refers to r0, so when calling it, we must clobbering r0.
+macro_rules! asm_no_dmb {
+    (options($($options:tt)*), $($asm:tt)*) => {
+        core::arch::asm!(
+            $($asm)*
+            options($($options)*),
+        )
+    };
+}
+#[cfg(any(
+    target_feature = "v7",
+    atomic_maybe_uninit_target_feature = "v7",
+    target_feature = "mclass",
+    atomic_maybe_uninit_target_feature = "mclass"
+))]
+macro_rules! asm_use_dmb {
+    (options($($options:tt)*), $($asm:tt)*) => {
+        core::arch::asm!(
+            $($asm)*
+            options($($options)*),
+        )
+    };
+}
+#[cfg(not(any(
+    target_feature = "v7",
+    atomic_maybe_uninit_target_feature = "v7",
+    target_feature = "mclass",
+    atomic_maybe_uninit_target_feature = "mclass"
+)))]
+macro_rules! asm_use_dmb {
+    (options($($options:tt)*), $($asm:tt)*) => {
+        core::arch::asm!(
+            $($asm)*
+            inout("r0") 0_u32 => _,
+            options($($options)*),
+        )
     };
 }
 
@@ -45,8 +121,9 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
-                        ($acquire:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire:expr) => {
+                            $asm!(
+                                options(nostack, preserves_flags),
                                 // (atomic) load from src to tmp
                                 concat!("ldr", $asm_suffix, " {tmp}, [{src}]"),
                                 $acquire, // acquire fence
@@ -55,14 +132,13 @@ macro_rules! atomic {
                                 src = in(reg) src,
                                 out = inout(reg) out => _,
                                 tmp = lateout(reg) _,
-                                options(nostack, preserves_flags),
                             )
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_load!(""),
+                        Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
                         // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!(dmb!()),
+                        Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
@@ -81,8 +157,9 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($acquire:expr, $release:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire:expr, $release:expr) => {
+                            $asm!(
+                                options(nostack, preserves_flags),
                                 // load from val to tmp
                                 concat!("ldr", $asm_suffix, " {tmp}, [{val}]"),
                                 // (atomic) store tmp to dst
@@ -92,20 +169,22 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
-                                options(nostack, preserves_flags),
                             )
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_store!("", ""),
-                        Ordering::Release => atomic_store!("", dmb!()),
-                        Ordering::SeqCst => atomic_store!(dmb!(), dmb!()),
+                        Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
+                        Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
+                        Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
         }
-        #[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
+        #[cfg(any(
+            any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+            not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+        ))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -121,8 +200,10 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {
-                        ($acquire:expr, $release:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire:expr, $release:expr) => {
+                            $asm!(
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                options(nostack),
                                 // load from val to val_tmp
                                 concat!("ldr", $asm_suffix, " {val_tmp}, [{val}]"),
                                 // (atomic) swap
@@ -144,23 +225,26 @@ macro_rules! atomic {
                                 r = lateout(reg) _,
                                 out_tmp = lateout(reg) _,
                                 val_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!(dmb!(), ""),
-                        Ordering::Release => atomic_swap!("", dmb!()),
+                        Ordering::Relaxed => atomic_swap!(asm_no_dmb, "", ""),
+                        Ordering::Acquire => atomic_swap!(asm_use_dmb, dmb!(), ""),
+                        Ordering::Release => atomic_swap!(asm_use_dmb, "", dmb!()),
                         // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(dmb!(), dmb!()),
+                        Ordering::AcqRel | Ordering::SeqCst => {
+                            atomic_swap!(asm_use_dmb, dmb!(), dmb!());
+                        }
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
         }
-        #[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
+        #[cfg(any(
+            any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+            not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+        ))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -181,8 +265,10 @@ macro_rules! atomic {
                     use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32;
                     macro_rules! cmpxchg_store_relaxed {
-                        ($acquire_success:expr, $acquire_failure:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire_success:expr, $acquire_failure:expr) => {
+                            $asm!(
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                options(nostack),
                                 concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
                                 "2:",
@@ -196,9 +282,9 @@ macro_rules! atomic {
                                     $acquire_success,
                                     "b 4f",
                                 "3:",
-                                    // compare failed, set r to 1 and clear exclusive
+                                    // compare failed, set r to 1
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                     $acquire_failure,
                                 "4:",
                                 // store out_tmp to out
@@ -211,14 +297,14 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     macro_rules! cmpxchg_release {
                         ($acquire_failure:expr) => {
-                            asm!(
+                            asm_use_dmb!(
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                options(nostack),
                                 concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
                                 concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
@@ -234,9 +320,9 @@ macro_rules! atomic {
                                     "cmp {out_tmp}, {old_tmp}",
                                     "beq 2b", // continue loop if compare succeed
                                 "3:",
-                                    // compare failed, set r to 1 and clear exclusive
+                                    // compare failed, set r to 1
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                     $acquire_failure,
                                 "4:",
                                 // store out_tmp to out
@@ -249,14 +335,14 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     macro_rules! cmpxchg_acqrel {
                         ($acquire_failure:expr) => {
-                            asm!(
+                            asm_use_dmb!(
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                options(nostack),
                                 concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
                                 concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
@@ -272,9 +358,9 @@ macro_rules! atomic {
                                     "cmp {out_tmp}, {old_tmp}",
                                     "beq 2b", // continue loop if compare succeed
                                 "3:",
-                                    // compare failed, set r to 1 and clear exclusive
+                                    // compare failed, set r to 1
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                     $acquire_failure,
                                     "b 5f",
                                 "4:", // store succeed
@@ -290,16 +376,18 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     match (success, failure) {
-                        (Relaxed, Relaxed) => cmpxchg_store_relaxed!("", ""),
-                        (Relaxed, Acquire | SeqCst) => cmpxchg_store_relaxed!("", dmb!()),
-                        (Acquire, Relaxed) => cmpxchg_store_relaxed!(dmb!(), ""),
-                        (Acquire, Acquire | SeqCst) => cmpxchg_store_relaxed!(dmb!(), dmb!()),
+                        (Relaxed, Relaxed) => cmpxchg_store_relaxed!(asm_no_dmb, "", ""),
+                        (Relaxed, Acquire | SeqCst) => {
+                            cmpxchg_store_relaxed!(asm_use_dmb, "", dmb!());
+                        }
+                        (Acquire, Relaxed) => cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), ""),
+                        (Acquire, Acquire | SeqCst) => {
+                            cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), dmb!());
+                        }
                         (Release, Relaxed) => cmpxchg_release!(""),
                         (Release, Acquire | SeqCst) => cmpxchg_release!(dmb!()),
                         // AcqRel and SeqCst compare_exchange are equivalent.
@@ -331,8 +419,10 @@ macro_rules! atomic {
                     use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32;
                     macro_rules! cmpxchg_weak {
-                        ($acquire:expr, $release:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire:expr, $release:expr) => {
+                            $asm!(
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                options(nostack),
                                 concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
                                 concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
@@ -342,9 +432,9 @@ macro_rules! atomic {
                                 concat!("strex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
                                 "b 4f",
                                 "3:",
-                                    // compare failed, set r to 1 and clear exclusive
+                                    // compare failed, set r to 1
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                 "4:",
                                 $acquire,
                                 // store out_tmp to out
@@ -357,14 +447,14 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     macro_rules! cmpxchg_weak_fail_load_relaxed {
                         ($release:expr) => {
-                            asm!(
+                            asm_use_dmb!(
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                options(nostack),
                                 concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
                                 concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
@@ -377,9 +467,9 @@ macro_rules! atomic {
                                 "beq 4f", // jump if store succeed
                                 "b 5f", // jump (store failed)
                                 "3:",
-                                    // compare failed, set r to 1 and clear exclusive
+                                    // compare failed, set r to 1
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                     "b 5f",
                                 "4:", // store succeed
                                     dmb!(), // acquire_success
@@ -394,14 +484,14 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     macro_rules! cmpxchg_weak_success_load_relaxed {
                         ($release:expr) => {
-                            asm!(
+                            asm_use_dmb!(
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                options(nostack),
                                 concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
                                 concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
@@ -414,9 +504,9 @@ macro_rules! atomic {
                                 "beq 5f", // jump if store succeed
                                 "b 4f", // jump (store failed)
                                 "3:",
-                                    // compare failed, set r to 1 and clear exclusive
+                                    // compare failed, set r to 1
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                 "4:", // compare or store failed
                                     dmb!(), // acquire_failure
                                 "5:",
@@ -430,21 +520,19 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg) _,
                                 old_tmp = lateout(reg) _,
                                 new_tmp = lateout(reg) _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     match (success, failure) {
-                        (Relaxed, Relaxed) => cmpxchg_weak!("", ""),
+                        (Relaxed, Relaxed) => cmpxchg_weak!(asm_no_dmb, "", ""),
                         (Relaxed, Acquire | SeqCst) => cmpxchg_weak_success_load_relaxed!(""),
                         (Acquire, Relaxed) => cmpxchg_weak_fail_load_relaxed!(""),
-                        (Acquire, Acquire | SeqCst) => cmpxchg_weak!(dmb!(), ""),
-                        (Release, Relaxed) => cmpxchg_weak!("", dmb!()),
+                        (Acquire, Acquire | SeqCst) => cmpxchg_weak!(asm_use_dmb, dmb!(), ""),
+                        (Release, Relaxed) => cmpxchg_weak!(asm_use_dmb, "", dmb!()),
                         (Release, Acquire | SeqCst) => cmpxchg_weak_success_load_relaxed!(dmb!()),
                         // AcqRel and SeqCst compare_exchange_weak are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_weak_fail_load_relaxed!(dmb!()),
-                        (AcqRel | SeqCst, _) => cmpxchg_weak!(dmb!(), dmb!()),
+                        (AcqRel | SeqCst, _) => cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!()),
                         _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -471,7 +559,12 @@ atomic!(usize, "");
 #[rustfmt::skip]
 macro_rules! atomic64 {
     ($int_type:ident) => {
-        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature = "aclass"))]
+        #[cfg(not(any(
+            target_feature = "mclass",
+            atomic_maybe_uninit_target_feature = "mclass",
+            target_feature = "rclass",
+            atomic_maybe_uninit_target_feature = "rclass",
+        )))]
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -485,11 +578,12 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_load`.
                 unsafe {
                     macro_rules! atomic_load {
-                        ($acquire:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire:expr) => {
+                            $asm!(
+                                options(nostack, preserves_flags),
                                 // (atomic) load from src to tmp pair
                                 "ldrexd r2, r3, [{src}]",
-                                "clrex",
+                                clrex!(),
                                 $acquire, // acquire fence
                                 // store tmp pair to out
                                 "strd r2, r3, [{out}]",
@@ -498,20 +592,24 @@ macro_rules! atomic64 {
                                 // tmp pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
-                                options(nostack, preserves_flags),
                             )
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_load!(""),
+                        Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
                         // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!(dmb!()),
+                        Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
         }
-        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature = "aclass"))]
+        #[cfg(not(any(
+            target_feature = "mclass",
+            atomic_maybe_uninit_target_feature = "mclass",
+            target_feature = "rclass",
+            atomic_maybe_uninit_target_feature = "rclass",
+        )))]
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
@@ -525,8 +623,10 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($acquire:expr, $release:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire:expr, $release:expr) => {
+                            $asm!(
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                options(nostack),
                                 // load from val to val pair
                                 "ldrd r2, r3, [{val}]",
                                 // (atomic) store val pair to dst
@@ -549,21 +649,24 @@ macro_rules! atomic64 {
                                 // tmp pair - must be even-numbered and not R14
                                 lateout("r4") _,
                                 lateout("r5") _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_store!("", ""),
-                        Ordering::Release => atomic_store!("", dmb!()),
-                        Ordering::SeqCst => atomic_store!(dmb!(), dmb!()),
+                        Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
+                        Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
+                        Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
         }
-        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature = "aclass"))]
+        #[cfg(not(any(
+            target_feature = "mclass",
+            atomic_maybe_uninit_target_feature = "mclass",
+            target_feature = "rclass",
+            atomic_maybe_uninit_target_feature = "rclass",
+        )))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -579,8 +682,10 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     macro_rules! atomic_swap {
-                        ($acquire:expr, $release:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire:expr, $release:expr) => {
+                            $asm!(
+                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                options(nostack),
                                 // load from val to val pair
                                 "ldrd r2, r3, [{val}]",
                                 // (atomic) swap
@@ -606,23 +711,26 @@ macro_rules! atomic64 {
                                 // out pair - must be even-numbered and not R14
                                 lateout("r4") _,
                                 lateout("r5") _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!(dmb!(), ""),
-                        Ordering::Release => atomic_swap!("", dmb!()),
+                        Ordering::Relaxed => atomic_swap!(asm_no_dmb, "", ""),
+                        Ordering::Acquire => atomic_swap!(asm_use_dmb, dmb!(), ""),
+                        Ordering::Release => atomic_swap!(asm_use_dmb, "", dmb!()),
                         // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(dmb!(), dmb!()),
+                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(asm_use_dmb, dmb!(), dmb!()),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
             }
         }
-        #[cfg(any(target_feature = "aclass", atomic_maybe_uninit_target_feature = "aclass"))]
+        #[cfg(not(any(
+            target_feature = "mclass",
+            atomic_maybe_uninit_target_feature = "mclass",
+            target_feature = "rclass",
+            atomic_maybe_uninit_target_feature = "rclass",
+        )))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -643,8 +751,10 @@ macro_rules! atomic64 {
                     use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32;
                     macro_rules! cmpxchg_store_relaxed {
-                        ($acquire_success:expr, $acquire_failure:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire_success:expr, $acquire_failure:expr) => {
+                            $asm!(
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
+                                options(nostack),
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
                                 "2:",
@@ -662,7 +772,7 @@ macro_rules! atomic64 {
                                 "3:",
                                     // compare failed, set r to 1 and clear exclusive
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                     $acquire_failure,
                                 "4:",
                                 // store r4-r5 pair to out
@@ -682,14 +792,14 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     macro_rules! cmpxchg_release {
                         ($acquire_failure:expr) => {
-                            asm!(
+                            asm_use_dmb!(
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
+                                options(nostack),
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
                                 "ldrexd r4, r5, [{dst}]",
@@ -711,7 +821,7 @@ macro_rules! atomic64 {
                                 "3:",
                                     // compare failed, set r to 1 and clear exclusive
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                     $acquire_failure,
                                 "4:",
                                 // store r4-r5 pair to out
@@ -731,14 +841,14 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     macro_rules! cmpxchg_acqrel {
                         ($acquire_failure:expr) => {
-                            asm!(
+                            asm_use_dmb!(
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
+                                options(nostack),
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
                                 "ldrexd r4, r5, [{dst}]",
@@ -760,7 +870,7 @@ macro_rules! atomic64 {
                                 "3:",
                                     // compare failed, set r to 1 and clear exclusive
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                     $acquire_failure,
                                     "b 5f",
                                 "4:", // store succeed
@@ -783,16 +893,14 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     match (success, failure) {
-                        (Relaxed, Relaxed) => cmpxchg_store_relaxed!("", ""),
-                        (Relaxed, Acquire | SeqCst) => cmpxchg_store_relaxed!("", dmb!()),
-                        (Acquire, Relaxed) => cmpxchg_store_relaxed!(dmb!(), ""),
-                        (Acquire, Acquire | SeqCst) => cmpxchg_store_relaxed!(dmb!(), dmb!()),
+                        (Relaxed, Relaxed) => cmpxchg_store_relaxed!(asm_no_dmb, "", ""),
+                        (Relaxed, Acquire | SeqCst) => cmpxchg_store_relaxed!(asm_use_dmb, "", dmb!()),
+                        (Acquire, Relaxed) => cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), ""),
+                        (Acquire, Acquire | SeqCst) => cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), dmb!()),
                         (Release, Relaxed) => cmpxchg_release!(""),
                         (Release, Acquire | SeqCst) => cmpxchg_release!(dmb!()),
                         // AcqRel and SeqCst compare_exchange are equivalent.
@@ -824,8 +932,10 @@ macro_rules! atomic64 {
                     use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32;
                     macro_rules! cmpxchg_weak {
-                        ($acquire:expr, $release:expr) => {
-                            asm!(
+                        ($asm:ident, $acquire:expr, $release:expr) => {
+                            $asm!(
+                                // Do not use `preserves_flags` because ORRS modifies the condition flags.
+                                options(nostack),
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
                                 "ldrexd r4, r5, [{dst}]",
@@ -839,7 +949,7 @@ macro_rules! atomic64 {
                                 "3:",
                                     // compare failed, set r to 1 and clear exclusive
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                 "4:",
                                 $acquire,
                                 // store r4-r5 pair to out
@@ -859,14 +969,14 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because ORRS modifies the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     macro_rules! cmpxchg_weak_fail_load_relaxed {
                         ($release:expr) => {
-                            asm!(
+                            asm_use_dmb!(
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
+                                options(nostack),
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
                                 "ldrexd r4, r5, [{dst}]",
@@ -883,7 +993,7 @@ macro_rules! atomic64 {
                                 "3:",
                                     // compare failed, set r to 1 and clear exclusive
                                     "mov {r}, #1",
-                                    "clrex",
+                                    clrex!(),
                                     "b 5f",
                                 "4:", // store succeed
                                     dmb!(), // acquire_success
@@ -905,14 +1015,14 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     macro_rules! cmpxchg_weak_success_load_relaxed {
                         ($release:expr) => {
-                            asm!(
+                            asm_use_dmb!(
+                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
+                                options(nostack),
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
                                 "ldrexd r4, r5, [{dst}]",
@@ -929,8 +1039,8 @@ macro_rules! atomic64 {
                                 "3:",
                                     // compare failed, set r to 1 and clear exclusive
                                     "mov {r}, #1",
-                                    "clrex",
-                                "4:", // compare or store failed
+                                    clrex!(),
+                                    "4:", // compare or store failed
                                     dmb!(), // acquire_failure
                                 "5:",
                                 // store r4-r5 pair to out
@@ -950,21 +1060,19 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 lateout("r8") _,
                                 lateout("r9") _,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
-                                options(nostack),
                             )
                         };
                     }
                     match (success, failure) {
-                        (Relaxed, Relaxed) => cmpxchg_weak!("", ""),
+                        (Relaxed, Relaxed) => cmpxchg_weak!(asm_no_dmb, "", ""),
                         (Relaxed, Acquire | SeqCst) => cmpxchg_weak_success_load_relaxed!(""),
                         (Acquire, Relaxed) => cmpxchg_weak_fail_load_relaxed!(""),
-                        (Acquire, Acquire | SeqCst) => cmpxchg_weak!(dmb!(), ""),
-                        (Release, Relaxed) => cmpxchg_weak!("", dmb!()),
+                        (Acquire, Acquire | SeqCst) => cmpxchg_weak!(asm_use_dmb, dmb!(), ""),
+                        (Release, Relaxed) => cmpxchg_weak!(asm_use_dmb, "", dmb!()),
                         (Release, Acquire | SeqCst) => cmpxchg_weak_success_load_relaxed!(dmb!()),
                         // AcqRel and SeqCst compare_exchange_weak are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_weak_fail_load_relaxed!(dmb!()),
-                        (AcqRel | SeqCst, _) => cmpxchg_weak!(dmb!(), dmb!()),
+                        (AcqRel | SeqCst, _) => cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!()),
                         _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);

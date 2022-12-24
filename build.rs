@@ -104,11 +104,11 @@ fn main() {
             //    ^^
             let mut subarch =
                 target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")).unwrap();
-            subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
-            subarch = subarch.split_once('.').unwrap_or((subarch, "")).0; // ignore .base/.main suffix
             subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
+            let full_subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
+            subarch = full_subarch.split_once('.').unwrap_or((full_subarch, "")).0; // ignore .base/.main suffix
             let mut known = true;
-            // As of rustc nightly-2022-07-09, there are the following "vN*" patterns:
+            // As of rustc nightly-2022-12-22, there are the following "vN*" patterns:
             // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g' | sed -E 's/$/"/g'
             // ""
             // "64_32"
@@ -138,10 +138,13 @@ fn main() {
             // target_feature="llvm14-builtins-abi"
             // target_feature="v5te"
             // target_feature="v6"
+            let mut is_aclass = false;
+            let mut is_mclass = false;
+            let mut is_rclass = false;
             match subarch {
-                "v7" | "v7a" | "v7neon" | "v7s" | "v7k" => target_feature("aclass"),
-                "v6m" | "v7em" | "v7m" | "v8m" => target_feature("mclass"),
-                "v7r" => target_feature("rclass"),
+                "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8a" => is_aclass = true,
+                "v6m" | "v7em" | "v7m" | "v8m" => is_mclass = true,
+                "v7r" | "v8r" => is_rclass = true,
                 // arm-linux-androideabi is v5te
                 // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
                 _ if target == "arm-linux-androideabi" => subarch = "v5te",
@@ -158,20 +161,31 @@ fn main() {
                     );
                 }
             }
-            if known {
-                let v6 = subarch.starts_with("v6");
-                let v7 = subarch.starts_with("v7");
-                let v8 = subarch.starts_with("v8");
-                if v6 || v7 || v8 {
-                    target_feature("v6");
-                    if v7 || v8 {
-                        target_feature("v7");
-                        if v8 {
-                            target_feature("v8");
-                        }
-                    }
+            target_feature_if("aclass", is_aclass, &version, None, true);
+            target_feature_if("mclass", is_mclass, &version, None, true);
+            target_feature_if("rclass", is_rclass, &version, None, true);
+            let mut v6 = known && subarch.starts_with("v6");
+            let mut v7 = known && subarch.starts_with("v7");
+            let (v8, v8m) = if known && subarch.starts_with("v8") {
+                // ARMv8-M Mainline/Baseline are not considered as v8 by rustc.
+                // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
+                if subarch.starts_with("v8m") {
+                    // ARMv8-M Mainline is a superset of ARMv7-M.
+                    // ARMv8-M Baseline is a superset of ARMv6-M.
+                    // That said, it seems LLVM handles thumbv8m.main without v8m like v6m.
+                    // https://godbolt.org/z/j9r3Wzccz
+                    v7 = full_subarch == "v8m.main";
+                    (false, true)
+                } else {
+                    (true, false)
                 }
-            }
+            } else {
+                (false, false)
+            };
+            v7 |= target_feature_if("v8", v8, &version, None, true);
+            v6 |= target_feature_if("v8m", v8m, &version, None, false);
+            v6 |= target_feature_if("v7", v7, &version, None, true);
+            target_feature_if("v6", v6, &version, None, true);
         }
         _ if target_arch.starts_with("riscv") => {
             // #[cfg(target_feature = "a")] doesn't work on stable.
@@ -179,10 +193,14 @@ fn main() {
             //        ^^
             let mut subarch = target.strip_prefix(target_arch).unwrap();
             subarch = subarch.split_once('-').unwrap().0;
-            // G = IMAFD
-            if subarch.contains('a') || subarch.contains('g') {
-                target_feature("a");
-            }
+            target_feature_if(
+                "a",
+                // G = IMAFD
+                subarch.contains('a') || subarch.contains('g'),
+                &version,
+                None,
+                true,
+            );
         }
         "powerpc64" => {
             let target_endian =
@@ -212,17 +230,13 @@ fn main() {
     }
 }
 
-fn target_feature(name: &str) {
-    println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"{name}\"");
-}
-
 fn target_feature_if(
     name: &str,
     mut has_target_feature: bool,
     version: &Version,
     stabilized: Option<u32>,
-    is_in_rustc: bool,
-) {
+    is_rustc_target_feature: bool,
+) -> bool {
     // HACK: Currently, it seems that the only way to handle unstable target
     // features on the stable is to parse the `-C target-feature` in RUSTFLAGS.
     //
@@ -233,11 +247,11 @@ fn target_feature_if(
     // (e.g., https://godbolt.org/z/8Eh3z5Wzb), so this hack works properly on stable.
     //
     // [RFC2045]: https://rust-lang.github.io/rfcs/2045-target-feature.html#backend-compilation-options
-    if is_in_rustc
+    if is_rustc_target_feature
         && (version.nightly || stabilized.map_or(false, |stabilized| version.minor >= stabilized))
     {
         // In this case, cfg(target_feature = "...") would work, so skip emitting our own target_feature cfg.
-        return;
+        return false;
     } else if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
         for mut flag in rustflags.to_string_lossy().split('\x1f') {
             flag = flag.strip_prefix("-C").unwrap_or(flag);
@@ -255,8 +269,9 @@ fn target_feature_if(
         }
     }
     if has_target_feature {
-        target_feature(name);
+        println!("cargo:rustc-cfg=atomic_maybe_uninit_target_feature=\"{name}\"");
     }
+    has_target_feature
 }
 
 fn target_cpu() -> Option<String> {

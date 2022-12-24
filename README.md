@@ -25,7 +25,7 @@ Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC,
 | x86_64                            | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
 | x86_64 (+cmpxchg16b)              | i128,u128                                           | ✓          | ✓     | ✓     |
 | arm (v6+)                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1] | ✓\[1] |
-| arm (v6 except v6-m, v7-a)        | i64,u64                                             | ✓          | ✓     | ✓     |
+| arm (v6 except v6-m, v7-a+) \[5]  | i64,u64                                             | ✓          | ✓     | ✓     |
 | aarch64 \[2]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓     | ✓     |
 | riscv32                           | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1] | ✓\[1] |
 | riscv64                           | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1] | ✓\[1] |
@@ -41,6 +41,7 @@ Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC,
 \[2] If target features such as `lse` and `lse2` are enabled at compile-time, more efficient instructions are used.<br>
 \[3] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 \[4] target-cpu `pwr8`, `pwr9`, or `pwr10`. powerpc64le is `pwr8` by default.<br>
+\[5] ARMv6 except ARMv6-M, ARMv7+ with A-profile<br>
 
 Feel free to submit an issue if your target is not supported yet.
 

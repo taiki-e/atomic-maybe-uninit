@@ -47,10 +47,18 @@ default_targets=(
     armv7-unknown-linux-gnueabi
     armv7-unknown-linux-gnueabihf
     thumbv7neon-unknown-linux-gnueabihf
+    # armv8-a
+    armv8a-none-eabi # custom target
+    # armv8-a big endian
+    armeb-unknown-linux-gnueabi
     # armv7-r
     armv7r-none-eabi
     # armv7-r big endian
     armebv7r-none-eabi
+    # armv8-r
+    armv8r-none-eabi # custom target
+    # armv8-r big endian
+    armebv8r-none-eabi # custom target
     # armv6-m
     thumbv6m-none-eabi
     # armv7-m
