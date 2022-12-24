@@ -10,6 +10,12 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Improve support for AArch32 v8.
+
+- Optimize inline assemblies on x86.
+
+- Documentation improvements.
+
 ## [0.2.14] - 2022-09-04
 
 - Support pre-power8 powerpc64le. powerpc64le's default cpu version is power8, but you can technically compile it for the old cpu using the unsafe `-C target-cpu` rustc flag.
@@ -26,7 +32,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.11] - 2022-07-31
 
-- Optimize inline assemblies on x86, x86_64, ARM, AArch64, and RISC-V.
+- Optimize inline assemblies on x86, ARM, AArch64, and RISC-V.
 
 ## [0.2.10] - 2022-07-16
 
