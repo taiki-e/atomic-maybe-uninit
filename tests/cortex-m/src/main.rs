@@ -1,13 +1,11 @@
 #![no_main]
 #![no_std]
-#![warn(rust_2018_idioms, unsafe_op_in_unsafe_fn)]
+#![warn(rust_2018_idioms, single_use_lifetimes, unsafe_op_in_unsafe_fn)]
 #![feature(panic_info_message)]
 
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
 use atomic_maybe_uninit::*;
-use cortex_m_rt::entry;
-use cortex_m_semihosting as semihosting;
 
 macro_rules! print {
     ($($tt:tt)*) => {
@@ -196,7 +194,7 @@ fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
     ]
 }
 
-#[entry]
+#[cortex_m_rt::entry]
 fn main() -> ! {
     macro_rules! test_atomic {
         ($int_type:ident) => {
@@ -220,25 +218,34 @@ fn main() -> ! {
     test_atomic!(i32);
     test_atomic!(u32);
 
-    loop {
-        semihosting::debug::exit(semihosting::debug::EXIT_SUCCESS);
-    }
+    semihosting::exit(semihosting::EXIT_SUCCESS)
 }
 
 #[inline(never)]
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
-    if let Some(s) = info.message() {
-        if let Some(l) = info.location() {
-            println!("panicked at '{:?}', {}", s, l);
-        } else {
-            println!("panicked at '{:?}' (no location info)", s);
-        }
+    if let Some(m) = info.message() {
+        print!("panicked at '{m:?}'");
     } else {
-        println!("panic occurred (no message)");
+        print!("panic occurred (no message)");
+    }
+    if let Some(l) = info.location() {
+        println!(", {l}");
+    } else {
+        println!(" (no location info)");
     }
 
-    loop {
-        semihosting::debug::exit(semihosting::debug::EXIT_FAILURE);
+    semihosting::exit(semihosting::EXIT_FAILURE)
+}
+
+mod semihosting {
+    pub use cortex_m_semihosting::{
+        debug::{EXIT_FAILURE, EXIT_SUCCESS},
+        hio::hstdout,
+    };
+
+    pub fn exit(status: cortex_m_semihosting::debug::ExitStatus) -> ! {
+        cortex_m_semihosting::debug::exit(status);
+        loop {}
     }
 }
