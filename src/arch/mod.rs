@@ -30,6 +30,7 @@
     target_arch = "mips64",
     target_arch = "mips64r6",
     target_arch = "msp430",
+    target_arch = "nvptx64",
     target_arch = "powerpc",
     target_arch = "powerpc64",
     target_arch = "s390x",
@@ -78,6 +79,8 @@ mod loongarch;
 mod mips;
 #[cfg(target_arch = "msp430")]
 mod msp430;
+#[cfg(target_arch = "nvptx64")]
+mod nvptx;
 #[cfg(any(target_arch = "powerpc", target_arch = "powerpc64"))]
 mod powerpc;
 #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]

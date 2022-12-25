@@ -128,6 +128,10 @@ default_targets=(
     # hexagon
     # rustc --print target-list | grep -E '^hexagon'
     hexagon-unknown-linux-musl
+
+    # nvptx64
+    # rustc --print target-list | grep -E '^nvptx'
+    nvptx64-nvidia-cuda
 )
 known_cfgs=()
 

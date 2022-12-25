@@ -105,6 +105,7 @@ Feel free to submit an issue if your target is not supported yet.
         target_arch = "mips64",
         target_arch = "mips64r6",
         target_arch = "msp430",
+        target_arch = "nvptx64",
         target_arch = "powerpc",
         target_arch = "powerpc64",
         target_arch = "s390x",
