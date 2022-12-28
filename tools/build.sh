@@ -148,7 +148,7 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
     if [[ "${rustc_minor_version}" -gt 62 ]]; then
         # TODO: handle key-value cfg from build script as --check-cfg=values(name, "value1", "value2", ... "valueN")
         # shellcheck disable=SC2207
-        known_cfgs+=($(grep -E 'cargo:rustc-cfg=' build.rs | sed -E 's/^.*cargo:rustc-cfg=//' | sed -E 's/(=\\)?".*$//' | LC_ALL=C sort -u))
+        known_cfgs+=($(grep -E 'cargo:rustc-cfg=' build.rs | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u))
         check_cfg="-Z unstable-options --check-cfg=names($(IFS=',' && echo "${known_cfgs[*]}")) --check-cfg=values(target_pointer_width,\"128\") --check-cfg=values(feature,\"cargo-clippy\")"
         rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
         base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy -Z check-cfg="names,values,output,features")

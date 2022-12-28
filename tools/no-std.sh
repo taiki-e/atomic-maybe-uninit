@@ -92,7 +92,7 @@ run() {
     case "${target}" in
         thumb*)
             test_dir=tests/cortex-m
-            target_rustflags="${target_rustflags} -C link-arg=-Tlink.x"
+            target_rustflags+=" -C link-arg=-Tlink.x"
             ;;
         *) bail "unrecognized target '${target}'" ;;
     esac
