@@ -121,6 +121,7 @@ jobs:
           - rust: nightly
             target: thumbv7neon-unknown-linux-gnueabihf
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
         with:
@@ -306,6 +307,7 @@ jobs:
           - beta
           - nightly
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
         with:
@@ -317,6 +319,7 @@ jobs:
 
   no-std:
     runs-on: ubuntu-22.04 # QEMU 6.2
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
         with:
@@ -330,6 +333,7 @@ jobs:
     env:
       CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER: valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --track-origins=yes
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
         with:
@@ -376,6 +380,7 @@ jobs:
     # prettier-ignore
     needs: [check-external-types, deny, docs, msrv, tidy, test, build, no-std, valgrind] # tidy:needs
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Mark the job as a success
         run: exit 0
