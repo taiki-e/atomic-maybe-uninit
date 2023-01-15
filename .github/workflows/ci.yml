@@ -41,7 +41,7 @@ jobs:
       event_name: ${{ github.event_name }}
       args: -vvv --feature-powerset --optional-deps
   tidy:
-    uses: taiki-e/workflows/.github/workflows/tidy-rust.yml@main
+    uses: taiki-e/workflows/.github/workflows/tidy.yml@main
 
   test:
     strategy:
