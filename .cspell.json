@@ -45,9 +45,5 @@
       "dictionaries": ["rust"]
     }
   ],
-  "ignorePaths": [
-    // TODO
-    "src/arch/**",
-    "target-specs/**"
-  ]
+  "ignorePaths": ["target-specs/**"]
 }
