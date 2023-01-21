@@ -42,6 +42,7 @@ ldrex
 ldrexd
 ldxp
 libc
+libtcl
 libtest
 llcr
 llhr
