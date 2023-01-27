@@ -45,7 +45,7 @@ fn main() {
 
     match target_arch {
         "x86_64" => {
-            // x86_64 macos always support CMPXCHG16B: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L7
+            // x86_64 macos always support CMPXCHG16B: https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L8
             let has_cmpxchg16b = target_os == "macos";
             // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/o4Y8W1hcb
             // It is unlikely that rustc will support that name, so we will ignore it for now.
@@ -59,7 +59,7 @@ fn main() {
             let mut no_cmpxchg = false;
             if target_os == "ios" || target_os == "tvos" || target_os == "watchos" {
                 // Apple's i386 simulator is actually i686 (yonah).
-                // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/apple_sdk_base.rs#L35
+                // https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_target/src/spec/apple_base.rs#L68
             } else if target.starts_with("i486") {
                 no_cmpxchg8b = true;
             } else if target.starts_with("i386") {
@@ -90,12 +90,12 @@ fn main() {
             }
         }
         "aarch64" => {
-            // aarch64 macos always support FEAT_LSE and FEAT_LSE2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L5
+            // aarch64 macos always support FEAT_LSE and FEAT_LSE2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L7
             let is_macos = target_os == "macos";
             // aarch64_target_feature stabilized in Rust 1.61.
             target_feature_if("lse", is_macos, &version, Some(61), true);
-            // As of rustc 1.63, target_feature "lse2" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_codegen_ssa/src/target_features.rs#L45
+            // As of rustc 1.67, target_feature "lse2" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_codegen_ssa/src/target_features.rs#L47
             target_feature_if("lse2", is_macos, &version, None, false);
         }
         "arm" => {
@@ -130,7 +130,7 @@ fn main() {
             // - v7, v7a, v7neon, v7s, and v7k are "aclass"
             // - v6m, v7em, v7m, and v8m are "mclass"
             // - v7r is "rclass"
-            // - 64_32 is aarch64 https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/arm64_32_apple_watchos.rs#L10
+            // - 64_32 is aarch64 https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_target/src/spec/arm64_32_apple_watchos.rs#L10
             //
             // Other targets don't have *class target feature.
             // For example:
@@ -146,7 +146,7 @@ fn main() {
                 "v6m" | "v7em" | "v7m" | "v8m" => is_mclass = true,
                 "v7r" | "v8r" => is_rclass = true,
                 // arm-linux-androideabi is v5te
-                // https://github.com/rust-lang/rust/blob/1.63.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
+                // https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
                 _ if target == "arm-linux-androideabi" => subarch = "v5te",
                 // v6 targets other than v6m don't have *class target feature.
                 "" | "v6" | "v6k" => subarch = "v6",
