@@ -1401,8 +1401,8 @@ mod tests {
         atomic_maybe_uninit_target_feature = "quadword-atomics"
     ))]
     test_atomic!(u128);
-    // As of qemu 7.0.0 , using lqarx/stqcx. with qemu-user hangs.
-    // To test this, use real powerpc64le hardware or use POWER Functional
+    // As of QEMU 7.2, using lqarx/stqcx. with qemu-user hangs.
+    // To test this, use real powerpc64 hardware or use POWER Functional
     // Simulator. See DEVELOPMENT.md for more.
     #[cfg(qemu)]
     #[cfg(target_arch = "powerpc64")]
