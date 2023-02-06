@@ -14,7 +14,7 @@
 // Generated asm:
 // - aarch64 https://godbolt.org/z/Yobx165PP
 // - aarch64 msvc https://godbolt.org/z/T5af7s747
-// - aarch64 (+lse) https://godbolt.org/z/eW7n171o5
+// - aarch64 (+lse) https://godbolt.org/z/Ef3vfTfqq
 // - aarch64 msvc (+lse) https://godbolt.org/z/de8n7aGrK
 // - aarch64 (+lse,+lse2) https://godbolt.org/z/Mc1W1z8e3
 // - aarch64 (+rcpc) https://godbolt.org/z/c4eccqa41
@@ -388,7 +388,7 @@ atomic!(usize, "", "");
 // - CASP (DWCAS) added as FEAT_LSE (mandatory from armv8.1-a)
 // - LDP/STP (DW load/store) if FEAT_LSE2 (optional from armv8.2-a, mandatory from armv8.4-a) is available
 //
-// If FEAT_LSE is available at compile-time, we use CASP for load/CAS. Otherwise, use LDXP/STXP loop.
+// If FEAT_LSE is available at compile-time, we use CASP for load/store/CAS/RMW. Otherwise, use LDXP/STXP loop.
 // If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.
 //
 // Note: FEAT_LSE2 doesn't imply FEAT_LSE.
@@ -560,6 +560,45 @@ macro_rules! atomic128 {
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    macro_rules! store {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to x4-x5 pair
+                                "ldp x4, x5, [{val}]",
+                                // (atomic) store (CAS loop)
+                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
+                                // If FEAT_LSE2 is not supported, LDP is not single-copy atomic reads,
+                                // it generates two single-copy atomic reads.
+                                // Refs: B2.2.1 of the Arm Architecture Reference Manual Armv8, for Armv8-A architecture profile
+                                "ldp x6, x7, [{dst}]",
+                                "2:",
+                                    // casp writes the current value to the first register pair,
+                                    // so copy the `out`'s value for later comparison.
+                                    "mov {tmp_lo}, x6",
+                                    "mov {tmp_hi}, x7",
+                                    concat!("casp", $acquire, $release, " x6, x7, x4, x5, [{dst}]"),
+                                    // compare x6-x7 pair and tmp pair
+                                    "eor {tmp_hi}, {tmp_hi}, x7",
+                                    "eor {tmp_lo}, {tmp_lo}, x6",
+                                    "orr {tmp_hi}, {tmp_lo}, {tmp_hi}",
+                                    "cbnz {tmp_hi}, 2b",
+                                $fence,
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                tmp_hi = lateout(reg) _,
+                                tmp_lo = lateout(reg) _,
+                                // must be allocated to even/odd register pair
+                                out("x4") _, // val_lo
+                                out("x5") _, // val_hi
+                                // must be allocated to even/odd register pair
+                                out("x6") _, // out_lo
+                                out("x7") _, // out_hi
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
                     macro_rules! store {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
@@ -601,6 +640,48 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    macro_rules! swap {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to x4-x5 pair
+                                "ldp x4, x5, [{val}]",
+                                // (atomic) swap (CAS loop)
+                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
+                                // If FEAT_LSE2 is not supported, LDP is not single-copy atomic reads,
+                                // it generates two single-copy atomic reads.
+                                // Refs: B2.2.1 of the Arm Architecture Reference Manual Armv8, for Armv8-A architecture profile
+                                "ldp x6, x7, [{dst}]",
+                                "2:",
+                                    // casp writes the current value to the first register pair,
+                                    // so copy the `out`'s value for later comparison.
+                                    "mov {tmp_lo}, x6",
+                                    "mov {tmp_hi}, x7",
+                                    concat!("casp", $acquire, $release, " x6, x7, x4, x5, [{dst}]"),
+                                    // compare x6-x7 pair and tmp pair
+                                    "eor {tmp_hi}, {tmp_hi}, x7",
+                                    "eor {tmp_lo}, {tmp_lo}, x6",
+                                    "orr {tmp_hi}, {tmp_lo}, {tmp_hi}",
+                                    "cbnz {tmp_hi}, 2b",
+                                $fence,
+                                // store out pair to out
+                                "stp x6, x7, [{out}]",
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
+                                tmp_hi = lateout(reg) _,
+                                tmp_lo = lateout(reg) _,
+                                // must be allocated to even/odd register pair
+                                out("x4") _, // val_lo
+                                out("x5") _, // val_hi
+                                // must be allocated to even/odd register pair
+                                out("x6") _, // out_lo
+                                out("x7") _, // out_hi
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
