@@ -51,6 +51,7 @@ lqarx
 lrcpc
 lwarx
 lwsync
+machdep
 mclass
 memcpy
 mfence

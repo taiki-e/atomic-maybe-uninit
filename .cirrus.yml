@@ -12,7 +12,7 @@ env:
   RUSTUP_MAX_RETRIES: '10'
 
 aarch64_linux_test_task:
-  name: test (aarch64-unknown-linux-gnu)
+  name: test ($TARGET)
   env:
     TARGET: aarch64-unknown-linux-gnu
     RUSTDOCFLAGS: -D warnings --cfg weak_memory
@@ -20,27 +20,27 @@ aarch64_linux_test_task:
   arm_container:
     image: rust:latest
   setup_script:
-    - rustup toolchain add nightly --component rust-src && rustup default nightly
+    - set -ex
+    - lscpu
+    - rustup toolchain add nightly --no-self-update --component rust-src && rustup default nightly
   test_script:
+    - set -ex
     - cargo test -vv --workspace --all-features
     - cargo test -vv --workspace --all-features --release
-    # Use -Z build-std because the prebuilt libtest seems to be incompatible with LTO, causing miscompilation: https://gist.github.com/taiki-e/9713f8e02e8f9f852ccee8d6f089ec24
-    - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo -Z build-std test -vv --workspace --all-features --release --tests --target $TARGET
+    - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
     # +lse
     - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" cargo test -vv --workspace --all-features
     - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" cargo test -vv --workspace --all-features --release
-    # Use -Z build-std because the prebuilt libtest seems to be incompatible with LTO, causing miscompilation: https://gist.github.com/taiki-e/9713f8e02e8f9f852ccee8d6f089ec24
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo -Z build-std test -vv --workspace --all-features --release --tests --target $TARGET
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
     # Graviton2 is armv8.2-a but supports armv8.3-a LDAPR instructions.
     # +rcpc
     - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" cargo test -vv --workspace --all-features
     - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" cargo test -vv --workspace --all-features --release
-    # Use -Z build-std because the prebuilt libtest seems to be incompatible with LTO, causing miscompilation: https://gist.github.com/taiki-e/9713f8e02e8f9f852ccee8d6f089ec24
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo -Z build-std test -vv --workspace --all-features --release --tests --target $TARGET
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
     # TODO: FEAT_LSE2 is not available on Graviton2 (armv8.2-a)
 
 aarch64_macos_test_task:
-  name: test (aarch64-apple-darwin)
+  name: test ($TARGET)
   env:
     TARGET: aarch64-apple-darwin
     RUSTDOCFLAGS: -D warnings --cfg weak_memory
@@ -48,16 +48,18 @@ aarch64_macos_test_task:
   macos_instance:
     image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
   setup_script:
+    - set -ex
+    - sysctl hw.optional machdep.cpu
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly --component rust-src
   test_script:
+    - set -ex
     - source $HOME/.cargo/env
     - cargo test -vv --workspace --all-features
     - cargo test -vv --workspace --all-features --release
-    # Use -Z build-std because the prebuilt libtest seems to be incompatible with LTO, causing miscompilation: https://gist.github.com/taiki-e/9713f8e02e8f9f852ccee8d6f089ec24
-    - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo -Z build-std test -vv --workspace --all-features --release --tests --target $TARGET
+    - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
 
 aarch64_linux_valgrind_task:
-  name: valgrind (aarch64-unknown-linux-gnu)
+  name: valgrind ($TARGET)
   env:
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER: valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --track-origins=yes
     RUSTDOCFLAGS: -D warnings --cfg valgrind
@@ -68,19 +70,20 @@ aarch64_linux_valgrind_task:
     # However, current Debian stable's Valgrind is 3.16: https://packages.debian.org/en/stable/valgrind
     image: debian:bookworm
   setup_script:
+    - set -ex
+    - lscpu
     - apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends valgrind ca-certificates curl gcc git libc6-dev
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly --component rust-src
   test_script:
+    - set -ex
     - source $HOME/.cargo/env
     # doctests on Valgrind are very slow
     - cargo test -vv --workspace --all-features --tests
     - cargo test -vv --workspace --all-features --release --tests
-    # Use -Z build-std because the prebuilt libtest seems to be incompatible with LTO, causing miscompilation: https://gist.github.com/taiki-e/9713f8e02e8f9f852ccee8d6f089ec24
-    - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo -Z build-std test -vv --workspace --all-features --release --tests --target $TARGET
+    - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
     # +lse
     - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" cargo test -vv --workspace --all-features --tests
     - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" cargo test -vv --workspace --all-features --release --tests
-    # Use -Z build-std because the prebuilt libtest seems to be incompatible with LTO, causing miscompilation: https://gist.github.com/taiki-e/9713f8e02e8f9f852ccee8d6f089ec24
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo -Z build-std test -vv --workspace --all-features --release --tests --target $TARGET
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
     # TODO: As of Valgrind 3.19, Valgrind doesn't support ldapr
     # TODO: FEAT_LSE2 is not available on Graviton2 (armv8.2-a)
