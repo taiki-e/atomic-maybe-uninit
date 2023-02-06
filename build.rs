@@ -90,10 +90,11 @@ fn main() {
             }
         }
         "aarch64" => {
-            // aarch64 macos always support FEAT_LSE and FEAT_LSE2 because it is armv8.6: https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L7
+            // aarch64 macos always support FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is armv8.6: https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_target/src/spec/aarch64_apple_darwin.rs#L7
             let is_macos = target_os == "macos";
             // aarch64_target_feature stabilized in Rust 1.61.
             target_feature_if("lse", is_macos, &version, Some(61), true);
+            target_feature_if("rcpc", is_macos, &version, Some(61), true);
             // As of rustc 1.67, target_feature "lse2" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_codegen_ssa/src/target_features.rs#L47
             target_feature_if("lse2", is_macos, &version, None, false);
@@ -108,7 +109,7 @@ fn main() {
             let full_subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
             subarch = full_subarch.split_once('.').unwrap_or((full_subarch, "")).0; // ignore .base/.main suffix
             let mut known = true;
-            // As of rustc nightly-2022-12-22, there are the following "vN*" patterns:
+            // As of rustc nightly-2023-02-05, there are the following "vN*" patterns:
             // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g' | sed -E 's/$/"/g'
             // ""
             // "64_32"
@@ -138,6 +139,9 @@ fn main() {
             // target_feature="llvm14-builtins-abi"
             // target_feature="v5te"
             // target_feature="v6"
+            //
+            // In addition to above known sub-architectures, we also recognize armv8-{a,r}.
+            // Note that there is a CPU that armv8-a but 32-bit only (Cortex-A32).
             let mut is_aclass = false;
             let mut is_mclass = false;
             let mut is_rclass = false;
@@ -221,6 +225,8 @@ fn main() {
                     has_pwr8_features = cpu == "ppc64le" || cpu == "future";
                 }
             }
+            // Note: As of rustc 1.67, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_codegen_ssa/src/target_features.rs#L215
             // l[bh]arx and st[bh]cx.
             target_feature_if("partword-atomics", has_pwr8_features, &version, None, false);
             // lqarx and stqcx.

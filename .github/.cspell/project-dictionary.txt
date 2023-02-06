@@ -36,6 +36,7 @@ hstdout
 IMAFD
 ishld
 isync
+ldapr
 ldaxp
 ldrd
 ldrex
@@ -47,6 +48,7 @@ libtest
 llcr
 llhr
 lqarx
+lrcpc
 lwarx
 lwsync
 mclass
@@ -68,6 +70,7 @@ pshufd
 quadword
 qword
 rclass
+rcpc
 risbg
 rldicl
 rldicr

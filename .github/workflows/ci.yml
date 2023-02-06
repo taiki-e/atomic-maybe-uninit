@@ -224,7 +224,35 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse ${{ env.RANDOMIZE_LAYOUT }}
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse ${{ env.RANDOMIZE_LAYOUT }}
         if: startsWith(matrix.target, 'aarch64') && startsWith(matrix.rust, 'nightly')
-      # TODO: it seems qemu-user has not yet properly implemented FEAT_LSE2: https://github.com/taiki-e/portable-atomic/pull/11#issuecomment-1114044327
+      # +rcpc
+      - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
+        env:
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc
+          # cortex-a76 is armv8.2-a but supports armv8.3-a LDAPR instructions.
+          QEMU_CPU: cortex-a76
+        if: startsWith(matrix.target, 'aarch64')
+      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
+        env:
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc
+          QEMU_CPU: cortex-a76
+        if: startsWith(matrix.target, 'aarch64')
+      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
+        env:
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
+          CARGO_PROFILE_RELEASE_LTO: fat
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc
+          QEMU_CPU: cortex-a76
+        if: startsWith(matrix.target, 'aarch64')
+      - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
+        env:
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc ${{ env.RANDOMIZE_LAYOUT }}
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc ${{ env.RANDOMIZE_LAYOUT }}
+          QEMU_CPU: cortex-a76
+        if: startsWith(matrix.target, 'aarch64') && startsWith(matrix.rust, 'nightly')
+      # TODO: As of QEMU 7.2, QEMU has not yet implemented FEAT_LSE2: https://linaro.atlassian.net/browse/QEMU-300
 
       # pwr7
       # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default

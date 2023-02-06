@@ -27,7 +27,7 @@ default_targets=(
     i686-unknown-linux-gnu
 
     # aarch64
-    # rustc --print target-list | grep -E '^aarch64'
+    # rustc --print target-list | grep -E '^(aarch64|arm64)'
     aarch64-unknown-linux-gnu
     # aarch64 big endian
     aarch64_be-unknown-linux-gnu
@@ -208,14 +208,17 @@ build() {
             esac
             ;;
         aarch64* | arm64*)
-            # macOS is skipped because it is +lse,+lse2 by default
+            # macOS is skipped because it is +lse,+lse2,+rcpc by default
             case "${target}" in
                 *-darwin) ;;
                 *)
                     RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
                         x_cargo "${args[@]}" --target-dir target/lse "$@"
+                    # FEAT_LSE2 doesn't imply FEAT_LSE.
                     RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2" \
                         x_cargo "${args[@]}" --target-dir target/lse2 "$@"
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+rcpc" \
+                        x_cargo "${args[@]}" --target-dir target/rcpc "$@"
                     ;;
             esac
             ;;

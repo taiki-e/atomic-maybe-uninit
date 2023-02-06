@@ -1,14 +1,17 @@
 // Refs:
 // - ARM Compiler armasm User Guide
 //   https://developer.arm.com/documentation/dui0801/latest
+// - Arm A-profile A64 Instruction Set Architecture
+//   https://developer.arm.com/documentation/ddi0602/2022-12/Base-Instructions?lang=en
 // - Arm Architecture Reference Manual for A-profile architecture
 //   https://developer.arm.com/documentation/ddi0487/latest
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/vT1enoG7P
-// - aarch64 (+lse) https://godbolt.org/z/Eh3Gv6br7
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/xjYPMGnj1
+// - aarch64 https://godbolt.org/z/Tj5Gz4dzE
+// - aarch64 (+lse) https://godbolt.org/z/Ka9oYr1Pj
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/3Y5hn8Ej1
+// - aarch64 (+rcpc) https://godbolt.org/z/5T3M8oxKa
 
 use core::{
     arch::asm,
@@ -61,8 +64,23 @@ macro_rules! atomic {
                     }
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
-                        // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
+                        #[cfg(any(target_feature = "rcpc", atomic_maybe_uninit_target_feature = "rcpc"))]
+                        Ordering::Acquire => {
+                            // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC.
+                            asm!(
+                                // (atomic) load from src to tmp
+                                concat!("ldapr", $asm_suffix, " {tmp", $val_modifier, "}, [{src", ptr_modifier!(), "}]"),
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
+                                src = in(reg) src,
+                                out = inout(reg) out => _,
+                                tmp = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            );
+                        }
+                        #[cfg(not(any(target_feature = "rcpc", atomic_maybe_uninit_target_feature = "rcpc")))]
+                        Ordering::Acquire => atomic_load!("a"),
+                        Ordering::SeqCst => atomic_load!("a"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
@@ -359,16 +377,13 @@ atomic!(usize, "", "");
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //
 // - LDXP/STXP loop (DW LL/SC)
-// - CASP (DWCAS) added as FEAT_LSE (armv8.1-a)
-// - LDP/STP (DW load/store) if FEAT_LSE2 (armv8.4-a) is available
+// - CASP (DWCAS) added as FEAT_LSE (mandatory from armv8.1-a)
+// - LDP/STP (DW load/store) if FEAT_LSE2 (optional from armv8.2-a, mandatory from armv8.4-a) is available
 //
+// If FEAT_LSE is available at compile-time, we use CASP for load/CAS. Otherwise, use LDXP/STXP loop.
 // If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.
-// Otherwise, use LDXP/STXP loop.
 //
-// Note: As of rustc 1.68.0-nightly, -C target-feature=+lse2 does not implicitly
-// enable target_feature "lse": https://godbolt.org/z/GYTcTeda6
-// Also, as of rustc 1.67, target_feature "lse2" is not available on rustc side:
-// https://github.com/rust-lang/rust/blob/1.67.0/compiler/rustc_codegen_ssa/src/target_features.rs#L47
+// Note: FEAT_LSE2 doesn't imply FEAT_LSE.
 //
 // Refs:
 // - LDP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/LDP
