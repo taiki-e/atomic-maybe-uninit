@@ -1,5 +1,4 @@
 aclass
-acqrel
 addi
 addiu
 addiw
@@ -76,7 +75,6 @@ risbg
 rldicl
 rldicr
 rlwinm
-seqcst
 seqz
 sete
 shufps
