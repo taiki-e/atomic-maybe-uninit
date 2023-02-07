@@ -76,7 +76,6 @@ risbg
 rldicl
 rldicr
 rlwinm
-semihosting
 seqcst
 seqz
 sete
