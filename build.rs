@@ -110,7 +110,7 @@ fn main() {
             subarch = full_subarch.split_once('.').unwrap_or((full_subarch, "")).0; // ignore .base/.main suffix
             let mut known = true;
             // As of rustc nightly-2023-02-05, there are the following "vN*" patterns:
-            // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//' | sed -E 's/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g' | sed -E 's/$/"/g'
+            // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
             // ""
             // "64_32"
             // "v4t"
