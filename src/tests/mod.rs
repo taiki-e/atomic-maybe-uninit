@@ -23,6 +23,7 @@ macro_rules! test_common {
 
                 use crate::AtomicMaybeUninit;
 
+                #[allow(clippy::extra_unused_type_parameters)] // https://github.com/rust-lang/rust-clippy/issues/10319
                 #[test]
                 fn assert_auto_traits() {
                     fn _assert<
