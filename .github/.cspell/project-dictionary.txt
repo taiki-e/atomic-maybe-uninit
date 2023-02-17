@@ -81,7 +81,6 @@ shufps
 SIGINT
 skiboot
 slli
-slliw
 sllv
 sllw
 sltiu

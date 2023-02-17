@@ -5,8 +5,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/P35T9Thsq
-// - riscv32imac https://godbolt.org/z/ofaPr8Gbc
+// - riscv64gc https://godbolt.org/z/1hcnPY8G1
+// - riscv32imac https://godbolt.org/z/W8xWj3cbG
 
 use core::{
     arch::asm,
@@ -45,21 +45,6 @@ macro_rules! addiw {
 macro_rules! addiw {
     () => {
         "addiw"
-    };
-}
-
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-#[cfg(target_arch = "riscv32")]
-macro_rules! slliw {
-    () => {
-        "slli"
-    };
-}
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-#[cfg(target_arch = "riscv64")]
-macro_rules! slliw {
-    () => {
-        "slliw"
     };
 }
 
@@ -317,7 +302,7 @@ macro_rules! atomic8 {
                                 // create aligned address and masks
                                 // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/CodeGen/AtomicExpandPass.cpp#L682
                                 "andi a6, a0, -4",
-                                concat!(slliw!(), " a0, a0, 3"),
+                                "slli a0, a0, 3",
                                 "li a4, 255",
                                 concat!(sllw!(), " a4, a4, a0"),
                                 concat!(sllw!(), " a1, a1, a0"),
@@ -388,7 +373,7 @@ macro_rules! atomic8 {
                                 // create aligned address and masks
                                 // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/CodeGen/AtomicExpandPass.cpp#L682
                                 "andi a6, a0, -4",
-                                concat!(slliw!(), " a0, a0, 3"),
+                                "slli a0, a0, 3",
                                 "li a5, 255",
                                 concat!(sllw!(), " a5, a5, a0"),
                                 concat!(sllw!(), " a7, a1, a0"),
@@ -469,7 +454,7 @@ macro_rules! atomic16 {
                                 // create aligned address and masks
                                 // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/CodeGen/AtomicExpandPass.cpp#L682
                                 "andi a6, a0, -4",
-                                concat!(slliw!(), " a0, a0, 3"),
+                                "slli a0, a0, 3",
                                 "lui a4, 16",
                                 concat!(addiw!(), " a4, a4, -1"),
                                 concat!(sllw!(), " a4, a4, a0"),
@@ -541,7 +526,7 @@ macro_rules! atomic16 {
                                 // create aligned address and masks
                                 // https://github.com/llvm/llvm-project/blob/llvmorg-15.0.0-rc1/llvm/lib/CodeGen/AtomicExpandPass.cpp#L682
                                 "andi a6, a0, -4",
-                                concat!(slliw!(), " a0, a0, 3"),
+                                "slli a0, a0, 3",
                                 "lui a5, 16",
                                 concat!(addiw!(), " a5, a5, -1"),
                                 concat!(sllw!(), " a5, a5, a0"),
