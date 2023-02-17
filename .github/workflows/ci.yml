@@ -136,9 +136,6 @@ jobs:
         if: startsWith(matrix.target, 'powerpc64')
       - run: echo "TARGET=--target ${{ matrix.target }}" >>"${GITHUB_ENV}"
         if: matrix.target != ''
-        # Since nightly-2022-12-23, -Z build-std + -Z randomize-layout + release mode on windows causes segfault.
-      - run: echo "RANDOMIZE_LAYOUT=-Z randomize-layout" >>"${GITHUB_ENV}"
-        if: startsWith(matrix.rust, 'nightly') && !startsWith(matrix.os, 'windows')
 
       - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
       - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
@@ -148,8 +145,8 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: fat
       - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} ${{ env.RANDOMIZE_LAYOUT }}
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} ${{ env.RANDOMIZE_LAYOUT }}
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -Z randomize-layout
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -Z randomize-layout
         if: startsWith(matrix.rust, 'nightly')
 
       # +cmpxchg16b
@@ -173,8 +170,8 @@ jobs:
         if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos')
       - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b ${{ env.RANDOMIZE_LAYOUT }}
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b ${{ env.RANDOMIZE_LAYOUT }}
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b -Z randomize-layout
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b -Z randomize-layout
         if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos') && startsWith(matrix.rust, 'nightly')
 
       # -sse2
@@ -197,8 +194,8 @@ jobs:
         if: startsWith(matrix.target, 'i686')
       - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2 ${{ env.RANDOMIZE_LAYOUT }}
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2 ${{ env.RANDOMIZE_LAYOUT }}
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2 -Z randomize-layout
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2 -Z randomize-layout
         if: startsWith(matrix.target, 'i686') && startsWith(matrix.rust, 'nightly')
 
       # +lse
@@ -221,8 +218,8 @@ jobs:
         if: startsWith(matrix.target, 'aarch64')
       - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse ${{ env.RANDOMIZE_LAYOUT }}
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse ${{ env.RANDOMIZE_LAYOUT }}
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse -Z randomize-layout
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse -Z randomize-layout
         if: startsWith(matrix.target, 'aarch64') && startsWith(matrix.rust, 'nightly')
       # +rcpc
       - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
@@ -248,8 +245,8 @@ jobs:
         if: startsWith(matrix.target, 'aarch64')
       - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc ${{ env.RANDOMIZE_LAYOUT }}
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc ${{ env.RANDOMIZE_LAYOUT }}
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc -Z randomize-layout
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc -Z randomize-layout
           QEMU_CPU: cortex-a76
         if: startsWith(matrix.target, 'aarch64') && startsWith(matrix.rust, 'nightly')
       # TODO: As of QEMU 7.2, QEMU has not yet implemented FEAT_LSE2: https://linaro.atlassian.net/browse/QEMU-300
@@ -275,8 +272,8 @@ jobs:
         if: startsWith(matrix.target, 'powerpc64le-')
       - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7 ${{ env.RANDOMIZE_LAYOUT }}
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7 ${{ env.RANDOMIZE_LAYOUT }}
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7 -Z randomize-layout
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7 -Z randomize-layout
         if: startsWith(matrix.target, 'powerpc64le-') && startsWith(matrix.rust, 'nightly')
 
       # pwr8
@@ -300,8 +297,8 @@ jobs:
         if: startsWith(matrix.target, 'powerpc64-')
       - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8 ${{ env.RANDOMIZE_LAYOUT }}
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8 ${{ env.RANDOMIZE_LAYOUT }}
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8 -Z randomize-layout
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8 -Z randomize-layout
         if: startsWith(matrix.target, 'powerpc64-') && startsWith(matrix.rust, 'nightly')
 
       - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private $TARGET $BUILD_STD
