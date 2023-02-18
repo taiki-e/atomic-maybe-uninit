@@ -4,11 +4,11 @@
 // - http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/sesGzGqrn
-// - powerpc64 https://godbolt.org/z/3Wav486WP
-// - powerpc64 (pwr8) https://godbolt.org/z/7qqEsnTY5
-// - powerpc64le https://godbolt.org/z/rr8fPqa7b
-// - powerpc64le (pwr7) https://godbolt.org/z/8hq8Ps5f1
+// - powerpc https://godbolt.org/z/3W15bTr1T
+// - powerpc64 https://godbolt.org/z/7r6f5Pfxb
+// - powerpc64 (pwr8) https://godbolt.org/z/dnasqer1q
+// - powerpc64le https://godbolt.org/z/ojPhP5nja
+// - powerpc64le (pwr7) https://godbolt.org/z/crEnvr6jT
 
 use core::{
     arch::asm,
@@ -286,10 +286,7 @@ macro_rules! atomic {
                                     "bne %cr0, 3f", // jump if compare failed
                                     concat!("st", $asm_suffix, "cx. {new_tmp}, 0, {dst}"),
                                     "bne %cr0, 2b", // continue loop if store failed
-                                    "b 4f",
                                 "3:",
-                                    concat!("st", $asm_suffix, "cx. {out_tmp}, 0, {dst}"),
-                                "4:",
                                 "xor {r}, {out_tmp}, {old_tmp}",
                                 $acquire,
                                 // store out_tmp pair to out
@@ -526,10 +523,7 @@ macro_rules! atomic8 {
                                     "or %r11, %r11, %r9",
                                     "stwcx. %r11, 0, %r3",
                                     "bne %cr0, 2b",
-                                    "b 4f",
                                 "3:",
-                                    "stwcx. %r11, 0, %r3",
-                                "4:",
                                 "srw %r5, %r5, %r7",
                                 $acquire,
                                 "xor %r3, %r5, %r4",
@@ -576,10 +570,7 @@ macro_rules! atomic8 {
                                     "or %r11, %r11, %r8",
                                     "stwcx. %r11, 0, %r3",
                                     "bne %cr0, 2b",
-                                    "b 4f",
                                 "3:",
-                                    "stwcx. %r11, 0, %r3",
-                                "4:",
                                 "srw %r5, %r9, %r5",
                                 $acquire,
                                 "xor %r3, %r5, %r4",
@@ -626,10 +617,7 @@ macro_rules! atomic8 {
                                     "or %r11, %r11, %r8",
                                     "stwcx. %r11, 0, %r5",
                                     "bne %cr0, 2b",
-                                    "b 4f",
                                 "3:",
-                                    "stwcx. %r11, 0, %r5",
-                                "4:",
                                     "srw %r5, %r9, %r3",
                                     "li %r3, 0",
                                     "cmpw 5, 4",
@@ -876,10 +864,7 @@ macro_rules! atomic16 {
                                     "or %r11, %r11, %r9",
                                     "stwcx. %r11, 0, %r5",
                                     "bne %cr0, 2b",
-                                    "b 4f",
                                 "3:",
-                                    "stwcx. %r11, 0, %r5",
-                                "4:",
                                 "srw %r5, %r3, %r7",
                                 $acquire,
                                 "xor %r3, %r5, %r4",
@@ -927,10 +912,7 @@ macro_rules! atomic16 {
                                     "or %r11, %r11, %r8",
                                     "stwcx. %r11, 0, %r3",
                                     "bne %cr0, 2b",
-                                    "b 4f",
                                 "3:",
-                                    "stwcx. %r11, 0, %r3",
-                                "4:",
                                 "srw %r5, %r9, %r5",
                                 $acquire,
                                 "xor %r3, %r5, %r4",
@@ -978,10 +960,7 @@ macro_rules! atomic16 {
                                     "or %r11, %r11, %r8",
                                     "stwcx. %r11, 0, %r3",
                                     "bne %cr0, 2b",
-                                    "b 4f",
                                 "3:",
-                                    "stwcx. %r11, 0, %r3",
-                                "4:",
                                     "srw %r5, %r9, %r5",
                                     "li %r3, 0",
                                     "cmpw %r5, %r4",
@@ -1310,10 +1289,7 @@ macro_rules! atomic128 {
                                     "mr %r10, %r6",
                                     "stqcx. %r10, 0, {dst}",
                                     "bne %cr0, 2b", // continue loop if store failed
-                                    "b 4f",
                                 "3:",
-                                    "stqcx. %r8, 0, {dst}",
-                                "4:",
                                 $acquire,
                                 // store r8-r9 pair to out
                                 concat!("std %r8, ", p128h!(), "({out})"),
