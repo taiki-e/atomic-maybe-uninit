@@ -81,6 +81,7 @@ Feel free to submit an issue if your target is not supported yet.
 )]
 #![allow(
     clippy::doc_markdown,
+    clippy::let_underscore_untyped, // https://github.com/rust-lang/rust-clippy/issues/10410
     clippy::missing_errors_doc,
     clippy::module_inception,
     clippy::too_many_lines,
