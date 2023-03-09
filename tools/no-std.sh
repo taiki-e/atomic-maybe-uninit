@@ -40,7 +40,7 @@ x_cargo() {
     echo
 }
 bail() {
-    echo "error: $*" >&2
+    echo >&2 "error: $*"
     exit 1
 }
 
