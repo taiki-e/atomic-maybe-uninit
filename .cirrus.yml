@@ -53,8 +53,8 @@ aarch64_macos_test_task:
     - sysctl hw.optional machdep.cpu
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly --component rust-src
   test_script:
+    - . $HOME/.cargo/env
     - set -ex
-    - source $HOME/.cargo/env
     - cargo test -vv --workspace --all-features
     - cargo test -vv --workspace --all-features --release
     - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
@@ -76,8 +76,8 @@ aarch64_linux_valgrind_task:
     - apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends valgrind ca-certificates curl gcc git libc6-dev
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly --component rust-src
   test_script:
+    - . $HOME/.cargo/env
     - set -ex
-    - source $HOME/.cargo/env
     # doctests on Valgrind are very slow
     - cargo test -vv --workspace --all-features --tests
     - cargo test -vv --workspace --all-features --release --tests
