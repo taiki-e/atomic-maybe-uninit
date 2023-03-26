@@ -5,7 +5,7 @@ cd "$(dirname "$0")"/..
 
 # shellcheck disable=SC2154
 trap 's=$?; echo >&2 "$0: Error on line "${LINENO}": ${BASH_COMMAND}"; exit ${s}' ERR
-trap -- 'exit 0' SIGINT
+trap -- 'exit 1' SIGINT
 
 # USAGE:
 #    ./tools/build.sh [+toolchain] [target]...
@@ -146,7 +146,7 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
     rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
     # -Z check-cfg requires 1.63.0-nightly
     # shellcheck disable=SC2207
-    if [[ "${rustc_minor_version}" -gt 62 ]]; then
+    if [[ "${rustc_minor_version}" -ge 63 ]]; then
         build_scripts=(build.rs)
         check_cfg='-Z unstable-options --check-cfg=values(target_pointer_width,"128") --check-cfg=values(feature,"cargo-clippy")'
         known_cfgs+=($(grep -E 'cargo:rustc-cfg=' "${build_scripts[@]}" | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u))
