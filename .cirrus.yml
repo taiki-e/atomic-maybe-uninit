@@ -35,6 +35,25 @@ aarch64_linux_test_task:
     # Graviton2 is armv8.2-a but supports armv8.3-a LDAPR instructions.
     - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" ./tools/test.sh -vv
 
+armhf_linux_test_task:
+  name: test ($TARGET)
+  env:
+    TARGET: armv7-unknown-linux-gnueabihf
+    RUSTDOCFLAGS: -D warnings --cfg weak_memory
+    RUSTFLAGS: -D warnings --cfg weak_memory
+  arm_container:
+    image: rust:latest
+  setup_script:
+    - set -ex
+    - lscpu
+    - rustup toolchain add nightly --no-self-update --component rust-src && rustup default nightly
+    - dpkg --add-architecture armhf
+    - apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends gcc-arm-linux-gnueabihf libc6-dev-armhf-cross libc6:armhf
+  test_script:
+    - set -ex
+    - export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
+    - ./tools/test.sh --target "$TARGET" -vv
+
 aarch64_macos_test_task:
   name: test ($TARGET)
   env:
