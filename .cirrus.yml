@@ -26,19 +26,14 @@ aarch64_linux_test_task:
     - rustup toolchain add nightly --no-self-update --component rust-src && rustup default nightly
   test_script:
     - set -ex
-    - cargo test -vv --workspace --all-features
-    - cargo test -vv --workspace --all-features --release
-    - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
+    - ./tools/test.sh -vv
     # +lse
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" cargo test -vv --workspace --all-features
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" cargo test -vv --workspace --all-features --release
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
-    # Graviton2 is armv8.2-a but supports armv8.3-a LDAPR instructions.
+    # Graviton2 (Neoverse N1) is ARMv8.2-a and doesn't support FEAT_LSE2.
+    # FEAT_LSE2 is tested on aarch64 macOS VM.
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh -vv
     # +rcpc
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" cargo test -vv --workspace --all-features
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" cargo test -vv --workspace --all-features --release
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
-    # TODO: FEAT_LSE2 is not available on Graviton2 (armv8.2-a)
+    # Graviton2 is armv8.2-a but supports armv8.3-a LDAPR instructions.
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" ./tools/test.sh -vv
 
 aarch64_macos_test_task:
   name: test ($TARGET)
@@ -55,9 +50,8 @@ aarch64_macos_test_task:
   test_script:
     - . $HOME/.cargo/env
     - set -ex
-    - cargo test -vv --workspace --all-features
-    - cargo test -vv --workspace --all-features --release
-    - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
+    # macOS is +lse,+lse2 by default
+    - ./tools/test.sh -vv
 
 aarch64_linux_valgrind_task:
   name: valgrind ($TARGET)
@@ -79,12 +73,7 @@ aarch64_linux_valgrind_task:
     - . $HOME/.cargo/env
     - set -ex
     # doctests on Valgrind are very slow
-    - cargo test -vv --workspace --all-features --tests
-    - cargo test -vv --workspace --all-features --release --tests
-    - CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
+    - ./tools/test.sh -vv --tests
     # +lse
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" cargo test -vv --workspace --all-features --tests
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" cargo test -vv --workspace --all-features --release --tests
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=fat cargo test -vv --workspace --all-features --release --tests
-    # TODO: As of Valgrind 3.19, Valgrind doesn't support ldapr
-    # TODO: FEAT_LSE2 is not available on Graviton2 (armv8.2-a)
+    # As of Valgrind 3.19, Valgrind supports atomic instructions of ARMv8.0 and ARMv8.1 (FEAT_LSE).
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh -vv --tests

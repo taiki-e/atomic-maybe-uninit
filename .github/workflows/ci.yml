@@ -122,6 +122,10 @@ jobs:
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
+      - run: lscpu
+        if: startsWith(matrix.os, 'ubuntu') || matrix.os == ''
+      - run: sysctl hw.optional machdep.cpu
+        if: startsWith(matrix.os, 'macos')
       - name: Install Rust
         run: rustup toolchain add ${{ matrix.rust }} --no-self-update --component rust-src && rustup default ${{ matrix.rust }}
       - run: rustup toolchain add nightly --no-self-update
@@ -140,169 +144,50 @@ jobs:
       - run: echo "TARGET=--target ${{ matrix.target }}" >>"${GITHUB_ENV}"
         if: matrix.target != ''
 
-      - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
-          CARGO_PROFILE_RELEASE_LTO: fat
-      - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -Z randomize-layout
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -Z randomize-layout
-        if: startsWith(matrix.rust, 'nightly')
-
+      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
       # +cmpxchg16b
       # macOS is skipped because it is +cmpxchg16b by default
-      - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
+      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
         if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
-        if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
-          CARGO_PROFILE_RELEASE_LTO: fat
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
-        if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos')
-      - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b -Z randomize-layout
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b -Z randomize-layout
-        if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos') && startsWith(matrix.rust, 'nightly')
-
       # -sse2
-      - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
+      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
         if: startsWith(matrix.target, 'i686')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
-        if: startsWith(matrix.target, 'i686')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
-          CARGO_PROFILE_RELEASE_LTO: fat
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
-        if: startsWith(matrix.target, 'i686')
-      - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2 -Z randomize-layout
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2 -Z randomize-layout
-        if: startsWith(matrix.target, 'i686') && startsWith(matrix.rust, 'nightly')
-
       # +lse
-      - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
+      # As of QEMU 7.2, QEMU has not yet implemented FEAT_LSE2: https://linaro.atlassian.net/browse/QEMU-300
+      # FEAT_LSE2 is tested on Cirrus CI's aarch64 macOS VM.
+      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
         if: startsWith(matrix.target, 'aarch64')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
-        if: startsWith(matrix.target, 'aarch64')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
-          CARGO_PROFILE_RELEASE_LTO: fat
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
-        if: startsWith(matrix.target, 'aarch64')
-      - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse -Z randomize-layout
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse -Z randomize-layout
-        if: startsWith(matrix.target, 'aarch64') && startsWith(matrix.rust, 'nightly')
       # +rcpc
-      - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
+      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc
           # cortex-a76 is armv8.2-a but supports armv8.3-a LDAPR instructions.
           QEMU_CPU: cortex-a76
         if: startsWith(matrix.target, 'aarch64')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc
-          QEMU_CPU: cortex-a76
-        if: startsWith(matrix.target, 'aarch64')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
-          CARGO_PROFILE_RELEASE_LTO: fat
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc
-          QEMU_CPU: cortex-a76
-        if: startsWith(matrix.target, 'aarch64')
-      - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc -Z randomize-layout
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc -Z randomize-layout
-          QEMU_CPU: cortex-a76
-        if: startsWith(matrix.target, 'aarch64') && startsWith(matrix.rust, 'nightly')
-      # TODO: As of QEMU 7.2, QEMU has not yet implemented FEAT_LSE2: https://linaro.atlassian.net/browse/QEMU-300
-
       # pwr7
       # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
-      - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
+      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
         if: startsWith(matrix.target, 'powerpc64le-')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
-        if: startsWith(matrix.target, 'powerpc64le-')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
-          CARGO_PROFILE_RELEASE_LTO: fat
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
-        if: startsWith(matrix.target, 'powerpc64le-')
-      - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7 -Z randomize-layout
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7 -Z randomize-layout
-        if: startsWith(matrix.target, 'powerpc64le-') && startsWith(matrix.rust, 'nightly')
-
       # pwr8
       # powerpc64le- (little-endian) is skipped because it is pwr8 by default
-      - run: cargo test -vv --workspace --all-features $TARGET $BUILD_STD $DOCTEST_XCOMPILE
+      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8
         if: startsWith(matrix.target, 'powerpc64-')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8
-        if: startsWith(matrix.target, 'powerpc64-')
-      - run: cargo test -vv --workspace --all-features --release $TARGET $BUILD_STD $DOCTEST_XCOMPILE
-        env:
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
-          CARGO_PROFILE_RELEASE_LTO: fat
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8
-        if: startsWith(matrix.target, 'powerpc64-')
-      - run: cargo careful test -vv --workspace --all-features $TARGET $DOCTEST_XCOMPILE
-        env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8 -Z randomize-layout
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8 -Z randomize-layout
-        if: startsWith(matrix.target, 'powerpc64-') && startsWith(matrix.rust, 'nightly')
 
       - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private $TARGET $BUILD_STD
 
@@ -351,32 +236,12 @@ jobs:
         run: rustup toolchain add nightly --no-self-update && rustup default nightly
       - uses: taiki-e/install-action@valgrind
       # doctests on Valgrind are very slow
-      - run: cargo test -vv --workspace --all-features --tests
+      - run: tools/test.sh -vv --tests
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg valgrind
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg valgrind
-      - run: cargo test -vv --workspace --all-features --release --tests
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg valgrind
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg valgrind
-      - run: cargo test -vv --workspace --all-features --release --tests
-        env:
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
-          CARGO_PROFILE_RELEASE_LTO: fat
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg valgrind
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg valgrind
       # +cmpxchg16b
-      - run: cargo test -vv --workspace --all-features --tests
+      - run: tools/test.sh -vv --tests
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg valgrind -C target-feature=+cmpxchg16b
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg valgrind -C target-feature=+cmpxchg16b
-      - run: cargo test -vv --workspace --all-features --release --tests
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg valgrind -C target-feature=+cmpxchg16b
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg valgrind -C target-feature=+cmpxchg16b
-      - run: cargo test -vv --workspace --all-features --release --tests
-        env:
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
-          CARGO_PROFILE_RELEASE_LTO: fat
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg valgrind -C target-feature=+cmpxchg16b
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg valgrind -C target-feature=+cmpxchg16b
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b --cfg valgrind
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b --cfg valgrind

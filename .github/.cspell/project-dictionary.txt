@@ -58,6 +58,7 @@ movq
 movs
 movsd
 movss
+neoverse
 noat
 nographic
 orrs
@@ -99,3 +100,5 @@ xmmword
 xori
 xorps
 yonah
+Zbuild
+Zsanitizer
