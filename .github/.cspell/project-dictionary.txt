@@ -49,7 +49,6 @@ lrcpc
 lwarx
 lwsync
 machdep
-memcpy
 mfence
 miscompilation
 miscompiles
