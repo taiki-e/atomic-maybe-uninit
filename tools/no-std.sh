@@ -91,8 +91,9 @@ run() {
     local test_dir
     case "${target}" in
         thumb*)
-            test_dir=tests/cortex-m
-            target_rustflags+=" -C link-arg=-Tlink.x"
+            test_dir=tests/no-std-qemu
+            linker=link.x
+            target_rustflags+=" -C link-arg=-T${linker}"
             ;;
         *) bail "unrecognized target '${target}'" ;;
     esac

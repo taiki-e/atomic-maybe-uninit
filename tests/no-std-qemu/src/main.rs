@@ -1,27 +1,17 @@
 #![no_main]
 #![no_std]
 #![warn(rust_2018_idioms, single_use_lifetimes, unsafe_op_in_unsafe_fn)]
-#![feature(panic_info_message)]
 
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
 use atomic_maybe_uninit::*;
+use semihosting::{print, println};
 
-macro_rules! print {
-    ($($tt:tt)*) => {
-        if let Ok(mut hstdout) = cortex_m_semihosting::hio::hstdout() {
-            use core::fmt::Write as _;
-            let _ = write!(hstdout, $($tt)*);
-        }
-    };
-}
-macro_rules! println {
-    ($($tt:tt)*) => {
-        if let Ok(mut hstdout) = cortex_m_semihosting::hio::hstdout() {
-            use core::fmt::Write as _;
-            let _ = writeln!(hstdout, $($tt)*);
-        }
-    };
+#[cfg(all(target_arch = "arm", target_feature = "mclass"))]
+#[cortex_m_rt::entry]
+fn main() -> ! {
+    run();
+    semihosting::process::exit(0)
 }
 
 macro_rules! __test_atomic {
@@ -163,6 +153,30 @@ macro_rules! __test_atomic {
     };
 }
 
+fn run() {
+    macro_rules! test_atomic {
+        ($int_type:ident) => {
+            paste::paste! {
+                fn [<test_atomic_ $int_type>]() {
+                    __test_atomic!($int_type);
+                }
+                print!("test test_atomic_{} ... ", stringify!($int_type));
+                [<test_atomic_ $int_type>]();
+                println!("ok");
+            }
+        };
+    }
+
+    test_atomic!(isize);
+    test_atomic!(usize);
+    test_atomic!(i8);
+    test_atomic!(u8);
+    test_atomic!(i16);
+    test_atomic!(u16);
+    test_atomic!(i32);
+    test_atomic!(u32);
+}
+
 fn load_orderings() -> [Ordering; 3] {
     [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst]
 }
@@ -192,60 +206,4 @@ fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
         (Ordering::SeqCst, Ordering::Acquire),
         (Ordering::SeqCst, Ordering::SeqCst),
     ]
-}
-
-#[cortex_m_rt::entry]
-fn main() -> ! {
-    macro_rules! test_atomic {
-        ($int_type:ident) => {
-            paste::paste! {
-                fn [<test_atomic_ $int_type>]() {
-                    __test_atomic!($int_type);
-                }
-                print!("test test_atomic_{} ... ", stringify!($int_type));
-                [<test_atomic_ $int_type>]();
-                println!("ok");
-            }
-        };
-    }
-
-    test_atomic!(isize);
-    test_atomic!(usize);
-    test_atomic!(i8);
-    test_atomic!(u8);
-    test_atomic!(i16);
-    test_atomic!(u16);
-    test_atomic!(i32);
-    test_atomic!(u32);
-
-    semihosting::exit(semihosting::EXIT_SUCCESS)
-}
-
-#[inline(never)]
-#[panic_handler]
-fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
-    if let Some(m) = info.message() {
-        print!("panicked at '{m:?}'");
-    } else {
-        print!("panic occurred (no message)");
-    }
-    if let Some(l) = info.location() {
-        println!(", {l}");
-    } else {
-        println!(" (no location info)");
-    }
-
-    semihosting::exit(semihosting::EXIT_FAILURE)
-}
-
-mod semihosting {
-    pub use cortex_m_semihosting::{
-        debug::{EXIT_FAILURE, EXIT_SUCCESS},
-        hio::hstdout,
-    };
-
-    pub fn exit(status: cortex_m_semihosting::debug::ExitStatus) -> ! {
-        cortex_m_semihosting::debug::exit(status);
-        loop {}
-    }
 }

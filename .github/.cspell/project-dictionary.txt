@@ -92,7 +92,6 @@ stwcx
 stxp
 subarch
 systemsim
-Tlink
 vmlinux
 xadd
 xchg
