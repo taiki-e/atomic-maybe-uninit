@@ -1,5 +1,5 @@
 [package]
-name = "cortex-m-test"
+name = "no-std-qemu-test"
 version = "0.0.0"
 edition = "2021"
 publish = false
