@@ -55,12 +55,13 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
+                                ".set push",
                                 ".set noat",
                                 // (atomic) load from src to tmp
                                 concat!("l", $asm_suffix, " {tmp}, 0({src})"),
                                 // store tmp to out
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
-                                ".set at",
+                                ".set pop",
                                 src = in(reg) src,
                                 out = in(reg) out,
                                 tmp = out(reg) _,
@@ -70,13 +71,14 @@ macro_rules! atomic_load_store {
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => {
                             asm!(
+                                ".set push",
                                 ".set noat",
                                 // (atomic) load from src to tmp
                                 concat!("l", $asm_suffix, " {tmp}, 0({src})"),
                                 "sync",
                                 // store tmp to out
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
-                                ".set at",
+                                ".set pop",
                                 src = in(reg) src,
                                 out = in(reg) out,
                                 tmp = out(reg) _,
@@ -103,12 +105,13 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
+                                ".set push",
                                 ".set noat",
                                 // load from val to tmp
                                 concat!("l", $asm_suffix, $asm_u_suffix, " {tmp}, 0({val})"),
                                 // (atomic) store tmp to dst
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
-                                ".set at",
+                                ".set pop",
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 tmp = out(reg) _,
@@ -117,13 +120,14 @@ macro_rules! atomic_load_store {
                         }
                         Ordering::Release => {
                             asm!(
+                                ".set push",
                                 ".set noat",
                                 // load from val to tmp
                                 concat!("l", $asm_suffix, $asm_u_suffix, " {tmp}, 0({val})"),
                                 // (atomic) store tmp to dst
                                 "sync",
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
-                                ".set at",
+                                ".set pop",
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 tmp = out(reg) _,
@@ -132,6 +136,7 @@ macro_rules! atomic_load_store {
                         }
                         Ordering::SeqCst => {
                             asm!(
+                                ".set push",
                                 ".set noat",
                                 // load from val to tmp
                                 concat!("l", $asm_suffix, $asm_u_suffix, " {tmp}, 0({val})"),
@@ -139,7 +144,7 @@ macro_rules! atomic_load_store {
                                 "sync",
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
                                 "sync",
-                                ".set at",
+                                ".set pop",
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 tmp = out(reg) _,
@@ -175,6 +180,7 @@ macro_rules! atomic {
                     macro_rules! atomic_swap {
                         ($acquire:expr, $release:expr) => {
                             asm!(
+                                ".set push",
                                 ".set noat",
                                 // load from val to val_tmp
                                 concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
@@ -191,7 +197,7 @@ macro_rules! atomic {
                                 $acquire, // acquire fence
                                 // store out_tmp to out
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                ".set at",
+                                ".set pop",
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
@@ -235,6 +241,7 @@ macro_rules! atomic {
                     macro_rules! atomic_cmpxchg {
                         ($acquire:expr, $release:expr) => {
                             asm!(
+                                ".set push",
                                 ".set noat",
                                 // load from old/new to old_tmp/new_tmp
                                 concat!("l", $asm_suffix, " {old_tmp}, 0({old})"),
@@ -255,7 +262,7 @@ macro_rules! atomic {
                                 // store out_tmp to out
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
                                 "sltiu {r}, {new_tmp}, 1",
-                                ".set at",
+                                ".set pop",
                                 dst = inout(reg) dst => _,
                                 old = in(reg) old,
                                 new = inout(reg) new => _,
@@ -310,6 +317,7 @@ macro_rules! atomic8 {
                                 // Refs:
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/Mips/atomic.ll
+                                ".set push",
                                 ".set noat",
                                 // create aligned address and masks
                                 // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
@@ -337,7 +345,7 @@ macro_rules! atomic8 {
                                     "seb {tmp}, {tmp}",
                                 $acquire,
                                 "sb {tmp}, 0($6)",
-                                ".set at",
+                                ".set pop",
                                 tmp = out(reg) _,
                                 out("$2") _, // dst ptr (aligned)
                                 out("$3") _,
@@ -390,6 +398,7 @@ macro_rules! atomic8 {
                                 // Refs:
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/Mips/atomic.ll
+                                ".set push",
                                 ".set noat",
                                 concat!(daddiu!(), " $3, $zero, -4"),
                                 "lbu $2, 0($6)", // new
@@ -421,7 +430,7 @@ macro_rules! atomic8 {
                                 "xor {tmp}, $2, {tmp}",
                                 "sb $2, 0($7)",
                                 "sltiu $2, {tmp}, 1",
-                                ".set at",
+                                ".set pop",
                                 tmp = out(reg) _,
                                 out("$2") r,
                                 out("$3") _, // dst (aligned)
@@ -479,6 +488,7 @@ macro_rules! atomic16 {
                                 // Refs:
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/Mips/atomic.ll
+                                ".set push",
                                 ".set noat",
                                 // create aligned address and masks
                                 // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
@@ -506,7 +516,7 @@ macro_rules! atomic16 {
                                     "seh {tmp}, {tmp}",
                                 $acquire,
                                 "sh {tmp}, 0($6)",
-                                ".set at",
+                                ".set pop",
                                 tmp = out(reg) _,
                                 out("$2") _, // dst ptr (aligned)
                                 out("$3") _,
@@ -559,6 +569,7 @@ macro_rules! atomic16 {
                                 // Refs:
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/Mips/atomic.ll
+                                ".set push",
                                 ".set noat",
                                 concat!(daddiu!(), " $3, $zero, -4"),
                                 "lhu $2, 0($6)", // new
@@ -590,7 +601,7 @@ macro_rules! atomic16 {
                                 "xor {tmp}, $2, {tmp}",
                                 "sh $2, 0($7)",
                                 "sltiu $2, {tmp}, 1",
-                                ".set at",
+                                ".set pop",
                                 tmp = out(reg) _,
                                 out("$2") r,
                                 out("$3") _, // dst (aligned)
