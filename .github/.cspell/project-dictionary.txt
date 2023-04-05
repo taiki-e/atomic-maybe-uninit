@@ -6,7 +6,6 @@ andc
 andi
 aqrl
 armasm
-autogen
 beqz
 bnez
 bswap
@@ -27,9 +26,7 @@ cntlzd
 cntlzw
 cset
 daddiu
-doctests
 DWCAS
-hstdout
 IMAFD
 ishld
 isync
@@ -41,7 +38,6 @@ ldrexd
 ldxp
 libc
 libtcl
-libtest
 llcr
 llhr
 lqarx
@@ -50,7 +46,6 @@ lwarx
 lwsync
 machdep
 mfence
-miscompilation
 miscompiles
 movd
 movlps
@@ -60,7 +55,6 @@ movsd
 movss
 neoverse
 noat
-nographic
 orrs
 partword
 pshufd
@@ -79,7 +73,6 @@ slli
 sllv
 sllw
 sltiu
-sourceware
 srlv
 srlw
 srwi
