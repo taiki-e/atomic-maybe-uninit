@@ -7,6 +7,7 @@
 [![build status](https://img.shields.io/github/actions/workflow/status/taiki-e/atomic-maybe-uninit/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/taiki-e/atomic-maybe-uninit/actions)
 [![build status](https://img.shields.io/cirrus/github/taiki-e/atomic-maybe-uninit/main?style=flat-square&logo=cirrusci)](https://cirrus-ci.com/github/taiki-e/atomic-maybe-uninit)
 
+<!-- tidy:crate-doc:start -->
 Atomic operations on potentially uninitialized integers.
 
 ## Motivation
@@ -52,6 +53,8 @@ Feel free to submit an issue if your target is not supported yet.
 [atomic-memcpy]: https://github.com/taiki-e/atomic-memcpy
 [portable-atomic]: https://github.com/taiki-e/portable-atomic
 [undefined-behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+
+<!-- tidy:crate-doc:end -->
 
 ## License
 

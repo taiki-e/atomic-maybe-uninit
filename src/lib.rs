@@ -1,4 +1,5 @@
 /*!
+<!-- tidy:crate-doc:start -->
 Atomic operations on potentially uninitialized integers.
 
 ## Motivation
@@ -44,6 +45,8 @@ Feel free to submit an issue if your target is not supported yet.
 [atomic-memcpy]: https://github.com/taiki-e/atomic-memcpy
 [portable-atomic]: https://github.com/taiki-e/portable-atomic
 [undefined-behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
+
+<!-- tidy:crate-doc:end -->
 */
 
 #![no_std]
