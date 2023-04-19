@@ -169,37 +169,29 @@ unsafe impl<T: Primitive> Sync for AtomicMaybeUninit<T> {}
 impl<T: Primitive> core::panic::RefUnwindSafe for AtomicMaybeUninit<T> {}
 
 impl<T: Primitive> AtomicMaybeUninit<T> {
-    /// Creates a new atomic value from a potentially uninitialized integer.
-    ///
-    /// This is `const fn` on Rust 1.61+. See also `const_new` function.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::mem::MaybeUninit;
-    ///
-    /// use atomic_maybe_uninit::AtomicMaybeUninit;
-    ///
-    /// let v = AtomicMaybeUninit::new(MaybeUninit::new(5_i32));
-    ///
-    /// // Equivalent to:
-    /// let v = AtomicMaybeUninit::from(5_i32);
-    /// ```
-    #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
-    #[inline]
-    #[must_use]
-    pub const fn new(v: MaybeUninit<T>) -> Self {
-        Self { v: UnsafeCell::new(v), _align: [] }
-    }
-
-    /// Creates a new atomic value from a potentially uninitialized integer.
-    ///
-    /// This is `const fn` on Rust 1.61+. See also `const_new` function.
-    #[cfg(atomic_maybe_uninit_no_const_fn_trait_bound)]
-    #[inline]
-    #[must_use]
-    pub fn new(v: MaybeUninit<T>) -> Self {
-        Self { v: UnsafeCell::new(v), _align: [] }
+    const_fn! {
+        const_if: #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))];
+        /// Creates a new atomic value from a potentially uninitialized integer.
+        ///
+        /// This is `const fn` on Rust 1.61+. See also `const_new` function.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// use std::mem::MaybeUninit;
+        ///
+        /// use atomic_maybe_uninit::AtomicMaybeUninit;
+        ///
+        /// let v = AtomicMaybeUninit::new(MaybeUninit::new(5_i32));
+        ///
+        /// // Equivalent to:
+        /// let v = AtomicMaybeUninit::from(5_i32);
+        /// ```
+        #[inline]
+        #[must_use]
+        pub const fn new(v: MaybeUninit<T>) -> Self {
+            Self { v: UnsafeCell::new(v), _align: [] }
+        }
     }
 
     /// Returns a mutable reference to the underlying integer.

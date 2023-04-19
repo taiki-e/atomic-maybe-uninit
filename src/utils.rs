@@ -37,6 +37,22 @@ macro_rules! unreachable_unchecked {
     };
 }
 
+/// Make the given function const if the given condition is true.
+macro_rules! const_fn {
+    (
+        const_if: #[cfg($($cfg:tt)+)];
+        $(#[$($attr:tt)*])*
+        $vis:vis const fn $($rest:tt)*
+    ) => {
+        #[cfg($($cfg)+)]
+        $(#[$($attr)*])*
+        $vis const fn $($rest)*
+        #[cfg(not($($cfg)+))]
+        $(#[$($attr)*])*
+        $vis fn $($rest)*
+    };
+}
+
 // https://github.com/rust-lang/rust/blob/1.68.0/library/core/src/sync/atomic.rs#L3019
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
