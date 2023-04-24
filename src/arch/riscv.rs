@@ -1,3 +1,5 @@
+// RISC-V
+//
 // Refs:
 // - "Mappings from C/C++ primitives to RISC-V primitives." table in RISC-V Instruction Set Manual:
 //   https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
@@ -5,8 +7,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/1hcnPY8G1
-// - riscv32imac https://godbolt.org/z/W8xWj3cbG
+// - riscv64gc https://godbolt.org/z/hb1G7xqvz
+// - riscv32imac https://godbolt.org/z/hqzq3jdro
 
 use core::{
     arch::asm,
@@ -611,6 +613,16 @@ mod tests {
     #[cfg(target_arch = "riscv64")]
     test_atomic!(u64);
 
-    stress_test_load_store!();
-    stress_test_load_swap!();
+    // load/store/swap implementation is not affected by signedness, so it is
+    // enough to test only unsigned types.
+    stress_test_load_store!(u8);
+    stress_test_load_swap!(u8);
+    stress_test_load_store!(u16);
+    stress_test_load_swap!(u16);
+    stress_test_load_store!(u32);
+    stress_test_load_swap!(u32);
+    #[cfg(target_arch = "riscv64")]
+    stress_test_load_store!(u64);
+    #[cfg(target_arch = "riscv64")]
+    stress_test_load_swap!(u64);
 }

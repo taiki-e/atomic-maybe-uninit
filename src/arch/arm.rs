@@ -1,11 +1,11 @@
 // ARMv6 and ARMv7
 //
 // Generated asm:
-// - armv7-a https://godbolt.org/z/TPffzs496
-// - armv7-r https://godbolt.org/z/43YvvWTPv
-// - armv7-m https://godbolt.org/z/oT3Kj1sqb
-// - armv6 https://godbolt.org/z/9ceads1jG
-// - armv6-m https://godbolt.org/z/qeezqGr8E
+// - armv7-a https://godbolt.org/z/P8noEd7je
+// - armv7-r https://godbolt.org/z/5d6aencMd
+// - armv7-m https://godbolt.org/z/57ohzhM91
+// - armv6 https://godbolt.org/z/3KKTf4j6r
+// - armv6-m https://godbolt.org/z/Wes9adjbb
 
 use core::{
     mem::{self, MaybeUninit},
@@ -14,7 +14,7 @@ use core::{
 
 #[cfg(any(
     any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
 ))]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
@@ -48,7 +48,7 @@ macro_rules! dmb {
 
 #[cfg(any(
     any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
 ))]
 #[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
 macro_rules! clrex {
@@ -58,7 +58,7 @@ macro_rules! clrex {
 }
 #[cfg(any(
     any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
 ))]
 #[cfg(not(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")))]
 macro_rules! clrex {
@@ -80,7 +80,7 @@ macro_rules! asm_no_dmb {
     target_feature = "v7",
     atomic_maybe_uninit_target_feature = "v7",
     target_feature = "mclass",
-    atomic_maybe_uninit_target_feature = "mclass"
+    atomic_maybe_uninit_target_feature = "mclass",
 ))]
 macro_rules! asm_use_dmb {
     (options($($options:tt)*), $($asm:tt)*) => {
@@ -94,7 +94,7 @@ macro_rules! asm_use_dmb {
     target_feature = "v7",
     atomic_maybe_uninit_target_feature = "v7",
     target_feature = "mclass",
-    atomic_maybe_uninit_target_feature = "mclass"
+    atomic_maybe_uninit_target_feature = "mclass",
 )))]
 macro_rules! asm_use_dmb {
     (options($($options:tt)*), $($asm:tt)*) => {
@@ -183,7 +183,7 @@ macro_rules! atomic {
         }
         #[cfg(any(
             any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-            not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+            not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
         ))]
         impl AtomicSwap for $int_type {
             #[inline]
@@ -243,7 +243,7 @@ macro_rules! atomic {
         }
         #[cfg(any(
             any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-            not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))
+            not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
         ))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
@@ -559,12 +559,7 @@ atomic!(usize, "");
 #[rustfmt::skip]
 macro_rules! atomic64 {
     ($int_type:ident) => {
-        #[cfg(not(any(
-            target_feature = "mclass",
-            atomic_maybe_uninit_target_feature = "mclass",
-            target_feature = "rclass",
-            atomic_maybe_uninit_target_feature = "rclass",
-        )))]
+        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -604,12 +599,7 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(not(any(
-            target_feature = "mclass",
-            atomic_maybe_uninit_target_feature = "mclass",
-            target_feature = "rclass",
-            atomic_maybe_uninit_target_feature = "rclass",
-        )))]
+        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
@@ -661,12 +651,7 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(not(any(
-            target_feature = "mclass",
-            atomic_maybe_uninit_target_feature = "mclass",
-            target_feature = "rclass",
-            atomic_maybe_uninit_target_feature = "rclass",
-        )))]
+        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -725,12 +710,7 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(not(any(
-            target_feature = "mclass",
-            atomic_maybe_uninit_target_feature = "mclass",
-            target_feature = "rclass",
-            atomic_maybe_uninit_target_feature = "rclass",
-        )))]
+        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -1100,6 +1080,14 @@ mod tests {
     test_atomic!(i64);
     test_atomic!(u64);
 
-    stress_test_load_store!();
-    stress_test_load_swap!();
+    // load/store/swap implementation is not affected by signedness, so it is
+    // enough to test only unsigned types.
+    stress_test_load_store!(u8);
+    stress_test_load_swap!(u8);
+    stress_test_load_store!(u16);
+    stress_test_load_swap!(u16);
+    stress_test_load_store!(u32);
+    stress_test_load_swap!(u32);
+    stress_test_load_store!(u64);
+    stress_test_load_swap!(u64);
 }

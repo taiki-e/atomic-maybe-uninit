@@ -3,4 +3,5 @@
 
 fastrand
 quickcheck
+rustversion
 semihosting

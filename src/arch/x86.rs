@@ -1,15 +1,17 @@
+// x86 and x86_64
+//
 // Refs:
 // - https://www.felixcloutier.com/x86
 //
 // Generated asm:
-// - x86_64 https://godbolt.org/z/YT36cWKbf
-// - x86_64 (+cmpxchg16b) https://godbolt.org/z/boq3x39e4
-// - x86 (i686) https://godbolt.org/z/zPPWPTMsE
-// - x86 (i686,-sse2) https://godbolt.org/z/d8WEYo94c
-// - x86 (i586) https://godbolt.org/z/PYT66nMeG
-// - x86 (i586,-x87) https://godbolt.org/z/e3M6TzonP
-// - x86 (i486) https://godbolt.org/z/Mofbqzo7G
-// - x86 (i386) https://godbolt.org/z/3YGnT55MM
+// - x86_64 https://godbolt.org/z/WaT48hczb
+// - x86_64 (+cmpxchg16b) https://godbolt.org/z/KhcYPs5fz
+// - x86 (i686) https://godbolt.org/z/8rWTzo3jd
+// - x86 (i686,-sse2) https://godbolt.org/z/nfx75xs8c
+// - x86 (i586) https://godbolt.org/z/qnKsnEE5b
+// - x86 (i586,-x87) https://godbolt.org/z/7haKrjzhq
+// - x86 (i486) https://godbolt.org/z/a1xjYcrhY
+// - x86 (i386) https://godbolt.org/z/oxYT8ncs5
 
 use core::{
     arch::asm,
@@ -246,7 +248,8 @@ macro_rules! atomic64 {
                 // Refs:
                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/X86/X86ISelLowering.cpp
                 unsafe {
-                    if cfg!(target_feature = "sse2") {
+                    #[cfg(target_feature = "sse2")]
+                    {
                         // atomic load is always SeqCst.
                         asm!(
                             // Refs:
@@ -267,7 +270,9 @@ macro_rules! atomic64 {
                             tmp1 = out(xmm_reg) _,
                             options(nostack, preserves_flags),
                         );
-                    } else {
+                    }
+                    #[cfg(not(target_feature = "sse2"))]
+                    {
                         // atomic load is always SeqCst.
                         asm!(
                             // Refs:
@@ -303,14 +308,13 @@ macro_rules! atomic64 {
                         // store current value to out
                         "mov dword ptr [esi], eax",
                         "mov dword ptr [esi + 4], edx",
-                        // restore esi
-                        "mov esi, {esi_tmp}",
+                        "mov esi, {esi_tmp}", // restore esi
                         esi_tmp = inout(reg) out => _,
-                        // set old/new args of cmpxchg to 0
+                        // set old/new args of cmpxchg8b to 0
                         inout("eax") 0_u32 => _,
-                        inout("ebx") 0_u32 => _,
-                        inout("ecx") 0_u32 => _,
                         inout("edx") 0_u32 => _,
+                        in("ebx") 0_u32,
+                        in("ecx") 0_u32,
                         in("edi") src,
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
@@ -397,9 +401,9 @@ macro_rules! atomic64 {
                             "lock cmpxchg8b qword ptr [edi]",
                             "jne 2b",
                         inout("eax") val => _,
+                        out("edx") _,
                         out("ebx") _,
                         out("ecx") _,
-                        out("edx") _,
                         in("edi") dst,
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
@@ -443,13 +447,12 @@ macro_rules! atomic64 {
                         // store previous value to out
                         "mov dword ptr [esi], eax",
                         "mov dword ptr [esi + 4], edx",
-                        // restore esi
-                        "mov esi, {esi_tmp}",
+                        "mov esi, {esi_tmp}", // restore esi
                         esi_tmp = inout(reg) out => _,
                         inout("eax") val => _,
+                        out("edx") _,
                         out("ebx") _,
                         out("ecx") _,
-                        out("edx") _,
                         in("edi") dst,
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
@@ -491,13 +494,12 @@ macro_rules! atomic64 {
                         // store previous value to out
                         "mov dword ptr [esi], eax",
                         "mov dword ptr [esi + 4], edx",
-                        // restore esi
-                        "mov esi, {esi_tmp}",
+                        "mov esi, {esi_tmp}", // restore esi
                         esi_tmp = inout(reg) out => _,
                         out("eax") _,
+                        inout("edx") old => _,
                         out("ebx") _,
                         inout("ecx") new => r,
-                        inout("edx") old => _,
                         in("edi") dst,
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
@@ -553,18 +555,18 @@ macro_rules! atomic128 {
                     // atomic load is always SeqCst.
                     asm!(
                         // rbx is reserved by LLVM
-                        "xchg {rbx_tmp}, rbx",
+                        "mov {rbx_tmp}, rbx",
+                        "xor rbx, rbx", // zeroed rbx
                         // (atomic) load by cmpxchg(0, 0)
                         concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                         // store current value to out
                         concat!("mov qword ptr [", $rsi, "], rax"),
                         concat!("mov qword ptr [", $rsi, " + 8], rdx"),
-                        // restore rbx
-                        "mov rbx, {rbx_tmp}",
-                        // set old/new args of cmpxchg to 0
-                        rbx_tmp = inout(reg) 0_u64 => _,
+                        "mov rbx, {rbx_tmp}", // restore rbx
+                        // set old/new args of cmpxchg16b to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
+                        rbx_tmp = out(reg) _,
+                        in("rcx") 0_u64,
                         inout("rax") 0_u64 => _,
-                        inout("rcx") 0_u64 => _,
                         inout("rdx") 0_u64 => _,
                         in($rdi) src,
                         in($rsi) out,
@@ -614,8 +616,7 @@ macro_rules! atomic128 {
                         "2:",
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                             "jne 2b",
-                        // restore rbx
-                        "mov rbx, {rbx_tmp}",
+                        "mov rbx, {rbx_tmp}", // restore rbx
                         rbx_tmp = out(reg) _,
                         out("rax") _,
                         out("rcx") _,
@@ -673,8 +674,7 @@ macro_rules! atomic128 {
                         // store previous value to out
                         concat!("mov qword ptr [", $r8, "], rax"),
                         concat!("mov qword ptr [", $r8, " + 8], rdx"),
-                        // restore rbx
-                        "mov rbx, {rbx_tmp}",
+                        "mov rbx, {rbx_tmp}", // restore rbx
                         rbx_tmp = out(reg) _,
                         out("rax") _,
                         out("rcx") _,
@@ -732,8 +732,7 @@ macro_rules! atomic128 {
                         // store previous value to out
                         concat!("mov qword ptr [", $r8, "], rax"),
                         concat!("mov qword ptr [", $r8, " + 8], rdx"),
-                        // restore rbx
-                        "mov rbx, {rbx_tmp}",
+                        "mov rbx, {rbx_tmp}", // restore rbx
                         rbx_tmp = out(reg) _,
                         out("rax") _,
                         out("rcx") r,
@@ -782,6 +781,22 @@ mod tests {
     #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
     test_atomic!(u128);
 
-    stress_test_load_store!();
-    stress_test_load_swap!();
+    // load/store/swap implementation is not affected by signedness, so it is
+    // enough to test only unsigned types.
+    stress_test_load_store!(u8);
+    stress_test_load_swap!(u8);
+    stress_test_load_store!(u16);
+    stress_test_load_swap!(u16);
+    stress_test_load_store!(u32);
+    stress_test_load_swap!(u32);
+    #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
+    stress_test_load_store!(u64);
+    #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
+    stress_test_load_swap!(u64);
+    #[cfg(target_arch = "x86_64")]
+    #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+    stress_test_load_store!(u128);
+    #[cfg(target_arch = "x86_64")]
+    #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+    stress_test_load_swap!(u128);
 }

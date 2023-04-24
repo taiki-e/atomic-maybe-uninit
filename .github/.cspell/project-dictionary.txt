@@ -9,7 +9,6 @@ armasm
 beqz
 bnez
 bswap
-callthru
 casp
 cbnz
 cdsg
@@ -31,13 +30,13 @@ IMAFD
 ishld
 isync
 ldapr
+ldar
 ldaxp
 ldrd
 ldrex
 ldrexd
 ldxp
 libc
-libtcl
 llcr
 llhr
 lqarx
@@ -47,6 +46,7 @@ lwsync
 machdep
 mfence
 miscompiles
+moreutils
 movd
 movlps
 movq
@@ -68,7 +68,7 @@ rlwinm
 seqz
 sete
 shufps
-skiboot
+signedness
 slli
 sllv
 sllw
@@ -85,8 +85,6 @@ strexd
 stwcx
 stxp
 subarch
-systemsim
-vmlinux
 xadd
 xchg
 xmmword

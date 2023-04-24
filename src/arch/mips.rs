@@ -1,8 +1,10 @@
+// MIPS32r2 and MIPS64r2
+//
 // Generated asm:
-// - mips https://godbolt.org/z/TePzEPb7x
-// - mipsel https://godbolt.org/z/6K9dfx7ns
-// - mips64 https://godbolt.org/z/jdf7Pz7sP
-// - mips64el https://godbolt.org/z/Kvz7czP1b
+// - mips https://godbolt.org/z/fjczM4E5r
+// - mipsel https://godbolt.org/z/6r35GddM5
+// - mips64 https://godbolt.org/z/YrYa43d3s
+// - mips64el https://godbolt.org/z/hnnox8M7M
 
 use core::{
     arch::asm,
@@ -35,6 +37,19 @@ macro_rules! daddiu {
 macro_rules! daddiu {
     () => {
         "daddiu"
+    };
+}
+
+macro_rules! atomic_rmw {
+    ($op:ident, $order:ident) => {
+        match $order {
+            Ordering::Relaxed => $op!("", ""),
+            Ordering::Acquire => $op!("sync", ""),
+            Ordering::Release => $op!("", "sync"),
+            // AcqRel and SeqCst RMWs are equivalent.
+            Ordering::AcqRel | Ordering::SeqCst => $op!("sync", "sync"),
+            _ => unreachable_unchecked!("{:?}", $order),
+        }
     };
 }
 
@@ -102,57 +117,26 @@ macro_rules! atomic_load_store {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
-                    match order {
-                        Ordering::Relaxed => {
+                    macro_rules! store {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 ".set push",
                                 ".set noat",
                                 // load from val to tmp
                                 concat!("l", $asm_suffix, $asm_u_suffix, " {tmp}, 0({val})"),
                                 // (atomic) store tmp to dst
+                                $release, // release fence
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
+                                $acquire, // acquire fence
                                 ".set pop",
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 tmp = out(reg) _,
                                 options(nostack),
-                            );
-                        }
-                        Ordering::Release => {
-                            asm!(
-                                ".set push",
-                                ".set noat",
-                                // load from val to tmp
-                                concat!("l", $asm_suffix, $asm_u_suffix, " {tmp}, 0({val})"),
-                                // (atomic) store tmp to dst
-                                "sync",
-                                concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
-                                ".set pop",
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                tmp = out(reg) _,
-                                options(nostack),
-                            );
-                        }
-                        Ordering::SeqCst => {
-                            asm!(
-                                ".set push",
-                                ".set noat",
-                                // load from val to tmp
-                                concat!("l", $asm_suffix, $asm_u_suffix, " {tmp}, 0({val})"),
-                                // (atomic) store tmp to dst
-                                "sync",
-                                concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
-                                "sync",
-                                ".set pop",
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                tmp = out(reg) _,
-                                options(nostack),
-                            );
-                        }
-                        _ => unreachable_unchecked!("{:?}", order),
+                            )
+                        };
                     }
+                    atomic_rmw!(store, order);
                 }
             }
         }
@@ -177,7 +161,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 ".set push",
@@ -208,14 +192,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("sync", ""),
-                        Ordering::Release => atomic_swap!("", "sync"),
-                        // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("sync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(swap, order);
                 }
             }
         }
@@ -238,7 +215,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
                     let mut r: usize;
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 ".set push",
@@ -275,14 +252,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("sync", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "sync"),
-                        // AcqRel and SeqCst compare_exchange are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
                 }
@@ -309,7 +279,7 @@ macro_rules! atomic8 {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 // Implement sub-word atomic operations using word-sized LL/SC loop.
@@ -360,14 +330,7 @@ macro_rules! atomic8 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("sync", ""),
-                        Ordering::Release => atomic_swap!("", "sync"),
-                        // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("sync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(swap, order);
                 }
             }
         }
@@ -390,7 +353,7 @@ macro_rules! atomic8 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
                     let mut r: usize;
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 // Implement sub-word atomic operations using word-sized LL/SC loop.
@@ -446,14 +409,7 @@ macro_rules! atomic8 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("sync", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "sync"),
-                        // AcqRel and SeqCst compare_exchange are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
                 }
@@ -480,7 +436,7 @@ macro_rules! atomic16 {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 // Implement sub-word atomic operations using word-sized LL/SC loop.
@@ -531,14 +487,7 @@ macro_rules! atomic16 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("sync", ""),
-                        Ordering::Release => atomic_swap!("", "sync"),
-                        // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("sync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(swap, order);
                 }
             }
         }
@@ -561,7 +510,7 @@ macro_rules! atomic16 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
                     let mut r: usize;
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 // Implement sub-word atomic operations using word-sized LL/SC loop.
@@ -617,14 +566,7 @@ macro_rules! atomic16 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("sync", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "sync"),
-                        // AcqRel and SeqCst compare_exchange are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("sync", "sync"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
                 }
@@ -667,6 +609,16 @@ mod tests {
     #[cfg(target_arch = "mips64")]
     test_atomic!(u64);
 
-    stress_test_load_store!();
-    stress_test_load_swap!();
+    // load/store/swap implementation is not affected by signedness, so it is
+    // enough to test only unsigned types.
+    stress_test_load_store!(u8);
+    stress_test_load_swap!(u8);
+    stress_test_load_store!(u16);
+    stress_test_load_swap!(u16);
+    stress_test_load_store!(u32);
+    stress_test_load_swap!(u32);
+    #[cfg(target_arch = "mips64")]
+    stress_test_load_store!(u64);
+    #[cfg(target_arch = "mips64")]
+    stress_test_load_swap!(u64);
 }

@@ -1,14 +1,16 @@
+// PowerPC and PowerPC64
+//
 // Refs:
 // - Power ISA https://openpowerfoundation.org/specifications/isa
 // - AIX Assembler language reference https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
 // - http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/3W15bTr1T
-// - powerpc64 https://godbolt.org/z/7r6f5Pfxb
-// - powerpc64 (pwr8) https://godbolt.org/z/dnasqer1q
-// - powerpc64le https://godbolt.org/z/ojPhP5nja
-// - powerpc64le (pwr7) https://godbolt.org/z/crEnvr6jT
+// - powerpc https://godbolt.org/z/9E1x13db7
+// - powerpc64 https://godbolt.org/z/Wox3zqMET
+// - powerpc64 (pwr8) https://godbolt.org/z/ar36s61dY
+// - powerpc64le https://godbolt.org/z/1j6WPa765
+// - powerpc64le (pwr7) https://godbolt.org/z/hMG8Y1Mdz
 
 use core::{
     arch::asm,
@@ -29,7 +31,7 @@ macro_rules! if_d {
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
+    atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
 #[cfg(target_endian = "big")]
 macro_rules! p128h {
@@ -40,7 +42,7 @@ macro_rules! p128h {
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
+    atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
 #[cfg(target_endian = "big")]
 macro_rules! p128l {
@@ -51,7 +53,7 @@ macro_rules! p128l {
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
+    atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
 #[cfg(target_endian = "little")]
 macro_rules! p128h {
@@ -62,12 +64,25 @@ macro_rules! p128h {
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
+    atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
 #[cfg(target_endian = "little")]
 macro_rules! p128l {
     () => {
         "0"
+    };
+}
+
+macro_rules! atomic_rmw {
+    ($op:ident, $order:ident) => {
+        match $order {
+            Ordering::Relaxed => $op!("", ""),
+            Ordering::Acquire => $op!("lwsync", ""),
+            Ordering::Release => $op!("", "lwsync"),
+            Ordering::AcqRel => $op!("lwsync", "lwsync"),
+            Ordering::SeqCst => $op!("lwsync", "sync"),
+            _ => unreachable_unchecked!("{:?}", $order),
+        }
     };
 }
 
@@ -215,7 +230,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val_tmp
@@ -242,14 +257,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("lwsync", ""),
-                        Ordering::Release => atomic_swap!("", "lwsync"),
-                        Ordering::AcqRel => atomic_swap!("lwsync", "lwsync"),
-                        Ordering::SeqCst => atomic_swap!("lwsync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(swap, order);
                 }
             }
         }
@@ -272,7 +280,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
                     let mut r: usize;
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from old/new to old_tmp/new_tmp pairs
@@ -307,14 +315,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("lwsync", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "lwsync"),
-                        Ordering::AcqRel => atomic_cmpxchg!("lwsync", "lwsync"),
-                        Ordering::SeqCst => atomic_cmpxchg!("lwsync", "sync"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
                 }
@@ -325,7 +326,7 @@ macro_rules! atomic {
 
 #[cfg(not(all(
     target_arch = "powerpc64",
-    any(target_feature = "partword-atomics", atomic_maybe_uninit_target_feature = "partword-atomics")
+    any(target_feature = "partword-atomics", atomic_maybe_uninit_target_feature = "partword-atomics"),
 )))]
 #[rustfmt::skip]
 macro_rules! atomic8 {
@@ -352,7 +353,7 @@ macro_rules! atomic8 {
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/PowerPC/atomics.ll
                     #[cfg(target_arch = "powerpc64")]
                     #[cfg(target_endian = "big")]
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lbz %r7, 0(%r4)",
@@ -390,7 +391,7 @@ macro_rules! atomic8 {
                     }
                     #[cfg(target_arch = "powerpc64")]
                     #[cfg(target_endian = "little")]
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lbz %r7, 0(%r4)",
@@ -426,7 +427,7 @@ macro_rules! atomic8 {
                         };
                     }
                     #[cfg(target_arch = "powerpc")]
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lbz %r7, 0(%r4)",
@@ -462,14 +463,7 @@ macro_rules! atomic8 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("lwsync", ""),
-                        Ordering::Release => atomic_swap!("", "lwsync"),
-                        Ordering::AcqRel => atomic_swap!("lwsync", "lwsync"),
-                        Ordering::SeqCst => atomic_swap!("lwsync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(swap, order);
                 }
             }
         }
@@ -499,7 +493,7 @@ macro_rules! atomic8 {
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/PowerPC/atomics.ll
                     #[cfg(target_arch = "powerpc64")]
                     #[cfg(target_endian = "big")]
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lbz %r4, 0(%r4)",
@@ -547,7 +541,7 @@ macro_rules! atomic8 {
                     }
                     #[cfg(target_arch = "powerpc64")]
                     #[cfg(target_endian = "little")]
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lbz %r8, 0(%r5)",
@@ -593,7 +587,7 @@ macro_rules! atomic8 {
                         };
                     }
                     #[cfg(target_arch = "powerpc")]
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lbz %r4, 0(%r4)",
@@ -644,14 +638,7 @@ macro_rules! atomic8 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("lwsync", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "lwsync"),
-                        Ordering::AcqRel => atomic_cmpxchg!("lwsync", "lwsync"),
-                        Ordering::SeqCst => atomic_cmpxchg!("lwsync", "sync"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
                 }
@@ -662,7 +649,7 @@ macro_rules! atomic8 {
 
 #[cfg(not(all(
     target_arch = "powerpc64",
-    any(target_feature = "partword-atomics", atomic_maybe_uninit_target_feature = "partword-atomics")
+    any(target_feature = "partword-atomics", atomic_maybe_uninit_target_feature = "partword-atomics"),
 )))]
 #[rustfmt::skip]
 macro_rules! atomic16 {
@@ -689,7 +676,7 @@ macro_rules! atomic16 {
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/PowerPC/atomics.ll
                     #[cfg(target_arch = "powerpc64")]
                     #[cfg(target_endian = "big")]
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lhz %r8, 0(%r4)",
@@ -728,7 +715,7 @@ macro_rules! atomic16 {
                     }
                     #[cfg(target_arch = "powerpc64")]
                     #[cfg(target_endian = "little")]
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "li %r6, 0",
@@ -765,7 +752,7 @@ macro_rules! atomic16 {
                         };
                     }
                     #[cfg(target_arch = "powerpc")]
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lhz %r7, 0(%r4)",
@@ -802,14 +789,7 @@ macro_rules! atomic16 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("lwsync", ""),
-                        Ordering::Release => atomic_swap!("", "lwsync"),
-                        Ordering::AcqRel => atomic_swap!("lwsync", "lwsync"),
-                        Ordering::SeqCst => atomic_swap!("lwsync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(swap, order);
                 }
             }
         }
@@ -839,7 +819,7 @@ macro_rules! atomic16 {
                     // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/PowerPC/atomics.ll
                     #[cfg(target_arch = "powerpc64")]
                     #[cfg(target_endian = "big")]
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lhz %r4, 0(%r4)",
@@ -888,7 +868,7 @@ macro_rules! atomic16 {
                     }
                     #[cfg(target_arch = "powerpc64")]
                     #[cfg(target_endian = "little")]
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "li %r7, 0",
@@ -935,7 +915,7 @@ macro_rules! atomic16 {
                         };
                     }
                     #[cfg(target_arch = "powerpc")]
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "lhz %r4, 0(%r4)",
@@ -987,14 +967,7 @@ macro_rules! atomic16 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("lwsync", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "lwsync"),
-                        Ordering::AcqRel => atomic_cmpxchg!("lwsync", "lwsync"),
-                        Ordering::SeqCst => atomic_cmpxchg!("lwsync", "sync"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
                 }
@@ -1006,57 +979,57 @@ macro_rules! atomic16 {
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "partword-atomics",
-    atomic_maybe_uninit_target_feature = "partword-atomics"
+    atomic_maybe_uninit_target_feature = "partword-atomics",
 ))]
 atomic!(i8, "bz", "b", "w");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "partword-atomics",
-    atomic_maybe_uninit_target_feature = "partword-atomics"
+    atomic_maybe_uninit_target_feature = "partword-atomics",
 ))]
 atomic!(u8, "bz", "b", "w");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "partword-atomics",
-    atomic_maybe_uninit_target_feature = "partword-atomics"
+    atomic_maybe_uninit_target_feature = "partword-atomics",
 ))]
 atomic!(i16, "hz", "h", "w");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "partword-atomics",
-    atomic_maybe_uninit_target_feature = "partword-atomics"
+    atomic_maybe_uninit_target_feature = "partword-atomics",
 ))]
 atomic!(u16, "hz", "h", "w");
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(
         target_feature = "partword-atomics",
-        atomic_maybe_uninit_target_feature = "partword-atomics"
-    )
+        atomic_maybe_uninit_target_feature = "partword-atomics",
+    ),
 )))]
 atomic8!(i8, "bz", "b");
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(
         target_feature = "partword-atomics",
-        atomic_maybe_uninit_target_feature = "partword-atomics"
-    )
+        atomic_maybe_uninit_target_feature = "partword-atomics",
+    ),
 )))]
 atomic8!(u8, "bz", "b");
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(
         target_feature = "partword-atomics",
-        atomic_maybe_uninit_target_feature = "partword-atomics"
-    )
+        atomic_maybe_uninit_target_feature = "partword-atomics",
+    ),
 )))]
 atomic16!(i16, "hz", "h");
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(
         target_feature = "partword-atomics",
-        atomic_maybe_uninit_target_feature = "partword-atomics"
-    )
+        atomic_maybe_uninit_target_feature = "partword-atomics",
+    ),
 )))]
 atomic16!(u16, "hz", "h");
 atomic!(i32, "wz", "w", "w");
@@ -1080,7 +1053,7 @@ atomic!(usize, "d", "d", "d");
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
+    atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
 macro_rules! atomic128 {
     ($int_type:ident) => {
@@ -1202,7 +1175,7 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to r4-r5 pair
@@ -1239,14 +1212,7 @@ macro_rules! atomic128 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("lwsync", ""),
-                        Ordering::Release => atomic_swap!("", "lwsync"),
-                        Ordering::AcqRel => atomic_swap!("lwsync", "lwsync"),
-                        Ordering::SeqCst => atomic_swap!("lwsync", "sync"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(swap, order);
                 }
             }
         }
@@ -1269,7 +1235,7 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
                 unsafe {
                     let mut r: usize;
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from old/new to r4-r5/r6-r7 pairs
@@ -1319,14 +1285,7 @@ macro_rules! atomic128 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("lwsync", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "lwsync"),
-                        Ordering::AcqRel => atomic_cmpxchg!("lwsync", "lwsync"),
-                        Ordering::SeqCst => atomic_cmpxchg!("lwsync", "sync"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     r != 0
                 }
@@ -1338,13 +1297,13 @@ macro_rules! atomic128 {
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
+    atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
 atomic128!(i128);
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics"
+    atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
 atomic128!(u128);
 
@@ -1362,39 +1321,41 @@ mod tests {
     test_atomic!(i64);
     #[cfg(target_arch = "powerpc64")]
     test_atomic!(u64);
-
-    #[cfg(not(qemu))]
     #[cfg(target_arch = "powerpc64")]
     #[cfg(any(
         target_feature = "quadword-atomics",
-        atomic_maybe_uninit_target_feature = "quadword-atomics"
+        atomic_maybe_uninit_target_feature = "quadword-atomics",
     ))]
     test_atomic!(i128);
-    #[cfg(not(qemu))]
     #[cfg(target_arch = "powerpc64")]
     #[cfg(any(
         target_feature = "quadword-atomics",
-        atomic_maybe_uninit_target_feature = "quadword-atomics"
+        atomic_maybe_uninit_target_feature = "quadword-atomics",
     ))]
     test_atomic!(u128);
-    // As of QEMU 7.2, using lqarx/stqcx. with qemu-user hangs.
-    // To test this, use real powerpc64 hardware or use POWER Functional
-    // Simulator. See DEVELOPMENT.md for more.
-    #[cfg(qemu)]
-    #[cfg(target_arch = "powerpc64")]
-    #[cfg(any(
-        target_feature = "quadword-atomics",
-        atomic_maybe_uninit_target_feature = "quadword-atomics"
-    ))]
-    test_atomic_load_store!(i128);
-    #[cfg(qemu)]
-    #[cfg(target_arch = "powerpc64")]
-    #[cfg(any(
-        target_feature = "quadword-atomics",
-        atomic_maybe_uninit_target_feature = "quadword-atomics"
-    ))]
-    test_atomic_load_store!(u128);
 
-    stress_test_load_store!();
-    stress_test_load_swap!();
+    // load/store/swap implementation is not affected by signedness, so it is
+    // enough to test only unsigned types.
+    stress_test_load_store!(u8);
+    stress_test_load_swap!(u8);
+    stress_test_load_store!(u16);
+    stress_test_load_swap!(u16);
+    stress_test_load_store!(u32);
+    stress_test_load_swap!(u32);
+    #[cfg(target_arch = "powerpc64")]
+    stress_test_load_store!(u64);
+    #[cfg(target_arch = "powerpc64")]
+    stress_test_load_swap!(u64);
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics",
+    ))]
+    stress_test_load_store!(u128);
+    #[cfg(target_arch = "powerpc64")]
+    #[cfg(any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics",
+    ))]
+    stress_test_load_swap!(u128);
 }

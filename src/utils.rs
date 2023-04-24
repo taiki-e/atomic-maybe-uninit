@@ -53,7 +53,7 @@ macro_rules! const_fn {
     };
 }
 
-// https://github.com/rust-lang/rust/blob/1.68.0/library/core/src/sync/atomic.rs#L3019
+// https://github.com/rust-lang/rust/blob/1.69.0/library/core/src/sync/atomic.rs#L3156
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn assert_load_ordering(order: Ordering) {
@@ -65,7 +65,7 @@ pub(crate) fn assert_load_ordering(order: Ordering) {
     }
 }
 
-// https://github.com/rust-lang/rust/blob/1.68.0/library/core/src/sync/atomic.rs#L3004
+// https://github.com/rust-lang/rust/blob/1.69.0/library/core/src/sync/atomic.rs#L3141
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn assert_store_ordering(order: Ordering) {
@@ -89,8 +89,7 @@ pub(crate) fn assert_swap_ordering(order: Ordering) {
     }
 }
 
-// https://github.com/rust-lang/rust/pull/98383
-// https://github.com/rust-lang/rust/blob/1.68.0/library/core/src/sync/atomic.rs#L3085
+// https://github.com/rust-lang/rust/blob/1.69.0/library/core/src/sync/atomic.rs#L3226
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn assert_compare_exchange_ordering(success: Ordering, failure: Ordering) {
@@ -111,6 +110,7 @@ pub(crate) fn assert_compare_exchange_ordering(success: Ordering, failure: Order
 }
 
 // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0418r2.html
+// https://github.com/rust-lang/rust/pull/98383
 #[allow(dead_code)]
 #[inline]
 pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> Ordering {

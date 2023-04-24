@@ -1,8 +1,10 @@
+// s390x
+//
 // Refs:
 // - https://www.ibm.com/support/pages/zarchitecture-reference-summary
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/o14qzdhK5
+// - s390x https://godbolt.org/z/vo7vWPvaY
 
 use core::{
     arch::asm,
@@ -604,6 +606,16 @@ mod tests {
     test_atomic!(i128);
     test_atomic!(u128);
 
-    stress_test_load_store!();
-    stress_test_load_swap!();
+    // load/store/swap implementation is not affected by signedness, so it is
+    // enough to test only unsigned types.
+    stress_test_load_store!(u8);
+    stress_test_load_swap!(u8);
+    stress_test_load_store!(u16);
+    stress_test_load_swap!(u16);
+    stress_test_load_store!(u32);
+    stress_test_load_swap!(u32);
+    stress_test_load_store!(u64);
+    stress_test_load_swap!(u64);
+    stress_test_load_store!(u128);
+    stress_test_load_swap!(u128);
 }

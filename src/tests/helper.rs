@@ -538,145 +538,6 @@ macro_rules! __test_atomic {
     };
 }
 
-macro_rules! __stress_test_coherence {
-    ($write:ident, $load_order:ident, $store_order:ident) => {
-        const N: usize = if cfg!(debug_assertions) { 500_000 } else { 5_000_000 };
-
-        unsafe {
-            let v = &(0..N).map(|_| AtomicUsize::new(0)).collect::<Vec<_>>();
-            let a = &AtomicMaybeUninit::from(0_usize);
-            thread::scope(|s| {
-                s.spawn(|_| {
-                    for i in 0..N {
-                        if let Some(b) = (a.load(Ordering::$load_order).assume_init()
-                            as *const AtomicUsize)
-                            .as_ref()
-                        {
-                            assert_eq!(b.load(Ordering::Relaxed), 1, "i={i}");
-                        }
-                    }
-                });
-                for b in v {
-                    b.store(1, Ordering::Relaxed);
-                    a.$write(MaybeUninit::new(b as *const _ as usize), Ordering::$store_order);
-                }
-            })
-            .unwrap();
-        }
-    };
-}
-
-macro_rules! stress_test_load_store {
-    () => {
-        #[allow(
-            clippy::alloc_instead_of_core,
-            clippy::std_instead_of_alloc,
-            clippy::std_instead_of_core,
-            clippy::undocumented_unsafe_blocks
-        )]
-        mod stress_coherence_load_store {
-            use std::{
-                mem::MaybeUninit,
-                sync::atomic::{AtomicUsize, Ordering},
-                vec::Vec,
-            };
-
-            use crossbeam_utils::thread;
-
-            use crate::AtomicMaybeUninit;
-
-            // This test should panic on architectures with weak memory models.
-            #[test]
-            // This should be `any(target_arch = ...)`, but qemu-user running on x86_64 does
-            // not seem to support weak memory emulation.
-            // Therefore, explicitly enable should_panic only on actual aarch64 hardware.
-            #[cfg_attr(weak_memory, should_panic)]
-            #[cfg(target_os = "linux")] // flaky on aarch64 macOS
-            fn load_relaxed_store_relaxed() {
-                __stress_test_coherence!(store, Relaxed, Relaxed);
-            }
-            #[test]
-            // `asm!` implies a compiler fence, so it seems the relaxed load written in
-            // `asm!` behaves like a consume load on architectures with weak memory models.
-            // #[cfg_attr(weak_memory, should_panic)]
-            fn load_relaxed_store_release() {
-                __stress_test_coherence!(store, Relaxed, Release);
-            }
-            // This test should panic on architectures with weak memory models.
-            #[test]
-            #[cfg_attr(weak_memory, should_panic)]
-            #[cfg(target_os = "linux")] // flaky on aarch64 macOS
-            fn load_acquire_store_relaxed() {
-                __stress_test_coherence!(store, Acquire, Relaxed);
-            }
-            #[test]
-            fn load_acquire_store_release() {
-                __stress_test_coherence!(store, Acquire, Release);
-            }
-            #[test]
-            fn load_seqcst_store_seqcst() {
-                __stress_test_coherence!(store, SeqCst, SeqCst);
-            }
-        }
-    };
-}
-
-macro_rules! stress_test_load_swap {
-    () => {
-        #[allow(
-            clippy::alloc_instead_of_core,
-            clippy::std_instead_of_alloc,
-            clippy::std_instead_of_core,
-            clippy::undocumented_unsafe_blocks
-        )]
-        mod stress_coherence_load_swap {
-            use std::{
-                mem::MaybeUninit,
-                sync::atomic::{AtomicUsize, Ordering},
-                vec::Vec,
-            };
-
-            use crossbeam_utils::thread;
-
-            use crate::AtomicMaybeUninit;
-
-            // This test should panic on architectures with weak memory models.
-            #[test]
-            #[cfg_attr(weak_memory, should_panic)]
-            #[cfg(target_os = "linux")] // flaky on aarch64 macOS
-            fn stress_coherence_load_relaxed_swap_relaxed() {
-                __stress_test_coherence!(swap, Relaxed, Relaxed);
-            }
-            #[test]
-            // `asm!` implies a compiler fence, so it seems the relaxed load written in
-            // `asm!` behaves like a consume load on architectures with weak memory models.
-            // #[cfg_attr(weak_memory, should_panic)]
-            fn stress_coherence_load_relaxed_swap_release() {
-                __stress_test_coherence!(swap, Relaxed, Release);
-            }
-            // This test should panic on architectures with weak memory models.
-            #[test]
-            #[cfg_attr(weak_memory, should_panic)]
-            #[cfg(target_os = "linux")] // flaky on aarch64 macOS
-            fn stress_coherence_load_acquire_swap_relaxed() {
-                __stress_test_coherence!(swap, Acquire, Relaxed);
-            }
-            #[test]
-            fn stress_coherence_load_acquire_swap_release() {
-                __stress_test_coherence!(swap, Acquire, Release);
-            }
-            #[test]
-            fn stress_coherence_load_acquire_swap_acqrel() {
-                __stress_test_coherence!(swap, Acquire, AcqRel);
-            }
-            #[test]
-            fn stress_coherence_load_seqcst_swap_seqcst() {
-                __stress_test_coherence!(swap, SeqCst, SeqCst);
-            }
-        }
-    };
-}
-
 #[track_caller]
 fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::String {
     let backtrace = std::env::var_os("RUST_BACKTRACE");
@@ -706,9 +567,6 @@ pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) 
         f(order);
     }
 
-    if skip_should_panic_test() {
-        return;
-    }
     assert_eq!(assert_panic(|| f(Ordering::Release)), "there is no such thing as a release load");
     assert_eq!(
         assert_panic(|| f(Ordering::AcqRel)),
@@ -727,9 +585,6 @@ pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T)
         f(order);
     }
 
-    if skip_should_panic_test() {
-        return;
-    }
     assert_eq!(assert_panic(|| f(Ordering::Acquire)), "there is no such thing as an acquire store");
     assert_eq!(
         assert_panic(|| f(Ordering::AcqRel)),
@@ -776,9 +631,6 @@ pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
         f(success, failure);
     }
 
-    if skip_should_panic_test() {
-        return;
-    }
     for &order in &swap_orderings() {
         let msg = assert_panic(|| f(order, Ordering::AcqRel));
         assert!(
@@ -796,10 +648,302 @@ pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
         );
     }
 }
-fn skip_should_panic_test() -> bool {
-    // Miri's panic handling is slow
-    // MSAN false positive: https://gist.github.com/taiki-e/dd6269a8ffec46284fdc764a4849f884
-    cfg!(miri)
-        || option_env!("CARGO_PROFILE_RELEASE_LTO").map_or(false, |v| v == "fat")
-            && option_env!("MSAN_OPTIONS").is_some()
+
+// For -C panic=abort -Z panic_abort_tests: https://github.com/rust-lang/rust/issues/67650
+#[rustversion::since(1.60)] // cfg!(panic) requires Rust 1.60
+fn is_panic_abort() -> bool {
+    cfg!(panic = "abort")
+}
+#[rustversion::before(1.60)] // cfg!(panic) requires Rust 1.60
+fn is_panic_abort() -> bool {
+    false
+}
+
+// Test the cases that should not fail if the memory ordering is implemented correctly.
+// This is still not exhaustive and only tests a few cases.
+// This currently only supports 32-bit or more integers.
+macro_rules! __stress_test_acquire_release {
+    (should_pass, $int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+        paste::paste! {
+            #[test]
+            fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
+                __stress_test_acquire_release!(
+                    $int_type, $write, $load_order, $store_order);
+            }
+        }
+    };
+    (can_panic, $int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+        paste::paste! {
+            // Currently, to make this test work well enough outside of Miri, tens of thousands
+            // of iterations are needed, but this test is slow in some environments.
+            // So, ignore by default.
+            #[test]
+            #[ignore]
+            fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
+                can_panic("a=", || __stress_test_acquire_release!(
+                    $int_type, $write, $load_order, $store_order));
+            }
+        }
+    };
+    ($int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
+        use std::{
+            mem::MaybeUninit,
+            sync::atomic::{AtomicUsize, Ordering},
+        };
+
+        use crossbeam_utils::thread;
+
+        use crate::AtomicMaybeUninit;
+
+        let mut n: usize = 50_000;
+        // This test is relatively fast because it spawns only one thread, but
+        // the iterations are limited to a maximum value of integers.
+        if $int_type::try_from(n).is_err() {
+            n = $int_type::MAX as usize;
+        }
+        let a = &AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(0));
+        let b = &AtomicUsize::new(0);
+        thread::scope(|s| unsafe {
+            s.spawn(|_| {
+                for i in 0..n {
+                    b.store(i, Ordering::Relaxed);
+                    a.$write(MaybeUninit::new(i as _), Ordering::$store_order);
+                }
+            });
+            loop {
+                let a = a.load(Ordering::$load_order).assume_init();
+                let b = b.load(Ordering::Relaxed);
+                assert!(a as usize <= b, "a={},b={}", a, b);
+                if a as usize == n - 1 {
+                    break;
+                }
+            }
+        })
+        .unwrap();
+    }};
+}
+macro_rules! __stress_test_seqcst {
+    (should_pass, $int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+        paste::paste! {
+            // Currently, to make this test work well enough outside of Miri, tens of thousands
+            // of iterations are needed, but this test is very slow in some environments because
+            // it creates two threads for each iteration.
+            // So, ignore on QEMU by default.
+            #[test]
+            #[cfg_attr(qemu, ignore)]
+            fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
+                __stress_test_seqcst!(
+                    $int_type, $write, $load_order, $store_order);
+            }
+        }
+    };
+    (can_panic, $int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+        paste::paste! {
+            // Currently, to make this test work well enough outside of Miri, tens of thousands
+            // of iterations are needed, but this test is very slow in some environments because
+            // it creates two threads for each iteration.
+            // So, ignore by default.
+            #[test]
+            #[ignore]
+            fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
+                can_panic("c=2", || __stress_test_seqcst!(
+                    $int_type, $write, $load_order, $store_order));
+            }
+        }
+    };
+    ($int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
+        use std::{
+            mem::MaybeUninit,
+            sync::atomic::{AtomicUsize, Ordering},
+        };
+
+        use crossbeam_utils::thread;
+
+        use crate::AtomicMaybeUninit;
+
+        const N: usize = 50_000;
+        let a = &AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(0));
+        let b = &AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(0));
+        let c = &AtomicUsize::new(0);
+        let ready = &AtomicUsize::new(0);
+        thread::scope(|s| unsafe {
+            for n in 0..N {
+                a.store(MaybeUninit::new(0), Ordering::Relaxed);
+                b.store(MaybeUninit::new(0), Ordering::Relaxed);
+                c.store(0, Ordering::Relaxed);
+                let h_a = s.spawn(|_| {
+                    while ready.load(Ordering::Relaxed) == 0 {}
+                    a.$write(MaybeUninit::new(1), Ordering::$store_order);
+                    if b.load(Ordering::$load_order).assume_init() == 0 {
+                        c.fetch_add(1, Ordering::Relaxed);
+                    }
+                });
+                let h_b = s.spawn(|_| {
+                    while ready.load(Ordering::Relaxed) == 0 {}
+                    b.$write(MaybeUninit::new(1), Ordering::$store_order);
+                    if a.load(Ordering::$load_order).assume_init() == 0 {
+                        c.fetch_add(1, Ordering::Relaxed);
+                    }
+                });
+                ready.store(1, Ordering::Relaxed);
+                h_a.join().unwrap();
+                h_b.join().unwrap();
+                let c = c.load(Ordering::Relaxed);
+                assert!(c == 0 || c == 1, "c={},n={}", c, n);
+            }
+        })
+        .unwrap();
+    }};
+}
+// Catches unwinding panic on architectures with weak memory models.
+#[allow(dead_code, clippy::used_underscore_binding)]
+pub(crate) fn catch_unwind_on_weak_memory_arch(pat: &str, f: impl Fn()) {
+    // With x86 TSO, RISC-V TSO (optional, not default), SPARC TSO (optional, default),
+    // and IBM-370 memory models should never be a panic here.
+    if cfg!(any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "s390x",
+        target_arch = "sparc",
+        target_arch = "sparc64",
+    )) {
+        f();
+    } else if !is_panic_abort() {
+        // This could be is_err on architectures with weak memory models.
+        // However, this does not necessarily mean that it will always be panic,
+        // and implementing it with stronger orderings is also okay.
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+            Ok(()) => {
+                // panic!();
+            }
+            Err(msg) => {
+                let msg = msg
+                    .downcast_ref::<std::string::String>()
+                    .cloned()
+                    .unwrap_or_else(|| msg.downcast_ref::<&'static str>().copied().unwrap().into());
+                assert!(msg.contains(pat), "{}", msg);
+            }
+        }
+    }
+}
+// Catches unwinding panic on architectures with non-sequentially consistent memory models.
+#[allow(dead_code, clippy::used_underscore_binding)]
+pub(crate) fn catch_unwind_on_non_seqcst_arch(pat: &str, f: impl Fn()) {
+    if !is_panic_abort() {
+        // This could be Err on architectures with non-sequentially consistent memory models.
+        // However, this does not necessarily mean that it will always be panic,
+        // and implementing it with stronger orderings is also okay.
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+            Ok(()) => {
+                // panic!();
+            }
+            Err(msg) => {
+                let msg = msg
+                    .downcast_ref::<std::string::String>()
+                    .cloned()
+                    .unwrap_or_else(|| msg.downcast_ref::<&'static str>().copied().unwrap().into());
+                assert!(msg.contains(pat), "{}", msg);
+            }
+        }
+    }
+}
+macro_rules! stress_test_load_store {
+    ($int_type:ident) => {
+        // debug mode and Valgrind are slow.
+        #[cfg(not(any(debug_assertions, valgrind)))]
+        paste::paste! {
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks
+            )]
+            mod [<stress_acquire_release_load_store_ $int_type>] {
+                use crate::tests::helper::catch_unwind_on_weak_memory_arch as can_panic;
+                __stress_test_acquire_release!(can_panic, $int_type, store, Relaxed, Relaxed);
+                __stress_test_acquire_release!(can_panic, $int_type, store, Relaxed, Release);
+                __stress_test_acquire_release!(can_panic, $int_type, store, Relaxed, SeqCst);
+                __stress_test_acquire_release!(can_panic, $int_type, store, Acquire, Relaxed);
+                __stress_test_acquire_release!(should_pass, $int_type, store, Acquire, Release);
+                __stress_test_acquire_release!(should_pass, $int_type, store, Acquire, SeqCst);
+                __stress_test_acquire_release!(can_panic, $int_type, store, SeqCst, Relaxed);
+                __stress_test_acquire_release!(should_pass, $int_type, store, SeqCst, Release);
+                __stress_test_acquire_release!(should_pass, $int_type, store, SeqCst, SeqCst);
+            }
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks
+            )]
+            mod [<stress_seqcst_load_store_ $int_type>] {
+                use crate::tests::helper::catch_unwind_on_non_seqcst_arch as can_panic;
+                __stress_test_seqcst!(can_panic, $int_type, store, Relaxed, Relaxed);
+                __stress_test_seqcst!(can_panic, $int_type, store, Relaxed, Release);
+                __stress_test_seqcst!(can_panic, $int_type, store, Relaxed, SeqCst);
+                __stress_test_seqcst!(can_panic, $int_type, store, Acquire, Relaxed);
+                __stress_test_seqcst!(can_panic, $int_type, store, Acquire, Release);
+                __stress_test_seqcst!(can_panic, $int_type, store, Acquire, SeqCst);
+                __stress_test_seqcst!(can_panic, $int_type, store, SeqCst, Relaxed);
+                __stress_test_seqcst!(can_panic, $int_type, store, SeqCst, Release);
+                __stress_test_seqcst!(should_pass, $int_type, store, SeqCst, SeqCst);
+            }
+        }
+    };
+}
+macro_rules! stress_test_load_swap {
+    ($int_type:ident) => {
+        // debug mode and Valgrind are slow.
+        #[cfg(not(any(debug_assertions, valgrind)))]
+        paste::paste! {
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks
+            )]
+            mod [<stress_acquire_release_load_swap_ $int_type>] {
+                use crate::tests::helper::catch_unwind_on_weak_memory_arch as can_panic;
+                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, Relaxed);
+                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, Acquire);
+                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, Release);
+                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, AcqRel);
+                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, SeqCst);
+                __stress_test_acquire_release!(can_panic, $int_type, swap, Acquire, Relaxed);
+                __stress_test_acquire_release!(can_panic, $int_type, swap, Acquire, Acquire);
+                __stress_test_acquire_release!(should_pass, $int_type, swap, Acquire, Release);
+                __stress_test_acquire_release!(should_pass, $int_type, swap, Acquire, AcqRel);
+                __stress_test_acquire_release!(should_pass, $int_type, swap, Acquire, SeqCst);
+                __stress_test_acquire_release!(can_panic, $int_type, swap, SeqCst, Relaxed);
+                __stress_test_acquire_release!(can_panic, $int_type, swap, SeqCst, Acquire);
+                __stress_test_acquire_release!(should_pass, $int_type, swap, SeqCst, Release);
+                __stress_test_acquire_release!(should_pass, $int_type, swap, SeqCst, AcqRel);
+                __stress_test_acquire_release!(should_pass, $int_type, swap, SeqCst, SeqCst);
+            }
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks
+            )]
+            mod [<stress_seqcst_load_swap_ $int_type>] {
+                use crate::tests::helper::catch_unwind_on_non_seqcst_arch as can_panic;
+                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, Relaxed);
+                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, Acquire);
+                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, Release);
+                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, AcqRel);
+                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, SeqCst);
+                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, Relaxed);
+                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, Acquire);
+                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, Release);
+                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, AcqRel);
+                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, SeqCst);
+                __stress_test_seqcst!(can_panic, $int_type, swap, SeqCst, Relaxed);
+                __stress_test_seqcst!(can_panic, $int_type, swap, SeqCst, Acquire);
+                __stress_test_seqcst!(can_panic, $int_type, swap, SeqCst, Release);
+                __stress_test_seqcst!(can_panic, $int_type, swap, SeqCst, AcqRel);
+                __stress_test_seqcst!(should_pass, $int_type, swap, SeqCst, SeqCst);
+            }
+        }
+    };
 }

@@ -127,7 +127,7 @@ jobs:
       - run: sysctl hw.optional machdep.cpu
         if: startsWith(matrix.os, 'macos')
       - name: Install Rust
-        run: rustup toolchain add ${{ matrix.rust }} --no-self-update --component rust-src && rustup default ${{ matrix.rust }}
+        run: rustup toolchain add ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
       - run: rustup toolchain add nightly --no-self-update
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions
@@ -140,7 +140,7 @@ jobs:
           target: ${{ matrix.target }}
         if: matrix.target != ''
       - run: echo "RUSTFLAGS=${RUSTFLAGS} --cfg qemu" >>"${GITHUB_ENV}"
-        if: startsWith(matrix.target, 'powerpc64')
+        if: matrix.target != '' && !startsWith(matrix.target, 'i686') && !startsWith(matrix.target, 'x86_64')
       - run: echo "TARGET=--target ${{ matrix.target }}" >>"${GITHUB_ENV}"
         if: matrix.target != ''
 
@@ -159,7 +159,7 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
         if: startsWith(matrix.target, 'i686')
       # +lse
-      # As of QEMU 7.2, QEMU has not yet implemented FEAT_LSE2: https://linaro.atlassian.net/browse/QEMU-300
+      # As of QEMU 8.0, QEMU has not yet implemented FEAT_LSE2: https://linaro.atlassian.net/browse/QEMU-300
       # FEAT_LSE2 is tested on Cirrus CI's aarch64 macOS VM.
       - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
@@ -207,7 +207,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install Rust
-        run: rustup toolchain add ${{ matrix.rust }} --no-self-update --component rust-src && rustup default ${{ matrix.rust }}
+        run: rustup toolchain add ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
       - uses: taiki-e/install-action@cargo-hack
       - run: tools/build.sh
 
@@ -225,7 +225,7 @@ jobs:
 
   valgrind:
     env:
-      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER: valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --track-origins=yes
+      VALGRIND: valgrind
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -234,14 +234,11 @@ jobs:
           persist-credentials: false
       - name: Install Rust
         run: rustup toolchain add nightly --no-self-update && rustup default nightly
+      - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
       - uses: taiki-e/install-action@valgrind
-      # doctests on Valgrind are very slow
-      - run: tools/test.sh -vv --tests
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg valgrind
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg valgrind
+      - run: tools/test.sh -vv 2>&1 | ts -i '%.s  '
       # +cmpxchg16b
-      - run: tools/test.sh -vv --tests
+      - run: tools/test.sh -vv 2>&1 | ts -i '%.s  '
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b --cfg valgrind
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b --cfg valgrind
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b

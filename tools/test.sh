@@ -76,9 +76,9 @@ if type -P rustup &>/dev/null; then
 fi
 rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -Vv | grep 'release: ' | sed 's/release: //')
-host=$(rustc ${pre_args[@]+"${pre_args[@]}"} -Vv | grep 'host: ' | sed 's/host: //')
 rustc_minor_version="${rustc_version#*.}"
 rustc_minor_version="${rustc_minor_version%%.*}"
+host=$(rustc ${pre_args[@]+"${pre_args[@]}"} -Vv | grep 'host: ' | sed 's/host: //')
 nightly=''
 if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]]; then
     nightly=1
@@ -116,13 +116,26 @@ if [[ -n "${target}" ]]; then
 fi
 args+=(
     --all-features
-    --workspace
+    --workspace --exclude bench --exclude portable-atomic-internal-codegen
 )
 target="${target:-"${host}"}"
+target_lower="${target//-/_}"
+target_lower="${target_lower//./_}"
+target_upper="$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")"
+
+if [[ -n "${VALGRIND:-}" ]]; then
+    export "CARGO_TARGET_${target_upper}_RUNNER"="${VALGRIND} -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --track-origins=yes"
+    export RUSTFLAGS="${RUSTFLAGS:-} --cfg valgrind"
+    export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} --cfg valgrind"
+    # doctest on Valgrind is very slow
+    if [[ ${#tests[@]} -eq 0 ]]; then
+        tests=(--tests)
+    fi
+fi
 
 run() {
     if [[ "${RUSTFLAGS:-}" == *"-Z sanitizer="* ]] || [[ "${RUSTFLAGS:-}" == *"-Zsanitizer="* ]]; then
-        # debug build + doctests is slow
+        # doctest with debug build on Sanitizer is slow
         x_cargo ${pre_args[@]+"${pre_args[@]}"} test --tests "$@"
     else
         x_cargo ${pre_args[@]+"${pre_args[@]}"} test ${tests[@]+"${tests[@]}"} "$@"
@@ -130,7 +143,7 @@ run() {
 
     if [[ "${RUSTFLAGS:-}" == *"-Z sanitizer=memory"* ]] || [[ "${RUSTFLAGS:-}" == *"-Zsanitizer=memory"* ]]; then
         # Workaround https://github.com/google/sanitizers/issues/558
-        CARGO_PROFILE_RELEASE_OPT_LEVEL=1 \
+        CARGO_PROFILE_RELEASE_OPT_LEVEL=0 \
             x_cargo ${pre_args[@]+"${pre_args[@]}"} test --release ${tests[@]+"${tests[@]}"} "$@"
     else
         x_cargo ${pre_args[@]+"${pre_args[@]}"} test --release ${tests[@]+"${tests[@]}"} "$@"

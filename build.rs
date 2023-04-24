@@ -45,11 +45,12 @@ fn main() {
 
     match target_arch {
         "x86_64" => {
-            // x86_64 macos always support CMPXCHG16B: https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L8
+            // x86_64 macos always support CMPXCHG16B: https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L8
             let has_cmpxchg16b = target_os == "macos";
             // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/6dszGeYsf
-            // It is unlikely that rustc will support that name, so we will ignore it for now.
-            target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, None, true);
+            // It is unlikely that rustc will support that name, so we ignore it.
+            // cmpxchg16b_target_feature stabilized in Rust 1.69.
+            target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, Some(69), true);
         }
         "x86" => {
             // i486 doesn't have cmpxchg8b.
@@ -96,8 +97,8 @@ fn main() {
             // aarch64_target_feature stabilized in Rust 1.61.
             target_feature_if("lse", is_macos, &version, Some(61), true);
             target_feature_if("rcpc", is_macos, &version, Some(61), true);
-            // As of rustc 1.68, target_feature "lse2" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_codegen_ssa/src/target_features.rs#L58
+            // As of rustc 1.69, target_feature "lse2" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_codegen_ssa/src/target_features.rs#L58
             target_feature_if("lse2", is_macos, &version, None, false);
         }
         "arm" => {
@@ -107,8 +108,8 @@ fn main() {
             let mut subarch =
                 target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")).unwrap();
             subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
-            let full_subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
-            subarch = full_subarch.split_once('.').unwrap_or((full_subarch, "")).0; // ignore .base/.main suffix
+            subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
+            subarch = subarch.split_once('.').unwrap_or((subarch, "")).0; // ignore .base/.main suffix
             let mut known = true;
             // As of rustc nightly-2023-02-05, there are the following "vN*" patterns:
             // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
@@ -129,9 +130,9 @@ fn main() {
             // "v7s"
             // "v8m"
             //
-            // - v7, v7a, v7neon, v7s, and v7k are "aclass"
-            // - v6m, v7em, v7m, and v8m are "mclass"
-            // - v7r is "rclass"
+            // - v7, v7a, v7neon, v7s, and v7k are aclass
+            // - v6m, v7em, v7m, and v8m are mclass
+            // - v7r is rclass
             // - 64_32 is aarch64 https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/arm64_32_apple_watchos.rs#L10
             //
             // Other targets don't have *class target feature.
@@ -141,17 +142,17 @@ fn main() {
             // target_feature="v5te"
             // target_feature="v6"
             //
-            // In addition to above known sub-architectures, we also recognize armv8-{a,r}.
+            // In addition to above known sub-architectures, we also recognize armv{8,9}-{a,r}.
             // Note that there is a CPU that armv8-a but 32-bit only (Cortex-A32).
-            let mut is_aclass = false;
+            //
+            // See also https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/ARM/ARMSubtarget.h#L96.
             let mut is_mclass = false;
-            let mut is_rclass = false;
             match subarch {
-                "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8a" => is_aclass = true,
+                "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8a" | "v9a" => {} // aclass
                 "v6m" | "v7em" | "v7m" | "v8m" => is_mclass = true,
-                "v7r" | "v8r" => is_rclass = true,
+                "v7r" | "v8r" => {} // rclass
                 // arm-linux-androideabi is v5te
-                // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
+                // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
                 _ if target == "arm-linux-androideabi" => subarch = "v5te",
                 // v6 targets other than v6m don't have *class target feature.
                 "" | "v6" | "v6k" => subarch = "v6",
@@ -166,20 +167,19 @@ fn main() {
                     );
                 }
             }
-            target_feature_if("aclass", is_aclass, &version, None, true);
             target_feature_if("mclass", is_mclass, &version, None, true);
-            target_feature_if("rclass", is_rclass, &version, None, true);
             let mut v6 = known && subarch.starts_with("v6");
             let mut v7 = known && subarch.starts_with("v7");
-            let (v8, v8m) = if known && subarch.starts_with("v8") {
-                // ARMv8-M Mainline/Baseline are not considered as v8 by rustc.
+            let (v8, v8m) = if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
+                // ARMv8-M is not considered as v8 by LLVM.
                 // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
-                if subarch.starts_with("v8m") {
+                if subarch.contains('m') {
                     // ARMv8-M Mainline is a superset of ARMv7-M.
                     // ARMv8-M Baseline is a superset of ARMv6-M.
-                    // That said, it seems LLVM handles thumbv8m.main without v8m like v6m.
-                    // https://godbolt.org/z/j9r3Wzccz
-                    v7 = full_subarch == "v8m.main";
+                    // That said, it seems LLVM (as of LLVM 16) handles thumbv8m.main without v8m like v6m.
+                    // https://godbolt.org/z/Ph96v9zae
+                    // TODO: ARMv9-M has not yet been released and not supported by LLVM (as of LLVM 16),
+                    // so it is not clear how it will be handled here.
                     (false, true)
                 } else {
                     (true, false)
@@ -226,8 +226,8 @@ fn main() {
                     has_pwr8_features = cpu == "ppc64le" || cpu == "future";
                 }
             }
-            // Note: As of rustc 1.68, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_codegen_ssa/src/target_features.rs#L226
+            // Note: As of rustc 1.69, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_codegen_ssa/src/target_features.rs#L226
             // l[bh]arx and st[bh]cx.
             target_feature_if("partword-atomics", has_pwr8_features, &version, None, false);
             // lqarx and stqcx.
@@ -307,7 +307,7 @@ mod version {
         // The known latest stable version. If we unable to determine
         // the rustc version, we assume this is the current version.
         // It is no problem if this is older than the actual latest stable.
-        pub(crate) const LATEST: Self = Self::stable(68);
+        pub(crate) const LATEST: Self = Self::stable(69);
 
         const fn stable(minor: u32) -> Self {
             Self { minor, nightly: false, commit_date: Date::new(0, 0, 0) }

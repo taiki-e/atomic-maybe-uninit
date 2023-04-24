@@ -29,27 +29,27 @@ compile_error!("this target is not supported yet");
 
 #[cfg(target_arch = "aarch64")]
 mod aarch64;
+#[cfg(target_arch = "arm")]
 #[cfg(all(
-    target_arch = "arm",
     any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
     not(all(
         any(
             target_feature = "v8",
             atomic_maybe_uninit_target_feature = "v8",
             target_feature = "v8m",
-            atomic_maybe_uninit_target_feature = "v8m"
+            atomic_maybe_uninit_target_feature = "v8m",
         ),
         target_endian = "little",
-    ))
+    )),
 ))]
 mod arm;
+#[cfg(target_arch = "arm")]
 #[cfg(all(
-    target_arch = "arm",
     any(
         target_feature = "v8",
         atomic_maybe_uninit_target_feature = "v8",
         target_feature = "v8m",
-        atomic_maybe_uninit_target_feature = "v8m"
+        atomic_maybe_uninit_target_feature = "v8m",
     ),
     target_endian = "little",
 ))]

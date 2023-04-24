@@ -1,17 +1,21 @@
+// AArch64
+//
 // Refs:
 // - ARM Compiler armasm User Guide
 //   https://developer.arm.com/documentation/dui0801/latest
 // - Arm A-profile A64 Instruction Set Architecture
-//   https://developer.arm.com/documentation/ddi0602/2022-12/Base-Instructions?lang=en
+//   https://developer.arm.com/documentation/ddi0602/latest
 // - Arm Architecture Reference Manual for A-profile architecture
 //   https://developer.arm.com/documentation/ddi0487/latest
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/Tj5Gz4dzE
-// - aarch64 (+lse) https://godbolt.org/z/Ka9oYr1Pj
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/3Y5hn8Ej1
-// - aarch64 (+rcpc) https://godbolt.org/z/5T3M8oxKa
+// - aarch64 https://godbolt.org/z/oEvcTeeMb
+// - aarch64 msvc https://godbolt.org/z/q6frMbv3h
+// - aarch64 (+lse) https://godbolt.org/z/sMoG6fc6q
+// - aarch64 msvc (+lse) https://godbolt.org/z/Y8MG14sv5
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/9vrMhWa3d
+// - aarch64 (+rcpc) https://godbolt.org/z/PYzodzaxr
 
 use core::{
     arch::asm,
@@ -31,6 +35,25 @@ macro_rules! ptr_modifier {
 macro_rules! ptr_modifier {
     () => {
         ""
+    };
+}
+
+macro_rules! atomic_rmw {
+    ($op:ident, $order:ident) => {
+        match $order {
+            Ordering::Relaxed => $op!("", "", ""),
+            Ordering::Acquire => $op!("a", "", ""),
+            Ordering::Release => $op!("", "l", ""),
+            Ordering::AcqRel => $op!("a", "l", ""),
+            // AcqRel and SeqCst RMWs are equivalent in non-MSVC environments.
+            #[cfg(not(target_env = "msvc"))]
+            Ordering::SeqCst => $op!("a", "l", ""),
+            // In MSVC environments, SeqCst stores/writes needs fences after writes.
+            // https://reviews.llvm.org/D141748
+            #[cfg(target_env = "msvc")]
+            Ordering::SeqCst => $op!("a", "l", "dmb ish"),
+            _ => unreachable_unchecked!("{:?}", $order),
+        }
     };
 }
 
@@ -99,12 +122,13 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($release:tt) => {
+                        ($release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to tmp
                                 concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", ptr_modifier!(), "}]"),
                                 // (atomic) store tmp to dst
                                 concat!("st", $release, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                $fence,
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 tmp = lateout(reg) _,
@@ -113,9 +137,15 @@ macro_rules! atomic {
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_store!(""),
-                        // Release and SeqCst stores are equivalent.
-                        Ordering::Release | Ordering::SeqCst => atomic_store!("l"),
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("l", ""),
+                        // AcqRel and SeqCst RMWs are equivalent in non-MSVC environments.
+                        #[cfg(not(target_env = "msvc"))]
+                        Ordering::SeqCst => atomic_store!("l", ""),
+                        // In MSVC environments, SeqCst stores/writes needs fences after writes.
+                        // https://reviews.llvm.org/D141748
+                        #[cfg(target_env = "msvc")]
+                        Ordering::SeqCst => atomic_store!("l", "dmb ish"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
@@ -136,14 +166,15 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
-                    macro_rules! atomic_swap {
-                        ($acquire:tt, $release:tt) => {
+                    macro_rules! swap {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to tmp
                                 concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", ptr_modifier!(), "}]"),
                                 // (atomic) swap
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
                                 concat!("swp", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                $fence,
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
@@ -155,8 +186,8 @@ macro_rules! atomic {
                         };
                     }
                     #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
-                    macro_rules! atomic_swap {
-                        ($acquire:tt, $release:tt) => {
+                    macro_rules! swap {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to val_tmp
                                 concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val", ptr_modifier!(), "}]"),
@@ -168,6 +199,7 @@ macro_rules! atomic {
                                     concat!("st", $release, "xr", $asm_suffix, " {r:w}, {val_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
+                                $fence,
                                 // store out_tmp to out
                                 concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
@@ -180,14 +212,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("a", ""),
-                        Ordering::Release => atomic_swap!("", "l"),
-                        // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(swap, order);
                 }
             }
         }
@@ -211,8 +236,8 @@ macro_rules! atomic {
                 unsafe {
                     let mut r: i32;
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
-                    macro_rules! atomic_cmpxchg {
-                        ($acquire:tt, $release:tt) => {{
+                    macro_rules! cmpxchg {
+                        ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
                                 // load from old/new to old_tmp/new_tmp
                                 concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old", ptr_modifier!(), "}]"),
@@ -223,6 +248,7 @@ macro_rules! atomic {
                                 // (atomic) compare and exchange
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASA--CASAL--CAS--CASL--CASAL--CAS--CASL
                                 concat!("cas", $acquire, $release, $asm_suffix, " {out_tmp", $val_modifier, "}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                $fence,
                                 concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
@@ -243,8 +269,8 @@ macro_rules! atomic {
                         }};
                     }
                     #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
-                    macro_rules! atomic_cmpxchg {
-                        ($acquire:tt, $release:tt) => {{
+                    macro_rules! cmpxchg {
+                        ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
                                 // load from old/new to old_tmp/new_tmp
                                 concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new", ptr_modifier!(), "}]"),
@@ -257,6 +283,7 @@ macro_rules! atomic {
                                     concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b", // continue loop if store failed
+                                    $fence,
                                     "b 4f",
                                 "3:",
                                     "mov {r:w}, #1", // mark as failed
@@ -266,9 +293,9 @@ macro_rules! atomic {
                                 concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
                                 old = in(reg) old,
-                                old_tmp = lateout(reg) _,
-                                new = inout(reg) new => _,
-                                new_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new = in(reg) new,
+                                new_tmp = out(reg) _,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
@@ -280,14 +307,7 @@ macro_rules! atomic {
                             r == 0
                         }};
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("a", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "l"),
-                        // AcqRel and SeqCst compare_exchange are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg, order)
                 }
             }
             #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
@@ -309,8 +329,8 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
                 unsafe {
                     let r: i32;
-                    macro_rules! atomic_cmpxchg_weak {
-                        ($acquire:tt, $release:tt) => {
+                    macro_rules! cmpxchg_weak {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from old/new to old_tmp/new_tmp
                                 concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new", ptr_modifier!(), "}]"),
@@ -320,6 +340,10 @@ macro_rules! atomic {
                                 concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
                                 "b.ne 3f",
                                 concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                // TODO: only emit when the above sc succeed
+                                // // 0 if the store was successful, 1 if no store was performed
+                                // "cbnz {r:w}, 4f",
+                                $fence,
                                 "b 4f",
                                 "3:",
                                     "mov {r:w}, #1",
@@ -329,9 +353,9 @@ macro_rules! atomic {
                                 concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
                                 old = in(reg) old,
-                                old_tmp = lateout(reg) _,
-                                new = inout(reg) new => _,
-                                new_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new = in(reg) new,
+                                new_tmp = out(reg) _,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
@@ -340,14 +364,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg_weak!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg_weak!("a", ""),
-                        Ordering::Release => atomic_cmpxchg_weak!("", "l"),
-                        // AcqRel and SeqCst compare_exchange_weak are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg_weak!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg_weak, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
                     r == 0
@@ -415,7 +432,7 @@ macro_rules! atomic128 {
                 // 16-byte aligned, that there are no concurrent non-atomic operations.
                 // the above cfg guarantee that the CPU supports FEAT_LSE2.
                 unsafe {
-                    macro_rules! atomic_load {
+                    macro_rules! atomic_load_relaxed {
                         ($acquire:tt) => {
                             asm!(
                                 // (atomic) load from src to tmp pair
@@ -432,9 +449,26 @@ macro_rules! atomic128 {
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_load!(""),
-                        Ordering::Acquire => atomic_load!("dmb ishld"),
-                        Ordering::SeqCst => atomic_load!("dmb ish"),
+                        Ordering::Relaxed => atomic_load_relaxed!(""),
+                        Ordering::Acquire => atomic_load_relaxed!("dmb ishld"),
+                        Ordering::SeqCst => {
+                            asm!(
+                                // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
+                                // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
+                                concat!("ldar {tmp}, [{src", ptr_modifier!(), "}]"),
+                                // (atomic) load from src to tmp pair
+                                concat!("ldp {tmp_lo}, {tmp_hi}, [{src", ptr_modifier!(), "}]"),
+                                "dmb ishld",
+                                // store tmp pair to out
+                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", ptr_modifier!(), "}]"),
+                                src = in(reg) src,
+                                out = in(reg) out,
+                                tmp_hi = out(reg) _,
+                                tmp_lo = out(reg) _,
+                                tmp = out(reg) _,
+                                options(nostack, preserves_flags),
+                            );
+                        },
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
@@ -535,8 +569,8 @@ macro_rules! atomic128 {
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
-                    macro_rules! atomic_store {
-                        ($acquire:tt, $release:tt) => {
+                    macro_rules! store {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to val pair
                                 concat!("ldp {val_lo}, {val_hi}, [{val", ptr_modifier!(), "}]"),
@@ -548,6 +582,7 @@ macro_rules! atomic128 {
                                     concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
+                                $fence,
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 val_hi = out(reg) _,
@@ -559,12 +594,7 @@ macro_rules! atomic128 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_store!("", ""),
-                        Ordering::Release => atomic_store!("", "l"),
-                        Ordering::SeqCst => atomic_store!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(store, order);
                 }
             }
         }
@@ -582,8 +612,8 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
                 unsafe {
-                    macro_rules! atomic_swap {
-                        ($acquire:tt, $release:tt) => {
+                    macro_rules! swap {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to val pair
                                 concat!("ldp {val_lo}, {val_hi}, [{val", ptr_modifier!(), "}]"),
@@ -595,6 +625,7 @@ macro_rules! atomic128 {
                                     concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
+                                $fence,
                                 // store tmp pair to out
                                 concat!("stp {tmp_lo}, {tmp_hi}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
@@ -609,14 +640,7 @@ macro_rules! atomic128 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("a", ""),
-                        Ordering::Release => atomic_swap!("", "l"),
-                        // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}", order),
-                    }
+                    atomic_rmw!(swap, order);
                 }
             }
         }
@@ -640,8 +664,8 @@ macro_rules! atomic128 {
                 unsafe {
                     let r: i32;
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
-                    macro_rules! atomic_cmpxchg {
-                        ($acquire:tt, $release:tt) => {{
+                    macro_rules! cmpxchg {
+                        ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
                                 // load from old/new to x6-x7/x4-x5 pairs
                                 concat!("ldp x6, x7, [{old", ptr_modifier!(), "}]"),
@@ -653,6 +677,7 @@ macro_rules! atomic128 {
                                 // (atomic) compare and exchange
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
                                 concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst", ptr_modifier!(), "}]"),
+                                $fence,
                                 // compare x6-x7 pair and x8-x9 pair
                                 "eor {tmp_hi}, x9, x7",
                                 "eor {tmp_lo}, x8, x6",
@@ -685,8 +710,8 @@ macro_rules! atomic128 {
                         }};
                     }
                     #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
-                    macro_rules! atomic_cmpxchg {
-                        ($acquire:tt, $release:tt) => {{
+                    macro_rules! cmpxchg {
+                        ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
                                 // load from old/new to old/new pair
                                 concat!("ldp {new_lo}, {new_hi}, [{new", ptr_modifier!(), "}]"),
@@ -709,6 +734,7 @@ macro_rules! atomic128 {
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b", // continue loop if store failed
                                 "4:",
+                                $fence,
                                 // store out_tmp to out
                                 concat!("stp {out_lo}, {out_hi}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
@@ -730,14 +756,7 @@ macro_rules! atomic128 {
                             r == 0
                         }};
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("a", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "l"),
-                        // AcqRel and SeqCst compare_exchange are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}, {:?}", success, failure),
-                    }
+                    atomic_rmw!(cmpxchg, order)
                 }
             }
         }
@@ -762,6 +781,16 @@ mod tests {
     test_atomic!(i128);
     test_atomic!(u128);
 
-    stress_test_load_store!();
-    stress_test_load_swap!();
+    // load/store/swap implementation is not affected by signedness, so it is
+    // enough to test only unsigned types.
+    stress_test_load_store!(u8);
+    stress_test_load_swap!(u8);
+    stress_test_load_store!(u16);
+    stress_test_load_swap!(u16);
+    stress_test_load_store!(u32);
+    stress_test_load_swap!(u32);
+    stress_test_load_store!(u64);
+    stress_test_load_swap!(u64);
+    stress_test_load_store!(u128);
+    stress_test_load_swap!(u128);
 }
