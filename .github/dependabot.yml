@@ -7,3 +7,11 @@ updates:
     commit-message:
       prefix: ''
     labels: []
+  # crates with [workspace] table are not recognized by the above 'directory: /'
+  - package-ecosystem: cargo
+    directory: /tests/no-std-qemu
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: ''
+    labels: []
