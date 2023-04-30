@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.2.16] - 2023-04-30
+
 - Support 64-bit atomics on ARMv7-R and ARMv8-R.
 
 - Fix bug in AArch64 128-bit SeqCst load when FEAT_LSE2 is enabled at compile-time.
@@ -124,7 +126,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.15...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.16...HEAD
+[0.2.16]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.15...v0.2.16
 [0.2.15]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.14...v0.2.15
 [0.2.14]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.13...v0.2.14
 [0.2.13]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.12...v0.2.13
