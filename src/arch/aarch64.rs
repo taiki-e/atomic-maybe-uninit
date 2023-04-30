@@ -10,12 +10,12 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/oEvcTeeMb
-// - aarch64 msvc https://godbolt.org/z/q6frMbv3h
-// - aarch64 (+lse) https://godbolt.org/z/sMoG6fc6q
-// - aarch64 msvc (+lse) https://godbolt.org/z/Y8MG14sv5
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/9vrMhWa3d
-// - aarch64 (+rcpc) https://godbolt.org/z/PYzodzaxr
+// - aarch64 https://godbolt.org/z/n93zqGMrM
+// - aarch64 msvc https://godbolt.org/z/76Ph17q4a
+// - aarch64 (+lse) https://godbolt.org/z/Gssoa4a4P
+// - aarch64 msvc (+lse) https://godbolt.org/z/1Kbrcx6b4
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/bjMcKb6xf
+// - aarch64 (+rcpc) https://godbolt.org/z/G6qeno9nv
 
 use core::{
     arch::asm,
@@ -204,7 +204,7 @@ macro_rules! atomic {
                                 concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                val_tmp = lateout(reg) _,
+                                val_tmp = out(reg) _,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) _,
@@ -255,9 +255,9 @@ macro_rules! atomic {
                                 "cset {r:w}, eq",
                                 dst = inout(reg) dst => _,
                                 old = in(reg) old,
-                                old_tmp = lateout(reg) _,
-                                new = inout(reg) new => _,
-                                new_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new = in(reg) new,
+                                new_tmp = out(reg) _,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
@@ -688,17 +688,17 @@ macro_rules! atomic128 {
                                 "cset {r:w}, eq",
                                 dst = inout(reg) dst => _,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
                                 r = lateout(reg) r,
                                 tmp_hi = lateout(reg) _,
                                 tmp_lo = lateout(reg) _,
                                 // must be allocated to even/odd register pair
-                                lateout("x6") _, // old_lo
-                                lateout("x7") _, // old_hi
+                                out("x6") _, // old_lo
+                                out("x7") _, // old_hi
                                 // must be allocated to even/odd register pair
-                                lateout("x4") _, // new_lo
-                                lateout("x5") _, // new_hi
+                                out("x4") _, // new_lo
+                                out("x5") _, // new_hi
                                 // must be allocated to even/odd register pair
                                 lateout("x8") _, // out_lo
                                 lateout("x9") _, // out_hi
@@ -739,11 +739,11 @@ macro_rules! atomic128 {
                                 concat!("stp {out_lo}, {out_hi}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
                                 old = in(reg) old,
-                                old_hi = lateout(reg) _,
-                                old_lo = lateout(reg) _,
-                                new = inout(reg) new => _,
-                                new_hi = lateout(reg) _,
-                                new_lo = lateout(reg) _,
+                                old_hi = out(reg) _,
+                                old_lo = out(reg) _,
+                                new = in(reg) new,
+                                new_hi = out(reg) _,
+                                new_lo = out(reg) _,
                                 out = inout(reg) out => _,
                                 out_hi = lateout(reg) _,
                                 out_lo = lateout(reg) _,
@@ -783,14 +783,9 @@ mod tests {
 
     // load/store/swap implementation is not affected by signedness, so it is
     // enough to test only unsigned types.
-    stress_test_load_store!(u8);
-    stress_test_load_swap!(u8);
-    stress_test_load_store!(u16);
-    stress_test_load_swap!(u16);
-    stress_test_load_store!(u32);
-    stress_test_load_swap!(u32);
-    stress_test_load_store!(u64);
-    stress_test_load_swap!(u64);
-    stress_test_load_store!(u128);
-    stress_test_load_swap!(u128);
+    stress_test!(u8);
+    stress_test!(u16);
+    stress_test!(u32);
+    stress_test!(u64);
+    stress_test!(u128);
 }

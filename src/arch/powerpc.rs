@@ -4,13 +4,14 @@
 // - Power ISA https://openpowerfoundation.org/specifications/isa
 // - AIX Assembler language reference https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
 // - http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
+// - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/9E1x13db7
-// - powerpc64 https://godbolt.org/z/Wox3zqMET
-// - powerpc64 (pwr8) https://godbolt.org/z/ar36s61dY
-// - powerpc64le https://godbolt.org/z/1j6WPa765
-// - powerpc64le (pwr7) https://godbolt.org/z/hMG8Y1Mdz
+// - powerpc https://godbolt.org/z/1ha4GGj6n
+// - powerpc64 https://godbolt.org/z/G4Y4x9Exs
+// - powerpc64 (pwr8) https://godbolt.org/z/fvq3q56d8
+// - powerpc64le https://godbolt.org/z/1re3YWxTd
+// - powerpc64le (pwr7) https://godbolt.org/z/sc6hbGqMM
 
 use core::{
     arch::asm,
@@ -303,8 +304,8 @@ macro_rules! atomic {
                                 if_d!($asm_suffix, "rldicl {r}, {r}, 58, 63", "srwi {r}, {r}, 5"),
                                 dst = inout(reg) dst => _,
                                 old = in(reg) old,
-                                old_tmp = lateout(reg) _,
-                                new = inout(reg) new => _,
+                                old_tmp = out(reg) _,
+                                new = in(reg) new,
                                 new_tmp = lateout(reg) _,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
@@ -1147,7 +1148,7 @@ macro_rules! atomic128 {
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
-                                out("r5") _,
+                                lateout("r5") _,
                                 options(nostack),
                             )
                         };
@@ -1186,10 +1187,8 @@ macro_rules! atomic128 {
                                 "2:",
                                     // load from dst to r6-r7 pair
                                     "lqarx %r6, 0, {dst}",
-                                    "mr %r9, %r5",
-                                    "mr %r8, %r4",
                                     // store r8-r9 pair to dst
-                                    "stqcx. %r8, 0, {dst}",
+                                    "stqcx. %r4, 0, {dst}",
                                     "bne %cr0, 2b",
                                 $acquire,
                                 // store r6-r7 pair to out
@@ -1202,11 +1201,9 @@ macro_rules! atomic128 {
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _, // val (hi)
-                                out("r5") _, // val (lo)
+                                lateout("r5") _, // val (lo)
                                 out("r6") _, // out (hi)
                                 out("r7") _, // out (lo)
-                                out("r8") _,
-                                out("r9") _,
                                 out("cr0") _,
                                 options(nostack),
                             )
@@ -1267,7 +1264,7 @@ macro_rules! atomic128 {
                                 "rldicl %r11, %r11, 58, 63",
                                 dst = inout(reg) dst => _,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
                                 out("r0") _,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
@@ -1275,11 +1272,11 @@ macro_rules! atomic128 {
                                 out("r4") _, // old (hi)
                                 out("r5") _, // old (lo)
                                 out("r6") _, // new (hi)
-                                out("r7") _, // new (lo)
-                                out("r8") _, // out (hi)
-                                out("r9") _, // out (lo)
-                                out("r10") _,
-                                out("r11") r,
+                                lateout("r7") _, // new (lo)
+                                lateout("r8") _, // out (hi)
+                                lateout("r9") _, // out (lo)
+                                lateout("r10") _,
+                                lateout("r11") r,
                                 out("cr0") _,
                                 options(nostack),
                             )
@@ -1336,26 +1333,15 @@ mod tests {
 
     // load/store/swap implementation is not affected by signedness, so it is
     // enough to test only unsigned types.
-    stress_test_load_store!(u8);
-    stress_test_load_swap!(u8);
-    stress_test_load_store!(u16);
-    stress_test_load_swap!(u16);
-    stress_test_load_store!(u32);
-    stress_test_load_swap!(u32);
+    stress_test!(u8);
+    stress_test!(u16);
+    stress_test!(u32);
     #[cfg(target_arch = "powerpc64")]
-    stress_test_load_store!(u64);
-    #[cfg(target_arch = "powerpc64")]
-    stress_test_load_swap!(u64);
+    stress_test!(u64);
     #[cfg(target_arch = "powerpc64")]
     #[cfg(any(
         target_feature = "quadword-atomics",
         atomic_maybe_uninit_target_feature = "quadword-atomics",
     ))]
-    stress_test_load_store!(u128);
-    #[cfg(target_arch = "powerpc64")]
-    #[cfg(any(
-        target_feature = "quadword-atomics",
-        atomic_maybe_uninit_target_feature = "quadword-atomics",
-    ))]
-    stress_test_load_swap!(u128);
+    stress_test!(u128);
 }

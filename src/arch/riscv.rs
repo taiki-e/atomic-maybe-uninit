@@ -7,8 +7,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/hb1G7xqvz
-// - riscv32imac https://godbolt.org/z/hqzq3jdro
+// - riscv64gc https://godbolt.org/z/YaT7P6xo1
+// - riscv32imac https://godbolt.org/z/3shqvq77s
 
 use core::{
     arch::asm,
@@ -181,16 +181,15 @@ macro_rules! atomic {
                         ($order:tt) => {
                             asm!(
                                 // load val to val_tmp
-                                concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
+                                concat!("l", $asm_suffix, " {val}, 0({val})"),
                                 // (atomic) swap (AMO)
                                 // - load value from dst and store it to out_tmp
                                 // - store value of val_tmp to dst
-                                concat!("amoswap.", $asm_suffix, $order, " {out_tmp}, {val_tmp}, 0({dst})"),
+                                concat!("amoswap.", $asm_suffix, $order, " {out_tmp}, {val}, 0({dst})"),
                                 // store out_tmp to out
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                val_tmp = lateout(reg) _,
+                                dst = in(reg) dst,
+                                val = inout(reg) val => _,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
@@ -232,26 +231,24 @@ macro_rules! atomic {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 // load old/new to old_tmp/new_tmp
-                                concat!("l", $asm_suffix, " {old_tmp}, 0({old})"),
-                                concat!("l", $asm_suffix, " {new_tmp}, 0({new})"),
+                                concat!("l", $asm_suffix, " {old}, 0({old})"),
+                                concat!("l", $asm_suffix, " {new}, 0({new})"),
                                 // (atomic) compare and exchange
                                 "2:",
                                     concat!("lr.", $asm_suffix, $acquire, " {out_tmp}, 0({dst})"),
-                                    "bne {out_tmp}, {old_tmp}, 3f", // compare and jump if compare failed
-                                    concat!("sc.", $asm_suffix, $release, " {r}, {new_tmp}, 0({dst})"),
+                                    "bne {out_tmp}, {old}, 3f", // compare and jump if compare failed
+                                    concat!("sc.", $asm_suffix, $release, " {r}, {new}, 0({dst})"),
                                     "bnez {r}, 2b", // continue loop if store failed
                                 "3:",
-                                "xor {r}, {out_tmp}, {old_tmp}",
+                                "xor {r}, {out_tmp}, {old}",
                                 "seqz {r}, {r}",
                                 // store out_tmp to out
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = inout(reg) dst => _,
-                                old = in(reg) old,
-                                old_tmp = lateout(reg) _,
+                                dst = in(reg) dst,
+                                old = inout(reg) old => _,
                                 new = inout(reg) new => _,
-                                new_tmp = lateout(reg) _,
-                                out = inout(reg) out => _,
-                                out_tmp = lateout(reg) _,
+                                out = in(reg) out,
+                                out_tmp = out(reg) _,
                                 r = out(reg) r,
                                 options(nostack, preserves_flags),
                             )
@@ -615,14 +612,9 @@ mod tests {
 
     // load/store/swap implementation is not affected by signedness, so it is
     // enough to test only unsigned types.
-    stress_test_load_store!(u8);
-    stress_test_load_swap!(u8);
-    stress_test_load_store!(u16);
-    stress_test_load_swap!(u16);
-    stress_test_load_store!(u32);
-    stress_test_load_swap!(u32);
+    stress_test!(u8);
+    stress_test!(u16);
+    stress_test!(u32);
     #[cfg(target_arch = "riscv64")]
-    stress_test_load_store!(u64);
-    #[cfg(target_arch = "riscv64")]
-    stress_test_load_swap!(u64);
+    stress_test!(u64);
 }

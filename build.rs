@@ -60,7 +60,7 @@ fn main() {
             let mut no_cmpxchg = false;
             if target_os == "ios" || target_os == "tvos" || target_os == "watchos" {
                 // Apple's i386 simulator is actually i686 (yonah).
-                // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/apple_base.rs#L68
+                // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_target/src/spec/apple_base.rs#L68
             } else if target.starts_with("i486") {
                 no_cmpxchg8b = true;
             } else if target.starts_with("i386") {
@@ -133,7 +133,7 @@ fn main() {
             // - v7, v7a, v7neon, v7s, and v7k are aclass
             // - v6m, v7em, v7m, and v8m are mclass
             // - v7r is rclass
-            // - 64_32 is aarch64 https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/arm64_32_apple_watchos.rs#L10
+            // - 64_32 is aarch64 https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_target/src/spec/arm64_32_apple_watchos.rs#L10
             //
             // Other targets don't have *class target feature.
             // For example:
@@ -297,6 +297,14 @@ fn target_cpu() -> Option<String> {
 mod version {
     use std::{env, process::Command, str};
 
+    pub(crate) fn rustc_version() -> Option<Version> {
+        let rustc = env::var_os("RUSTC")?;
+        // Use verbose version output because the packagers add extra strings to the normal version output.
+        let output = Command::new(rustc).args(["--version", "--verbose"]).output().ok()?;
+        let verbose_version = str::from_utf8(&output.stdout).ok()?;
+        Version::parse(verbose_version)
+    }
+
     pub(crate) struct Version {
         pub(crate) minor: u32,
         pub(crate) nightly: bool,
@@ -310,7 +318,7 @@ mod version {
         pub(crate) const LATEST: Self = Self::stable(69);
 
         const fn stable(minor: u32) -> Self {
-            Self { minor, nightly: false, commit_date: Date::new(0, 0, 0) }
+            Self { minor, nightly: false, commit_date: Date::UNKNOWN }
         }
 
         pub(crate) fn probe(&self, minor: u32, year: u16, month: u8, day: u8) -> bool {
@@ -318,6 +326,45 @@ mod version {
                 self.minor > minor || self.commit_date >= Date::new(year, month, day)
             } else {
                 self.minor >= minor
+            }
+        }
+
+        pub(crate) fn parse(verbose_version: &str) -> Option<Self> {
+            let mut release = verbose_version
+                .lines()
+                .find(|line| line.starts_with("release: "))
+                .map(|line| &line["release: ".len()..])?
+                .splitn(2, '-');
+            let version = release.next().unwrap();
+            let channel = release.next().unwrap_or_default();
+            let mut digits = version.splitn(3, '.');
+            let major = digits.next()?.parse::<u32>().ok()?;
+            if major != 1 {
+                return None;
+            }
+            let minor = digits.next()?.parse::<u32>().ok()?;
+            let _patch = digits.next().unwrap_or("0").parse::<u32>().ok()?;
+            let nightly = channel == "nightly" || channel == "dev";
+
+            // we don't refer commit date on stable/beta.
+            if nightly {
+                let commit_date = (|| {
+                    let mut commit_date = verbose_version
+                        .lines()
+                        .find(|line| line.starts_with("commit-date: "))
+                        .map(|line| &line["commit-date: ".len()..])?
+                        .splitn(3, '-');
+                    let year = commit_date.next()?.parse::<u16>().ok()?;
+                    let month = commit_date.next()?.parse::<u8>().ok()?;
+                    let day = commit_date.next()?.parse::<u8>().ok()?;
+                    if month > 12 || day > 31 {
+                        return None;
+                    }
+                    Some(Date::new(year, month, day))
+                })();
+                Some(Version { minor, nightly, commit_date: commit_date.unwrap_or(Date::UNKNOWN) })
+            } else {
+                Some(Version::stable(minor))
             }
         }
     }
@@ -330,42 +377,10 @@ mod version {
     }
 
     impl Date {
+        const UNKNOWN: Self = Self::new(0, 0, 0);
+
         const fn new(year: u16, month: u8, day: u8) -> Self {
             Self { year, month, day }
-        }
-    }
-
-    pub(crate) fn rustc_version() -> Option<Version> {
-        let rustc = env::var_os("RUSTC")?;
-        // Use verbose version output because the packagers add extra strings to the normal version output.
-        let output = Command::new(rustc).args(["--version", "--verbose"]).output().ok()?;
-        let output = str::from_utf8(&output.stdout).ok()?;
-
-        let mut release =
-            output.lines().find_map(|line| line.strip_prefix("release: "))?.splitn(2, '-');
-        let version = release.next().unwrap();
-        let channel = release.next().unwrap_or_default();
-        let mut digits = version.splitn(3, '.');
-        let major = digits.next()?.parse::<u32>().ok()?;
-        if major != 1 {
-            return None;
-        }
-        let minor = digits.next()?.parse::<u32>().ok()?;
-        let _patch = digits.next().unwrap_or("0").parse::<u32>().ok()?;
-        let nightly = channel == "nightly" || channel == "dev";
-
-        if nightly {
-            let mut commit_date =
-                output.lines().find_map(|line| line.strip_prefix("commit-date: "))?.splitn(3, '-');
-            let year = commit_date.next()?.parse::<u16>().ok()?;
-            let month = commit_date.next()?.parse::<u8>().ok()?;
-            let day = commit_date.next()?.parse::<u8>().ok()?;
-            if month > 12 || day > 31 {
-                return None;
-            }
-            Some(Version { minor, nightly, commit_date: Date::new(year, month, day) })
-        } else {
-            Some(Version::stable(minor))
         }
     }
 }

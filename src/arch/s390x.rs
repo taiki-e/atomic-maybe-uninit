@@ -1,10 +1,11 @@
 // s390x
 //
 // Refs:
-// - https://www.ibm.com/support/pages/zarchitecture-reference-summary
+// - z/Architecture Reference Summary https://www.ibm.com/support/pages/zarchitecture-reference-summary
+// - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/vo7vWPvaY
+// - s390x https://godbolt.org/z/8eEYWr6f8
 
 use core::{
     arch::asm,
@@ -158,10 +159,10 @@ macro_rules! atomic {
                         "risbg {r}, {tmp}, 63, 191, 33",
                         // store r0 to out
                         concat!("st", $st_suffix, " %r0, 0({out})"),
-                        dst = inout(reg) dst => _,
+                        dst = in(reg) dst,
                         old = in(reg) old,
-                        new = inout(reg) new => _,
-                        tmp = lateout(reg) _,
+                        new = in(reg) new,
+                        tmp = out(reg) _,
                         out = inout(reg) out => _,
                         r = lateout(reg) r,
                         out("r0") _,
@@ -608,14 +609,9 @@ mod tests {
 
     // load/store/swap implementation is not affected by signedness, so it is
     // enough to test only unsigned types.
-    stress_test_load_store!(u8);
-    stress_test_load_swap!(u8);
-    stress_test_load_store!(u16);
-    stress_test_load_swap!(u16);
-    stress_test_load_store!(u32);
-    stress_test_load_swap!(u32);
-    stress_test_load_store!(u64);
-    stress_test_load_swap!(u64);
-    stress_test_load_store!(u128);
-    stress_test_load_swap!(u128);
+    stress_test!(u8);
+    stress_test!(u16);
+    stress_test!(u32);
+    stress_test!(u64);
+    stress_test!(u128);
 }

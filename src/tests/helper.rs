@@ -891,8 +891,9 @@ macro_rules! stress_test_load_store {
         }
     };
 }
-macro_rules! stress_test_load_swap {
+macro_rules! stress_test {
     ($int_type:ident) => {
+        stress_test_load_store!($int_type);
         // debug mode and Valgrind are slow.
         #[cfg(not(any(debug_assertions, valgrind)))]
         paste::paste! {

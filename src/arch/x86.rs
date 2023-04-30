@@ -1,7 +1,8 @@
 // x86 and x86_64
 //
 // Refs:
-// - https://www.felixcloutier.com/x86
+// - x86 and amd64 instruction reference https://www.felixcloutier.com/x86
+// - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
 // - x86_64 https://godbolt.org/z/WaT48hczb
@@ -783,20 +784,12 @@ mod tests {
 
     // load/store/swap implementation is not affected by signedness, so it is
     // enough to test only unsigned types.
-    stress_test_load_store!(u8);
-    stress_test_load_swap!(u8);
-    stress_test_load_store!(u16);
-    stress_test_load_swap!(u16);
-    stress_test_load_store!(u32);
-    stress_test_load_swap!(u32);
+    stress_test!(u8);
+    stress_test!(u16);
+    stress_test!(u32);
     #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-    stress_test_load_store!(u64);
-    #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-    stress_test_load_swap!(u64);
+    stress_test!(u64);
     #[cfg(target_arch = "x86_64")]
     #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
-    stress_test_load_store!(u128);
-    #[cfg(target_arch = "x86_64")]
-    #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
-    stress_test_load_swap!(u128);
+    stress_test!(u128);
 }

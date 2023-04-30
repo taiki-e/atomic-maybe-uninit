@@ -39,7 +39,7 @@ Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC,
 | msp430 \[3]                          | isize,usize,i8,u8,i16,u16                           | ✓          |       |       |
 
 \[1] ARM's atomic RMW operations are not available on v6-m (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc.<br>
-\[2] ARMv6 except ARMv6-M, ARMv7+ with A-profile or R-profile<br>
+\[2] ARMv6 except ARMv6-M, ARMv7+ with A-profile or R-profile.<br>
 \[3] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 \[4] target-cpu `pwr8`, `pwr9`, or `pwr10`. powerpc64le is `pwr8` by default.<br>
 

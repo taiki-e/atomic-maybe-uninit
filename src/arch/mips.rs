@@ -1,10 +1,10 @@
 // MIPS32r2 and MIPS64r2
 //
 // Generated asm:
-// - mips https://godbolt.org/z/fjczM4E5r
-// - mipsel https://godbolt.org/z/6r35GddM5
-// - mips64 https://godbolt.org/z/YrYa43d3s
-// - mips64el https://godbolt.org/z/hnnox8M7M
+// - mips https://godbolt.org/z/v7Pz9xqfM
+// - mipsel https://godbolt.org/z/P77xKfnsz
+// - mips64 https://godbolt.org/z/a9ds4MMab
+// - mips64el https://godbolt.org/z/nfMPxMqW6
 
 use core::{
     arch::asm,
@@ -185,9 +185,9 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
-                                r = lateout(reg) _,
-                                out_tmp = lateout(reg) _,
                                 val_tmp = out(reg) _,
+                                out_tmp = lateout(reg) _,
+                                r = lateout(reg) _,
                                 options(nostack),
                             )
                         };
@@ -242,12 +242,12 @@ macro_rules! atomic {
                                 ".set pop",
                                 dst = inout(reg) dst => _,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
-                                r = lateout(reg) r,
-                                out_tmp = lateout(reg) _,
+                                new_tmp = out(reg) _,
                                 old_tmp = out(reg) _,
-                                new_tmp = lateout(reg) _,
+                                out_tmp = lateout(reg) _,
+                                r = lateout(reg) r,
                                 options(nostack),
                             )
                         };
@@ -611,14 +611,9 @@ mod tests {
 
     // load/store/swap implementation is not affected by signedness, so it is
     // enough to test only unsigned types.
-    stress_test_load_store!(u8);
-    stress_test_load_swap!(u8);
-    stress_test_load_store!(u16);
-    stress_test_load_swap!(u16);
-    stress_test_load_store!(u32);
-    stress_test_load_swap!(u32);
+    stress_test!(u8);
+    stress_test!(u16);
+    stress_test!(u32);
     #[cfg(target_arch = "mips64")]
-    stress_test_load_store!(u64);
-    #[cfg(target_arch = "mips64")]
-    stress_test_load_swap!(u64);
+    stress_test!(u64);
 }

@@ -1,11 +1,11 @@
 // ARMv6 and ARMv7
 //
 // Generated asm:
-// - armv7-a https://godbolt.org/z/P8noEd7je
-// - armv7-r https://godbolt.org/z/5d6aencMd
-// - armv7-m https://godbolt.org/z/57ohzhM91
-// - armv6 https://godbolt.org/z/3KKTf4j6r
-// - armv6-m https://godbolt.org/z/Wes9adjbb
+// - armv7-a https://godbolt.org/z/8P3ds5rhG
+// - armv7-r https://godbolt.org/z/qfbaT3McY
+// - armv7-m https://godbolt.org/z/aoexav9z1
+// - armv6 https://godbolt.org/z/8xb97Efa1
+// - armv6-m https://godbolt.org/z/oa9YWh5Kf
 
 use core::{
     mem::{self, MaybeUninit},
@@ -224,7 +224,7 @@ macro_rules! atomic {
                                 out = inout(reg) out => _,
                                 r = lateout(reg) _,
                                 out_tmp = lateout(reg) _,
-                                val_tmp = lateout(reg) _,
+                                val_tmp = out(reg) _,
                             )
                         };
                     }
@@ -292,11 +292,11 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
-                                old_tmp = lateout(reg) _,
-                                new_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new_tmp = out(reg) _,
                             )
                         };
                     }
@@ -330,11 +330,11 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
-                                old_tmp = lateout(reg) _,
-                                new_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new_tmp = out(reg) _,
                             )
                         };
                     }
@@ -371,11 +371,11 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
-                                old_tmp = lateout(reg) _,
-                                new_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new_tmp = out(reg) _,
                             )
                         };
                     }
@@ -442,11 +442,11 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
-                                old_tmp = lateout(reg) _,
-                                new_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new_tmp = out(reg) _,
                             )
                         };
                     }
@@ -479,11 +479,11 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
-                                old_tmp = lateout(reg) _,
-                                new_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new_tmp = out(reg) _,
                             )
                         };
                     }
@@ -515,11 +515,11 @@ macro_rules! atomic {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
                                 out_tmp = lateout(reg) _,
-                                old_tmp = lateout(reg) _,
-                                new_tmp = lateout(reg) _,
+                                old_tmp = out(reg) _,
+                                new_tmp = out(reg) _,
                             )
                         };
                     }
@@ -760,9 +760,9 @@ macro_rules! atomic64 {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -770,8 +770,8 @@ macro_rules! atomic64 {
                                 lateout("r4") _,
                                 lateout("r5") _,
                                 // new pair - must be even-numbered and not R14
-                                lateout("r8") _,
-                                lateout("r9") _,
+                                out("r8") _,
+                                out("r9") _,
                             )
                         };
                     }
@@ -809,9 +809,9 @@ macro_rules! atomic64 {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -819,8 +819,8 @@ macro_rules! atomic64 {
                                 lateout("r4") _,
                                 lateout("r5") _,
                                 // new pair - must be even-numbered and not R14
-                                lateout("r8") _,
-                                lateout("r9") _,
+                                out("r8") _,
+                                out("r9") _,
                             )
                         };
                     }
@@ -861,9 +861,9 @@ macro_rules! atomic64 {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -871,8 +871,8 @@ macro_rules! atomic64 {
                                 lateout("r4") _,
                                 lateout("r5") _,
                                 // new pair - must be even-numbered and not R14
-                                lateout("r8") _,
-                                lateout("r9") _,
+                                out("r8") _,
+                                out("r9") _,
                             )
                         };
                     }
@@ -937,9 +937,9 @@ macro_rules! atomic64 {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -947,8 +947,8 @@ macro_rules! atomic64 {
                                 lateout("r4") _,
                                 lateout("r5") _,
                                 // new pair - must be even-numbered and not R14
-                                lateout("r8") _,
-                                lateout("r9") _,
+                                out("r8") _,
+                                out("r9") _,
                             )
                         };
                     }
@@ -983,9 +983,9 @@ macro_rules! atomic64 {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -993,8 +993,8 @@ macro_rules! atomic64 {
                                 lateout("r4") _,
                                 lateout("r5") _,
                                 // new pair - must be even-numbered and not R14
-                                lateout("r8") _,
-                                lateout("r9") _,
+                                out("r8") _,
+                                out("r9") _,
                             )
                         };
                     }
@@ -1028,9 +1028,9 @@ macro_rules! atomic64 {
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = out(reg) _,
+                                tmp = lateout(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -1038,8 +1038,8 @@ macro_rules! atomic64 {
                                 lateout("r4") _,
                                 lateout("r5") _,
                                 // new pair - must be even-numbered and not R14
-                                lateout("r8") _,
-                                lateout("r9") _,
+                                out("r8") _,
+                                out("r9") _,
                             )
                         };
                     }
@@ -1082,12 +1082,8 @@ mod tests {
 
     // load/store/swap implementation is not affected by signedness, so it is
     // enough to test only unsigned types.
-    stress_test_load_store!(u8);
-    stress_test_load_swap!(u8);
-    stress_test_load_store!(u16);
-    stress_test_load_swap!(u16);
-    stress_test_load_store!(u32);
-    stress_test_load_swap!(u32);
-    stress_test_load_store!(u64);
-    stress_test_load_swap!(u64);
+    stress_test!(u8);
+    stress_test!(u16);
+    stress_test!(u32);
+    stress_test!(u64);
 }
