@@ -24,6 +24,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.15] - 2022-12-25
 
+**Note:** This release has been yanked due to a bug fixed in 0.2.16.
+
 - Improve support for AArch32 ARMv8.
 
 - Optimize inline assemblies on x86.
@@ -32,9 +34,13 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.14] - 2022-09-04
 
+**Note:** This release has been yanked due to a bug fixed in 0.2.16.
+
 - Support pre-power8 powerpc64le. powerpc64le's default cpu version is power8, but you can technically compile it for the old cpu using the unsafe `-C target-cpu` rustc flag.
 
 ## [0.2.13] - 2022-08-17
+
+**Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
 - Support MSP430 atomic load/store.
 
@@ -42,17 +48,25 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.12] - 2022-08-03
 
+**Note:** This release has been yanked due to a bug fixed in 0.2.16.
+
 - Optimize AArch64 128-bit atomic load when the `lse` target feature is enabled at compile-time.
 
 ## [0.2.11] - 2022-07-31
+
+**Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
 - Optimize inline assemblies on x86, ARM, AArch64, and RISC-V.
 
 ## [0.2.10] - 2022-07-16
 
+**Note:** This release has been yanked due to a bug fixed in 0.2.16.
+
 - Support ARMv6.
 
 ## [0.2.9] - 2022-06-30
+
+**Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
 - Add `compare_exchange`, `compare_exchange_weak`, and `fetch_update`. ([#7](https://github.com/taiki-e/atomic-maybe-uninit/pull/7))
 
@@ -61,6 +75,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - Support x86 64-bit atomics.
 
 ## [0.2.8] - 2022-06-21
+
+**Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
 - Fix bug in powerpc64 128-bit atomics.
 
@@ -87,6 +103,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - Implement MIPS64r2 8-bit and 16-bit swap.
 
 ## [0.2.5] - 2022-05-30
+
+**Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
 - Support ARMv6-M.
 
