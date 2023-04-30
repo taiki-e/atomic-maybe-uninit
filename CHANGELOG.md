@@ -10,9 +10,19 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support 64-bit atomics on ARMv7-R and ARMv8-R.
+
+- Fix bug in AArch64 128-bit SeqCst load when FEAT_LSE2 is enabled at compile-time.
+
+- Fix bug in AArch64 16-bit compare_exchange_weak.
+
+- Optimize AArch64 atomic load when the `rcpc` target feature is enabled at compile-time.
+
+- Optimize PowerPC/PowerPC64 atomic RMWs.
+
 ## [0.2.15] - 2022-12-25
 
-- Improve support for AArch32 v8.
+- Improve support for AArch32 ARMv8.
 
 - Optimize inline assemblies on x86.
 
