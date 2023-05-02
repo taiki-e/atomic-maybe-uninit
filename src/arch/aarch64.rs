@@ -7,6 +7,8 @@
 //   https://developer.arm.com/documentation/ddi0602/latest
 // - Arm Architecture Reference Manual for A-profile architecture
 //   https://developer.arm.com/documentation/ddi0487/latest
+// - Arm Architecture Reference Manual Supplement - Armv8, for Armv8-R AArch64 architecture profile
+//   https://developer.arm.com/documentation/ddi0600/latest
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
@@ -69,7 +71,7 @@ macro_rules! atomic {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
@@ -119,7 +121,7 @@ macro_rules! atomic {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
                         ($release:tt, $fence:tt) => {
@@ -163,7 +165,7 @@ macro_rules! atomic {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
                     macro_rules! swap {
@@ -232,7 +234,7 @@ macro_rules! atomic {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
@@ -326,7 +328,7 @@ macro_rules! atomic {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let r: i32;
                     macro_rules! cmpxchg_weak {
@@ -473,7 +475,7 @@ macro_rules! atomic128 {
                     }
                 }
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
                     macro_rules! atomic_load {
@@ -567,7 +569,7 @@ macro_rules! atomic128 {
                     }
                 }
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! store {
                         ($acquire:tt, $release:tt, $fence:tt) => {
@@ -610,7 +612,7 @@ macro_rules! atomic128 {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
@@ -619,22 +621,22 @@ macro_rules! atomic128 {
                                 concat!("ldp {val_lo}, {val_hi}, [{val", ptr_modifier!(), "}]"),
                                 // (atomic) swap
                                 "2:",
-                                    // load from dst to tmp pair
-                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    // load from dst to out pair
+                                    concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // store val pair to dst
                                     concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", ptr_modifier!(), "}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 $fence,
-                                // store tmp pair to out
-                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", ptr_modifier!(), "}]"),
+                                // store out pair to out
+                                concat!("stp {out_lo}, {out_hi}, [{out", ptr_modifier!(), "}]"),
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
                                 out = inout(reg) out => _,
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
-                                tmp_hi = lateout(reg) _,
-                                tmp_lo = lateout(reg) _,
+                                out_hi = lateout(reg) _,
+                                out_lo = lateout(reg) _,
                                 r = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -660,7 +662,7 @@ macro_rules! atomic128 {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let r: i32;
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]

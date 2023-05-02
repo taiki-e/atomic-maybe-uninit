@@ -238,7 +238,7 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
         success: Ordering,
         failure: Ordering,
     ) -> bool {
-        // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
+        // SAFETY: the caller must uphold the safety contract.
         unsafe { Self::atomic_compare_exchange(dst, current, new, out, success, failure) }
     }
 }

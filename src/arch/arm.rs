@@ -1,5 +1,11 @@
 // ARMv6 and ARMv7
 //
+// Refs:
+// - ARM Architecture Reference Manual ARMv7-A and ARMv7-R edition
+//   https://developer.arm.com/documentation/ddi0406/cb
+// - ARMv6 Differences
+//   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv6-Differences?lang=en
+//
 // Generated asm:
 // - armv7-a https://godbolt.org/z/8P3ds5rhG
 // - armv7-r https://godbolt.org/z/qfbaT3McY
@@ -118,7 +124,7 @@ macro_rules! atomic {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load {
                         ($asm:ident, $acquire:expr) => {
@@ -154,7 +160,7 @@ macro_rules! atomic {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
                         ($asm:ident, $acquire:expr, $release:expr) => {
@@ -197,7 +203,7 @@ macro_rules! atomic {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_swap {
                         ($asm:ident, $acquire:expr, $release:expr) => {
@@ -260,7 +266,7 @@ macro_rules! atomic {
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32;
@@ -414,7 +420,7 @@ macro_rules! atomic {
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32;
@@ -570,7 +576,7 @@ macro_rules! atomic64 {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load {
                         ($asm:ident, $acquire:expr) => {
@@ -610,7 +616,7 @@ macro_rules! atomic64 {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
                         ($asm:ident, $acquire:expr, $release:expr) => {
@@ -664,7 +670,7 @@ macro_rules! atomic64 {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_swap {
                         ($asm:ident, $acquire:expr, $release:expr) => {
@@ -726,7 +732,7 @@ macro_rules! atomic64 {
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32;
@@ -907,7 +913,7 @@ macro_rules! atomic64 {
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32;

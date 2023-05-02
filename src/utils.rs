@@ -29,7 +29,7 @@ macro_rules! unreachable_unchecked {
         if cfg!(debug_assertions) {
             unreachable!($($tt)*);
         } else {
-            // SAFETY: the caller must uphold the safety contract for `unreachable_unchecked`.
+            // SAFETY: the caller must uphold the safety contract.
             // (To force the caller to use unsafe block for this macro, do not use
             // unsafe block here.)
             core::hint::unreachable_unchecked()
@@ -77,6 +77,9 @@ pub(crate) fn assert_store_ordering(order: Ordering) {
     }
 }
 
+// We use unreachable_unchecked! macro to remove the panic path (see also macro docs).
+// Since Ordering is non_exhaustive, the caller of such a function must use this
+// assertion to prevent UB due to the addition of new orderings.
 #[inline]
 pub(crate) fn assert_swap_ordering(order: Ordering) {
     match order {

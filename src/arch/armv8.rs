@@ -1,8 +1,14 @@
-// AArch32 ARMv8 little endian
+// ARMv8 AArch32 (little endian)
 //
 // LLVM doesn't generate CLREX for ARMv8-M Baseline, but it actually supports CLREX.
 // https://developer.arm.com/documentation/dui1095/a/The-Cortex-M23-Instruction-Set/Memory-access-instructions?lang=en
 // https://community.arm.com/cfs-file/__key/telligent-evolution-components-attachments/01-2057-00-00-00-01-28-35/Cortex_2D00_M-for-Beginners-_2D00_-2017_5F00_EN_5F00_v2.pdf
+//
+// Refs:
+// - Arm Architecture Reference Manual for A-profile architecture
+//   https://developer.arm.com/documentation/ddi0487/latest
+// - Armv8-M Architecture Reference Manual
+//   https://developer.arm.com/documentation/ddi0553/latest
 //
 // Generated asm:
 // - armv8-a https://godbolt.org/z/araPdeYxE
@@ -42,7 +48,7 @@ macro_rules! atomic {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
@@ -77,7 +83,7 @@ macro_rules! atomic {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
                         ($release:tt) => {
@@ -114,7 +120,7 @@ macro_rules! atomic {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
@@ -163,7 +169,7 @@ macro_rules! atomic {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
                     macro_rules! cmpxchg {
@@ -223,7 +229,7 @@ macro_rules! atomic {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
                     macro_rules! cmpxchg_weak {
@@ -277,9 +283,6 @@ atomic!(u32, "");
 atomic!(isize, "");
 atomic!(usize, "");
 
-// Refs:
-// - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/LDREXD
-// - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/STREXD
 #[rustfmt::skip]
 macro_rules! atomic64 {
     ($int_type:ident) => {
@@ -294,7 +297,7 @@ macro_rules! atomic64 {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
@@ -333,7 +336,7 @@ macro_rules! atomic64 {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! store {
                         ($acquire:tt, $release:tt) => {
@@ -380,7 +383,7 @@ macro_rules! atomic64 {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
@@ -434,7 +437,7 @@ macro_rules! atomic64 {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
                     macro_rules! cmpxchg {
@@ -501,7 +504,7 @@ macro_rules! atomic64 {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange_weak`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
                     macro_rules! cmpxchg_weak {

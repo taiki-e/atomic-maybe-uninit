@@ -13,7 +13,7 @@ macro_rules! atomic {
                 out: *mut MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
@@ -37,7 +37,7 @@ macro_rules! atomic {
                 val: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic store is always SeqCst.
                     asm!(

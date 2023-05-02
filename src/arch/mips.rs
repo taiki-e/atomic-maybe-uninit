@@ -1,10 +1,10 @@
 // MIPS32r2 and MIPS64r2
 //
 // Generated asm:
-// - mips https://godbolt.org/z/v7Pz9xqfM
-// - mipsel https://godbolt.org/z/P77xKfnsz
-// - mips64 https://godbolt.org/z/a9ds4MMab
-// - mips64el https://godbolt.org/z/nfMPxMqW6
+// - mips https://godbolt.org/z/Ton7fG48a
+// - mipsel https://godbolt.org/z/jbYcbecr1
+// - mips64 https://godbolt.org/z/baMvE37e1
+// - mips64el https://godbolt.org/z/bdEEPeGef
 
 use core::{
     arch::asm,
@@ -65,41 +65,30 @@ macro_rules! atomic_load_store {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    macro_rules! atomic_load {
+                        ($acquire:tt) => {
+                            asm!(
+                                ".set push",
+                                ".set noat",
+                                // (atomic) load from src to tmp
+                                concat!("l", $asm_suffix, " {tmp}, 0({src})"),
+                                $acquire,
+                                // store tmp to out
+                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
+                                ".set pop",
+                                src = in(reg) src,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
+                                options(nostack),
+                            )
+                        };
+                    }
                     match order {
-                        Ordering::Relaxed => {
-                            asm!(
-                                ".set push",
-                                ".set noat",
-                                // (atomic) load from src to tmp
-                                concat!("l", $asm_suffix, " {tmp}, 0({src})"),
-                                // store tmp to out
-                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
-                                ".set pop",
-                                src = in(reg) src,
-                                out = in(reg) out,
-                                tmp = out(reg) _,
-                                options(nostack),
-                            );
-                        }
+                        Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => {
-                            asm!(
-                                ".set push",
-                                ".set noat",
-                                // (atomic) load from src to tmp
-                                concat!("l", $asm_suffix, " {tmp}, 0({src})"),
-                                "sync",
-                                // store tmp to out
-                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
-                                ".set pop",
-                                src = in(reg) src,
-                                out = in(reg) out,
-                                tmp = out(reg) _,
-                                options(nostack),
-                            );
-                        }
+                        Ordering::Acquire | Ordering::SeqCst => atomic_load!("sync"),
                         _ => unreachable_unchecked!("{:?}", order),
                     }
                 }
@@ -115,10 +104,10 @@ macro_rules! atomic_load_store {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! store {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 ".set push",
                                 ".set noat",
@@ -159,10 +148,10 @@ macro_rules! atomic {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 ".set push",
                                 ".set noat",
@@ -212,11 +201,11 @@ macro_rules! atomic {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: usize;
                     macro_rules! cmpxchg {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 ".set push",
                                 ".set noat",
@@ -277,10 +266,10 @@ macro_rules! atomic8 {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 // Implement sub-word atomic operations using word-sized LL/SC loop.
                                 // Based on assemblies generated by rustc/LLVM.
@@ -350,11 +339,11 @@ macro_rules! atomic8 {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: usize;
                     macro_rules! cmpxchg {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 // Implement sub-word atomic operations using word-sized LL/SC loop.
                                 // Based on assemblies generated by rustc/LLVM.
@@ -434,10 +423,10 @@ macro_rules! atomic16 {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 // Implement sub-word atomic operations using word-sized LL/SC loop.
                                 // Based on assemblies generated by rustc/LLVM.
@@ -507,11 +496,11 @@ macro_rules! atomic16 {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: usize;
                     macro_rules! cmpxchg {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 // Implement sub-word atomic operations using word-sized LL/SC loop.
                                 // Based on assemblies generated by rustc/LLVM.

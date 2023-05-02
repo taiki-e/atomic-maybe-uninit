@@ -66,7 +66,7 @@ macro_rules! atomic {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
@@ -92,7 +92,7 @@ macro_rules! atomic {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     match order {
                         // Relaxed and Release stores are equivalent.
@@ -137,7 +137,7 @@ macro_rules! atomic {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
@@ -172,7 +172,7 @@ macro_rules! atomic {
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg
                 unsafe {
@@ -243,7 +243,7 @@ macro_rules! atomic64 {
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
                 #[cfg(target_feature = "sse")]
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
                 //
                 // Refs:
@@ -296,7 +296,7 @@ macro_rules! atomic64 {
                     }
                 }
                 #[cfg(not(target_feature = "sse"))]
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
@@ -334,7 +334,7 @@ macro_rules! atomic64 {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
 
                 #[cfg(target_feature = "sse")]
-                // SAFETY: the caller must uphold the safety contract for `atomic_store`.
+                // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
                 //
                 // Refs:
@@ -381,7 +381,7 @@ macro_rules! atomic64 {
                     }
                 }
                 #[cfg(not(target_feature = "sse"))]
-                // SAFETY: the caller must uphold the safety contract for `atomic_load`.
+                // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
@@ -424,7 +424,7 @@ macro_rules! atomic64 {
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_swap`.
+                // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
@@ -476,7 +476,7 @@ macro_rules! atomic64 {
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                // SAFETY: the caller must uphold the safety contract for `atomic_compare_exchange`.
+                // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg
                 unsafe {
