@@ -65,6 +65,7 @@ risbg
 rldicl
 rldicr
 rlwinm
+sched
 seqz
 sete
 shufps

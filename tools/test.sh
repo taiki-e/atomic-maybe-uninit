@@ -31,7 +31,11 @@ x_cargo() {
     if [[ -n "${CARGO_PROFILE_RELEASE_LTO:-}" ]]; then
         echo "+ CARGO_PROFILE_RELEASE_LTO='${CARGO_PROFILE_RELEASE_LTO}' \\"
     fi
-    x "${cargo}" "$@"
+    if [[ -n "${TS:-}" ]]; then
+        x "${cargo}" "$@" 2>&1 | "${TS}" -i '%.s  '
+    else
+        x "${cargo}" "$@"
+    fi
     echo
 }
 bail() {
@@ -87,6 +91,13 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
     fi
 fi
 export RUST_TEST_THREADS=1
+if [[ -n "${CI:-}" ]]; then
+    if type -P ts &>/dev/null; then
+        TS=ts
+    elif [[ -e C:/msys64/usr/bin/ts ]]; then
+        TS=C:/msys64/usr/bin/ts
+    fi
+fi
 
 args=()
 if [[ -z "${target}" ]] && [[ -n "${build_std}" ]]; then
@@ -124,7 +135,7 @@ target_lower="${target_lower//./_}"
 target_upper="$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")"
 
 if [[ -n "${VALGRIND:-}" ]]; then
-    export "CARGO_TARGET_${target_upper}_RUNNER"="${VALGRIND} -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --track-origins=yes"
+    export "CARGO_TARGET_${target_upper}_RUNNER"="${VALGRIND} -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --track-origins=yes --fair-sched=yes"
     export RUSTFLAGS="${RUSTFLAGS:-} --cfg valgrind"
     export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} --cfg valgrind"
     # doctest on Valgrind is very slow
@@ -141,15 +152,16 @@ run() {
         x_cargo ${pre_args[@]+"${pre_args[@]}"} test ${tests[@]+"${tests[@]}"} "$@"
     fi
 
+    # release mode + doctests is slow on some platforms (probably related to the fact that they compile binaries for each example)
     if [[ "${RUSTFLAGS:-}" == *"-Z sanitizer=memory"* ]] || [[ "${RUSTFLAGS:-}" == *"-Zsanitizer=memory"* ]]; then
         # Workaround https://github.com/google/sanitizers/issues/558
         CARGO_PROFILE_RELEASE_OPT_LEVEL=0 \
-            x_cargo ${pre_args[@]+"${pre_args[@]}"} test --release ${tests[@]+"${tests[@]}"} "$@"
+            x_cargo ${pre_args[@]+"${pre_args[@]}"} test --release --tests "$@"
     else
-        x_cargo ${pre_args[@]+"${pre_args[@]}"} test --release ${tests[@]+"${tests[@]}"} "$@"
+        x_cargo ${pre_args[@]+"${pre_args[@]}"} test --release --tests "$@"
     fi
 
-    # LTO + doctests is very slow on some platforms
+    # LTO + doctests is very slow on some platforms (probably related to the fact that they compile binaries for each example)
     CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
         CARGO_PROFILE_RELEASE_LTO=fat \
         x_cargo ${pre_args[@]+"${pre_args[@]}"} test --release --tests --target-dir target/fat-lto "$@"
