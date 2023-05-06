@@ -150,10 +150,10 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
         build_scripts=(build.rs)
         check_cfg='-Z unstable-options --check-cfg=values(target_pointer_width,"128") --check-cfg=values(feature,"cargo-clippy")'
         known_cfgs+=($(grep -E 'cargo:rustc-cfg=' "${build_scripts[@]}" | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u))
-        check_cfg+=" --check-cfg=names($(IFS=',' && echo "${known_cfgs[*]}"))"
         # TODO: handle multi-line target_feature_if
         known_target_feature_values+=($(grep -E 'target_feature_if\("' "${build_scripts[@]}" | sed -E 's/^.*target_feature_if\(//; s/",.*$/"/' | LC_ALL=C sort -u))
         check_cfg+=" --check-cfg=values(atomic_maybe_uninit_target_feature,\"a\",$(IFS=',' && echo "${known_target_feature_values[*]}"))"
+        check_cfg+=" --check-cfg=names($(IFS=',' && echo "${known_cfgs[*]}"))"
         rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
         base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy -Z check-cfg="names,values,output,features")
     fi
