@@ -116,10 +116,9 @@ macro_rules! atomic_load_store {
                                 "isync",
                                 // store tmp to out
                                 concat!("st", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
-                                out("r0") _,
+                                src = in(reg_nonzero) src,
+                                out = inout(reg_nonzero) out => _,
+                                tmp = lateout(reg_nonzero) _,
                                 out("cr7") _,
                                 options(nostack),
                             )
@@ -132,10 +131,9 @@ macro_rules! atomic_load_store {
                                 concat!("l", $ld_suffix, " {tmp}, 0({src})"),
                                 // store tmp to out
                                 concat!("st", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
-                                out("r0") _,
+                                src = in(reg_nonzero) src,
+                                out = inout(reg_nonzero) out => _,
+                                tmp = lateout(reg_nonzero) _,
                                 options(nostack),
                             )
                         }
@@ -156,10 +154,9 @@ macro_rules! atomic_load_store {
                                 $acquire,
                                 // store tmp to out
                                 concat!("st", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
-                                out("r0") _,
+                                src = in(reg_nonzero) src,
+                                out = inout(reg_nonzero) out => _,
+                                tmp = lateout(reg_nonzero) _,
                                 options(nostack),
                             )
                         };
@@ -193,10 +190,9 @@ macro_rules! atomic_load_store {
                                 // (atomic) store tmp to dst
                                 $release,
                                 concat!("st", $asm_suffix, " {tmp}, 0({dst})"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                tmp = lateout(reg) _,
-                                out("r0") _,
+                                dst = inout(reg_nonzero) dst => _,
+                                val = in(reg_nonzero) val,
+                                tmp = lateout(reg_nonzero) _,
                                 options(nostack),
                             )
                         };
@@ -247,12 +243,11 @@ macro_rules! atomic {
                                 $acquire,
                                 // store out_tmp to out
                                 concat!("st", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                val_tmp = lateout(reg) _,
-                                out = inout(reg) out => _,
-                                out_tmp = lateout(reg) _,
-                                out("r0") _,
+                                dst = inout(reg_nonzero) dst => _,
+                                val = in(reg_nonzero) val,
+                                val_tmp = lateout(reg_nonzero) _,
+                                out = inout(reg_nonzero) out => _,
+                                out_tmp = lateout(reg_nonzero) _,
                                 out("cr0") _,
                                 options(nostack),
                             )
@@ -302,15 +297,14 @@ macro_rules! atomic {
                                 concat!("st", $asm_suffix, " {out_tmp}, 0({out})"),
                                 concat!("cntlz", $cmp_suffix, " {r}, {r}"),
                                 if_d!($asm_suffix, "rldicl {r}, {r}, 58, 63", "srwi {r}, {r}, 5"),
-                                dst = inout(reg) dst => _,
-                                old = in(reg) old,
-                                old_tmp = out(reg) _,
-                                new = in(reg) new,
-                                new_tmp = lateout(reg) _,
-                                out = inout(reg) out => _,
-                                out_tmp = lateout(reg) _,
-                                r = lateout(reg) r,
-                                out("r0") _,
+                                dst = inout(reg_nonzero) dst => _,
+                                old = in(reg_nonzero) old,
+                                old_tmp = out(reg_nonzero) _,
+                                new = in(reg_nonzero) new,
+                                new_tmp = lateout(reg_nonzero) _,
+                                out = inout(reg_nonzero) out => _,
+                                out_tmp = lateout(reg_nonzero) _,
+                                r = lateout(reg_nonzero) r,
                                 out("cr0") _,
                                 options(nostack),
                             )
@@ -377,7 +371,6 @@ macro_rules! atomic8 {
                                 "clrlwi %r3, %r3, 24",
                                 $acquire,
                                 "stb %r3, 0(%r5)",
-                                out("r0") _,
                                 inout("r3") dst => _,
                                 inout("r4") val => _,
                                 in("r5") out,
@@ -414,7 +407,6 @@ macro_rules! atomic8 {
                                 $acquire,
                                 "clrlwi %r3, %r3, 24",
                                 "stb %r3, 0(%r5)",
-                                out("r0") _,
                                 inout("r3") dst => _,
                                 inout("r4") val => _,
                                 in("r5") out,
@@ -451,7 +443,6 @@ macro_rules! atomic8 {
                                 "clrlwi %r3, %r3, 24",
                                 $acquire,
                                 "stb %r3, 0(%r5)",
-                                out("r0") _,
                                 inout("r3") dst => _,
                                 inout("r4") val => _, // val ptr -> dst ptr (aligned)
                                 in("r5") out,
@@ -525,7 +516,6 @@ macro_rules! atomic8 {
                                 "cntlzw  %r3, %r3",
                                 "srwi %r3, %r3, 5",
                                 "stb %r5, 0(%r6)",
-                                out("r0") _,
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
                                 inout("r5") new => _,
@@ -572,7 +562,6 @@ macro_rules! atomic8 {
                                 "stb %r5, 0(%r6)",
                                 "cntlzw  %r3, %r3",
                                 "srwi %r3, %r3, 5",
-                                out("r0") _,
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
                                 inout("r5") new => _,
@@ -624,7 +613,6 @@ macro_rules! atomic8 {
                                 "6:",
                                 $acquire,
                                 "stb %r5, 0(%r6)",
-                                out("r0") _,
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
                                 inout("r5") new => _,
@@ -701,7 +689,6 @@ macro_rules! atomic16 {
                                 "clrlwi %r3, %r3, 16",
                                 $acquire,
                                 "sth %r3, 0(%r5)",
-                                out("r0") _,
                                 inout("r3") dst => _,
                                 inout("r4") val => _,
                                 in("r5") out,
@@ -739,7 +726,6 @@ macro_rules! atomic16 {
                                 $acquire,
                                 "clrlwi %r3, %r3, 16",
                                 "sth %r3, 0(%r5)",
-                                out("r0") _,
                                 inout("r3") dst => _,
                                 inout("r4") val => _,
                                 in("r5") out,
@@ -777,7 +763,6 @@ macro_rules! atomic16 {
                                 "clrlwi %r3, %r3, 16",
                                 $acquire,
                                 "sth %r3, 0(%r5)",
-                                out("r0") _,
                                 inout("r3") dst => _,
                                 inout("r4") val => _, // val ptr -> dst ptr (aligned)
                                 in("r5") out,
@@ -852,7 +837,6 @@ macro_rules! atomic16 {
                                 "cntlzw %r3, %r3",
                                 "srwi %r3, %r3, 5",
                                 "sth %r5, 0(%r6)",
-                                out("r0") _,
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
                                 inout("r5") new => _,
@@ -900,7 +884,6 @@ macro_rules! atomic16 {
                                 "sth %r5, 0(%r6)",
                                 "cntlzw %r3, %r3",
                                 "srwi %r3, %r3, 5",
-                                out("r0") _,
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
                                 inout("r5") new => _,
@@ -953,7 +936,6 @@ macro_rules! atomic16 {
                                 "6:",
                                 $acquire,
                                 "sth %r5, 0(%r6)",
-                                out("r0") _,
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
                                 inout("r5") new => _,
@@ -1084,9 +1066,8 @@ macro_rules! atomic128 {
                                 // store r4-r5 pair to out
                                 concat!("std %r4, ", p128h!(), "({out})"),
                                 concat!("std %r5, ", p128l!(), "({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                out("r0") _,
+                                src = in(reg_nonzero) src,
+                                out = inout(reg_nonzero) out => _,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
@@ -1104,9 +1085,8 @@ macro_rules! atomic128 {
                                 // store r4-r5 pair to out
                                 concat!("std %r4, ", p128h!(), "({out})"),
                                 concat!("std %r5, ", p128l!(), "({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
-                                out("r0") _,
+                                src = in(reg_nonzero) src,
+                                out = inout(reg_nonzero) out => _,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
@@ -1142,9 +1122,8 @@ macro_rules! atomic128 {
                                 // (atomic) store r4-r5 pair to dst
                                 $release,
                                 "stq %r4, 0({dst})",
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                out("r0") _,
+                                dst = inout(reg_nonzero) dst => _,
+                                val = in(reg_nonzero) val,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
@@ -1194,10 +1173,9 @@ macro_rules! atomic128 {
                                 // store r6-r7 pair to out
                                 concat!("std %r6, ", p128h!(), "({out})"),
                                 concat!("std %r7, ", p128l!(), "({out})"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                out = inout(reg) out => _,
-                                out("r0") _,
+                                dst = inout(reg_nonzero) dst => _,
+                                val = in(reg_nonzero) val,
+                                out = inout(reg_nonzero) out => _,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _, // val (hi)
@@ -1262,11 +1240,10 @@ macro_rules! atomic128 {
                                 "or. %r11, %r11, %r10",
                                 "cntlzd %r11, %r11",
                                 "rldicl %r11, %r11, 58, 63",
-                                dst = inout(reg) dst => _,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out => _,
-                                out("r0") _,
+                                dst = inout(reg_nonzero) dst => _,
+                                old = in(reg_nonzero) old,
+                                new = in(reg_nonzero) new,
+                                out = inout(reg_nonzero) out => _,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _, // old (hi)
