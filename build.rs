@@ -233,6 +233,12 @@ fn main() {
             // lqarx and stqcx.
             target_feature_if("quadword-atomics", has_pwr8_features, &version, None, false);
         }
+        "s390x" => {
+            // https://github.com/rust-lang/rust/pull/111331 merged in Rust 1.71 (nightly-2023-05-09).
+            if version.probe(71, 2023, 5, 8) {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_s390x_asm_cc_clobbered");
+            }
+        }
         _ => {}
     }
 }

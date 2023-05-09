@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix bug in s390x atomic RMWs on old nightly.
+
 ## [0.2.16] - 2023-04-30
 
 - Support 64-bit atomics on ARMv7-R and ARMv8-R.

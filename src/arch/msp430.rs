@@ -25,7 +25,7 @@ macro_rules! atomic {
                         src = in(reg) src,
                         out = inout(reg) out => _,
                         tmp = lateout(reg) _,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }
@@ -49,7 +49,7 @@ macro_rules! atomic {
                         dst = inout(reg) dst => _,
                         val = in(reg) val,
                         tmp = lateout(reg) _,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }

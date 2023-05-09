@@ -58,6 +58,8 @@ jobs:
           - rust: nightly
           - rust: nightly
             os: macos-latest
+          - rust: '1.59'
+            target: aarch64-unknown-linux-gnu
           - rust: stable
             target: aarch64-unknown-linux-gnu
           - rust: nightly
@@ -92,17 +94,31 @@ jobs:
             target: i686-unknown-linux-gnu
           - rust: nightly
             target: mips-unknown-linux-gnu
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: mips-unknown-linux-gnu
           - rust: nightly
+            target: mipsel-unknown-linux-gnu
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
             target: mipsel-unknown-linux-gnu
           - rust: nightly
             target: mips64-unknown-linux-gnuabi64
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: mips64-unknown-linux-gnuabi64
           - rust: nightly
+            target: mips64el-unknown-linux-gnuabi64
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
             target: mips64el-unknown-linux-gnuabi64
           - rust: nightly
             target: powerpc-unknown-linux-gnu
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: powerpc-unknown-linux-gnu
           - rust: nightly
             target: powerpc64-unknown-linux-gnu
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: powerpc64-unknown-linux-gnu
           - rust: nightly
+            target: powerpc64le-unknown-linux-gnu
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
             target: powerpc64le-unknown-linux-gnu
           - rust: nightly
             target: riscv32gc-unknown-linux-gnu
@@ -112,6 +128,11 @@ jobs:
             target: riscv64gc-unknown-linux-gnu
           - rust: nightly
             target: s390x-unknown-linux-gnu
+          - rust: nightly-2023-05-09 # Rust 1.71, LLVM 16 (oldest version we can implement atomic RMWs on this target)
+            target: s390x-unknown-linux-gnu
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: s390x-unknown-linux-gnu
+            tests: --tests # doctest needs atomic RMWs
           - rust: stable
             target: thumbv7neon-unknown-linux-gnueabihf
           - rust: nightly
@@ -148,16 +169,18 @@ jobs:
       - run: echo "TARGET=--target ${{ matrix.target }}" >>"${GITHUB_ENV}"
         if: matrix.target != ''
 
-      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv ${{ matrix.tests }} $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      # We test doctest only once with the default build conditions because doctest is slow.
+      # src/tests has extended copies of doctest, so this will not reduce test coverage.
       # +cmpxchg16b
       # macOS is skipped because it is +cmpxchg16b by default
-      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
         if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos')
       # -sse2
-      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
@@ -165,13 +188,13 @@ jobs:
       # +lse
       # As of QEMU 8.0, QEMU has not yet implemented FEAT_LSE2: https://linaro.atlassian.net/browse/QEMU-300
       # FEAT_LSE2 is tested on Cirrus CI's aarch64 macOS VM.
-      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
         if: startsWith(matrix.target, 'aarch64')
       # +rcpc
-      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc
@@ -180,14 +203,14 @@ jobs:
         if: startsWith(matrix.target, 'aarch64')
       # pwr7
       # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
-      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
         if: startsWith(matrix.target, 'powerpc64le-')
       # pwr8
       # powerpc64le- (little-endian) is skipped because it is pwr8 by default
-      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8

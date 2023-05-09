@@ -120,7 +120,7 @@ macro_rules! atomic_load_store {
                                 out = inout(reg_nonzero) out => _,
                                 tmp = lateout(reg_nonzero) _,
                                 out("cr7") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -134,7 +134,7 @@ macro_rules! atomic_load_store {
                                 src = in(reg_nonzero) src,
                                 out = inout(reg_nonzero) out => _,
                                 tmp = lateout(reg_nonzero) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         }
                         Ordering::Acquire => atomic_load_acquire!(""),
@@ -157,7 +157,7 @@ macro_rules! atomic_load_store {
                                 src = in(reg_nonzero) src,
                                 out = inout(reg_nonzero) out => _,
                                 tmp = lateout(reg_nonzero) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -193,7 +193,7 @@ macro_rules! atomic_load_store {
                                 dst = inout(reg_nonzero) dst => _,
                                 val = in(reg_nonzero) val,
                                 tmp = lateout(reg_nonzero) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -249,7 +249,7 @@ macro_rules! atomic {
                                 out = inout(reg_nonzero) out => _,
                                 out_tmp = lateout(reg_nonzero) _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -306,7 +306,7 @@ macro_rules! atomic {
                                 out_tmp = lateout(reg_nonzero) _,
                                 r = lateout(reg_nonzero) r,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -379,7 +379,7 @@ macro_rules! atomic8 {
                                 out("r8") _,
                                 out("r9") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -415,7 +415,7 @@ macro_rules! atomic8 {
                                 out("r8") _,
                                 out("r9") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -451,7 +451,7 @@ macro_rules! atomic8 {
                                 out("r8") _,
                                 out("r9") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -526,7 +526,7 @@ macro_rules! atomic8 {
                                 out("r10") _,
                                 out("r11") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -572,7 +572,7 @@ macro_rules! atomic8 {
                                 out("r10") _,
                                 out("r11") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -623,7 +623,7 @@ macro_rules! atomic8 {
                                 out("r10") _,
                                 out("r11") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -697,7 +697,7 @@ macro_rules! atomic16 {
                                 out("r8") _,
                                 out("r9") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -734,7 +734,7 @@ macro_rules! atomic16 {
                                 out("r8") _,
                                 out("r9") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -771,7 +771,7 @@ macro_rules! atomic16 {
                                 out("r8") _,
                                 out("r9") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -847,7 +847,7 @@ macro_rules! atomic16 {
                                 out("r10") _,
                                 out("r11") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -894,7 +894,7 @@ macro_rules! atomic16 {
                                 out("r10") _,
                                 out("r11") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -946,7 +946,7 @@ macro_rules! atomic16 {
                                 out("r10") _,
                                 out("r11") _,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -1073,7 +1073,7 @@ macro_rules! atomic128 {
                                 out("r4") _,
                                 out("r5") _,
                                 out("cr7") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -1091,7 +1091,7 @@ macro_rules! atomic128 {
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 out("r5") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         }
                         Ordering::Acquire => atomic_load_acquire!(""),
@@ -1128,7 +1128,7 @@ macro_rules! atomic128 {
                                 // We cannot use r1 and r2, so starting with r4.
                                 out("r4") _,
                                 lateout("r5") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -1183,7 +1183,7 @@ macro_rules! atomic128 {
                                 out("r6") _, // out (hi)
                                 out("r7") _, // out (lo)
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -1255,7 +1255,7 @@ macro_rules! atomic128 {
                                 lateout("r10") _,
                                 lateout("r11") r,
                                 out("cr0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }

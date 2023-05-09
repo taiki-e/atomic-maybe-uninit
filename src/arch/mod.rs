@@ -4,7 +4,6 @@
 // - feature(asm_experimental_arch): https://doc.rust-lang.org/nightly/unstable-book/language-features/asm-experimental-arch.html
 // - asm module in rustc_target: https://github.com/rust-lang/rust/tree/HEAD/compiler/rustc_target/src/asm
 // - asm module in rustc_codegen_llvm: https://github.com/rust-lang/rust/blob/HEAD/compiler/rustc_codegen_llvm/src/asm.rs
-//   - preserves_flags https://github.com/rust-lang/rust/blob/HEAD/compiler/rustc_codegen_llvm/src/asm.rs#L204-L239
 // - LLVM LangRef: https://llvm.org/docs/LangRef.html#inline-assembler-expressions
 // - inline assembly related issues in rust-lang/rust: https://github.com/rust-lang/rust/labels/A-inline-assembly
 

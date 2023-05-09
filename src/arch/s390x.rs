@@ -13,7 +13,9 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+use crate::raw::{AtomicCompareExchange, AtomicSwap};
+use crate::raw::{AtomicLoad, AtomicStore};
 
 macro_rules! atomic_load_store {
     ($int_type:ident, $asm_suffix:tt, $st_suffix:tt) => {
@@ -38,7 +40,7 @@ macro_rules! atomic_load_store {
                         src = in(reg) src,
                         out = in(reg) out,
                         out("r0") _,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }
@@ -66,7 +68,7 @@ macro_rules! atomic_load_store {
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 out("r0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         Ordering::SeqCst => {
@@ -79,7 +81,7 @@ macro_rules! atomic_load_store {
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 out("r0") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         },
                         _ => unreachable_unchecked!("{:?}", order),
@@ -93,6 +95,7 @@ macro_rules! atomic_load_store {
 macro_rules! atomic {
     ($int_type:ident, $asm_suffix:tt, $st_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix, $st_suffix);
+        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -128,6 +131,7 @@ macro_rules! atomic {
                 }
             }
         }
+        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -179,6 +183,7 @@ macro_rules! atomic {
 macro_rules! atomic8 {
     ($int_type:ident, $asm_suffix:tt, $st_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix, $st_suffix);
+        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -225,6 +230,7 @@ macro_rules! atomic8 {
                 }
             }
         }
+        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -292,6 +298,7 @@ macro_rules! atomic8 {
 macro_rules! atomic16 {
     ($int_type:ident, $asm_suffix:tt, $st_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix, $st_suffix);
+        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -338,6 +345,7 @@ macro_rules! atomic16 {
                 }
             }
         }
+        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -440,7 +448,7 @@ macro_rules! atomic128 {
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") _,
                         out("r1") _,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }
@@ -471,7 +479,7 @@ macro_rules! atomic128 {
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 out("r0") _,
                                 out("r1") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         Ordering::SeqCst => {
@@ -487,7 +495,7 @@ macro_rules! atomic128 {
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 out("r0") _,
                                 out("r1") _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             );
                         }
                         _ => unreachable_unchecked!("{:?}", order),
@@ -495,6 +503,7 @@ macro_rules! atomic128 {
                 }
             }
         }
+        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -535,6 +544,7 @@ macro_rules! atomic128 {
                 }
             }
         }
+        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -594,24 +604,77 @@ atomic128!(u128);
 
 #[cfg(test)]
 mod tests {
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(isize);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(usize);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(i8);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(u8);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(i16);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(u16);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(i32);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(u32);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(i64);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(u64);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(i128);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     test_atomic!(u128);
+
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(isize);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(usize);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(i8);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(u8);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(i16);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(u16);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(i32);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(u32);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(i64);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(u64);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(i128);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    test_atomic_load_store!(u128);
 
     // load/store/swap implementation is not affected by signedness, so it is
     // enough to test only unsigned types.
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     stress_test!(u8);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     stress_test!(u16);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     stress_test!(u32);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     stress_test!(u64);
+    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
     stress_test!(u128);
+
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    stress_test_load_store!(u8);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    stress_test_load_store!(u16);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    stress_test_load_store!(u32);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    stress_test_load_store!(u64);
+    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    stress_test_load_store!(u128);
 }
