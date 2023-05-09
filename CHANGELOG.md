@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Fix bug in s390x atomic RMWs on old nightly.
 
+- Optimize inline assemblies on RISC-V, PowerPC, s390x, and MSP430.
+
 ## [0.2.16] - 2023-04-30
 
 - Support 64-bit atomics on ARMv7-R and ARMv8-R.
