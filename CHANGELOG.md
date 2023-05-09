@@ -18,6 +18,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.16] - 2023-04-30
 
+**Note:** This release has been yanked due to a bug fixed in 0.2.17.
+
 - Support 64-bit atomics on ARMv7-R and ARMv8-R.
 
 - Fix bug in AArch64 16-bit compare_exchange_weak.
