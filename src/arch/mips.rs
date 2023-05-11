@@ -48,7 +48,7 @@ macro_rules! atomic_rmw {
             Ordering::Release => $op!("", "sync"),
             // AcqRel and SeqCst RMWs are equivalent.
             Ordering::AcqRel | Ordering::SeqCst => $op!("sync", "sync"),
-            _ => unreachable_unchecked!("{:?}", $order),
+            _ => unreachable!("{:?}", $order),
         }
     };
 }
@@ -89,7 +89,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("sync"),
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
             }

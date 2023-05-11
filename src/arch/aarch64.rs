@@ -54,7 +54,7 @@ macro_rules! atomic_rmw {
             // https://reviews.llvm.org/D141748
             #[cfg(target_env = "msvc")]
             Ordering::SeqCst => $op!("a", "l", "dmb ish"),
-            _ => unreachable_unchecked!("{:?}", $order),
+            _ => unreachable!("{:?}", $order),
         }
     };
 }
@@ -106,7 +106,7 @@ macro_rules! atomic {
                         #[cfg(not(any(target_feature = "rcpc", atomic_maybe_uninit_target_feature = "rcpc")))]
                         Ordering::Acquire => atomic_load!("a"),
                         Ordering::SeqCst => atomic_load!("a"),
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
             }
@@ -148,7 +148,7 @@ macro_rules! atomic {
                         // https://reviews.llvm.org/D141748
                         #[cfg(target_env = "msvc")]
                         Ordering::SeqCst => atomic_store!("l", "dmb ish"),
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
             }
@@ -471,7 +471,7 @@ macro_rules! atomic128 {
                                 options(nostack, preserves_flags),
                             );
                         },
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
@@ -524,7 +524,7 @@ macro_rules! atomic128 {
                         Ordering::Relaxed => atomic_load!("", ""),
                         Ordering::Acquire => atomic_load!("a", ""),
                         Ordering::SeqCst => atomic_load!("a", "l"),
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
             }
@@ -565,7 +565,7 @@ macro_rules! atomic128 {
                         Ordering::Relaxed => atomic_store!("", ""),
                         Ordering::Release => atomic_store!("", "dmb ish"),
                         Ordering::SeqCst => atomic_store!("dmb ish", "dmb ish"),
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]

@@ -84,7 +84,7 @@ macro_rules! atomic_load_store {
                                 options(nostack, preserves_flags),
                             );
                         },
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
             }
@@ -498,7 +498,7 @@ macro_rules! atomic128 {
                                 options(nostack, preserves_flags),
                             );
                         }
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
             }

@@ -120,7 +120,7 @@ macro_rules! atomic {
                                 options(nostack, preserves_flags),
                             );
                         }
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
             }
@@ -377,7 +377,7 @@ macro_rules! atomic64 {
                                 options(nostack),
                             );
                         }
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
                 #[cfg(not(target_feature = "sse"))]

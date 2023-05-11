@@ -10,33 +10,6 @@ macro_rules! static_assert {
     };
 }
 
-/// Informs the compiler that this point in the code is not reachable, enabling
-/// further optimizations.
-///
-/// In release mode, this macro calls `core::hint::unreachable_unchecked`.
-/// In debug mode, this macro calls `unreachable!` just in case.
-///
-/// Note: When using `unreachable!`, the compiler cannot eliminate the
-/// unreachable branch in some compiler versions, even if the only pattern not
-/// covered is `#[non_exhaustive]`: <https://godbolt.org/z/68MnGa4o5>
-///
-/// # Safety
-///
-/// Reaching this function is completely undefined behavior.
-#[allow(unused_macros)]
-macro_rules! unreachable_unchecked {
-    ($($tt:tt)*) => {
-        if cfg!(debug_assertions) {
-            unreachable!($($tt)*);
-        } else {
-            // SAFETY: the caller must uphold the safety contract.
-            // (To force the caller to use unsafe block for this macro, do not use
-            // unsafe block here.)
-            core::hint::unreachable_unchecked()
-        }
-    };
-}
-
 /// Make the given function const if the given condition is true.
 macro_rules! const_fn {
     (
@@ -73,21 +46,6 @@ pub(crate) fn assert_store_ordering(order: Ordering) {
         Ordering::Release | Ordering::Relaxed | Ordering::SeqCst => {}
         Ordering::Acquire => panic!("there is no such thing as an acquire store"),
         Ordering::AcqRel => panic!("there is no such thing as an acquire-release store"),
-        _ => unreachable!("{:?}", order),
-    }
-}
-
-// We use unreachable_unchecked! macro to remove the panic path (see also macro docs).
-// Since Ordering is non_exhaustive, the caller of such a function must use this
-// assertion to prevent UB due to the addition of new orderings.
-#[inline]
-pub(crate) fn assert_swap_ordering(order: Ordering) {
-    match order {
-        Ordering::AcqRel
-        | Ordering::Acquire
-        | Ordering::Relaxed
-        | Ordering::Release
-        | Ordering::SeqCst => {}
         _ => unreachable!("{:?}", order),
     }
 }

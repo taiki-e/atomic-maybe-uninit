@@ -89,7 +89,7 @@ macro_rules! atomic_rmw_amo {
             Ordering::Release => $op!(".rl"),
             // AcqRel and SeqCst RMWs are equivalent.
             Ordering::AcqRel | Ordering::SeqCst => $op!(".aqrl"),
-            _ => unreachable_unchecked!("{:?}", $order),
+            _ => unreachable!("{:?}", $order),
         }
     };
 }
@@ -102,7 +102,7 @@ macro_rules! atomic_rmw_lr_sc {
             Ordering::Release => $op!("", ".rl"),
             Ordering::AcqRel => $op!(".aq", ".rl"),
             Ordering::SeqCst => $op!(".aqrl", ".rl"),
-            _ => unreachable_unchecked!("{:?}", $order),
+            _ => unreachable!("{:?}", $order),
         }
     };
 }
@@ -142,7 +142,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_load!("", ""),
                         Ordering::Acquire => atomic_load!("fence r, rw", ""),
                         Ordering::SeqCst => atomic_load!("fence r, rw", "fence rw, rw"),
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
             }
@@ -178,7 +178,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_store!(""),
                         // Release and SeqCst stores are equivalent.
                         Ordering::Release | Ordering::SeqCst => atomic_store!("fence rw, w"),
-                        _ => unreachable_unchecked!("{:?}", order),
+                        _ => unreachable!("{:?}", order),
                     }
                 }
             }

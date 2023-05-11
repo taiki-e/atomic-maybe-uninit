@@ -325,7 +325,6 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     where
         T: AtomicSwap,
     {
-        utils::assert_swap_ordering(order);
         let mut out = MaybeUninit::<T>::uninit();
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
