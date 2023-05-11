@@ -13,6 +13,7 @@ casp
 cbnz
 cdsg
 cfgs
+mfcr
 cinc
 cirruslabs
 clrex
@@ -20,9 +21,6 @@ clrlwi
 cmpd
 cmpw
 cmpxchg
-cntlz
-cntlzd
-cntlzw
 cset
 daddiu
 DWCAS
@@ -62,7 +60,6 @@ quadword
 qword
 rcpc
 risbg
-rldicl
 rldicr
 rlwinm
 sched
@@ -76,7 +73,6 @@ sllw
 sltiu
 srlv
 srlw
-srwi
 stlxp
 stpq
 stqcx

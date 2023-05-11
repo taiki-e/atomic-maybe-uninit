@@ -7,11 +7,11 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/1ha4GGj6n
-// - powerpc64 https://godbolt.org/z/G4Y4x9Exs
-// - powerpc64 (pwr8) https://godbolt.org/z/fvq3q56d8
-// - powerpc64le https://godbolt.org/z/1re3YWxTd
-// - powerpc64le (pwr7) https://godbolt.org/z/sc6hbGqMM
+// - powerpc https://godbolt.org/z/rcesG8Tds
+// - powerpc64 https://godbolt.org/z/b9h54fr7r
+// - powerpc64 (pwr8) https://godbolt.org/z/95qGn9xv4
+// - powerpc64le https://godbolt.org/z/GEoqbdK49
+// - powerpc64le (pwr7) https://godbolt.org/z/9r9eGbs9T
 
 use core::{
     arch::asm,
@@ -21,14 +21,6 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
-macro_rules! if_d {
-    ("d", $then:expr, $else:expr) => {
-        $then
-    };
-    ($asm_suffix:tt, $then:expr, $else:expr) => {
-        $else
-    };
-}
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
@@ -85,6 +77,11 @@ macro_rules! atomic_rmw {
             _ => unreachable!("{:?}", $order),
         }
     };
+}
+
+#[inline]
+fn extract_cr0(r: usize) -> bool {
+    r & 0x20000000 != 0
 }
 
 macro_rules! atomic_load_store {
@@ -291,12 +288,10 @@ macro_rules! atomic {
                                     concat!("st", $asm_suffix, "cx. {new_tmp}, 0, {dst}"),
                                     "bne %cr0, 2b", // continue loop if store failed
                                 "3:",
-                                "xor {r}, {out_tmp}, {old_tmp}",
+                                "mfcr {r}",
                                 $acquire,
                                 // store out_tmp pair to out
                                 concat!("st", $asm_suffix, " {out_tmp}, 0({out})"),
-                                concat!("cntlz", $cmp_suffix, " {r}, {r}"),
-                                if_d!($asm_suffix, "rldicl {r}, {r}, 58, 63", "srwi {r}, {r}, 5"),
                                 dst = inout(reg_nonzero) dst => _,
                                 old = in(reg_nonzero) old,
                                 old_tmp = out(reg_nonzero) _,
@@ -311,8 +306,7 @@ macro_rules! atomic {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    extract_cr0(r)
                 }
             }
         }
@@ -511,10 +505,8 @@ macro_rules! atomic8 {
                                     "bne %cr0, 2b",
                                 "3:",
                                 "srw %r5, %r5, %r7",
+                                "mfcr %r3",
                                 $acquire,
-                                "xor %r3, %r5, %r4",
-                                "cntlzw  %r3, %r3",
-                                "srwi %r3, %r3, 5",
                                 "stb %r5, 0(%r6)",
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
@@ -557,11 +549,9 @@ macro_rules! atomic8 {
                                     "bne %cr0, 2b",
                                 "3:",
                                 "srw %r5, %r9, %r5",
+                                "mfcr %r3",
                                 $acquire,
-                                "xor %r3, %r5, %r4",
                                 "stb %r5, 0(%r6)",
-                                "cntlzw  %r3, %r3",
-                                "srwi %r3, %r3, 5",
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
                                 inout("r5") new => _,
@@ -602,15 +592,8 @@ macro_rules! atomic8 {
                                     "stwcx. %r11, 0, %r5",
                                     "bne %cr0, 2b",
                                 "3:",
-                                    "srw %r5, %r9, %r3",
-                                    "li %r3, 0",
-                                    "cmpw 5, 4",
-                                    "li %r4, 1",
-                                    "bc 12, 2, 5f",
-                                    "b 6f",
-                                "5:",
-                                    "addi %r3, %r4, 0",
-                                "6:",
+                                "srw %r5, %r9, %r3",
+                                "mfcr %r3",
                                 $acquire,
                                 "stb %r5, 0(%r6)",
                                 inout("r3") dst => r,
@@ -628,8 +611,7 @@ macro_rules! atomic8 {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    extract_cr0(r)
                 }
             }
         }
@@ -832,10 +814,8 @@ macro_rules! atomic16 {
                                     "bne %cr0, 2b",
                                 "3:",
                                 "srw %r5, %r3, %r7",
+                                "mfcr %r3",
                                 $acquire,
-                                "xor %r3, %r5, %r4",
-                                "cntlzw %r3, %r3",
-                                "srwi %r3, %r3, 5",
                                 "sth %r5, 0(%r6)",
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
@@ -879,11 +859,9 @@ macro_rules! atomic16 {
                                     "bne %cr0, 2b",
                                 "3:",
                                 "srw %r5, %r9, %r5",
+                                "mfcr %r3",
                                 $acquire,
-                                "xor %r3, %r5, %r4",
                                 "sth %r5, 0(%r6)",
-                                "cntlzw %r3, %r3",
-                                "srwi %r3, %r3, 5",
                                 inout("r3") dst => r,
                                 inout("r4") old => _,
                                 inout("r5") new => _,
@@ -925,15 +903,8 @@ macro_rules! atomic16 {
                                     "stwcx. %r11, 0, %r3",
                                     "bne %cr0, 2b",
                                 "3:",
-                                    "srw %r5, %r9, %r5",
-                                    "li %r3, 0",
-                                    "cmpw %r5, %r4",
-                                    "li %r4, 1",
-                                    "bc 12, 2, 5f",
-                                    "b 6f",
-                                "5:",
-                                    "addi %r3, %r4, 0",
-                                "6:",
+                                "srw %r5, %r9, %r5",
+                                "mfcr %r3",
                                 $acquire,
                                 "sth %r5, 0(%r6)",
                                 inout("r3") dst => r,
@@ -951,8 +922,7 @@ macro_rules! atomic16 {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    extract_cr0(r)
                 }
             }
         }
@@ -1226,20 +1196,14 @@ macro_rules! atomic128 {
                                     "xor %r10, %r8, %r4",
                                     "or. %r11, %r11, %r10",
                                     "bne %cr0, 3f", // jump if compare failed
-                                    "mr %r11, %r7",
-                                    "mr %r10, %r6",
-                                    "stqcx. %r10, 0, {dst}",
+                                    "stqcx. %r6, 0, {dst}",
                                     "bne %cr0, 2b", // continue loop if store failed
                                 "3:",
+                                "mfcr %r11",
                                 $acquire,
                                 // store r8-r9 pair to out
                                 concat!("std %r8, ", p128h!(), "({out})"),
                                 concat!("std %r9, ", p128l!(), "({out})"),
-                                "xor %r11, %r9, %r5",
-                                "xor %r10, %r8, %r4",
-                                "or. %r11, %r11, %r10",
-                                "cntlzd %r11, %r11",
-                                "rldicl %r11, %r11, 58, 63",
                                 dst = inout(reg_nonzero) dst => _,
                                 old = in(reg_nonzero) old,
                                 new = in(reg_nonzero) new,
@@ -1260,8 +1224,7 @@ macro_rules! atomic128 {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    extract_cr0(r)
                 }
             }
         }

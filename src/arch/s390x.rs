@@ -1,11 +1,12 @@
 // s390x
 //
 // Refs:
+// - z/Architecture Principles of Operation https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf
 // - z/Architecture Reference Summary https://www.ibm.com/support/pages/zarchitecture-reference-summary
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/8eEYWr6f8
+// - s390x https://godbolt.org/z/7KzrMqW9e
 
 use core::{
     arch::asm,
@@ -16,6 +17,14 @@ use core::{
 #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
+
+#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+#[inline]
+fn extract_cc(r: i64) -> bool {
+    let r = r.wrapping_add(-268435456) & (1 << 31);
+    debug_assert!(r == 0 || r == 2147483648, "r={r}");
+    r != 0
+}
 
 macro_rules! atomic_load_store {
     ($int_type:ident, $asm_suffix:tt, $st_suffix:tt) => {
@@ -149,7 +158,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: i64;
                     // compare_exchange is always SeqCst.
                     asm!(
                         // load from old/new to r0/tmp
@@ -157,10 +166,8 @@ macro_rules! atomic {
                         concat!("l", $asm_suffix, " {tmp}, 0({new})"),
                         // (atomic) compare and exchange
                         concat!("cs", $asm_suffix, " %r0, {tmp}, 0({dst})"),
-                        // store result to r as true(1) or false(0)
-                        "ipm {tmp}",
-                        "afi {tmp}, -268435456",
-                        "risbg {r}, {tmp}, 63, 191, 33",
+                        // store condition code to r
+                        "ipm {r}",
                         // store r0 to out
                         concat!("st", $st_suffix, " %r0, 0({out})"),
                         dst = in(reg) dst,
@@ -172,8 +179,7 @@ macro_rules! atomic {
                         out("r0") _,
                         options(nostack),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    extract_cc(r)
                 }
             }
         }
@@ -248,7 +254,7 @@ macro_rules! atomic8 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: i64;
                     // compare_exchange is always SeqCst.
                     asm!(
                         // Implement sub-word atomic operations using word-sized CAS loop.
@@ -271,10 +277,8 @@ macro_rules! atomic8 {
                             "cs %r4, %r12, 0(%r3)",
                             "jl 2b",
                         "3:",
-                        // store result to r2 as true(1) or false(0)
-                        "ipm %r0",
-                        "afi %r0, -268435456",
-                        "risbg %r2, %r0, 63, 191, 33",
+                        // store condition code to r2
+                        "ipm %r2",
                         "stc %r13, 0(%r5)",
                         out("r0") _,
                         out("r1") _,
@@ -287,8 +291,7 @@ macro_rules! atomic8 {
                         out("r14") _,
                         options(nostack),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    extract_cc(r)
                 }
             }
         }
@@ -363,7 +366,7 @@ macro_rules! atomic16 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: i64;
                     // compare_exchange is always SeqCst.
                     asm!(
                         // Implement sub-word atomic operations using word-sized CAS loop.
@@ -386,10 +389,8 @@ macro_rules! atomic16 {
                             "cs %r4, %r12, 0(%r3)",
                             "jl 2b",
                         "3:",
-                        // store result to r2 as true(1) or false(0)
-                        "ipm %r0",
-                        "afi %r0, -268435456",
-                        "risbg %r2, %r0, 63, 191, 33",
+                        // store condition code to r2
+                        "ipm %r2",
                         "sth %r13, 0(%r5)",
                         out("r0") _,
                         out("r1") _,
@@ -402,8 +403,7 @@ macro_rules! atomic16 {
                         out("r14") _,
                         options(nostack),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    extract_cc(r)
                 }
             }
         }
@@ -562,7 +562,7 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: i64;
                     // compare_exchange is always SeqCst.
                     asm!(
                         // load from old/new to r0-r1/r12-r13 pairs
@@ -572,10 +572,8 @@ macro_rules! atomic128 {
                         "lg %r12, 0({new})",
                         // (atomic) compare and exchange
                         "cdsg %r0, %r12, 0({dst})",
-                        // store result to r as true(1) or false(0)
+                        // store condition code to r
                         "ipm {r}",
-                        "afi {r}, -268435456",
-                        "risbg {r}, {r}, 63, 191, 33",
                         // store r0-r1 pair to out
                         "stg %r1, 8({out})",
                         "stg %r0, 0({out})",
@@ -591,8 +589,7 @@ macro_rules! atomic128 {
                         out("r13") _, // new (hi)
                         options(nostack),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    extract_cc(r)
                 }
             }
         }

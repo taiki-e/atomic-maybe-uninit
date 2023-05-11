@@ -88,7 +88,8 @@ Feel free to submit an issue if your target is not supported yet.
     clippy::missing_errors_doc,
     clippy::module_inception,
     clippy::too_many_lines,
-    clippy::type_complexity
+    clippy::type_complexity,
+    clippy::unreadable_literal
 )]
 #![cfg_attr(
     not(any(
