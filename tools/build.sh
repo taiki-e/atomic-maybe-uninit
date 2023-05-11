@@ -234,6 +234,10 @@ build() {
             RUSTFLAGS="${target_rustflags} -C target-cpu=pwr7" \
                 x_cargo "${args[@]}" --target-dir target/pwr7 "$@"
             ;;
+        s390x*)
+            RUSTFLAGS="${target_rustflags} -C target-cpu=z196" \
+                x_cargo "${args[@]}" --target-dir target/z196 "$@"
+            ;;
     esac
 }
 

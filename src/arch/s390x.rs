@@ -6,7 +6,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/7KzrMqW9e
+// - s390x https://godbolt.org/z/vh6x8rTjb
+// - s390x (z196) https://godbolt.org/z/fve3761z3
 
 use core::{
     arch::asm,
@@ -66,33 +67,35 @@ macro_rules! atomic_load_store {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    macro_rules! atomic_store {
+                        ($fence:tt) => {
+                            asm!(
+                                // load from val to r0
+                                concat!("l", $asm_suffix, " %r0, 0({val})"),
+                                // (atomic) store r0 to dst
+                                concat!("st", $st_suffix, " %r0, 0({dst})"),
+                                $fence,
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                out("r0") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
                     match order {
                         // Relaxed and Release stores are equivalent.
-                        Ordering::Relaxed | Ordering::Release => {
-                            asm!(
-                                // load from val to r0
-                                concat!("l", $asm_suffix, " %r0, 0({val})"),
-                                // (atomic) store r0 to dst
-                                concat!("st", $st_suffix, " %r0, 0({dst})"),
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                out("r0") _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        Ordering::SeqCst => {
-                            asm!(
-                                // load from val to r0
-                                concat!("l", $asm_suffix, " %r0, 0({val})"),
-                                // (atomic) store r0 to dst
-                                concat!("st", $st_suffix, " %r0, 0({dst})"),
-                                "bcr 15, %r0",
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                out("r0") _,
-                                options(nostack, preserves_flags),
-                            );
-                        },
+                        Ordering::Relaxed | Ordering::Release => atomic_store!(""),
+                        // bcr 14,0 (fast-BCR-serialization) requires z196 or later.
+                        #[cfg(any(
+                            target_feature = "fast-serialization",
+                            atomic_maybe_uninit_target_feature = "fast-serialization",
+                        ))]
+                        Ordering::SeqCst => atomic_store!("bcr 14, 0"),
+                        #[cfg(not(any(
+                            target_feature = "fast-serialization",
+                            atomic_maybe_uninit_target_feature = "fast-serialization",
+                        )))]
+                        Ordering::SeqCst => atomic_store!("bcr 15, 0"),
                         _ => unreachable!("{:?}", order),
                     }
                 }
@@ -465,39 +468,38 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    macro_rules! atomic_store {
+                        ($fence:tt) => {
+                            asm!(
+                                // load from val to r0-r1 pair
+                                "lg %r1, 8({val})",
+                                "lg %r0, 0({val})",
+                                // (atomic) store r0-r1 pair to dst
+                                "stpq %r0, 0({dst})",
+                                $fence,
+                                dst = in(reg) dst,
+                                val = in(reg) val,
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                                out("r0") _,
+                                out("r1") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
                     match order {
                         // Relaxed and Release stores are equivalent.
-                        Ordering::Relaxed | Ordering::Release => {
-                            asm!(
-                                // load from val to r0-r1 pair
-                                "lg %r1, 8({val})",
-                                "lg %r0, 0({val})",
-                                // (atomic) store r0-r1 pair to dst
-                                "stpq %r0, 0({dst})",
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                out("r0") _,
-                                out("r1") _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        Ordering::SeqCst => {
-                            asm!(
-                                // load from val to r0-r1 pair
-                                "lg %r1, 8({val})",
-                                "lg %r0, 0({val})",
-                                // (atomic) store r0-r1 pair to dst
-                                "stpq %r0, 0({dst})",
-                                "bcr 15, %r0",
-                                dst = in(reg) dst,
-                                val = in(reg) val,
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                out("r0") _,
-                                out("r1") _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
+                        Ordering::Relaxed | Ordering::Release => atomic_store!(""),
+                        // bcr 14,0 (fast-BCR-serialization) requires z196 or later.
+                        #[cfg(any(
+                            target_feature = "fast-serialization",
+                            atomic_maybe_uninit_target_feature = "fast-serialization",
+                        ))]
+                        Ordering::SeqCst => atomic_store!("bcr 14, 0"),
+                        #[cfg(not(any(
+                            target_feature = "fast-serialization",
+                            atomic_maybe_uninit_target_feature = "fast-serialization",
+                        )))]
+                        Ordering::SeqCst => atomic_store!("bcr 15, 0"),
                         _ => unreachable!("{:?}", order),
                     }
                 }

@@ -215,6 +215,13 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8
         if: startsWith(matrix.target, 'powerpc64-')
+      # z196 (arch9)
+      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+        env:
+          # TODO: disable high-word LLVM target-feature to avoid LLVM codegen bug.
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=z196 -C target-feature=-high-word
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196 -C target-feature=-high-word
+        if: startsWith(matrix.target, 's390x')
 
       - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private $TARGET $BUILD_STD
 

@@ -238,6 +238,21 @@ fn main() {
             if version.probe(71, 2023, 5, 8) {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_s390x_asm_cc_clobbered");
             }
+
+            // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/SystemZ/SystemZFeatures.td#L37
+            let mut has_arch9_features = false;
+            if let Some(cpu) = target_cpu() {
+                // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/SystemZ/SystemZProcessors.td
+                match &*cpu {
+                    "arch9" | "z196" | "arch10" | "zEC12" | "arch11" | "z13" | "arch12" | "z14"
+                    | "arch13" | "z15" | "arch14" | "z16" => has_arch9_features = true,
+                    _ => {}
+                }
+            }
+            // Note: As of rustc 1.69, target_feature "fast-serialization" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_codegen_ssa/src/target_features.rs
+            // bcr 14,0
+            target_feature_if("fast-serialization", has_arch9_features, &version, None, false);
         }
         _ => {}
     }
