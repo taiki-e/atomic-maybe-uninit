@@ -52,7 +52,8 @@ default_targets=(
     # armv8-a
     armv8a-none-eabi # custom target
     # armv8-a big endian
-    armeb-unknown-linux-gnueabi
+    # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/348
+    # armeb-unknown-linux-gnueabi
     # armv7-r
     armv7r-none-eabi
     # armv7-r big endian
@@ -60,7 +61,8 @@ default_targets=(
     # armv8-r
     armv8r-none-eabi # custom target
     # armv8-r big endian
-    armebv8r-none-eabi # custom target
+    # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/348
+    # armebv8r-none-eabi # custom target
     # armv6-m
     thumbv6m-none-eabi
     # armv7-m
