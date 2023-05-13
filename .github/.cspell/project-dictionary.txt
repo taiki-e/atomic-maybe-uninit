@@ -12,7 +12,6 @@ bswap
 casp
 cbnz
 cdsg
-cfgs
 mfcr
 cinc
 cirruslabs
