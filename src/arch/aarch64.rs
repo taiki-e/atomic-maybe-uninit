@@ -12,12 +12,12 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/n93zqGMrM
-// - aarch64 msvc https://godbolt.org/z/76Ph17q4a
-// - aarch64 (+lse) https://godbolt.org/z/Gssoa4a4P
-// - aarch64 msvc (+lse) https://godbolt.org/z/1Kbrcx6b4
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/bjMcKb6xf
-// - aarch64 (+rcpc) https://godbolt.org/z/G6qeno9nv
+// - aarch64 https://godbolt.org/z/5PaYcznf6
+// - aarch64 msvc https://godbolt.org/z/oTYTnvbdE
+// - aarch64 (+lse) https://godbolt.org/z/Ejc5h7zP8
+// - aarch64 msvc (+lse) https://godbolt.org/z/39vEG1WEW
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/bosG5v7s5
+// - aarch64 (+rcpc) https://godbolt.org/z/Eznvc3s14
 
 use core::{
     arch::asm,
@@ -26,19 +26,6 @@ use core::{
 };
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
-
-#[cfg(target_pointer_width = "32")]
-macro_rules! ptr_modifier {
-    () => {
-        ":w"
-    };
-}
-#[cfg(target_pointer_width = "64")]
-macro_rules! ptr_modifier {
-    () => {
-        ""
-    };
-}
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -77,11 +64,11 @@ macro_rules! atomic {
                         ($acquire:tt) => {
                             asm!(
                                 // (atomic) load from src to tmp
-                                concat!("ld", $acquire, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{src", ptr_modifier!(), "}]"),
+                                concat!("ld", $acquire, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{src}]"),
                                 // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out}]"),
+                                src = in(reg) src as u64,
+                                out = inout(reg) out as u64 => _,
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -94,11 +81,11 @@ macro_rules! atomic {
                             // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC.
                             asm!(
                                 // (atomic) load from src to tmp
-                                concat!("ldapr", $asm_suffix, " {tmp", $val_modifier, "}, [{src", ptr_modifier!(), "}]"),
+                                concat!("ldapr", $asm_suffix, " {tmp", $val_modifier, "}, [{src}]"),
                                 // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out}]"),
+                                src = in(reg) src as u64,
+                                out = inout(reg) out as u64 => _,
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             );
@@ -127,12 +114,12 @@ macro_rules! atomic {
                         ($release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to tmp
-                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", ptr_modifier!(), "}]"),
+                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val}]"),
                                 // (atomic) store tmp to dst
-                                concat!("st", $release, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                concat!("st", $release, "r", $asm_suffix, " {tmp", $val_modifier, "}, [{dst}]"),
                                 $fence,
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
+                                dst = inout(reg) dst as u64 => _,
+                                val = in(reg) val as u64,
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -172,16 +159,16 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to tmp
-                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val", ptr_modifier!(), "}]"),
+                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val}]"),
                                 // (atomic) swap
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
-                                concat!("swp", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                concat!("swp", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst}]"),
                                 $fence,
                                 // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                out = inout(reg) out => _,
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) dst as u64 => _,
+                                val = in(reg) val as u64,
+                                out = inout(reg) out as u64 => _,
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -192,22 +179,22 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to val_tmp
-                                concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val", ptr_modifier!(), "}]"),
+                                concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val}]"),
                                 // (atomic) swap
                                 "2:",
                                     // load from dst to out_tmp
-                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
                                     // store val to dst
-                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {val_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {val_tmp", $val_modifier, "}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 $fence,
                                 // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) dst as u64 => _,
+                                val = in(reg) val as u64,
                                 val_tmp = out(reg) _,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out as u64 => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) _,
                                 options(nostack, preserves_flags),
@@ -242,25 +229,25 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
                                 // load from old/new to old_tmp/new_tmp
-                                concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old", ptr_modifier!(), "}]"),
-                                concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new", ptr_modifier!(), "}]"),
+                                concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old}]"),
+                                concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new}]"),
                                 // cas writes the current value to the first register,
                                 // so copy the `old`'s value for later comparison.
                                 concat!("mov {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
                                 // (atomic) compare and exchange
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASA--CASAL--CAS--CASL--CASAL--CAS--CASL
-                                concat!("cas", $acquire, $release, $asm_suffix, " {out_tmp", $val_modifier, "}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                concat!("cas", $acquire, $release, $asm_suffix, " {out_tmp", $val_modifier, "}, {new_tmp", $val_modifier, "}, [{dst}]"),
                                 $fence,
                                 concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
                                 // store tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out}]"),
                                 "cset {r:w}, eq",
-                                dst = inout(reg) dst => _,
-                                old = in(reg) old,
+                                dst = inout(reg) dst as u64 => _,
+                                old = in(reg) old as u64,
                                 old_tmp = out(reg) _,
-                                new = in(reg) new,
+                                new = in(reg) new as u64,
                                 new_tmp = out(reg) _,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out as u64 => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -275,14 +262,14 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
                                 // load from old/new to old_tmp/new_tmp
-                                concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new", ptr_modifier!(), "}]"),
-                                concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old", ptr_modifier!(), "}]"),
+                                concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new}]"),
+                                concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old}]"),
                                 // (atomic) compare and exchange
                                 "2:",
-                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
                                     concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
                                     "b.ne 3f", // jump if compare failed
-                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b", // continue loop if store failed
                                     $fence,
@@ -292,13 +279,13 @@ macro_rules! atomic {
                                     "clrex",
                                 "4:",
                                 // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
-                                dst = inout(reg) dst => _,
-                                old = in(reg) old,
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) dst as u64 => _,
+                                old = in(reg) old as u64,
                                 old_tmp = out(reg) _,
-                                new = in(reg) new,
+                                new = in(reg) new as u64,
                                 new_tmp = out(reg) _,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out as u64 => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -335,13 +322,13 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from old/new to old_tmp/new_tmp
-                                concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new", ptr_modifier!(), "}]"),
-                                concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old", ptr_modifier!(), "}]"),
+                                concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new}]"),
+                                concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old}]"),
                                 // (atomic) compare and exchange
-                                concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
                                 concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
                                 "b.ne 3f",
-                                concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst", ptr_modifier!(), "}]"),
+                                concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst}]"),
                                 // TODO: only emit when the above sc succeed
                                 // // 0 if the store was successful, 1 if no store was performed
                                 // "cbnz {r:w}, 4f",
@@ -352,13 +339,13 @@ macro_rules! atomic {
                                     "clrex",
                                 "4:",
                                 // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out", ptr_modifier!(), "}]"),
-                                dst = inout(reg) dst => _,
-                                old = in(reg) old,
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) dst as u64 => _,
+                                old = in(reg) old as u64,
                                 old_tmp = out(reg) _,
-                                new = in(reg) new,
+                                new = in(reg) new as u64,
                                 new_tmp = out(reg) _,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out as u64 => _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -438,12 +425,12 @@ macro_rules! atomic128 {
                         ($acquire:tt) => {
                             asm!(
                                 // (atomic) load from src to tmp pair
-                                concat!("ldp {tmp_lo}, {tmp_hi}, [{src", ptr_modifier!(), "}]"),
+                                "ldp {tmp_lo}, {tmp_hi}, [{src}]",
                                 $acquire,
                                 // store tmp pair to out
-                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", ptr_modifier!(), "}]"),
-                                src = in(reg) src,
-                                out = in(reg) out,
+                                "stp {tmp_lo}, {tmp_hi}, [{out}]",
+                                src = in(reg) src as u64,
+                                out = in(reg) out as u64,
                                 tmp_hi = out(reg) _,
                                 tmp_lo = out(reg) _,
                                 options(nostack, preserves_flags),
@@ -457,14 +444,14 @@ macro_rules! atomic128 {
                             asm!(
                                 // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
                                 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
-                                concat!("ldar {tmp}, [{src", ptr_modifier!(), "}]"),
+                                "ldar {tmp}, [{src}]",
                                 // (atomic) load from src to tmp pair
-                                concat!("ldp {tmp_lo}, {tmp_hi}, [{src", ptr_modifier!(), "}]"),
+                                "ldp {tmp_lo}, {tmp_hi}, [{src}]",
                                 "dmb ishld",
                                 // store tmp pair to out
-                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", ptr_modifier!(), "}]"),
-                                src = in(reg) src,
-                                out = in(reg) out,
+                                "stp {tmp_lo}, {tmp_hi}, [{out}]",
+                                src = in(reg) src as u64,
+                                out = in(reg) out as u64,
                                 tmp_hi = out(reg) _,
                                 tmp_lo = out(reg) _,
                                 tmp = out(reg) _,
@@ -485,11 +472,11 @@ macro_rules! atomic128 {
                                 // Refs:
                                 // - https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
                                 // - https://github.com/taiki-e/portable-atomic/pull/20
-                                concat!("casp", $acquire, $release, " x4, x5, x4, x5, [{src", ptr_modifier!(), "}]"),
+                                concat!("casp", $acquire, $release, " x4, x5, x4, x5, [{src}]"),
                                 // store out pair to out
-                                concat!("stp x4, x5, [{out", ptr_modifier!(), "}]"),
-                                src = in(reg) src,
-                                out = in(reg) out,
+                                "stp x4, x5, [{out}]",
+                                src = in(reg) src as u64,
+                                out = in(reg) out as u64,
                                 // must be allocated to even/odd register pair
                                 inout("x4") 0_u64 => _, // out_lo
                                 inout("x5") 0_u64 => _, // out_lo
@@ -504,15 +491,15 @@ macro_rules! atomic128 {
                                 // (atomic) load from src to tmp pair
                                 "2:",
                                     // load from src to tmp pair
-                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{src", ptr_modifier!(), "}]"),
+                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{src}]"),
                                     // store tmp pair to src
-                                    concat!("st", $release, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{src", ptr_modifier!(), "}]"),
+                                    concat!("st", $release, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{src}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 // store tmp pair to out
-                                concat!("stp {tmp_lo}, {tmp_hi}, [{out", ptr_modifier!(), "}]"),
-                                src = in(reg) src,
-                                out = in(reg) out,
+                                "stp {tmp_lo}, {tmp_hi}, [{out}]",
+                                src = in(reg) src as u64,
+                                out = in(reg) out as u64,
                                 tmp_hi = out(reg) _,
                                 tmp_lo = out(reg) _,
                                 r = out(reg) _,
@@ -548,13 +535,13 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 // load from val to val pair
-                                concat!("ldp {val_lo}, {val_hi}, [{val", ptr_modifier!(), "}]"),
+                                "ldp {val_lo}, {val_hi}, [{val}]",
                                 // (atomic) store val pair to dst
                                 $release,
-                                concat!("stp {val_lo}, {val_hi}, [{dst", ptr_modifier!(), "}]"),
+                                "stp {val_lo}, {val_hi}, [{dst}]",
                                 $acquire,
-                                dst = in(reg) dst,
-                                val = in(reg) val,
+                                dst = in(reg) dst as u64,
+                                val = in(reg) val as u64,
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
                                 options(nostack, preserves_flags),
@@ -575,18 +562,18 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to val pair
-                                concat!("ldp {val_lo}, {val_hi}, [{val", ptr_modifier!(), "}]"),
+                                "ldp {val_lo}, {val_hi}, [{val}]",
                                 // (atomic) store val pair to dst
                                 "2:",
                                     // load from dst to tmp pair
-                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst}]"),
                                     // store val pair to dst
-                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 $fence,
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
+                                dst = inout(reg) dst as u64 => _,
+                                val = in(reg) val as u64,
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
                                 tmp_hi = lateout(reg) _,
@@ -618,21 +605,21 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // load from val to val pair
-                                concat!("ldp {val_lo}, {val_hi}, [{val", ptr_modifier!(), "}]"),
+                                "ldp {val_lo}, {val_hi}, [{val}]",
                                 // (atomic) swap
                                 "2:",
                                     // load from dst to out pair
-                                    concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{dst}]"),
                                     // store val pair to dst
-                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
                                 $fence,
                                 // store out pair to out
-                                concat!("stp {out_lo}, {out_hi}, [{out", ptr_modifier!(), "}]"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                out = inout(reg) out => _,
+                                "stp {out_lo}, {out_hi}, [{out}]",
+                                dst = inout(reg) dst as u64 => _,
+                                val = in(reg) val as u64,
+                                out = inout(reg) out as u64 => _,
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
                                 out_hi = lateout(reg) _,
@@ -670,28 +657,28 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
                                 // load from old/new to x6-x7/x4-x5 pairs
-                                concat!("ldp x6, x7, [{old", ptr_modifier!(), "}]"),
-                                concat!("ldp x4, x5, [{new", ptr_modifier!(), "}]"),
+                                "ldp x6, x7, [{old}]",
+                                "ldp x4, x5, [{new}]",
                                 // casp writes the current value to the first register pair,
                                 // so copy the `old`'s value for later comparison.
                                 "mov x8, x6",
                                 "mov x9, x7",
                                 // (atomic) compare and exchange
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
-                                concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst", ptr_modifier!(), "}]"),
+                                concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"),
                                 $fence,
                                 // compare x6-x7 pair and x8-x9 pair
                                 "eor {tmp_hi}, x9, x7",
                                 "eor {tmp_lo}, x8, x6",
                                 "orr {tmp_hi}, {tmp_lo}, {tmp_hi}",
                                 // store tmp to out
-                                concat!("stp x8, x9, [{out", ptr_modifier!(), "}]"),
+                                "stp x8, x9, [{out}]",
                                 "cmp {tmp_hi}, #0",
                                 "cset {r:w}, eq",
-                                dst = inout(reg) dst => _,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out => _,
+                                dst = inout(reg) dst as u64 => _,
+                                old = in(reg) old as u64,
+                                new = in(reg) new as u64,
+                                out = inout(reg) out as u64 => _,
                                 r = lateout(reg) r,
                                 tmp_hi = lateout(reg) _,
                                 tmp_lo = lateout(reg) _,
@@ -716,37 +703,37 @@ macro_rules! atomic128 {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
                                 // load from old/new to old/new pair
-                                concat!("ldp {new_lo}, {new_hi}, [{new", ptr_modifier!(), "}]"),
-                                concat!("ldp {old_lo}, {old_hi}, [{old", ptr_modifier!(), "}]"),
+                                "ldp {new_lo}, {new_hi}, [{new}]",
+                                "ldp {old_lo}, {old_hi}, [{old}]",
                                 // (atomic) compare and exchange
                                 "2:",
-                                    concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{dst}]"),
                                     "cmp {out_lo}, {old_lo}",
                                     "cset {r:w}, ne",
                                     "cmp {out_hi}, {old_hi}",
                                     "cinc {r:w}, {r:w}, ne",
                                     "cbz {r:w}, 3f", // jump if compare succeed
-                                    concat!("st", $release, "xp {r:w}, {out_lo}, {out_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("st", $release, "xp {r:w}, {out_lo}, {out_hi}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b", // continue loop if store failed
                                     "mov {r:w}, #1", // mark as failed
                                     "b 4f",
                                 "3:",
-                                    concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst", ptr_modifier!(), "}]"),
+                                    concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b", // continue loop if store failed
                                 "4:",
                                 $fence,
                                 // store out_tmp to out
-                                concat!("stp {out_lo}, {out_hi}, [{out", ptr_modifier!(), "}]"),
-                                dst = inout(reg) dst => _,
-                                old = in(reg) old,
+                                "stp {out_lo}, {out_hi}, [{out}]",
+                                dst = inout(reg) dst as u64 => _,
+                                old = in(reg) old as u64,
                                 old_hi = out(reg) _,
                                 old_lo = out(reg) _,
-                                new = in(reg) new,
+                                new = in(reg) new as u64,
                                 new_hi = out(reg) _,
                                 new_lo = out(reg) _,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out as u64 => _,
                                 out_hi = lateout(reg) _,
                                 out_lo = lateout(reg) _,
                                 r = lateout(reg) r,
