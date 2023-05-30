@@ -127,7 +127,7 @@ if [[ -n "${target}" ]]; then
 fi
 args+=(
     --all-features
-    --workspace --exclude bench --exclude portable-atomic-internal-codegen
+    --workspace
 )
 target="${target:-"${host}"}"
 target_lower="${target//-/_}"
@@ -172,7 +172,7 @@ run() {
         # Since nightly-2022-12-23, -Z build-std + -Z randomize-layout + release mode on Windows
         # sometimes causes segfault in build script or proc-macro.
         if [[ -z "${target_flags[*]+"${target_flags[*]}"}" ]] && [[ "${target}" == *"-windows"* ]]; then
-            args+=(--target "${target}")
+            randomize_layout=''
         fi
         RUSTFLAGS="${RUSTFLAGS:-}${randomize_layout:-}" \
             RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${randomize_layout:-}" \
