@@ -76,8 +76,7 @@ macro_rules! __test_atomic {
             test_load_ordering(|order| VAR.load(order));
             test_store_ordering(|order| VAR.store(MaybeUninit::new(10), order));
             unsafe {
-                for (load_order, store_order) in load_orderings().into_iter().zip(store_orderings())
-                {
+                for (load_order, store_order) in LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS) {
                     assert_eq!(VAR.load(load_order).assume_init(), 10);
                     VAR.store(MaybeUninit::new(5), store_order);
                     assert_eq!(VAR.load(load_order).assume_init(), 5);
@@ -103,7 +102,7 @@ macro_rules! __test_atomic {
             fn quickcheck_load_store(x: $int_type, y: $int_type) -> bool {
                 unsafe {
                     for (load_order, store_order) in
-                        load_orderings().into_iter().zip(store_orderings())
+                        LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS)
                     {
                         let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
                         assert_eq!(a.load(load_order).assume_init(), x);
@@ -158,7 +157,7 @@ macro_rules! __test_atomic {
             unsafe {
                 let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
                 test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
-                for order in swap_orderings() {
+                for order in SWAP_ORDERINGS {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
                     assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), 5);
                     assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
@@ -173,7 +172,7 @@ macro_rules! __test_atomic {
         ::quickcheck::quickcheck! {
             fn quickcheck_swap(x: $int_type, y: $int_type) -> bool {
                 unsafe {
-                    for order in swap_orderings() {
+                    for order in SWAP_ORDERINGS {
                         let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
                         assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
                         assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
@@ -254,7 +253,7 @@ macro_rules! __test_atomic {
                 test_compare_exchange_ordering(|success, failure| {
                     a.compare_exchange(MaybeUninit::new(5), MaybeUninit::new(5), success, failure)
                 });
-                for (success, failure) in compare_exchange_orderings() {
+                for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
                     assert_eq!(
                         a.compare_exchange(
@@ -318,7 +317,7 @@ macro_rules! __test_atomic {
                         failure,
                     )
                 });
-                for (success, failure) in compare_exchange_orderings() {
+                for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(4));
                     assert_eq!(
                         a.compare_exchange_weak(
@@ -350,7 +349,7 @@ macro_rules! __test_atomic {
                 test_compare_exchange_ordering(|set, fetch| {
                     a.fetch_update(set, fetch, |x| Some(x))
                 });
-                for (success, failure) in compare_exchange_orderings() {
+                for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(7));
                     assert_eq!(
                         a.fetch_update(success, failure, |_| None).unwrap_err().assume_init(),
@@ -386,7 +385,7 @@ macro_rules! __test_atomic {
                             break z;
                         }
                     };
-                    for (success, failure) in compare_exchange_orderings() {
+                    for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                         let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
                         assert_eq!(
                             a.compare_exchange(
@@ -436,7 +435,7 @@ macro_rules! __test_atomic {
                             break z;
                         }
                     };
-                    for (success, failure) in compare_exchange_orderings() {
+                    for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                         let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
                         assert_eq!(
                             a.fetch_update(success, failure, |_| Some(MaybeUninit::new(y)))
@@ -449,6 +448,17 @@ macro_rules! __test_atomic {
                             .unwrap()
                             .assume_init(),
                             y
+                        );
+                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
+                        assert_eq!(
+                            a.fetch_update(success, failure, |z| if z.assume_init() == y {
+                                Some(z)
+                            } else {
+                                None
+                            })
+                            .unwrap_err()
+                            .assume_init(),
+                            z
                         );
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
                     }
@@ -546,15 +556,14 @@ fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::Strin
         .cloned()
         .unwrap_or_else(|| msg.downcast_ref::<&'static str>().copied().unwrap().into())
 }
-pub(crate) fn load_orderings() -> [Ordering; 3] {
-    [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst]
-}
+pub(crate) const LOAD_ORDERINGS: [Ordering; 3] =
+    [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst];
 pub(crate) fn rand_load_ordering() -> Ordering {
-    load_orderings()[fastrand::usize(0..load_orderings().len())]
+    LOAD_ORDERINGS[fastrand::usize(0..LOAD_ORDERINGS.len())]
 }
 #[track_caller]
 pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
-    for order in load_orderings() {
+    for order in LOAD_ORDERINGS {
         f(order);
     }
 
@@ -564,15 +573,14 @@ pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) 
         "there is no such thing as an acquire-release load"
     );
 }
-pub(crate) fn store_orderings() -> [Ordering; 3] {
-    [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst]
-}
+pub(crate) const STORE_ORDERINGS: [Ordering; 3] =
+    [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst];
 pub(crate) fn rand_store_ordering() -> Ordering {
-    store_orderings()[fastrand::usize(0..store_orderings().len())]
+    STORE_ORDERINGS[fastrand::usize(0..STORE_ORDERINGS.len())]
 }
 #[track_caller]
 pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
-    for order in store_orderings() {
+    for order in STORE_ORDERINGS {
         f(order);
     }
 
@@ -582,47 +590,44 @@ pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T)
         "there is no such thing as an acquire-release store"
     );
 }
-pub(crate) fn swap_orderings() -> [Ordering; 5] {
-    [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst]
-}
+pub(crate) const SWAP_ORDERINGS: [Ordering; 5] =
+    [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst];
 pub(crate) fn rand_swap_ordering() -> Ordering {
-    swap_orderings()[fastrand::usize(0..swap_orderings().len())]
+    SWAP_ORDERINGS[fastrand::usize(0..SWAP_ORDERINGS.len())]
 }
 pub(crate) fn test_swap_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
-    for order in swap_orderings() {
+    for order in SWAP_ORDERINGS {
         f(order);
     }
 }
-pub(crate) fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
-    [
-        (Ordering::Relaxed, Ordering::Relaxed),
-        (Ordering::Relaxed, Ordering::Acquire),
-        (Ordering::Relaxed, Ordering::SeqCst),
-        (Ordering::Acquire, Ordering::Relaxed),
-        (Ordering::Acquire, Ordering::Acquire),
-        (Ordering::Acquire, Ordering::SeqCst),
-        (Ordering::Release, Ordering::Relaxed),
-        (Ordering::Release, Ordering::Acquire),
-        (Ordering::Release, Ordering::SeqCst),
-        (Ordering::AcqRel, Ordering::Relaxed),
-        (Ordering::AcqRel, Ordering::Acquire),
-        (Ordering::AcqRel, Ordering::SeqCst),
-        (Ordering::SeqCst, Ordering::Relaxed),
-        (Ordering::SeqCst, Ordering::Acquire),
-        (Ordering::SeqCst, Ordering::SeqCst),
-    ]
-}
+pub(crate) const COMPARE_EXCHANGE_ORDERINGS: [(Ordering, Ordering); 15] = [
+    (Ordering::Relaxed, Ordering::Relaxed),
+    (Ordering::Relaxed, Ordering::Acquire),
+    (Ordering::Relaxed, Ordering::SeqCst),
+    (Ordering::Acquire, Ordering::Relaxed),
+    (Ordering::Acquire, Ordering::Acquire),
+    (Ordering::Acquire, Ordering::SeqCst),
+    (Ordering::Release, Ordering::Relaxed),
+    (Ordering::Release, Ordering::Acquire),
+    (Ordering::Release, Ordering::SeqCst),
+    (Ordering::AcqRel, Ordering::Relaxed),
+    (Ordering::AcqRel, Ordering::Acquire),
+    (Ordering::AcqRel, Ordering::SeqCst),
+    (Ordering::SeqCst, Ordering::Relaxed),
+    (Ordering::SeqCst, Ordering::Acquire),
+    (Ordering::SeqCst, Ordering::SeqCst),
+];
 pub(crate) fn rand_compare_exchange_ordering() -> (Ordering, Ordering) {
-    compare_exchange_orderings()[fastrand::usize(0..compare_exchange_orderings().len())]
+    COMPARE_EXCHANGE_ORDERINGS[fastrand::usize(0..COMPARE_EXCHANGE_ORDERINGS.len())]
 }
 pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
     f: impl Fn(Ordering, Ordering) -> T,
 ) {
-    for &(success, failure) in &compare_exchange_orderings() {
+    for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
         f(success, failure);
     }
 
-    for &order in &swap_orderings() {
+    for order in SWAP_ORDERINGS {
         let msg = assert_panic(|| f(order, Ordering::AcqRel));
         assert!(
             msg == "there is no such thing as an acquire-release failure ordering"
