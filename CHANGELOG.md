@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Optimize inline assemblies on PowerPC and s390x.
+
 ## [0.2.17] - 2023-05-09
 
 - Fix bug in s390x atomic RMWs on old nightly.
