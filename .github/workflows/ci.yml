@@ -67,6 +67,8 @@ jobs:
           # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/348
           - rust: nightly-2023-05-12
             target: aarch64_be-unknown-linux-gnu
+          - rust: '1.59'
+            target: arm-unknown-linux-gnueabi
           - rust: stable
             target: arm-unknown-linux-gnueabi
           - rust: nightly
@@ -81,14 +83,20 @@ jobs:
             target: armv7-unknown-linux-gnueabi
           - rust: nightly
             target: armv7-unknown-linux-gnueabi
+          - rust: '1.59'
+            target: armv7-unknown-linux-gnueabihf
           - rust: stable
             target: armv7-unknown-linux-gnueabihf
           - rust: nightly
             target: armv7-unknown-linux-gnueabihf
+          - rust: '1.59'
+            target: i586-unknown-linux-gnu
           - rust: stable
             target: i586-unknown-linux-gnu
           - rust: nightly
             target: i586-unknown-linux-gnu
+          - rust: '1.59'
+            target: i686-unknown-linux-gnu
           - rust: stable
             target: i686-unknown-linux-gnu
           - rust: nightly
@@ -123,6 +131,8 @@ jobs:
             target: powerpc64le-unknown-linux-gnu
           - rust: nightly
             target: riscv32gc-unknown-linux-gnu
+          - rust: '1.59'
+            target: riscv64gc-unknown-linux-gnu
           - rust: stable
             target: riscv64gc-unknown-linux-gnu
           - rust: nightly
