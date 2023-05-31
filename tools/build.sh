@@ -204,9 +204,9 @@ build() {
         x_cargo "${args[@]}" "$@"
     case "${target}" in
         x86_64*)
-            # macOS is skipped because it is +cmpxchg16b by default
+            # Apple targets are skipped because they are +cmpxchg16b by default
             case "${target}" in
-                *-darwin) ;;
+                *-apple-*) ;;
                 *)
                     RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
                         x_cargo "${args[@]}" --target-dir target/cmpxchg16b "$@"
