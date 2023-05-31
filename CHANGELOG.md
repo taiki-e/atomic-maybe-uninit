@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.2.18] - 2023-05-31
+
 - Fix build error on aarch64 ILP32 ABI targets (tier 3).
 
 - Optimize inline assemblies on PowerPC and s390x.
@@ -156,7 +158,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.17...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.18...HEAD
+[0.2.18]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.17...v0.2.18
 [0.2.17]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.16...v0.2.17
 [0.2.16]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.15...v0.2.16
 [0.2.15]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.14...v0.2.15
