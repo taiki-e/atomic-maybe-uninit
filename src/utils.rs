@@ -26,7 +26,7 @@ macro_rules! const_fn {
     };
 }
 
-// https://github.com/rust-lang/rust/blob/1.69.0/library/core/src/sync/atomic.rs#L3156
+// https://github.com/rust-lang/rust/blob/1.70.0/library/core/src/sync/atomic.rs#L3155
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn assert_load_ordering(order: Ordering) {
@@ -38,7 +38,7 @@ pub(crate) fn assert_load_ordering(order: Ordering) {
     }
 }
 
-// https://github.com/rust-lang/rust/blob/1.69.0/library/core/src/sync/atomic.rs#L3141
+// https://github.com/rust-lang/rust/blob/1.70.0/library/core/src/sync/atomic.rs#L3140
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn assert_store_ordering(order: Ordering) {
@@ -50,7 +50,7 @@ pub(crate) fn assert_store_ordering(order: Ordering) {
     }
 }
 
-// https://github.com/rust-lang/rust/blob/1.69.0/library/core/src/sync/atomic.rs#L3226
+// https://github.com/rust-lang/rust/blob/1.70.0/library/core/src/sync/atomic.rs#L3221
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn assert_compare_exchange_ordering(success: Ordering, failure: Ordering) {

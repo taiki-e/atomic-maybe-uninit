@@ -48,8 +48,8 @@ fn main() {
     match target_arch {
         "x86_64" => {
             // x86_64 Apple targets always support CMPXCHG16B:
-            // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L8
-            // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_target/src/spec/apple_base.rs#L69-L70
+            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L8
+            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/apple_base.rs#L69-L70
             // Script to get targets that support cmpxchg16b by default:
             // $ (for target in $(rustc --print target-list); do [[ "${target}" == "x86_64"* ]] && rustc --print cfg --target "${target}" | grep -q cmpxchg16b && echo "${target}"; done)
             let has_cmpxchg16b = is_apple;
@@ -66,7 +66,7 @@ fn main() {
             let mut no_cmpxchg = false;
             if is_apple {
                 // Apple's i386 simulator is actually i686 (yonah).
-                // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_target/src/spec/apple_base.rs#L68
+                // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/apple_base.rs#L68
             } else if target.starts_with("i486") {
                 no_cmpxchg8b = true;
             } else if target.starts_with("i386") {
@@ -103,8 +103,8 @@ fn main() {
             // aarch64_target_feature stabilized in Rust 1.61.
             target_feature_if("lse", is_macos, &version, Some(61), true);
             target_feature_if("rcpc", is_macos, &version, Some(61), true);
-            // As of rustc 1.69, target_feature "lse2" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_codegen_ssa/src/target_features.rs#L58
+            // As of rustc 1.70, target_feature "lse2" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs#L58
             target_feature_if("lse2", is_macos, &version, None, false);
         }
         "arm" => {
@@ -139,7 +139,7 @@ fn main() {
             // - v7, v7a, v7neon, v7s, and v7k are aclass
             // - v6m, v7em, v7m, and v8m are mclass
             // - v7r is rclass
-            // - 64_32 is aarch64 https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_target/src/spec/arm64_32_apple_watchos.rs#L10
+            // - 64_32 is aarch64 https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/arm64_32_apple_watchos.rs#L10
             //
             // Other targets don't have *class target feature.
             // For example:
@@ -158,7 +158,7 @@ fn main() {
                 "v6m" | "v7em" | "v7m" | "v8m" => is_mclass = true,
                 "v7r" | "v8r" => {} // rclass
                 // arm-linux-androideabi is v5te
-                // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
+                // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
                 _ if target == "arm-linux-androideabi" => subarch = "v5te",
                 // v6 targets other than v6m don't have *class target feature.
                 "" | "v6" | "v6k" => subarch = "v6",
@@ -232,8 +232,8 @@ fn main() {
                     has_pwr8_features = cpu == "ppc64le" || cpu == "future";
                 }
             }
-            // Note: As of rustc 1.69, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_codegen_ssa/src/target_features.rs#L226
+            // Note: As of rustc 1.70, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs#L226
             // l[bh]arx and st[bh]cx.
             target_feature_if("partword-atomics", has_pwr8_features, &version, None, false);
             // lqarx and stqcx.
@@ -255,8 +255,8 @@ fn main() {
                     _ => {}
                 }
             }
-            // Note: As of rustc 1.69, target_feature "fast-serialization" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.69.0/compiler/rustc_codegen_ssa/src/target_features.rs
+            // Note: As of rustc 1.70, target_feature "fast-serialization" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs
             // bcr 14,0
             target_feature_if("fast-serialization", has_arch9_features, &version, None, false);
         }
@@ -342,7 +342,7 @@ mod version {
         // The known latest stable version. If we unable to determine
         // the rustc version, we assume this is the current version.
         // It is no problem if this is older than the actual latest stable.
-        pub(crate) const LATEST: Self = Self::stable(69);
+        pub(crate) const LATEST: Self = Self::stable(70);
 
         const fn stable(minor: u32) -> Self {
             Self { minor, nightly: false, commit_date: Date::UNKNOWN }
