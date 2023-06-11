@@ -7,8 +7,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/haPxM3Wxn
-// - riscv32imac https://godbolt.org/z/M7zrrjGEr
+// - riscv64gc https://godbolt.org/z/nnGcqbd85
+// - riscv32imac https://godbolt.org/z/EWjPGed4b
 
 use core::{
     arch::asm,
@@ -107,6 +107,13 @@ macro_rules! atomic_rmw_lr_sc {
     };
 }
 
+#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+#[cfg(target_arch = "riscv32")]
+type XSize = u32;
+#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+#[cfg(target_arch = "riscv64")]
+type XSize = u64;
+
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($int_type:ident, $asm_suffix:tt) => {
@@ -131,8 +138,8 @@ macro_rules! atomic_load_store {
                                 $acquire,
                                 // store tmp to out
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg) src,
-                                out = inout(reg) out => _,
+                                src = in(reg) ptr_reg!(src),
+                                out = inout(reg) ptr_reg!(out) => _,
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -167,8 +174,8 @@ macro_rules! atomic_load_store {
                                 // (atomic) store tmp to dst
                                 $release,
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -215,9 +222,9 @@ macro_rules! atomic {
                                 concat!("amoswap.", $asm_suffix, $order, " {out_tmp}, {val}, 0({dst})"),
                                 // store out_tmp to out
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = in(reg) dst,
-                                val = inout(reg) val => _,
-                                out = inout(reg) out => _,
+                                dst = in(reg) ptr_reg!(dst),
+                                val = inout(reg) ptr_reg!(val) => _,
+                                out = inout(reg) ptr_reg!(out) => _,
                                 out_tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -246,7 +253,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: XSize;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -264,10 +271,10 @@ macro_rules! atomic {
                                 "seqz {r}, {r}",
                                 // store out_tmp to out
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                dst = in(reg) dst,
-                                old = inout(reg) old => _,
-                                new = inout(reg) new => _,
-                                out = in(reg) out,
+                                dst = in(reg) ptr_reg!(dst),
+                                old = inout(reg) ptr_reg!(old) => _,
+                                new = inout(reg) ptr_reg!(new) => _,
+                                out = in(reg) ptr_reg!(out),
                                 out_tmp = out(reg) _,
                                 r = out(reg) r,
                                 options(nostack, preserves_flags),
@@ -329,9 +336,9 @@ macro_rules! atomic8 {
                                     "bnez a3, 2b",
                                 concat!(srlw!(), " a0, a5, a0"),
                                 "sb a0, 0({out})",
-                                val = in(reg) val,
-                                out = inout(reg) out => _,
-                                inout("a0") dst => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
+                                inout("a0") ptr_reg!(dst) => _,
                                 lateout("a1") _,
                                 out("a3") _,
                                 out("a4") _,
@@ -364,7 +371,7 @@ macro_rules! atomic8 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: XSize;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -400,10 +407,10 @@ macro_rules! atomic8 {
                                 "xor a0, a7, a0",
                                 "seqz a0, a0",
                                 "sb a1, 0({out})",
-                                out = inout(reg) out => _,
-                                inout("a0") dst => r,
-                                inout("a1") old => _,
-                                inout("a2") new => _,
+                                out = inout(reg) ptr_reg!(out) => _,
+                                inout("a0") ptr_reg!(dst) => r,
+                                inout("a1") ptr_reg!(old) => _,
+                                inout("a2") ptr_reg!(new) => _,
                                 out("a4") _,
                                 out("a5") _,
                                 out("a6") _,
@@ -468,9 +475,9 @@ macro_rules! atomic16 {
                                     "bnez a3, 2b",
                                 concat!(srlw!(), " a0, a5, a0"),
                                 "sh a0, 0({out})",
-                                val = in(reg) val,
-                                out = inout(reg) out => _,
-                                inout("a0") dst => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
+                                inout("a0") ptr_reg!(dst) => _,
                                 lateout("a1") _,
                                 out("a3") _,
                                 out("a4") _,
@@ -503,7 +510,7 @@ macro_rules! atomic16 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: XSize;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -540,10 +547,10 @@ macro_rules! atomic16 {
                                 "xor a0, a7, a0",
                                 "seqz a0, a0",
                                 "sh a1, 0({out})",
-                                out = inout(reg) out => _,
-                                inout("a0") dst => r,
-                                inout("a1") old => _,
-                                inout("a2") new => _,
+                                out = inout(reg) ptr_reg!(out) => _,
+                                inout("a0") ptr_reg!(dst) => r,
+                                inout("a1") ptr_reg!(old) => _,
+                                inout("a2") ptr_reg!(new) => _,
                                 out("a4") _,
                                 out("a5") _,
                                 out("a6") _,

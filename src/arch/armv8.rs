@@ -359,8 +359,8 @@ macro_rules! atomic64 {
                                 out("r2") _,
                                 out("r3") _,
                                 // tmp pair - must be even-numbered and not R14
-                                lateout("r4") _,
-                                lateout("r5") _,
+                                out("r4") _,
+                                out("r5") _,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
@@ -409,8 +409,8 @@ macro_rules! atomic64 {
                                 out("r2") _,
                                 out("r3") _,
                                 // out pair - must be even-numbered and not R14
-                                lateout("r4") _,
-                                lateout("r5") _,
+                                out("r4") _,
+                                out("r5") _,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
@@ -473,8 +473,8 @@ macro_rules! atomic64 {
                                 out("r2") _,
                                 out("r3") _,
                                 // out pair - must be even-numbered and not R14
-                                lateout("r4") _,
-                                lateout("r5") _,
+                                out("r4") _,
+                                out("r5") _,
                                 // new pair - must be even-numbered and not R14
                                 out("r8") _,
                                 out("r9") _,
@@ -536,8 +536,8 @@ macro_rules! atomic64 {
                                 out("r2") _,
                                 out("r3") _,
                                 // out pair - must be even-numbered and not R14
-                                lateout("r4") _,
-                                lateout("r5") _,
+                                out("r4") _,
+                                out("r5") _,
                                 // new pair - must be even-numbered and not R14
                                 out("r8") _,
                                 out("r9") _,

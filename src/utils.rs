@@ -1,3 +1,7 @@
+#[macro_use]
+#[path = "gen/utils.rs"]
+mod gen;
+
 use core::sync::atomic::Ordering;
 
 macro_rules! static_assert {

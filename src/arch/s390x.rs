@@ -6,8 +6,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/vh6x8rTjb
-// - s390x (z196) https://godbolt.org/z/fve3761z3
+// - s390x https://godbolt.org/z/1b18nxfzs
+// - s390x (z196) https://godbolt.org/z/ezoWETv8E
 
 use core::{
     arch::asm,
@@ -47,8 +47,8 @@ macro_rules! atomic_load_store {
                         concat!("l", $asm_suffix, " %r0, 0({src})"),
                         // store r0 to out
                         concat!("st", $st_suffix, " %r0, 0({out})"),
-                        src = in(reg) src,
-                        out = in(reg) out,
+                        src = in(reg) ptr_reg!(src),
+                        out = in(reg) ptr_reg!(out),
                         out("r0") _,
                         options(nostack, preserves_flags),
                     );
@@ -75,8 +75,8 @@ macro_rules! atomic_load_store {
                                 // (atomic) store r0 to dst
                                 concat!("st", $st_suffix, " %r0, 0({dst})"),
                                 $fence,
-                                dst = in(reg) dst,
-                                val = in(reg) val,
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) ptr_reg!(val),
                                 out("r0") _,
                                 options(nostack, preserves_flags),
                             )
@@ -133,10 +133,10 @@ macro_rules! atomic {
                             "jl 2b",
                         // store r0 to out
                         concat!("st", $st_suffix, " %r0, 0({out})"),
-                        dst = inout(reg) dst => _,
-                        val = in(reg) val,
+                        dst = inout(reg) ptr_reg!(dst) => _,
+                        val = in(reg) ptr_reg!(val),
                         val_tmp = out(reg) _,
-                        out = inout(reg) out => _,
+                        out = inout(reg) ptr_reg!(out) => _,
                         out("r0") _,
                         options(nostack),
                     );
@@ -173,11 +173,11 @@ macro_rules! atomic {
                         "ipm {r}",
                         // store r0 to out
                         concat!("st", $st_suffix, " %r0, 0({out})"),
-                        dst = in(reg) dst,
-                        old = in(reg) old,
-                        new = in(reg) new,
+                        dst = in(reg) ptr_reg!(dst),
+                        old = in(reg) ptr_reg!(old),
+                        new = in(reg) ptr_reg!(new),
                         tmp = out(reg) _,
-                        out = inout(reg) out => _,
+                        out = inout(reg) ptr_reg!(out) => _,
                         r = lateout(reg) r,
                         out("r0") _,
                         options(nostack),
@@ -226,12 +226,12 @@ macro_rules! atomic8 {
                             "cs %r3, %r14, 0(%r1)",
                             "jl 2b",
                         "rll %r0, %r3, 8(%r2)",
-                        "stc %r0, 0(%r4)",
+                        "stc %r0, 0({out})",
+                        out = in(reg) ptr_reg!(out),
                         out("r0") _,
                         out("r1") _, // dst ptr (aligned)
-                        inout("r2") dst => _,
-                        inout("r3") val => _,
-                        in("r4") out,
+                        inout("r2") ptr_reg!(dst) => _,
+                        inout("r3") ptr_reg!(val) => _,
                         out("r5") _,
                         out("r14") _,
                         options(nostack),
@@ -282,13 +282,13 @@ macro_rules! atomic8 {
                         "3:",
                         // store condition code to r2
                         "ipm %r2",
-                        "stc %r13, 0(%r5)",
+                        "stc %r13, 0({out})",
+                        out = in(reg) ptr_reg!(out),
                         out("r0") _,
                         out("r1") _,
-                        inout("r2") dst => r,
-                        inout("r3") old => _,
-                        inout("r4") new => _,
-                        in("r5") out,
+                        inout("r2") ptr_reg!(dst) => r,
+                        inout("r3") ptr_reg!(old) => _,
+                        inout("r4") ptr_reg!(new) => _,
                         out("r12") _,
                         out("r13") _,
                         out("r14") _,
@@ -338,12 +338,12 @@ macro_rules! atomic16 {
                             "cs %r3, %r14, 0(%r1)",
                             "jl 2b",
                         "rll %r0, %r3, 16(%r2)",
-                        "sth %r0, 0(%r4)",
+                        "sth %r0, 0({out})",
+                        out = in(reg) ptr_reg!(out),
                         out("r0") _,
                         out("r1") _, // dst ptr (aligned)
-                        inout("r2") dst => _,
-                        inout("r3") val => _,
-                        in("r4") out,
+                        inout("r2") ptr_reg!(dst) => _,
+                        inout("r3") ptr_reg!(val) => _,
                         out("r5") _,
                         out("r14") _,
                         options(nostack),
@@ -394,13 +394,13 @@ macro_rules! atomic16 {
                         "3:",
                         // store condition code to r2
                         "ipm %r2",
-                        "sth %r13, 0(%r5)",
+                        "sth %r13, 0({out})",
+                        out = in(reg) ptr_reg!(out),
                         out("r0") _,
                         out("r1") _,
-                        inout("r2") dst => r,
-                        inout("r3") old => _,
-                        inout("r4") new => _,
-                        in("r5") out,
+                        inout("r2") ptr_reg!(dst) => r,
+                        inout("r3") ptr_reg!(old) => _,
+                        inout("r4") ptr_reg!(new) => _,
                         out("r12") _,
                         out("r13") _,
                         out("r14") _,
@@ -446,8 +446,8 @@ macro_rules! atomic128 {
                         // store r0-r1 pair to out
                         "stg %r1, 8({out})",
                         "stg %r0, 0({out})",
-                        src = in(reg) src,
-                        out = in(reg) out,
+                        src = in(reg) ptr_reg!(src),
+                        out = in(reg) ptr_reg!(out),
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") _,
                         out("r1") _,
@@ -477,8 +477,8 @@ macro_rules! atomic128 {
                                 // (atomic) store r0-r1 pair to dst
                                 "stpq %r0, 0({dst})",
                                 $fence,
-                                dst = in(reg) dst,
-                                val = in(reg) val,
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) ptr_reg!(val),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 out("r0") _,
                                 out("r1") _,
@@ -533,9 +533,9 @@ macro_rules! atomic128 {
                         // store r2-r3 pair to out
                         "stg %r3, 8({out})",
                         "stg %r2, 0({out})",
-                        dst = inout(reg) dst => _,
-                        val = in(reg) val,
-                        out = inout(reg) out => _,
+                        dst = inout(reg) ptr_reg!(dst) => _,
+                        val = in(reg) ptr_reg!(val),
+                        out = inout(reg) ptr_reg!(out) => _,
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") _, // val (hi)
                         out("r1") _, // val (lo)
@@ -579,10 +579,10 @@ macro_rules! atomic128 {
                         // store r0-r1 pair to out
                         "stg %r1, 8({out})",
                         "stg %r0, 0({out})",
-                        dst = in(reg) dst,
-                        old = in(reg) old,
-                        new = in(reg) new,
-                        out = inout(reg) out => _,
+                        dst = in(reg) ptr_reg!(dst),
+                        old = in(reg) ptr_reg!(old),
+                        new = in(reg) ptr_reg!(new),
+                        out = inout(reg) ptr_reg!(out) => _,
                         r = lateout(reg) r,
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") _, // old (hi) -> out (hi)

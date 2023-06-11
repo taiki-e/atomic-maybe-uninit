@@ -1,10 +1,10 @@
 // MIPS32r2 and MIPS64r2
 //
 // Generated asm:
-// - mips https://godbolt.org/z/Ton7fG48a
-// - mipsel https://godbolt.org/z/jbYcbecr1
-// - mips64 https://godbolt.org/z/baMvE37e1
-// - mips64el https://godbolt.org/z/bdEEPeGef
+// - mips https://godbolt.org/z/61MdnaaeW
+// - mipsel https://godbolt.org/z/1TfMh4P13
+// - mips64 https://godbolt.org/z/eYhvTcM4P
+// - mips64el https://godbolt.org/z/cvrWrhYh8
 
 use core::{
     arch::asm,
@@ -53,6 +53,11 @@ macro_rules! atomic_rmw {
     };
 }
 
+#[cfg(target_arch = "mips")]
+type XSize = u32;
+#[cfg(target_arch = "mips64")]
+type XSize = u64;
+
 macro_rules! atomic_load_store {
     ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
         impl AtomicLoad for $int_type {
@@ -78,8 +83,8 @@ macro_rules! atomic_load_store {
                                 // store tmp to out
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 ".set pop",
-                                src = in(reg) src,
-                                out = in(reg) out,
+                                src = in(reg) ptr_reg!(src),
+                                out = in(reg) ptr_reg!(out),
                                 tmp = out(reg) _,
                                 options(nostack),
                             )
@@ -118,8 +123,8 @@ macro_rules! atomic_load_store {
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
                                 $acquire, // acquire fence
                                 ".set pop",
-                                dst = in(reg) dst,
-                                val = in(reg) val,
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) ptr_reg!(val),
                                 tmp = out(reg) _,
                                 options(nostack),
                             )
@@ -171,9 +176,9 @@ macro_rules! atomic {
                                 // store out_tmp to out
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
                                 ".set pop",
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                out = inout(reg) out => _,
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
                                 val_tmp = out(reg) _,
                                 out_tmp = lateout(reg) _,
                                 r = lateout(reg) _,
@@ -203,7 +208,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: XSize;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -229,10 +234,10 @@ macro_rules! atomic {
                                 concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
                                 "sltiu {r}, {new_tmp}, 1",
                                 ".set pop",
-                                dst = inout(reg) dst => _,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out => _,
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                old = in(reg) ptr_reg!(old),
+                                new = in(reg) ptr_reg!(new),
+                                out = inout(reg) ptr_reg!(out) => _,
                                 new_tmp = out(reg) _,
                                 old_tmp = out(reg) _,
                                 out_tmp = lateout(reg) _,
@@ -303,14 +308,14 @@ macro_rules! atomic8 {
                                     "srlv {tmp}, {tmp}, $3",
                                     "seb {tmp}, {tmp}",
                                 $acquire,
-                                "sb {tmp}, 0($6)",
+                                "sb {tmp}, 0({out})",
                                 ".set pop",
+                                out = in(reg) ptr_reg!(out),
                                 tmp = out(reg) _,
                                 out("$2") _, // dst ptr (aligned)
                                 out("$3") _,
-                                inout("$4") dst => _,
-                                inout("$5") val => _,
-                                in("$6") out,
+                                inout("$4") ptr_reg!(dst) => _,
+                                inout("$5") ptr_reg!(val) => _,
                                 out("$7") _,
                                 out("$8") _,
                                 out("$9") _,
@@ -341,7 +346,7 @@ macro_rules! atomic8 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: XSize;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -380,16 +385,16 @@ macro_rules! atomic8 {
                                 "seb $2, $2",
                                 $acquire,
                                 "xor {tmp}, $2, {tmp}",
-                                "sb $2, 0($7)",
+                                "sb $2, 0({out})",
                                 "sltiu $2, {tmp}, 1",
                                 ".set pop",
+                                out = in(reg) ptr_reg!(out),
                                 tmp = out(reg) _,
                                 out("$2") r,
                                 out("$3") _, // dst (aligned)
-                                inout("$4") dst => _,
-                                inout("$5") old => _,
-                                inout("$6") new => _,
-                                in("$7") out,
+                                inout("$4") ptr_reg!(dst) => _,
+                                inout("$5") ptr_reg!(old) => _,
+                                inout("$6") ptr_reg!(new) => _,
                                 out("$8") _,
                                 out("$9") _,
                                 out("$10") _,
@@ -460,14 +465,14 @@ macro_rules! atomic16 {
                                     "srlv {tmp}, {tmp}, $3",
                                     "seh {tmp}, {tmp}",
                                 $acquire,
-                                "sh {tmp}, 0($6)",
+                                "sh {tmp}, 0({out})",
                                 ".set pop",
+                                out = in(reg) ptr_reg!(out),
                                 tmp = out(reg) _,
                                 out("$2") _, // dst ptr (aligned)
                                 out("$3") _,
-                                inout("$4") dst => _,
-                                inout("$5") val => _,
-                                in("$6") out,
+                                inout("$4") ptr_reg!(dst) => _,
+                                inout("$5") ptr_reg!(val) => _,
                                 out("$7") _,
                                 out("$8") _,
                                 out("$9") _,
@@ -498,7 +503,7 @@ macro_rules! atomic16 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: usize;
+                    let mut r: XSize;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -537,16 +542,16 @@ macro_rules! atomic16 {
                                 "seh $2, $2",
                                 $acquire,
                                 "xor {tmp}, $2, {tmp}",
-                                "sh $2, 0($7)",
+                                "sh $2, 0({out})",
                                 "sltiu $2, {tmp}, 1",
                                 ".set pop",
+                                out = in(reg) ptr_reg!(out),
                                 tmp = out(reg) _,
                                 out("$2") r,
                                 out("$3") _, // dst (aligned)
-                                inout("$4") dst => _,
-                                inout("$5") old => _,
-                                inout("$6") new => _,
-                                in("$7") out,
+                                inout("$4") ptr_reg!(dst) => _,
+                                inout("$5") ptr_reg!(old) => _,
+                                inout("$6") ptr_reg!(new) => _,
                                 out("$8") _,
                                 out("$9") _,
                                 out("$10") _,
