@@ -12,12 +12,12 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/54sEqeK66
-// - aarch64 msvc https://godbolt.org/z/rTro4bqds
-// - aarch64 (+lse) https://godbolt.org/z/Td5bK6M66
-// - aarch64 msvc (+lse) https://godbolt.org/z/a7Kca7v37
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/zjKbMWWjx
-// - aarch64 (+rcpc) https://godbolt.org/z/dPY8dYWoj
+// - aarch64 https://godbolt.org/z/8bhjvcETc
+// - aarch64 msvc https://godbolt.org/z/nqzMxq1fW
+// - aarch64 (+lse) https://godbolt.org/z/njj3n8xe1
+// - aarch64 msvc (+lse) https://godbolt.org/z/TbvbcMP9f
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/91EP1Tvfq
+// - aarch64 (+rcpc) https://godbolt.org/z/oYEhW56vo
 
 use core::{
     arch::asm,
@@ -29,18 +29,20 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
+        atomic_rmw!($op, $order, write = $order)
+    };
+    ($op:ident, $order:ident, write = $write:ident) => {
         match $order {
             Ordering::Relaxed => $op!("", "", ""),
             Ordering::Acquire => $op!("a", "", ""),
             Ordering::Release => $op!("", "l", ""),
             Ordering::AcqRel => $op!("a", "l", ""),
-            // AcqRel and SeqCst RMWs are equivalent in non-MSVC environments.
-            #[cfg(not(target_env = "msvc"))]
-            Ordering::SeqCst => $op!("a", "l", ""),
             // In MSVC environments, SeqCst stores/writes needs fences after writes.
             // https://reviews.llvm.org/D141748
             #[cfg(target_env = "msvc")]
-            Ordering::SeqCst => $op!("a", "l", "dmb ish"),
+            Ordering::SeqCst if $write == Ordering::SeqCst => $op!("a", "l", "dmb ish"),
+            // AcqRel and SeqCst RMWs are equivalent in non-MSVC environments.
+            Ordering::SeqCst => $op!("a", "l", ""),
             _ => unreachable!("{:?}", $order),
         }
     };
@@ -296,7 +298,7 @@ macro_rules! atomic {
                             r == 0
                         }};
                     }
-                    atomic_rmw!(cmpxchg, order)
+                    atomic_rmw!(cmpxchg, order, write = success)
                 }
             }
             #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
@@ -353,7 +355,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    atomic_rmw!(cmpxchg_weak, order);
+                    atomic_rmw!(cmpxchg_weak, order, write = success);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
                     r == 0
@@ -745,7 +747,7 @@ macro_rules! atomic128 {
                             r == 0
                         }};
                     }
-                    atomic_rmw!(cmpxchg, order)
+                    atomic_rmw!(cmpxchg, order, write = success)
                 }
             }
         }
