@@ -73,7 +73,6 @@ aarch64_linux_valgrind_task:
   name: valgrind ($TARGET)
   env:
     TARGET: aarch64-unknown-linux-gnu
-    VALGRIND: valgrind
   arm_container:
     # Valgrind support ldxp/stxp on 3.19+: https://valgrind.org/docs/manual/dist.news.html
     # However, current Debian stable's Valgrind is 3.16: https://packages.debian.org/en/stable/valgrind
@@ -85,7 +84,7 @@ aarch64_linux_valgrind_task:
   test_script:
     - . $HOME/.cargo/env
     - set -ex
-    - ./tools/test.sh -vv
+    - ./tools/test.sh valgrind -vv
     # +lse
     # As of Valgrind 3.19, Valgrind supports atomic instructions of ARMv8.0 and ARMv8.1 (FEAT_LSE).
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh -vv
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh valgrind -vv

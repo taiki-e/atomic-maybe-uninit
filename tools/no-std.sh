@@ -15,9 +15,9 @@ default_targets=(
     # armv6-m
     thumbv6m-none-eabi
     # armv7-m
+    thumbv7m-none-eabi
     thumbv7em-none-eabi
     thumbv7em-none-eabihf
-    thumbv7m-none-eabi
     # armv8-m
     thumbv8m.base-none-eabi
     thumbv8m.main-none-eabi
@@ -79,7 +79,8 @@ run() {
     else
         local target_flags=(--target "${target}")
     fi
-    args+=(run "${target_flags[@]}")
+    local subcmd=run
+    args+=("${subcmd}" "${target_flags[@]}")
     if grep <<<"${rustup_target_list}" -Eq "^${target}$"; then
         rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
     elif [[ -n "${nightly}" ]]; then
@@ -98,6 +99,7 @@ run() {
             ;;
         *) bail "unrecognized target '${target}'" ;;
     esac
+    args+=(--all-features)
 
     (
         cd "${test_dir}"
