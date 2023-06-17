@@ -40,6 +40,7 @@ jobs:
   docs:
     uses: taiki-e/workflows/.github/workflows/docs.yml@main
   msrv:
+    needs: tidy
     uses: taiki-e/workflows/.github/workflows/msrv.yml@main
     with:
       event_name: ${{ github.event_name }}
@@ -48,6 +49,7 @@ jobs:
     uses: taiki-e/workflows/.github/workflows/tidy.yml@main
 
   test:
+    needs: tidy
     strategy:
       fail-fast: false
       matrix:
@@ -237,6 +239,7 @@ jobs:
       - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private $TARGET $BUILD_STD
 
   build:
+    needs: tidy
     strategy:
       fail-fast: false
       matrix:
@@ -257,6 +260,7 @@ jobs:
       - run: tools/build.sh
 
   no-std:
+    needs: tidy
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -269,6 +273,7 @@ jobs:
       - run: tools/no-std.sh
 
   valgrind:
+    needs: tidy
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -287,6 +292,7 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
 
   codegen:
+    needs: tidy
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
