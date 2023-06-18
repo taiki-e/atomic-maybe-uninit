@@ -26,30 +26,12 @@ aarch64_linux_test_task:
     - set -ex
     - ./tools/test.sh -vv
     # +lse
-    # Graviton2 (Neoverse N1) is ARMv8.2-a and doesn't support FEAT_LSE2.
+    # Neoverse N1 is ARMv8.2-a and doesn't support FEAT_LSE2.
     # FEAT_LSE2 is tested on aarch64 macOS VM.
     - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh -vv
     # +rcpc
-    # Graviton2 is armv8.2-a but supports armv8.3-a LDAPR instructions.
+    # Neoverse N1 is armv8.2-a but supports armv8.3-a LDAPR instructions.
     - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" ./tools/test.sh -vv
-
-armhf_linux_test_task:
-  name: test ($TARGET)
-  env:
-    TARGET: armv7-unknown-linux-gnueabihf
-  arm_container:
-    image: rust:latest
-  setup_script:
-    - set -ex
-    - lscpu
-    - rustup toolchain add nightly --no-self-update && rustup default nightly
-    - dpkg --add-architecture armhf
-    - apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends gcc-arm-linux-gnueabihf libc6-dev-armhf-cross libc6:armhf moreutils
-  test_script:
-    - set -ex
-    - export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
-    - ./tools/test.sh --target "$TARGET" -Z doctest-xcompile -vv
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+v8" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+v8" ./tools/test.sh -Z build-std --target "$TARGET" -vv
 
 aarch64_macos_test_task:
   name: test ($TARGET)

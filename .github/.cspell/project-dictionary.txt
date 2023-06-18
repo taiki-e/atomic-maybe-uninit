@@ -33,7 +33,6 @@ ldrd
 ldrex
 ldrexd
 ldxp
-libc
 llcr
 llhr
 lqarx
