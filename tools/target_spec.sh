@@ -17,8 +17,7 @@ utils_file="src/gen/utils.rs"
 mkdir -p "$(dirname "${utils_file}")"
 
 known_64_bit_arch=()
-for target in $(rustc --print target-list); do
-    target_spec=$(rustc --print target-spec-json -Z unstable-options --target "${target}")
+for target_spec in $(rustc -Z unstable-options --print all-target-specs-json | jq -c '. | to_entries | .[].value'); do
     arch="$(jq <<<"${target_spec}" -r '.arch')"
     if [[ "$(jq <<<"${target_spec}" -r '."target-pointer-width"')" == "64" ]]; then
         known_64_bit_arch+=("${arch}")
