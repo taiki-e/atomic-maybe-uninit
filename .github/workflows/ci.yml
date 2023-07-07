@@ -103,11 +103,11 @@ jobs:
             target: i686-unknown-linux-gnu
           - rust: nightly
             target: i686-unknown-linux-gnu
-          - rust: nightly
+          - rust: nightly-2023-07-04 # TODO: LLVM bug: Undefined temporary symbol error when building std.
             target: mips-unknown-linux-gnu
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
             target: mips-unknown-linux-gnu
-          - rust: nightly
+          - rust: nightly-2023-07-04 # TODO: LLVM bug: Undefined temporary symbol error when building std.
             target: mipsel-unknown-linux-gnu
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
             target: mipsel-unknown-linux-gnu
