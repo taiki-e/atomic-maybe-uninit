@@ -31,12 +31,12 @@ default_targets=(
     # rustc --print target-list | grep -E '^(aarch64|arm64)'
     aarch64-unknown-linux-gnu
     # aarch64 big endian
-    # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/348
+    # TODO: compiler-builtins bug https://github.com/rust-lang/compiler-builtins/pull/539
     # aarch64_be-unknown-linux-gnu
     # aarch64 ILP32 ABI
     aarch64-unknown-linux-gnu_ilp32
     # aarch64 ILP32 ABI big endian
-    # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/348
+    # TODO: compiler-builtins bug https://github.com/rust-lang/compiler-builtins/pull/539
     # aarch64_be-unknown-linux-gnu_ilp32
     # aarch64 always support lse
     aarch64-apple-darwin
@@ -53,8 +53,7 @@ default_targets=(
     # armv8-a
     armv8a-none-eabi # custom target
     # armv8-a big endian
-    # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/348
-    # armeb-unknown-linux-gnueabi
+    armeb-unknown-linux-gnueabi
     # armv7-r
     armv7r-none-eabi
     # armv7-r big endian
@@ -62,8 +61,7 @@ default_targets=(
     # armv8-r
     armv8r-none-eabi # custom target
     # armv8-r big endian
-    # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/348
-    # armebv8r-none-eabi # custom target
+    armebv8r-none-eabi # custom target
     # armv6-m
     thumbv6m-none-eabi
     # armv7-m
