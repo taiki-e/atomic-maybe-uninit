@@ -91,6 +91,8 @@ jobs:
             target: armv7-unknown-linux-gnueabihf
           - rust: nightly
             target: armv7-unknown-linux-gnueabihf
+          - rust: nightly
+            target: armeb-unknown-linux-gnueabi
           - rust: '1.59'
             target: i586-unknown-linux-gnu
           - rust: stable

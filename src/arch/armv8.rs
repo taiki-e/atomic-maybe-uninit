@@ -1,4 +1,4 @@
-// ARMv8 AArch32 (little endian)
+// ARMv8 AArch32
 //
 // LLVM doesn't generate CLREX for ARMv8-M Baseline, but it actually supports CLREX.
 // https://developer.arm.com/documentation/dui1095/a/The-Cortex-M23-Instruction-Set/Memory-access-instructions?lang=en

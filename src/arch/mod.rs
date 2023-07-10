@@ -31,26 +31,20 @@ mod aarch64;
 #[cfg(target_arch = "arm")]
 #[cfg(all(
     any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-    not(all(
-        any(
-            target_feature = "v8",
-            atomic_maybe_uninit_target_feature = "v8",
-            target_feature = "v8m",
-            atomic_maybe_uninit_target_feature = "v8m",
-        ),
-        target_endian = "little",
-    )),
-))]
-mod arm;
-#[cfg(target_arch = "arm")]
-#[cfg(all(
-    any(
+    not(any(
         target_feature = "v8",
         atomic_maybe_uninit_target_feature = "v8",
         target_feature = "v8m",
         atomic_maybe_uninit_target_feature = "v8m",
-    ),
-    target_endian = "little",
+    )),
+))]
+mod arm;
+#[cfg(target_arch = "arm")]
+#[cfg(any(
+    target_feature = "v8",
+    atomic_maybe_uninit_target_feature = "v8",
+    target_feature = "v8m",
+    atomic_maybe_uninit_target_feature = "v8m",
 ))]
 mod armv8;
 #[cfg(any(target_arch = "mips", target_arch = "mips64"))]
