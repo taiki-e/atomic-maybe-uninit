@@ -75,12 +75,6 @@ jobs:
             target: arm-unknown-linux-gnueabi
           - rust: nightly
             target: arm-unknown-linux-gnueabi
-          # TODO: setup-cross-toolchain-action doesn't support them yet.
-          # cross miscompiles them as armv7.
-          # - rust: stable
-          #   target: arm-unknown-linux-gnueabihf
-          # - rust: nightly
-          #   target: arm-unknown-linux-gnueabihf
           - rust: stable
             target: armv7-unknown-linux-gnueabi
           - rust: nightly
@@ -311,10 +305,8 @@ jobs:
       - name: Install Rust
         run: rustup toolchain add nightly --no-self-update --component rustfmt && rustup default nightly
       - run: tools/target_spec.sh
-      - run: git add -N . && git diff --exit-code
-        if: github.repository_owner != 'taiki-e' || github.event_name != 'schedule' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
       - id: diff
-        run: ci/gen.sh
+        run: tools/ci/gen.sh
         if: github.repository_owner == 'taiki-e' && (github.event_name == 'schedule' || github.event_name == 'push' && github.ref == 'refs/heads/main')
       - uses: peter-evans/create-pull-request@v5
         with:
@@ -327,3 +319,4 @@ jobs:
             [2]: https://github.com/peter-evans/create-pull-request/blob/HEAD/docs/concepts-guidelines.md#workarounds-to-trigger-further-workflow-runs
           branch: update-generated-code
         if: github.repository_owner == 'taiki-e' && (github.event_name == 'schedule' || github.event_name == 'push' && github.ref == 'refs/heads/main') && steps.diff.outputs.success == 'false'
+      - run: git add -N . && git diff --exit-code
