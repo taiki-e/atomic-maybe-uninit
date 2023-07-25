@@ -2,12 +2,15 @@ addi
 addiu
 addiw
 amoswap
+amswap
 andc
 andi
+andn
 aqrl
 armasm
 beqz
 bnez
+bstrpick
 bswap
 casp
 cbnz
@@ -21,6 +24,7 @@ cmpw
 cmpxchg
 cset
 daddiu
+dbar
 DWCAS
 IMAFD
 ishld
@@ -67,6 +71,7 @@ slli
 sllv
 sllw
 sltiu
+sltui
 srlv
 srlw
 stlxp

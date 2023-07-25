@@ -99,6 +99,10 @@ jobs:
             target: i686-unknown-linux-gnu
           - rust: nightly
             target: i686-unknown-linux-gnu
+          - rust: beta # inline asm for loongarch has been stabilized in Rust 1.72
+            target: loongarch64-unknown-linux-gnu
+          - rust: nightly
+            target: loongarch64-unknown-linux-gnu
           - rust: nightly
             target: mips-unknown-linux-gnu
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
