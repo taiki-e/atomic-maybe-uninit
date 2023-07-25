@@ -7,6 +7,7 @@
 // - LLVM LangRef: https://llvm.org/docs/LangRef.html#inline-assembler-expressions
 // - inline assembly related issues in rust-lang/rust: https://github.com/rust-lang/rust/labels/A-inline-assembly
 
+// TODO: mips32r6, mips64r6?
 #[cfg(not(any(
     target_arch = "x86",
     target_arch = "x86_64",
@@ -17,6 +18,7 @@
     target_arch = "aarch64",
     target_arch = "riscv32",
     target_arch = "riscv64",
+    target_arch = "loongarch64",
     target_arch = "mips",
     target_arch = "mips64",
     target_arch = "powerpc",
@@ -47,6 +49,8 @@ mod arm;
     atomic_maybe_uninit_target_feature = "v8m",
 ))]
 mod armv8;
+#[cfg(target_arch = "loongarch64")]
+mod loongarch;
 #[cfg(any(target_arch = "mips", target_arch = "mips64"))]
 mod mips;
 #[cfg(target_arch = "msp430")]

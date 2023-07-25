@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support LoongArch64.
+
 ## [0.2.18] - 2023-05-31
 
 - Fix build error on aarch64 ILP32 ABI targets (tier 3).

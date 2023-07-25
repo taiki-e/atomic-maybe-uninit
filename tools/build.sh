@@ -85,6 +85,9 @@ default_targets=(
     # riscv32 with atomic
     riscv32imac-unknown-none-elf
 
+    # loongarch
+    loongarch64-unknown-linux-gnu
+
     # mips
     # rustc --print target-list | grep -E '^mips'
     mips-unknown-linux-gnu
@@ -191,6 +194,12 @@ build() {
             mips* | powerpc* | s390* | msp430*)
                 echo "target '${target}' requires nightly compiler (skipped all checks)"
                 return 0
+                ;;
+            loongarch*)
+                if [[ "${rustc_minor_version}" -lt 72 ]]; then
+                    echo "target '${target}' requires Rust 1.72+ (skipped all checks)"
+                    return 0
+                fi
                 ;;
         esac
     fi

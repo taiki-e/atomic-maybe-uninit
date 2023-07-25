@@ -10,7 +10,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC, s390x, and MSP430 are supported.
+Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, LoongArch64, MIPS32r2, MIPS64r2, PowerPC, s390x, and MSP430 are supported.
 
 | target_arch                          | primitives                                          | load/store | swap  | CAS   |
 | ------------------------------------ | --------------------------------------------------- |:----------:|:-----:|:-----:|
@@ -22,18 +22,20 @@ Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, MIPS32r2, MIPS64r2, PowerPC,
 | aarch64                              | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓     | ✓     |
 | riscv32                              | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1] | ✓\[1] |
 | riscv64                              | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1] | ✓\[1] |
-| mips \[3]                            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓     | ✓     |
-| mips64 \[3]                          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
-| powerpc \[3]                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓     | ✓     |
-| powerpc64 \[3]                       | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
-| powerpc64 (pwr8+) \[3] \[4]          | i128,u128                                           | ✓          | ✓     | ✓     |
-| s390x \[3]                           | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓     | ✓     |
-| msp430 \[3]                          | isize,usize,i8,u8,i16,u16                           | ✓          |       |       |
+| loongarch64 \[3]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
+| mips \[4]                            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓     | ✓     |
+| mips64 \[4]                          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
+| powerpc \[4]                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓     | ✓     |
+| powerpc64 \[4]                       | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
+| powerpc64 (pwr8+) \[4] \[5]          | i128,u128                                           | ✓          | ✓     | ✓     |
+| s390x \[4]                           | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓     | ✓     |
+| msp430 \[4]                          | isize,usize,i8,u8,i16,u16                           | ✓          |       |       |
 
 \[1] ARM's atomic RMW operations are not available on v6-m (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc.<br>
 \[2] ARMv6+ except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
-\[3] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
-\[4] target-cpu `pwr8`, `pwr9`, or `pwr10`. powerpc64le is `pwr8` by default.<br>
+\[3] Requires Rust 1.72+.<br>
+\[4] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
+\[5] target-cpu `pwr8`, `pwr9`, or `pwr10`. powerpc64le is `pwr8` by default.<br>
 
 Feel free to submit an issue if your target is not supported yet.
 
@@ -92,14 +94,14 @@ Feel free to submit an issue if your target is not supported yet.
     clippy::unreadable_literal
 )]
 #![cfg_attr(
-    not(any(
-        target_arch = "x86",
-        target_arch = "x86_64",
-        target_arch = "arm",
-        target_arch = "aarch64",
-        target_arch = "riscv32",
-        target_arch = "riscv64",
-    )),
+    any(
+        target_arch = "mips",
+        target_arch = "mips64",
+        target_arch = "powerpc",
+        target_arch = "powerpc64",
+        target_arch = "s390x",
+        target_arch = "msp430",
+    ),
     feature(asm_experimental_arch)
 )]
 
