@@ -12,7 +12,6 @@ bswap
 casp
 cbnz
 cdsg
-mfcr
 cinc
 cirruslabs
 clrex
@@ -40,8 +39,8 @@ lrcpc
 lwarx
 lwsync
 machdep
+mfcr
 mfence
-miscompiles
 movd
 movlps
 movq
