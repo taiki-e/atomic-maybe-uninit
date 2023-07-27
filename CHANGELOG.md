@@ -14,9 +14,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Support LoongArch64.
 
-- Fix build error on MIPS32r6 and MIPS64r6 since [nightly-2023-07-19's target_arch change](https://github.com/rust-lang/rust/pull/112374).
+- Fix build error on MIPS32r6 and MIPS64r6 (both tier 3) since [nightly-2023-07-19's target_arch change](https://github.com/rust-lang/rust/pull/112374).
 
-- Fix build error on big endian ARMv8 AArch32.
+- Fix build error on big endian ARMv8 AArch32 (tier 3).
 
 - Acknowledge all x86_64 Apple targets support 128-bit atomics.
 
