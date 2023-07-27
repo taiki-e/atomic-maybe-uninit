@@ -7,11 +7,11 @@
 //   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv6-Differences?lang=en
 //
 // Generated asm:
-// - armv7-a https://godbolt.org/z/8P3ds5rhG
-// - armv7-r https://godbolt.org/z/qfbaT3McY
-// - armv7-m https://godbolt.org/z/aoexav9z1
-// - armv6 https://godbolt.org/z/8xb97Efa1
-// - armv6-m https://godbolt.org/z/oa9YWh5Kf
+// - armv7-a https://godbolt.org/z/P93x9TjWs
+// - armv7-r https://godbolt.org/z/1z9q9vTcd
+// - armv7-m https://godbolt.org/z/WozEfbMbx
+// - armv6 https://godbolt.org/z/T5M337jYK
+// - armv6-m https://godbolt.org/z/q88qPah4W
 
 use core::{
     mem::{self, MaybeUninit},
@@ -210,27 +210,26 @@ macro_rules! atomic {
                             $asm!(
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
-                                // load from val to val_tmp
-                                concat!("ldr", $asm_suffix, " {val_tmp}, [{val}]"),
+                                // load from val (ptr) to val (val)
+                                concat!("ldr", $asm_suffix, " {val}, [{val}]"),
                                 // (atomic) swap
                                 $release, // release fence
                                 "2:",
-                                    // load from dst to out_tmp
-                                    concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
-                                    // store val to dst
-                                    concat!("strex", $asm_suffix, " {r}, {val_tmp}, [{dst}]"),
+                                    // load from dst to tmp
+                                    concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
+                                    // try to store val to dst
+                                    concat!("strex", $asm_suffix, " {r}, {val}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
                                     "bne 2b",
                                 $acquire, // acquire fence
-                                // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                out = inout(reg) out => _,
-                                r = lateout(reg) _,
-                                out_tmp = lateout(reg) _,
-                                val_tmp = out(reg) _,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
+                                dst = in(reg) dst,
+                                val = inout(reg) val => _,
+                                out = in(reg) out,
+                                r = out(reg) _,
+                                tmp = out(reg) _,
                             )
                         };
                     }
@@ -247,6 +246,7 @@ macro_rules! atomic {
                 }
             }
         }
+        #[rustfmt::skip]
         #[cfg(any(
             any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
             not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
@@ -275,13 +275,14 @@ macro_rules! atomic {
                             $asm!(
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
-                                concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
-                                concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
+                                // load from old/new (ptr) to old/new (val)
+                                concat!("ldr", $asm_suffix, " {old}, [{old}]"),
+                                concat!("ldr", $asm_suffix, " {new}, [{new}]"),
                                 "2:",
-                                    concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
-                                    "cmp {out_tmp}, {old_tmp}",
+                                    concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
+                                    "cmp {tmp}, {old}",
                                     "bne 3f", // jump if compare failed
-                                    concat!("strex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
+                                    concat!("strex", $asm_suffix, " {r}, {new}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, #0",
                                     "bne 2b", // continue loop if store failed
@@ -293,16 +294,14 @@ macro_rules! atomic {
                                     clrex!(),
                                     $acquire_failure,
                                 "4:",
-                                // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                                dst = inout(reg) dst => _,
-                                r = lateout(reg) r,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out => _,
-                                out_tmp = lateout(reg) _,
-                                old_tmp = out(reg) _,
-                                new_tmp = out(reg) _,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
+                                dst = in(reg) dst,
+                                r = out(reg) r,
+                                old = inout(reg) old => _,
+                                new = inout(reg) new => _,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
                             )
                         };
                     }
@@ -311,19 +310,20 @@ macro_rules! atomic {
                             asm_use_dmb!(
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
-                                concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
-                                concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
-                                concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
-                                "cmp {out_tmp}, {old_tmp}",
+                                // load from old/new (ptr) to old/new (val)
+                                concat!("ldr", $asm_suffix, " {old}, [{old}]"),
+                                concat!("ldr", $asm_suffix, " {new}, [{new}]"),
+                                concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
+                                "cmp {tmp}, {old}",
                                 "bne 3f", // jump if compare failed
                                 dmb!(), // release
                                 "2:",
-                                    concat!("strex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
+                                    concat!("strex", $asm_suffix, " {r}, {new}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, #0",
                                     "beq 4f", // jump if store succeed
-                                    concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
-                                    "cmp {out_tmp}, {old_tmp}",
+                                    concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
+                                    "cmp {tmp}, {old}",
                                     "beq 2b", // continue loop if compare succeed
                                 "3:",
                                     // compare failed, set r to 1
@@ -331,16 +331,14 @@ macro_rules! atomic {
                                     clrex!(),
                                     $acquire_failure,
                                 "4:",
-                                // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                                dst = inout(reg) dst => _,
-                                r = lateout(reg) r,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out => _,
-                                out_tmp = lateout(reg) _,
-                                old_tmp = out(reg) _,
-                                new_tmp = out(reg) _,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
+                                dst = in(reg) dst,
+                                r = out(reg) r,
+                                old = inout(reg) old => _,
+                                new = inout(reg) new => _,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
                             )
                         };
                     }
@@ -349,19 +347,20 @@ macro_rules! atomic {
                             asm_use_dmb!(
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
-                                concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
-                                concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
-                                concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
-                                "cmp {out_tmp}, {old_tmp}",
+                                // load from old/new (ptr) to old/new (val)
+                                concat!("ldr", $asm_suffix, " {old}, [{old}]"),
+                                concat!("ldr", $asm_suffix, " {new}, [{new}]"),
+                                concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
+                                "cmp {tmp}, {old}",
                                 "bne 3f", // jump if compare failed
                                 dmb!(), // release
                                 "2:",
-                                    concat!("strex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
+                                    concat!("strex", $asm_suffix, " {r}, {new}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, #0",
                                     "beq 4f", // jump if store succeed
-                                    concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
-                                    "cmp {out_tmp}, {old_tmp}",
+                                    concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
+                                    "cmp {tmp}, {old}",
                                     "beq 2b", // continue loop if compare succeed
                                 "3:",
                                     // compare failed, set r to 1
@@ -372,16 +371,14 @@ macro_rules! atomic {
                                 "4:", // store succeed
                                     dmb!(), // acquire_success
                                 "5:",
-                                // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                                dst = inout(reg) dst => _,
-                                r = lateout(reg) r,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out => _,
-                                out_tmp = lateout(reg) _,
-                                old_tmp = out(reg) _,
-                                new_tmp = out(reg) _,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
+                                dst = in(reg) dst,
+                                r = out(reg) r,
+                                old = inout(reg) old => _,
+                                new = inout(reg) new => _,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
                             )
                         };
                     }
@@ -429,13 +426,14 @@ macro_rules! atomic {
                             $asm!(
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
-                                concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
-                                concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
-                                concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
-                                "cmp {out_tmp}, {old_tmp}",
+                                // load from old/new (ptr) to old/new (val)
+                                concat!("ldr", $asm_suffix, " {old}, [{old}]"),
+                                concat!("ldr", $asm_suffix, " {new}, [{new}]"),
+                                concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
+                                "cmp {tmp}, {old}",
                                 "bne 3f", // jump if compare failed
                                 $release,
-                                concat!("strex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
+                                concat!("strex", $asm_suffix, " {r}, {new}, [{dst}]"),
                                 "b 4f",
                                 "3:",
                                     // compare failed, set r to 1
@@ -443,16 +441,14 @@ macro_rules! atomic {
                                     clrex!(),
                                 "4:",
                                 $acquire,
-                                // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                                dst = inout(reg) dst => _,
-                                r = lateout(reg) r,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out => _,
-                                out_tmp = lateout(reg) _,
-                                old_tmp = out(reg) _,
-                                new_tmp = out(reg) _,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
+                                dst = in(reg) dst,
+                                r = out(reg) r,
+                                old = inout(reg) old => _,
+                                new = inout(reg) new => _,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
                             )
                         };
                     }
@@ -461,13 +457,14 @@ macro_rules! atomic {
                             asm_use_dmb!(
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
-                                concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
-                                concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
-                                concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
-                                "cmp {out_tmp}, {old_tmp}",
+                                // load from old/new (ptr) to old/new (val)
+                                concat!("ldr", $asm_suffix, " {old}, [{old}]"),
+                                concat!("ldr", $asm_suffix, " {new}, [{new}]"),
+                                concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
+                                "cmp {tmp}, {old}",
                                 "bne 3f", // jump if compare failed
                                 $release,
-                                concat!("strex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
+                                concat!("strex", $asm_suffix, " {r}, {new}, [{dst}]"),
                                 // 0 if the store was successful, 1 if no store was performed
                                 "cmp {r}, #0",
                                 "beq 4f", // jump if store succeed
@@ -480,16 +477,14 @@ macro_rules! atomic {
                                 "4:", // store succeed
                                     dmb!(), // acquire_success
                                 "5:",
-                                // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                                dst = inout(reg) dst => _,
-                                r = lateout(reg) r,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out => _,
-                                out_tmp = lateout(reg) _,
-                                old_tmp = out(reg) _,
-                                new_tmp = out(reg) _,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
+                                dst = in(reg) dst,
+                                r = out(reg) r,
+                                old = inout(reg) old => _,
+                                new = inout(reg) new => _,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
                             )
                         };
                     }
@@ -498,13 +493,14 @@ macro_rules! atomic {
                             asm_use_dmb!(
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
-                                concat!("ldr", $asm_suffix, " {old_tmp}, [{old}]"),
-                                concat!("ldr", $asm_suffix, " {new_tmp}, [{new}]"),
-                                concat!("ldrex", $asm_suffix, " {out_tmp}, [{dst}]"),
-                                "cmp {out_tmp}, {old_tmp}",
+                                // load from old/new (ptr) to old/new (val)
+                                concat!("ldr", $asm_suffix, " {old}, [{old}]"),
+                                concat!("ldr", $asm_suffix, " {new}, [{new}]"),
+                                concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
+                                "cmp {tmp}, {old}",
                                 "bne 3f", // jump if compare failed
                                 $release,
-                                concat!("strex", $asm_suffix, " {r}, {new_tmp}, [{dst}]"),
+                                concat!("strex", $asm_suffix, " {r}, {new}, [{dst}]"),
                                 // 0 if the store was successful, 1 if no store was performed
                                 "cmp {r}, #0",
                                 "beq 5f", // jump if store succeed
@@ -516,16 +512,14 @@ macro_rules! atomic {
                                 "4:", // compare or store failed
                                     dmb!(), // acquire_failure
                                 "5:",
-                                // store out_tmp to out
-                                concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                                dst = inout(reg) dst => _,
-                                r = lateout(reg) r,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out => _,
-                                out_tmp = lateout(reg) _,
-                                old_tmp = out(reg) _,
-                                new_tmp = out(reg) _,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
+                                dst = in(reg) dst,
+                                r = out(reg) r,
+                                old = inout(reg) old => _,
+                                new = inout(reg) new => _,
+                                out = in(reg) out,
+                                tmp = out(reg) _,
                             )
                         };
                     }
@@ -630,7 +624,7 @@ macro_rules! atomic64 {
                                 "2:",
                                     // load from dst to tmp pair
                                     "ldrexd r4, r5, [{dst}]",
-                                    // store val pair to dst
+                                    // try to store val pair to dst
                                     "strexd {r}, r2, r3, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
@@ -684,7 +678,7 @@ macro_rules! atomic64 {
                                 "2:",
                                     // load from dst to out pair
                                     "ldrexd r4, r5, [{dst}]",
-                                    // store val pair to dst
+                                    // try to store val pair to dst
                                     "strexd {r}, r2, r3, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
@@ -761,14 +755,14 @@ macro_rules! atomic64 {
                                     clrex!(),
                                     $acquire_failure,
                                 "4:",
-                                // store r4-r5 pair to out
+                                // store out pair to out
                                 "strd r4, r5, [{out}]",
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
+                                tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -810,14 +804,14 @@ macro_rules! atomic64 {
                                     clrex!(),
                                     $acquire_failure,
                                 "4:",
-                                // store r4-r5 pair to out
+                                // store out pair to out
                                 "strd r4, r5, [{out}]",
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
+                                tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -862,14 +856,14 @@ macro_rules! atomic64 {
                                 "4:", // store succeed
                                     dmb!(), // acquire_success
                                 "5:",
-                                // store r4-r5 pair to out
+                                // store out pair to out
                                 "strd r4, r5, [{out}]",
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
+                                tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -938,14 +932,14 @@ macro_rules! atomic64 {
                                     clrex!(),
                                 "4:",
                                 $acquire,
-                                // store r4-r5 pair to out
+                                // store out pair to out
                                 "strd r4, r5, [{out}]",
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
+                                tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -984,14 +978,14 @@ macro_rules! atomic64 {
                                 "4:", // store succeed
                                     dmb!(), // acquire_success
                                 "5:",
-                                // store r4-r5 pair to out
+                                // store out pair to out
                                 "strd r4, r5, [{out}]",
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
+                                tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -1029,14 +1023,14 @@ macro_rules! atomic64 {
                                     "4:", // compare or store failed
                                     dmb!(), // acquire_failure
                                 "5:",
-                                // store r4-r5 pair to out
+                                // store out pair to out
                                 "strd r4, r5, [{out}]",
                                 dst = inout(reg) dst => _,
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
                                 out = inout(reg) out => _,
-                                tmp = lateout(reg) _,
+                                tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,

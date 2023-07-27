@@ -10,10 +10,10 @@ aqrl
 armasm
 beqz
 bnez
-bstrpick
 bswap
 casp
 cbnz
+ccmp
 cdsg
 cinc
 cirruslabs
@@ -62,6 +62,8 @@ rcpc
 risbg
 rldicr
 rlwinm
+rsbegin
+rsend
 sched
 seqz
 sete
@@ -89,5 +91,4 @@ xmmword
 xori
 xorps
 yonah
-Zbuild
 Zsanitizer

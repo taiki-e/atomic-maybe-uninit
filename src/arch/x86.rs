@@ -5,14 +5,14 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - x86_64 https://godbolt.org/z/WaT48hczb
-// - x86_64 (+cmpxchg16b) https://godbolt.org/z/KhcYPs5fz
-// - x86 (i686) https://godbolt.org/z/8rWTzo3jd
-// - x86 (i686,-sse2) https://godbolt.org/z/nfx75xs8c
-// - x86 (i586) https://godbolt.org/z/qnKsnEE5b
-// - x86 (i586,-x87) https://godbolt.org/z/7haKrjzhq
-// - x86 (i486) https://godbolt.org/z/a1xjYcrhY
-// - x86 (i386) https://godbolt.org/z/oxYT8ncs5
+// - x86_64 https://godbolt.org/z/fvqWGT5E6
+// - x86_64 (+cmpxchg16b) https://godbolt.org/z/fGdj8naT9
+// - x86 (i686) https://godbolt.org/z/9jKcboaoG
+// - x86 (i686,-sse2) https://godbolt.org/z/sjYK57r96
+// - x86 (i586) https://godbolt.org/z/5rrzYGxPe
+// - x86 (i586,-x87) https://godbolt.org/z/GvcdhqxYo
+// - x86 (i486) https://godbolt.org/z/nPaGY4oEM
+// - x86 (i386) https://godbolt.org/z/YWEc63Kac
 
 use core::{
     arch::asm,

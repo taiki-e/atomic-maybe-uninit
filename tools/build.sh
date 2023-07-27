@@ -31,13 +31,11 @@ default_targets=(
     # rustc --print target-list | grep -E '^(aarch64|arm64)'
     aarch64-unknown-linux-gnu
     # aarch64 big endian
-    # TODO: compiler-builtins bug https://github.com/rust-lang/compiler-builtins/pull/539
-    # aarch64_be-unknown-linux-gnu
+    aarch64_be-unknown-linux-gnu
     # aarch64 ILP32 ABI
     aarch64-unknown-linux-gnu_ilp32
     # aarch64 ILP32 ABI big endian
-    # TODO: compiler-builtins bug https://github.com/rust-lang/compiler-builtins/pull/539
-    # aarch64_be-unknown-linux-gnu_ilp32
+    aarch64_be-unknown-linux-gnu_ilp32
     # aarch64 always support lse
     aarch64-apple-darwin
 
@@ -90,11 +88,18 @@ default_targets=(
 
     # mips
     # rustc --print target-list | grep -E '^mips'
+    # mips32r2
     mips-unknown-linux-gnu
     mipsel-unknown-linux-gnu
-    # mips64
+    # mips32r6
+    mipsisa32r6-unknown-linux-gnu
+    mipsisa32r6el-unknown-linux-gnu
+    # mips64r2
     mips64-unknown-linux-gnuabi64
     mips64el-unknown-linux-gnuabi64
+    # mips64r6
+    mipsisa64r6-unknown-linux-gnuabi64
+    mipsisa64r6el-unknown-linux-gnuabi64
 
     # powerpc
     # rustc --print target-list | grep -E '^powerpc'
@@ -151,10 +156,11 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
     nightly=1
     rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
     # -Z check-cfg requires 1.63.0-nightly
+    # we only check this on the recent nightly to avoid old clippy bugs.
     # shellcheck disable=SC2207
-    if [[ "${rustc_minor_version}" -ge 63 ]]; then
+    if [[ "${rustc_minor_version}" -ge 73 ]]; then
         build_scripts=(build.rs)
-        check_cfg='-Z unstable-options --check-cfg=values(target_pointer_width,"128") --check-cfg=values(feature,"cargo-clippy")'
+        check_cfg='-Z unstable-options --check-cfg=values(target_pointer_width,"128") --check-cfg=values(target_arch,"xtensa","mips32r6","mips64r6") --check-cfg=values(feature,"cargo-clippy")'
         known_cfgs+=($(grep -E 'cargo:rustc-cfg=' "${build_scripts[@]}" | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u))
         # TODO: handle multi-line target_feature_if
         known_target_feature_values+=($(grep -E 'target_feature_if\("' "${build_scripts[@]}" | sed -E 's/^.*target_feature_if\(//; s/",.*$/"/' | LC_ALL=C sort -u))

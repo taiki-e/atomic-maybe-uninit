@@ -44,7 +44,7 @@ jobs:
     uses: taiki-e/workflows/.github/workflows/msrv.yml@main
     with:
       event_name: ${{ github.event_name }}
-      args: -vvv --feature-powerset --optional-deps
+      args: --feature-powerset --optional-deps
   tidy:
     uses: taiki-e/workflows/.github/workflows/tidy.yml@main
 
@@ -66,8 +66,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - rust: nightly
             target: aarch64-unknown-linux-gnu
-          # TODO: compiler-builtins bug https://github.com/rust-lang/compiler-builtins/pull/539
-          - rust: nightly-2023-05-12
+          - rust: nightly
             target: aarch64_be-unknown-linux-gnu
           - rust: '1.59'
             target: arm-unknown-linux-gnueabi
@@ -119,6 +118,22 @@ jobs:
             target: mips64el-unknown-linux-gnuabi64
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
             target: mips64el-unknown-linux-gnuabi64
+          - rust: nightly-2023-07-18 # TODO: https://github.com/rust-lang/rust/pull/112374 broke build-std due to https://github.com/rust-lang/libc/pull/3268 is not released yet
+            target: mipsisa32r6-unknown-linux-gnu
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: mipsisa32r6-unknown-linux-gnu
+          - rust: nightly-2023-07-18 # TODO: https://github.com/rust-lang/rust/pull/112374 broke build-std due to https://github.com/rust-lang/libc/pull/3268 is not released yet
+            target: mipsisa32r6el-unknown-linux-gnu
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: mipsisa32r6el-unknown-linux-gnu
+          - rust: nightly-2023-07-18 # TODO: https://github.com/rust-lang/rust/pull/112374 broke build-std due to https://github.com/rust-lang/libc/pull/3268 is not released yet
+            target: mipsisa64r6-unknown-linux-gnuabi64
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: mipsisa64r6-unknown-linux-gnuabi64
+          - rust: nightly-2023-07-18 # TODO: https://github.com/rust-lang/rust/pull/112374 broke build-std due to https://github.com/rust-lang/libc/pull/3268 is not released yet
+            target: mipsisa64r6el-unknown-linux-gnuabi64
+          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: mipsisa64r6el-unknown-linux-gnuabi64
           - rust: nightly
             target: powerpc-unknown-linux-gnu
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)

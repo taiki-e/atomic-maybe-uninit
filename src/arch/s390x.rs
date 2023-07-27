@@ -6,8 +6,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/1b18nxfzs
-// - s390x (z196) https://godbolt.org/z/ezoWETv8E
+// - s390x https://godbolt.org/z/aMqh7dd4r
+// - s390x (z196) https://godbolt.org/z/6716oaY4a
 
 use core::{
     arch::asm,
@@ -19,6 +19,7 @@ use core::{
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
+// Extracts and checks condition code.
 #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
 #[inline]
 fn extract_cc(r: i64) -> bool {
@@ -133,10 +134,10 @@ macro_rules! atomic {
                             "jl 2b",
                         // store r0 to out
                         concat!("st", $st_suffix, " %r0, 0({out})"),
-                        dst = inout(reg) ptr_reg!(dst) => _,
+                        dst = in(reg) ptr_reg!(dst),
                         val = in(reg) ptr_reg!(val),
                         val_tmp = out(reg) _,
-                        out = inout(reg) ptr_reg!(out) => _,
+                        out = in(reg) ptr_reg!(out),
                         out("r0") _,
                         options(nostack),
                     );
@@ -169,16 +170,15 @@ macro_rules! atomic {
                         concat!("l", $asm_suffix, " {tmp}, 0({new})"),
                         // (atomic) compare and exchange
                         concat!("cs", $asm_suffix, " %r0, {tmp}, 0({dst})"),
-                        // store condition code to r
-                        "ipm {r}",
+                        // store condition code
+                        "ipm {tmp}",
                         // store r0 to out
                         concat!("st", $st_suffix, " %r0, 0({out})"),
                         dst = in(reg) ptr_reg!(dst),
                         old = in(reg) ptr_reg!(old),
                         new = in(reg) ptr_reg!(new),
-                        tmp = out(reg) _,
-                        out = inout(reg) ptr_reg!(out) => _,
-                        r = lateout(reg) r,
+                        tmp = out(reg) r,
+                        out = in(reg) ptr_reg!(out),
                         out("r0") _,
                         options(nostack),
                     );
@@ -280,13 +280,13 @@ macro_rules! atomic8 {
                             "cs %r4, %r12, 0(%r3)",
                             "jl 2b",
                         "3:",
-                        // store condition code to r2
-                        "ipm %r2",
+                        // store condition code
+                        "ipm %r0",
                         "stc %r13, 0({out})",
                         out = in(reg) ptr_reg!(out),
-                        out("r0") _,
+                        out("r0") r,
                         out("r1") _,
-                        inout("r2") ptr_reg!(dst) => r,
+                        inout("r2") ptr_reg!(dst) => _,
                         inout("r3") ptr_reg!(old) => _,
                         inout("r4") ptr_reg!(new) => _,
                         out("r12") _,
@@ -392,13 +392,13 @@ macro_rules! atomic16 {
                             "cs %r4, %r12, 0(%r3)",
                             "jl 2b",
                         "3:",
-                        // store condition code to r2
-                        "ipm %r2",
+                        // store condition code
+                        "ipm %r0",
                         "sth %r13, 0({out})",
                         out = in(reg) ptr_reg!(out),
-                        out("r0") _,
+                        out("r0") r,
                         out("r1") _,
-                        inout("r2") ptr_reg!(dst) => r,
+                        inout("r2") ptr_reg!(dst) => _,
                         inout("r3") ptr_reg!(old) => _,
                         inout("r4") ptr_reg!(new) => _,
                         out("r12") _,
@@ -441,16 +441,16 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load from src to r0-r1 pair
+                        // (atomic) load from src to out pair
                         "lpq %r0, 0({src})",
-                        // store r0-r1 pair to out
+                        // store out pair to out
                         "stg %r1, 8({out})",
                         "stg %r0, 0({out})",
                         src = in(reg) ptr_reg!(src),
                         out = in(reg) ptr_reg!(out),
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        out("r0") _,
-                        out("r1") _,
+                        out("r0") _, // out (hi)
+                        out("r1") _, // out (lo)
                         options(nostack, preserves_flags),
                     );
                 }
@@ -471,17 +471,17 @@ macro_rules! atomic128 {
                     macro_rules! atomic_store {
                         ($fence:tt) => {
                             asm!(
-                                // load from val to r0-r1 pair
+                                // load from val to val pair
                                 "lg %r1, 8({val})",
                                 "lg %r0, 0({val})",
-                                // (atomic) store r0-r1 pair to dst
+                                // (atomic) store val pair to dst
                                 "stpq %r0, 0({dst})",
                                 $fence,
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) ptr_reg!(val),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                out("r0") _,
-                                out("r1") _,
+                                out("r0") _, // val (hi)
+                                out("r1") _, // val (lo)
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -522,7 +522,7 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
-                        // load from val to r0-r1 pair
+                        // load from val to val pair
                         "lg %r1, 8({val})",
                         "lg %r0, 0({val})",
                         // (atomic) swap (CAS loop)
@@ -530,7 +530,7 @@ macro_rules! atomic128 {
                         "2:",
                             "cdsg %r2, %r0, 0({dst})",
                             "jl 2b",
-                        // store r2-r3 pair to out
+                        // store out pair to out
                         "stg %r3, 8({out})",
                         "stg %r2, 0({out})",
                         dst = inout(reg) ptr_reg!(dst) => _,
@@ -567,16 +567,16 @@ macro_rules! atomic128 {
                     let mut r: i64;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // load from old/new to r0-r1/r12-r13 pairs
+                        // load from old/new to old/new pairs
                         "lg %r1, 8({old})",
                         "lg %r0, 0({old})",
                         "lg %r13, 8({new})",
                         "lg %r12, 0({new})",
                         // (atomic) compare and exchange
                         "cdsg %r0, %r12, 0({dst})",
-                        // store condition code to r
+                        // store condition code
                         "ipm {r}",
-                        // store r0-r1 pair to out
+                        // store out pair to out
                         "stg %r1, 8({out})",
                         "stg %r0, 0({out})",
                         dst = in(reg) ptr_reg!(dst),

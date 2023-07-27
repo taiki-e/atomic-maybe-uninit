@@ -1,10 +1,10 @@
-// MIPS32r2 and MIPS64r2
+// MIPS32 and MIPS64
 //
 // Generated asm:
-// - mips https://godbolt.org/z/61MdnaaeW
-// - mipsel https://godbolt.org/z/1TfMh4P13
-// - mips64 https://godbolt.org/z/eYhvTcM4P
-// - mips64el https://godbolt.org/z/cvrWrhYh8
+// - mips https://godbolt.org/z/oraj5srMn
+// - mipsel https://godbolt.org/z/41hexMPsf
+// - mips64 https://godbolt.org/z/3exjdnMWG
+// - mips64el https://godbolt.org/z/z5rhsKzsj
 
 use core::{
     arch::asm,
@@ -27,13 +27,13 @@ macro_rules! if_be {
     };
 }
 
-#[cfg(target_arch = "mips")]
+#[cfg(any(target_arch = "mips", target_arch = "mips32r6"))]
 macro_rules! daddiu {
     () => {
         "addiu"
     };
 }
-#[cfg(target_arch = "mips64")]
+#[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
 macro_rules! daddiu {
     () => {
         "daddiu"
@@ -53,9 +53,9 @@ macro_rules! atomic_rmw {
     };
 }
 
-#[cfg(target_arch = "mips")]
+#[cfg(any(target_arch = "mips", target_arch = "mips32r6"))]
 type XSize = u32;
-#[cfg(target_arch = "mips64")]
+#[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
 type XSize = u64;
 
 macro_rules! atomic_load_store {
@@ -139,8 +139,8 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt, $asm_ll_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix, $asm_u_suffix);
+    ($int_type:ident, $asm_suffix:tt, $asm_ll_suffix:tt) => {
+        atomic_load_store!($int_type, $asm_suffix, "");
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -168,7 +168,7 @@ macro_rules! atomic {
                                     // load from dst to out_tmp
                                     concat!("ll", $asm_ll_suffix, " {out_tmp}, 0({dst})"),
                                     "move {r}, {val_tmp}",
-                                    // store val to dst
+                                    // try to store val to dst
                                     concat!("sc", $asm_ll_suffix, " {r}, 0({dst})"),
                                     // 1 if the store was successful, 0 if no store was performed
                                     "beqz {r}, 2b",
@@ -180,7 +180,7 @@ macro_rules! atomic {
                                 val = in(reg) ptr_reg!(val),
                                 out = inout(reg) ptr_reg!(out) => _,
                                 val_tmp = out(reg) _,
-                                out_tmp = lateout(reg) _,
+                                out_tmp = out(reg) _,
                                 r = lateout(reg) _,
                                 options(nostack),
                             )
@@ -223,7 +223,7 @@ macro_rules! atomic {
                                     concat!("ll", $asm_ll_suffix, " {out_tmp}, 0({dst})"),
                                     "bne {out_tmp}, {old_tmp}, 3f", // compare and jump if compare failed
                                     "move {r}, {new_tmp}",
-                                    // store new to dst
+                                    // try to store new to dst
                                     concat!("sc", $asm_ll_suffix, " {r}, 0({dst})"),
                                     // 1 if the store was successful, 0 if no store was performed
                                     "beqz {r}, 2b", // continue loop if store failed
@@ -240,7 +240,7 @@ macro_rules! atomic {
                                 out = inout(reg) ptr_reg!(out) => _,
                                 new_tmp = out(reg) _,
                                 old_tmp = out(reg) _,
-                                out_tmp = lateout(reg) _,
+                                out_tmp = out(reg) _,
                                 r = lateout(reg) r,
                                 options(nostack),
                             )
@@ -256,9 +256,9 @@ macro_rules! atomic {
 }
 
 #[rustfmt::skip]
-macro_rules! atomic8 {
-    ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix, $asm_u_suffix);
+macro_rules! atomic_sub_word {
+    ($int_type:ident, $asm_suffix:tt, $xor_mask:tt, $max:tt) => {
+        atomic_load_store!($int_type, $asm_suffix, "u");
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -283,16 +283,14 @@ macro_rules! atomic8 {
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/Mips/atomic.ll
                                 ".set push",
                                 ".set noat",
-                                // create aligned address and masks
-                                // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
                                 concat!(daddiu!(), " $2, $zero, -4"),
                                 "andi $3, $4, 3",
-                                "lbu {tmp}, 0($5)",
+                                concat!("l", $asm_suffix, "u {tmp}, 0($5)"),
                                 $release,
-                                if_be!("xori $3, $3, 3"),
+                                if_be!(concat!("xori $3, $3, ", $xor_mask)),
                                 "and $2, $4, $2",
                                 "sll $3, $3, 3",
-                                "ori $4, $zero, 255",
+                                concat!("ori $4, $zero, ", $max),
                                 "sllv $4, $4, $3",
                                 "sllv $7, {tmp}, $3",
                                 "nor $5, $zero, $4",
@@ -304,11 +302,11 @@ macro_rules! atomic8 {
                                     "or $10, $10, $9",
                                     "sc $10, 0($2)",
                                     "beqz $10, 2b",
-                                    "and {tmp}, $8, $4",
-                                    "srlv {tmp}, {tmp}, $3",
-                                    "seb {tmp}, {tmp}",
+                                "and {tmp}, $8, $4",
+                                "srlv {tmp}, {tmp}, $3",
+                                concat!("se", $asm_suffix, " {tmp}, {tmp}"),
                                 $acquire,
-                                "sb {tmp}, 0({out})",
+                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 ".set pop",
                                 out = in(reg) ptr_reg!(out),
                                 tmp = out(reg) _,
@@ -358,16 +356,16 @@ macro_rules! atomic8 {
                                 ".set push",
                                 ".set noat",
                                 concat!(daddiu!(), " $3, $zero, -4"),
-                                "lbu $2, 0($6)", // new
-                                "lb {tmp}, 0($5)",  // old
-                                "ori $5, $zero, 255",
+                                concat!("l", $asm_suffix, "u $2, 0($6)"), // new
+                                concat!("l", $asm_suffix, " {tmp}, 0($5)"),  // old
+                                concat!("ori $5, $zero, ", $max),
                                 $release,
                                 "and $3, $4, $3",
                                 "andi $4, $4, 3",
-                                if_be!("xori $4, $4, 3"),
+                                if_be!(concat!("xori $4, $4, ", $xor_mask)),
                                 "sll $4, $4, 3",
-                                "andi $8, {tmp}, 255",
-                                "andi $2, $2, 255",
+                                concat!("andi $8, {tmp}, ", $max),
+                                concat!("andi $2, $2, ", $max),
                                 "sllv $5, $5, $4",
                                 "sllv $8, $8, $4",
                                 "sllv $9, $2, $4",
@@ -382,10 +380,10 @@ macro_rules! atomic8 {
                                     "beqz $10, 2b",
                                 "3:",
                                 "srlv $2, $11, $4",
-                                "seb $2, $2",
+                                concat!("se", $asm_suffix, " $2, $2"),
                                 $acquire,
                                 "xor {tmp}, $2, {tmp}",
-                                "sb $2, 0({out})",
+                                concat!("s", $asm_suffix, " $2, 0({out})"),
                                 "sltiu $2, {tmp}, 1",
                                 ".set pop",
                                 out = in(reg) ptr_reg!(out),
@@ -412,181 +410,24 @@ macro_rules! atomic8 {
     };
 }
 
-#[rustfmt::skip]
-macro_rules! atomic16 {
-    ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix, $asm_u_suffix);
-        impl AtomicSwap for $int_type {
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
-                order: Ordering,
-            ) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                // Implement sub-word atomic operations using word-sized LL/SC loop.
-                                // Based on assemblies generated by rustc/LLVM.
-                                // Refs:
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/Mips/atomic.ll
-                                ".set push",
-                                ".set noat",
-                                // create aligned address and masks
-                                // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                                concat!(daddiu!(), " $2, $zero, -4"),
-                                "andi $3, $4, 3",
-                                "lhu {tmp}, 0($5)",
-                                $release,
-                                if_be!("xori $3, $3, 2"),
-                                "and $2, $4, $2",
-                                "sll $3, $3, 3",
-                                "ori $4, $zero, 65535",
-                                "sllv $4, $4, $3",
-                                "sllv $7, {tmp}, $3",
-                                "nor $5, $zero, $4",
-                                // (atomic) swap
-                                "2:",
-                                    "ll $8, 0($2)",
-                                    "and $9, $7, $4",
-                                    "and $10, $8, $5",
-                                    "or $10, $10, $9",
-                                    "sc $10, 0($2)",
-                                    "beqz $10, 2b",
-                                    "and {tmp}, $8, $4",
-                                    "srlv {tmp}, {tmp}, $3",
-                                    "seh {tmp}, {tmp}",
-                                $acquire,
-                                "sh {tmp}, 0({out})",
-                                ".set pop",
-                                out = in(reg) ptr_reg!(out),
-                                tmp = out(reg) _,
-                                out("$2") _, // dst ptr (aligned)
-                                out("$3") _,
-                                inout("$4") ptr_reg!(dst) => _,
-                                inout("$5") ptr_reg!(val) => _,
-                                out("$7") _,
-                                out("$8") _,
-                                out("$9") _,
-                                out("$10") _,
-                                options(nostack),
-                            )
-                        };
-                    }
-                    atomic_rmw!(swap, order);
-                }
-            }
-        }
-        impl AtomicCompareExchange for $int_type {
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
-                success: Ordering,
-                failure: Ordering,
-            ) -> bool {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-                let order = crate::utils::upgrade_success_ordering(success, failure);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let mut r: XSize;
-                    macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                // Implement sub-word atomic operations using word-sized LL/SC loop.
-                                // Based on assemblies generated by rustc/LLVM.
-                                // Refs:
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/Mips/atomic.ll
-                                ".set push",
-                                ".set noat",
-                                concat!(daddiu!(), " $3, $zero, -4"),
-                                "lhu $2, 0($6)", // new
-                                "lh {tmp}, 0($5)", // old
-                                "ori $5, $zero, 65535",
-                                $release,
-                                "and $3, $4, $3",
-                                "andi $4, $4, 3",
-                                if_be!("xori $4, $4, 2"),
-                                "sll $4, $4, 3",
-                                "andi $8, {tmp}, 65535",
-                                "andi $2, $2, 65535",
-                                "sllv $5, $5, $4",
-                                "sllv $8, $8, $4",
-                                "sllv $9, $2, $4",
-                                "nor $6, $zero, $5",
-                                "2:",
-                                    "ll $10, 0($3)",
-                                    "and $11, $10, $5",
-                                    "bne $11, $8, 3f",
-                                    "and $10, $10, $6",
-                                    "or $10, $10, $9",
-                                    "sc $10, 0($3)",
-                                    "beqz $10, 2b",
-                                "3:",
-                                "srlv $2, $11, $4",
-                                "seh $2, $2",
-                                $acquire,
-                                "xor {tmp}, $2, {tmp}",
-                                "sh $2, 0({out})",
-                                "sltiu $2, {tmp}, 1",
-                                ".set pop",
-                                out = in(reg) ptr_reg!(out),
-                                tmp = out(reg) _,
-                                out("$2") r,
-                                out("$3") _, // dst (aligned)
-                                inout("$4") ptr_reg!(dst) => _,
-                                inout("$5") ptr_reg!(old) => _,
-                                inout("$6") ptr_reg!(new) => _,
-                                out("$8") _,
-                                out("$9") _,
-                                out("$10") _,
-                                out("$11") _,
-                                options(nostack),
-                            )
-                        };
-                    }
-                    atomic_rmw!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
-                }
-            }
-        }
-    };
-}
-
-atomic8!(i8, "b", "u");
-atomic8!(u8, "b", "u");
-atomic16!(i16, "h", "u");
-atomic16!(u16, "h", "u");
-atomic!(i32, "w", "", "");
-atomic!(u32, "w", "", "");
-#[cfg(target_arch = "mips64")]
-atomic!(i64, "d", "", "d");
-#[cfg(target_arch = "mips64")]
-atomic!(u64, "d", "", "d");
+atomic_sub_word!(i8, "b", "3", "255");
+atomic_sub_word!(u8, "b", "3", "255");
+atomic_sub_word!(i16, "h", "2", "65535");
+atomic_sub_word!(u16, "h", "2", "65535");
+atomic!(i32, "w", "");
+atomic!(u32, "w", "");
+#[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
+atomic!(i64, "d", "d");
+#[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
+atomic!(u64, "d", "d");
 #[cfg(target_pointer_width = "32")]
-atomic!(isize, "w", "", "");
+atomic!(isize, "w", "");
 #[cfg(target_pointer_width = "32")]
-atomic!(usize, "w", "", "");
+atomic!(usize, "w", "");
 #[cfg(target_pointer_width = "64")]
-atomic!(isize, "d", "", "d");
+atomic!(isize, "d", "d");
 #[cfg(target_pointer_width = "64")]
-atomic!(usize, "d", "", "d");
+atomic!(usize, "d", "d");
 
 #[cfg(test)]
 mod tests {
@@ -598,9 +439,9 @@ mod tests {
     test_atomic!(u16);
     test_atomic!(i32);
     test_atomic!(u32);
-    #[cfg(target_arch = "mips64")]
+    #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
     test_atomic!(i64);
-    #[cfg(target_arch = "mips64")]
+    #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
     test_atomic!(u64);
 
     // load/store/swap implementation is not affected by signedness, so it is
@@ -608,6 +449,6 @@ mod tests {
     stress_test!(u8);
     stress_test!(u16);
     stress_test!(u32);
-    #[cfg(target_arch = "mips64")]
+    #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
     stress_test!(u64);
 }

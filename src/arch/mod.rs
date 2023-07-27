@@ -7,7 +7,6 @@
 // - LLVM LangRef: https://llvm.org/docs/LangRef.html#inline-assembler-expressions
 // - inline assembly related issues in rust-lang/rust: https://github.com/rust-lang/rust/labels/A-inline-assembly
 
-// TODO: mips32r6, mips64r6?
 #[cfg(not(any(
     target_arch = "x86",
     target_arch = "x86_64",
@@ -20,11 +19,13 @@
     target_arch = "riscv64",
     target_arch = "loongarch64",
     target_arch = "mips",
+    target_arch = "mips32r6",
     target_arch = "mips64",
+    target_arch = "mips64r6",
+    target_arch = "msp430",
     target_arch = "powerpc",
     target_arch = "powerpc64",
     target_arch = "s390x",
-    target_arch = "msp430",
 )))]
 compile_error!("this target is not supported yet");
 
@@ -51,7 +52,12 @@ mod arm;
 mod armv8;
 #[cfg(target_arch = "loongarch64")]
 mod loongarch;
-#[cfg(any(target_arch = "mips", target_arch = "mips64"))]
+#[cfg(any(
+    target_arch = "mips",
+    target_arch = "mips32r6",
+    target_arch = "mips64",
+    target_arch = "mips64r6",
+))]
 mod mips;
 #[cfg(target_arch = "msp430")]
 mod msp430;

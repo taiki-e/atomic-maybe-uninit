@@ -12,12 +12,12 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/8bhjvcETc
-// - aarch64 msvc https://godbolt.org/z/nqzMxq1fW
-// - aarch64 (+lse) https://godbolt.org/z/njj3n8xe1
-// - aarch64 msvc (+lse) https://godbolt.org/z/TbvbcMP9f
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/91EP1Tvfq
-// - aarch64 (+rcpc) https://godbolt.org/z/oYEhW56vo
+// - aarch64 https://godbolt.org/z/Yobx165PP
+// - aarch64 msvc https://godbolt.org/z/T5af7s747
+// - aarch64 (+lse) https://godbolt.org/z/eW7n171o5
+// - aarch64 msvc (+lse) https://godbolt.org/z/de8n7aGrK
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/Mc1W1z8e3
+// - aarch64 (+rcpc) https://godbolt.org/z/c4eccqa41
 
 use core::{
     arch::asm,
@@ -186,7 +186,7 @@ macro_rules! atomic {
                                 "2:",
                                     // load from dst to out_tmp
                                     concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
-                                    // store val to dst
+                                    // try to store val to dst
                                     concat!("st", $release, "xr", $asm_suffix, " {r:w}, {val_tmp", $val_modifier, "}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
@@ -197,7 +197,7 @@ macro_rules! atomic {
                                 val = in(reg) ptr_reg!(val),
                                 val_tmp = out(reg) _,
                                 out = inout(reg) ptr_reg!(out) => _,
-                                out_tmp = lateout(reg) _,
+                                out_tmp = out(reg) _,
                                 r = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -241,7 +241,7 @@ macro_rules! atomic {
                                 concat!("cas", $acquire, $release, $asm_suffix, " {out_tmp", $val_modifier, "}, {new_tmp", $val_modifier, "}, [{dst}]"),
                                 $fence,
                                 concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
-                                // store tmp to out
+                                // store out_tmp to out
                                 concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out}]"),
                                 "cset {r:w}, eq",
                                 dst = inout(reg) ptr_reg!(dst) => _,
@@ -250,7 +250,7 @@ macro_rules! atomic {
                                 new = in(reg) ptr_reg!(new),
                                 new_tmp = out(reg) _,
                                 out = inout(reg) ptr_reg!(out) => _,
-                                out_tmp = lateout(reg) _,
+                                out_tmp = out(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
@@ -288,7 +288,7 @@ macro_rules! atomic {
                                 new = in(reg) ptr_reg!(new),
                                 new_tmp = out(reg) _,
                                 out = inout(reg) ptr_reg!(out) => _,
-                                out_tmp = lateout(reg) _,
+                                out_tmp = out(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
@@ -348,7 +348,7 @@ macro_rules! atomic {
                                 new = in(reg) ptr_reg!(new),
                                 new_tmp = out(reg) _,
                                 out = inout(reg) ptr_reg!(out) => _,
-                                out_tmp = lateout(reg) _,
+                                out_tmp = out(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
@@ -474,14 +474,14 @@ macro_rules! atomic128 {
                                 // Refs:
                                 // - https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
                                 // - https://github.com/taiki-e/portable-atomic/pull/20
-                                concat!("casp", $acquire, $release, " x4, x5, x4, x5, [{src}]"),
+                                concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"),
                                 // store out pair to out
-                                "stp x4, x5, [{out}]",
+                                "stp x2, x3, [{out}]",
                                 src = in(reg) ptr_reg!(src),
                                 out = in(reg) ptr_reg!(out),
                                 // must be allocated to even/odd register pair
-                                inout("x4") 0_u64 => _, // out_lo
-                                inout("x5") 0_u64 => _, // out_lo
+                                inout("x2") 0_u64 => _, // out_lo
+                                inout("x3") 0_u64 => _, // out_lo
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -567,20 +567,18 @@ macro_rules! atomic128 {
                                 "ldp {val_lo}, {val_hi}, [{val}]",
                                 // (atomic) store val pair to dst
                                 "2:",
-                                    // load from dst to tmp pair
-                                    concat!("ld", $acquire, "xp {tmp_lo}, {tmp_hi}, [{dst}]"),
-                                    // store val pair to dst
-                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst}]"),
+                                    // load from dst to xzr/tmp pair
+                                    concat!("ld", $acquire, "xp xzr, {tmp}, [{dst}]"),
+                                    // try to store val pair to dst
+                                    concat!("st", $release, "xp {tmp:w}, {val_lo}, {val_hi}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b",
+                                    "cbnz {tmp:w}, 2b",
                                 $fence,
                                 dst = inout(reg) ptr_reg!(dst) => _,
                                 val = in(reg) ptr_reg!(val),
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
-                                tmp_hi = lateout(reg) _,
-                                tmp_lo = lateout(reg) _,
-                                r = lateout(reg) _,
+                                tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -612,7 +610,7 @@ macro_rules! atomic128 {
                                 "2:",
                                     // load from dst to out pair
                                     concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{dst}]"),
-                                    // store val pair to dst
+                                    // try to store val pair to dst
                                     concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cbnz {r:w}, 2b",
@@ -624,8 +622,8 @@ macro_rules! atomic128 {
                                 out = inout(reg) ptr_reg!(out) => _,
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
-                                out_hi = lateout(reg) _,
-                                out_lo = lateout(reg) _,
+                                out_hi = out(reg) _,
+                                out_lo = out(reg) _,
                                 r = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -653,47 +651,42 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let r: i32;
+                    let mut r: i32;
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
-                                // load from old/new to x6-x7/x4-x5 pairs
-                                "ldp x6, x7, [{old}]",
+                                // load from old/new to old/new pairs
+                                "ldp {old_lo}, {old_hi}, [{old}]",
                                 "ldp x4, x5, [{new}]",
                                 // casp writes the current value to the first register pair,
                                 // so copy the `old`'s value for later comparison.
-                                "mov x8, x6",
-                                "mov x9, x7",
+                                "mov x8, {old_lo}",
+                                "mov x9, {old_hi}",
                                 // (atomic) compare and exchange
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
                                 concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"),
                                 $fence,
-                                // compare x6-x7 pair and x8-x9 pair
-                                "eor {tmp_hi}, x9, x7",
-                                "eor {tmp_lo}, x8, x6",
-                                "orr {tmp_hi}, {tmp_lo}, {tmp_hi}",
-                                // store tmp to out
-                                "stp x8, x9, [{out}]",
-                                "cmp {tmp_hi}, #0",
+                                // compare old pair and out pair
+                                "cmp x8, {old_lo}",
+                                "ccmp x9, {old_hi}, #0, eq",
                                 "cset {r:w}, eq",
-                                dst = inout(reg) ptr_reg!(dst) => _,
+                                // store out pair to out
+                                "stp x8, x9, [{out}]",
+                                dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) ptr_reg!(old),
                                 new = in(reg) ptr_reg!(new),
                                 out = inout(reg) ptr_reg!(out) => _,
+                                old_lo = out(reg) _,
+                                old_hi = out(reg) _,
                                 r = lateout(reg) r,
-                                tmp_hi = lateout(reg) _,
-                                tmp_lo = lateout(reg) _,
-                                // must be allocated to even/odd register pair
-                                out("x6") _, // old_lo
-                                out("x7") _, // old_hi
-                                // must be allocated to even/odd register pair
+                                // new pair - must be allocated to even/odd register pair
                                 out("x4") _, // new_lo
                                 out("x5") _, // new_hi
-                                // must be allocated to even/odd register pair
+                                // out pair - must be allocated to even/odd register pair
                                 out("x8") _, // out_lo
                                 out("x9") _, // out_hi
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP and CCMP modify the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -736,8 +729,8 @@ macro_rules! atomic128 {
                                 new_hi = out(reg) _,
                                 new_lo = out(reg) _,
                                 out = inout(reg) ptr_reg!(out) => _,
-                                out_hi = lateout(reg) _,
-                                out_lo = lateout(reg) _,
+                                out_hi = out(reg) _,
+                                out_lo = out(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),

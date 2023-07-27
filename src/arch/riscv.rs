@@ -7,8 +7,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/nnGcqbd85
-// - riscv32imac https://godbolt.org/z/EWjPGed4b
+// - riscv64gc https://godbolt.org/z/TGWeoTj4x
+// - riscv32imac https://godbolt.org/z/4Y7v5cTqo
 
 use core::{
     arch::asm,
@@ -19,21 +19,6 @@ use core::{
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
-
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-#[cfg(target_arch = "riscv32")]
-macro_rules! if_64 {
-    ($($tt:tt)*) => {
-        ""
-    };
-}
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-#[cfg(target_arch = "riscv64")]
-macro_rules! if_64 {
-    ($($tt:tt)*) => {
-        $($tt)*
-    };
-}
 
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
 #[cfg(target_arch = "riscv32")]
@@ -214,18 +199,18 @@ macro_rules! atomic {
                     macro_rules! swap {
                         ($order:tt) => {
                             asm!(
-                                // load val to val_tmp
+                                // load from val (ptr) to val (val)
                                 concat!("l", $asm_suffix, " {val}, 0({val})"),
                                 // (atomic) swap (AMO)
-                                // - load value from dst and store it to out_tmp
-                                // - store value of val_tmp to dst
-                                concat!("amoswap.", $asm_suffix, $order, " {out_tmp}, {val}, 0({dst})"),
-                                // store out_tmp to out
-                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
+                                // - load value from dst and store it to tmp
+                                // - store value of val to dst
+                                concat!("amoswap.", $asm_suffix, $order, " {tmp}, {val}, 0({dst})"),
+                                // store tmp to out
+                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 dst = in(reg) ptr_reg!(dst),
                                 val = inout(reg) ptr_reg!(val) => _,
                                 out = inout(reg) ptr_reg!(out) => _,
-                                out_tmp = lateout(reg) _,
+                                tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -257,25 +242,25 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load old/new to old_tmp/new_tmp
+                                // load from old/new (ptr) to old/new (val)
                                 concat!("l", $asm_suffix, " {old}, 0({old})"),
                                 concat!("l", $asm_suffix, " {new}, 0({new})"),
                                 // (atomic) compare and exchange
                                 "2:",
-                                    concat!("lr.", $asm_suffix, $acquire, " {out_tmp}, 0({dst})"),
-                                    "bne {out_tmp}, {old}, 3f", // compare and jump if compare failed
+                                    concat!("lr.", $asm_suffix, $acquire, " {tmp}, 0({dst})"),
+                                    "bne {tmp}, {old}, 3f", // compare and jump if compare failed
                                     concat!("sc.", $asm_suffix, $release, " {r}, {new}, 0({dst})"),
                                     "bnez {r}, 2b", // continue loop if store failed
                                 "3:",
-                                "xor {r}, {out_tmp}, {old}",
+                                "xor {r}, {tmp}, {old}",
                                 "seqz {r}, {r}",
-                                // store out_tmp to out
-                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
+                                // store tmp to out
+                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 dst = in(reg) ptr_reg!(dst),
                                 old = inout(reg) ptr_reg!(old) => _,
                                 new = inout(reg) ptr_reg!(new) => _,
                                 out = in(reg) ptr_reg!(out),
-                                out_tmp = out(reg) _,
+                                tmp = out(reg) _,
                                 r = out(reg) r,
                                 options(nostack, preserves_flags),
                             )
@@ -291,8 +276,8 @@ macro_rules! atomic {
 }
 
 #[rustfmt::skip]
-macro_rules! atomic8 {
-    ($int_type:ident, $asm_suffix:tt) => {
+macro_rules! atomic_sub_word {
+    ($int_type:ident, $asm_suffix:tt, $create_mask:expr) => {
         atomic_load_store!($int_type, $asm_suffix);
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
         impl AtomicSwap for $int_type {
@@ -317,12 +302,10 @@ macro_rules! atomic8 {
                                 // Refs:
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/RISCV/atomic-rmw.ll
-                                "lbu a1, 0({val})",
-                                // create aligned address and masks
-                                // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
+                                concat!("l", $asm_suffix, "u a1, 0(a1)"),
                                 "andi a6, a0, -4",
                                 "slli a0, a0, 3",
-                                "li a4, 255",
+                                $create_mask,
                                 concat!(sllw!(), " a4, a4, a0"),
                                 concat!(sllw!(), " a1, a1, a0"),
                                 // (atomic) swap (LR/SC)
@@ -335,11 +318,10 @@ macro_rules! atomic8 {
                                     concat!("sc.w", $release, " a3, a3, 0(a6)"),
                                     "bnez a3, 2b",
                                 concat!(srlw!(), " a0, a5, a0"),
-                                "sb a0, 0({out})",
-                                val = in(reg) ptr_reg!(val),
-                                out = inout(reg) ptr_reg!(out) => _,
+                                concat!("s", $asm_suffix, " a0, 0({out})"),
+                                out = in(reg) ptr_reg!(out),
                                 inout("a0") ptr_reg!(dst) => _,
-                                lateout("a1") _,
+                                inout("a1") ptr_reg!(val) => _,
                                 out("a3") _,
                                 out("a4") _,
                                 out("a5") _,
@@ -380,180 +362,37 @@ macro_rules! atomic8 {
                                 // Refs:
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
                                 // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/RISCV/atomic-rmw.ll
-                                "lbu a1, 0(a1)",
-                                "lbu a2, 0(a2)",
-                                // create aligned address and masks
-                                // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
+                                concat!("l", $asm_suffix, "u a1, 0(a1)"),
+                                concat!("l", $asm_suffix, "u a2, 0(a2)"),
                                 "andi a6, a0, -4",
                                 "slli a0, a0, 3",
-                                "li a5, 255",
-                                concat!(sllw!(), " a5, a5, a0"),
+                                $create_mask,
+                                concat!(sllw!(), " a4, a4, a0"),
                                 concat!(sllw!(), " a7, a1, a0"),
                                 concat!(sllw!(), " a2, a2, a0"),
                                 // (atomic) compare and exchange (LR/SC loop)
                                 "2:",
-                                    concat!("lr.w", $acquire, " a4, 0(a6)"),
-                                    "and a1, a4, a5",
+                                    concat!("lr.w", $acquire, " a5, 0(a6)"),
+                                    "and a1, a5, a4",
                                     "bne a1, a7, 3f",
-                                    "xor a1, a4, a2",
-                                    "and a1, a1, a5",
-                                    "xor a1, a1, a4",
+                                    "xor a1, a5, a2",
+                                    "and a1, a1, a4",
+                                    "xor a1, a1, a5",
                                     concat!("sc.w", $release, " a1, a1, 0(a6)"),
                                     "bnez a1, 2b",
                                 "3:",
-                                concat!(srlw!(), " a1, a4, a0"),
-                                "and a0, a4, a5",
-                                if_64!("sext.w a0, a0"),
-                                "xor a0, a7, a0",
+                                concat!(srlw!(), " a1, a5, a0"),
+                                "and a5, a5, a4",
+                                "xor a0, a7, a5",
                                 "seqz a0, a0",
-                                "sb a1, 0({out})",
-                                out = inout(reg) ptr_reg!(out) => _,
+                                concat!("s", $asm_suffix, " a1, 0({out})"),
+                                out = in(reg) ptr_reg!(out),
                                 inout("a0") ptr_reg!(dst) => r,
                                 inout("a1") ptr_reg!(old) => _,
                                 inout("a2") ptr_reg!(new) => _,
-                                out("a4") _,
-                                out("a5") _,
-                                out("a6") _,
-                                out("a7") _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    atomic_rmw_lr_sc!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
-                }
-            }
-        }
-    };
-}
-
-#[rustfmt::skip]
-macro_rules! atomic16 {
-    ($int_type:ident, $asm_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix);
-        #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-        impl AtomicSwap for $int_type {
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
-                order: Ordering,
-            ) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                // Implement sub-word atomic operations using word-sized LL/SC loop.
-                                // Based on assemblies generated by rustc/LLVM.
-                                // Refs:
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/RISCV/atomic-rmw.ll
-                                "lhu a1, 0({val})",
-                                // create aligned address and masks
-                                // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                                "andi a6, a0, -4",
-                                "slli a0, a0, 3",
-                                "lui a4, 16",
-                                concat!(addiw!(), " a4, a4, -1"),
-                                concat!(sllw!(), " a4, a4, a0"),
-                                concat!(sllw!(), " a1, a1, a0"),
-                                // (atomic) swap (LR/SC)
-                                "2:",
-                                    concat!("lr.w", $acquire, " a5, 0(a6)"),
-                                    "mv a3, a1",
-                                    "xor a3, a3, a5",
-                                    "and a3, a3, a4",
-                                    "xor a3, a3, a5",
-                                    concat!("sc.w", $release, " a3, a3, 0(a6)"),
-                                    "bnez a3, 2b",
-                                concat!(srlw!(), " a0, a5, a0"),
-                                "sh a0, 0({out})",
-                                val = in(reg) ptr_reg!(val),
-                                out = inout(reg) ptr_reg!(out) => _,
-                                inout("a0") ptr_reg!(dst) => _,
-                                lateout("a1") _,
-                                out("a3") _,
                                 out("a4") _,
                                 out("a5") _,
                                 out("a6") _, // dst ptr (aligned)
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    atomic_rmw_lr_sc!(swap, order);
-                }
-            }
-        }
-        #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-        impl AtomicCompareExchange for $int_type {
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
-                success: Ordering,
-                failure: Ordering,
-            ) -> bool {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-                let order = crate::utils::upgrade_success_ordering(success, failure);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let mut r: XSize;
-                    macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                // Implement sub-word atomic operations using word-sized LL/SC loop.
-                                // Based on assemblies generated by rustc/LLVM.
-                                // Refs:
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/RISCV/atomic-rmw.ll
-                                "lhu a1, 0(a1)",
-                                "lhu a2, 0(a2)",
-                                // create aligned address and masks
-                                // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                                "andi a6, a0, -4",
-                                "slli a0, a0, 3",
-                                "lui a5, 16",
-                                concat!(addiw!(), " a5, a5, -1"),
-                                concat!(sllw!(), " a5, a5, a0"),
-                                concat!(sllw!(), " a7, a1, a0"),
-                                concat!(sllw!(), " a2, a2, a0"),
-                                // (atomic) compare and exchange (LR/SC loop)
-                                "2:",
-                                    concat!("lr.w", $acquire, " a4, 0(a6)"),
-                                    "and a1, a4, a5",
-                                    "bne a1, a7, 3f",
-                                    "xor a1, a4, a2",
-                                    "and a1, a1, a5",
-                                    "xor a1, a1, a4",
-                                    concat!("sc.w", $release, " a1, a1, 0(a6)"),
-                                    "bnez a1, 2b",
-                                "3:",
-                                concat!(srlw!(), " a1, a4, a0"),
-                                "and a0, a4, a5",
-                                if_64!("sext.w a0, a0"),
-                                "xor a0, a7, a0",
-                                "seqz a0, a0",
-                                "sh a1, 0({out})",
-                                out = inout(reg) ptr_reg!(out) => _,
-                                inout("a0") ptr_reg!(dst) => r,
-                                inout("a1") ptr_reg!(old) => _,
-                                inout("a2") ptr_reg!(new) => _,
-                                out("a4") _,
-                                out("a5") _,
-                                out("a6") _,
                                 out("a7") _,
                                 options(nostack, preserves_flags),
                             )
@@ -568,10 +407,10 @@ macro_rules! atomic16 {
     };
 }
 
-atomic8!(i8, "b");
-atomic8!(u8, "b");
-atomic16!(i16, "h");
-atomic16!(u16, "h");
+atomic_sub_word!(i8, "b", "li a4, 255");
+atomic_sub_word!(u8, "b", "li a4, 255");
+atomic_sub_word!(i16, "h", concat!("lui a4, 16\n", addiw!(), " a4, a4, -1"));
+atomic_sub_word!(u16, "h", concat!("lui a4, 16\n", addiw!(), " a4, a4, -1"));
 atomic!(i32, "w");
 atomic!(u32, "w");
 #[cfg(target_arch = "riscv64")]

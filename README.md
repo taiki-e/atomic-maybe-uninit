@@ -18,7 +18,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, LoongArch64, MIPS32r2, MIPS64r2, PowerPC, s390x, and MSP430 are supported.
+Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, PowerPC, s390x, and MSP430 are supported.
 
 | target_arch                          | primitives                                          | load/store | swap  | CAS   |
 | ------------------------------------ | --------------------------------------------------- |:----------:|:-----:|:-----:|
@@ -31,8 +31,8 @@ Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, LoongArch64, MIPS32r2, MIPS6
 | riscv32                              | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1] | ✓\[1] |
 | riscv64                              | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1] | ✓\[1] |
 | loongarch64 \[3]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
-| mips \[4]                            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓     | ✓     |
-| mips64 \[4]                          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
+| mips / mips32r6 \[4]                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓     | ✓     |
+| mips64 / mips64r6 \[4]               | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
 | powerpc \[4]                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓     | ✓     |
 | powerpc64 \[4]                       | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓     | ✓     |
 | powerpc64 (pwr8+) \[4] \[5]          | i128,u128                                           | ✓          | ✓     | ✓     |
