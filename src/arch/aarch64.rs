@@ -182,7 +182,7 @@ macro_rules! atomic {
                             asm!(
                                 // load from val to val_tmp
                                 concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val}]"),
-                                // (atomic) swap
+                                // (atomic) swap (LL/SC loop)
                                 "2:",
                                     // load from dst to out_tmp
                                     concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
@@ -236,7 +236,7 @@ macro_rules! atomic {
                                 // cas writes the current value to the first register,
                                 // so copy the `old`'s value for later comparison.
                                 concat!("mov {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
-                                // (atomic) compare and exchange
+                                // (atomic) CAS
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASA--CASAL--CAS--CASL--CASAL--CAS--CASL
                                 concat!("cas", $acquire, $release, $asm_suffix, " {out_tmp", $val_modifier, "}, {new_tmp", $val_modifier, "}, [{dst}]"),
                                 $fence,
@@ -266,7 +266,7 @@ macro_rules! atomic {
                                 // load from old/new to old_tmp/new_tmp
                                 concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new}]"),
                                 concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old}]"),
-                                // (atomic) compare and exchange
+                                // (atomic) CAS (LL/SC loop)
                                 "2:",
                                     concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
                                     concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
@@ -326,7 +326,7 @@ macro_rules! atomic {
                                 // load from old/new to old_tmp/new_tmp
                                 concat!("ldr", $asm_suffix, " {new_tmp", $val_modifier, "}, [{new}]"),
                                 concat!("ldr", $asm_suffix, " {old_tmp", $val_modifier, "}, [{old}]"),
-                                // (atomic) compare and exchange
+                                // (atomic) CAS
                                 concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
                                 concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
                                 "b.ne 3f",
@@ -565,7 +565,7 @@ macro_rules! atomic128 {
                             asm!(
                                 // load from val to val pair
                                 "ldp {val_lo}, {val_hi}, [{val}]",
-                                // (atomic) store val pair to dst
+                                // (atomic) store val pair to dst (LL/SC loop)
                                 "2:",
                                     // load from dst to xzr/tmp pair
                                     concat!("ld", $acquire, "xp xzr, {tmp}, [{dst}]"),
@@ -606,7 +606,7 @@ macro_rules! atomic128 {
                             asm!(
                                 // load from val to val pair
                                 "ldp {val_lo}, {val_hi}, [{val}]",
-                                // (atomic) swap
+                                // (atomic) swap (LL/SC loop)
                                 "2:",
                                     // load from dst to out pair
                                     concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{dst}]"),
@@ -663,7 +663,7 @@ macro_rules! atomic128 {
                                 // so copy the `old`'s value for later comparison.
                                 "mov x8, {old_lo}",
                                 "mov x9, {old_hi}",
-                                // (atomic) compare and exchange
+                                // (atomic) CAS
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
                                 concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"),
                                 $fence,
@@ -700,7 +700,7 @@ macro_rules! atomic128 {
                                 // load from old/new to old/new pair
                                 "ldp {new_lo}, {new_hi}, [{new}]",
                                 "ldp {old_lo}, {old_hi}, [{old}]",
-                                // (atomic) compare and exchange
+                                // (atomic) CAS (LL/SC loop)
                                 "2:",
                                     concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{dst}]"),
                                     "cmp {out_lo}, {old_lo}",

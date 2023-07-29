@@ -212,7 +212,7 @@ macro_rules! atomic {
                                 options(nostack),
                                 // load from val (ptr) to val (val)
                                 concat!("ldr", $asm_suffix, " {val}, [{val}]"),
-                                // (atomic) swap
+                                // (atomic) swap (LL/SC loop)
                                 $release, // release fence
                                 "2:",
                                     // load from dst to tmp
@@ -278,6 +278,7 @@ macro_rules! atomic {
                                 // load from old/new (ptr) to old/new (val)
                                 concat!("ldr", $asm_suffix, " {old}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new}, [{new}]"),
+                                // (atomic) CAS (LL/SC loop)
                                 "2:",
                                     concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
                                     "cmp {tmp}, {old}",
@@ -313,6 +314,7 @@ macro_rules! atomic {
                                 // load from old/new (ptr) to old/new (val)
                                 concat!("ldr", $asm_suffix, " {old}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new}, [{new}]"),
+                                // (atomic) CAS (LL/SC loop)
                                 concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
                                 "cmp {tmp}, {old}",
                                 "bne 3f", // jump if compare failed
@@ -350,6 +352,7 @@ macro_rules! atomic {
                                 // load from old/new (ptr) to old/new (val)
                                 concat!("ldr", $asm_suffix, " {old}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new}, [{new}]"),
+                                // (atomic) CAS (LL/SC loop)
                                 concat!("ldrex", $asm_suffix, " {tmp}, [{dst}]"),
                                 "cmp {tmp}, {old}",
                                 "bne 3f", // jump if compare failed
@@ -619,7 +622,7 @@ macro_rules! atomic64 {
                                 options(nostack),
                                 // load from val to val pair
                                 "ldrd r2, r3, [{val}]",
-                                // (atomic) store val pair to dst
+                                // (atomic) store val pair to dst (LL/SC loop)
                                 $release, // release fence
                                 "2:",
                                     // load from dst to tmp pair
@@ -673,7 +676,7 @@ macro_rules! atomic64 {
                                 options(nostack),
                                 // load from val to val pair
                                 "ldrd r2, r3, [{val}]",
-                                // (atomic) swap
+                                // (atomic) swap (LL/SC loop)
                                 $release, // release fence
                                 "2:",
                                     // load from dst to out pair
@@ -737,6 +740,7 @@ macro_rules! atomic64 {
                                 options(nostack),
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
+                                // (atomic) CAS (LL/SC loop)
                                 "2:",
                                     "ldrexd r4, r5, [{dst}]",
                                     "eor {tmp}, r5, r3",
@@ -782,6 +786,7 @@ macro_rules! atomic64 {
                                 options(nostack),
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
+                                // (atomic) CAS (LL/SC loop)
                                 "ldrexd r4, r5, [{dst}]",
                                 "eor {tmp}, r5, r3",
                                 "eor {r}, r4, r2",
@@ -831,6 +836,7 @@ macro_rules! atomic64 {
                                 options(nostack),
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
+                                // (atomic) CAS (LL/SC loop)
                                 "ldrexd r4, r5, [{dst}]",
                                 "eor {tmp}, r5, r3",
                                 "eor {r}, r4, r2",

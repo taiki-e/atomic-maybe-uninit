@@ -127,7 +127,7 @@ macro_rules! atomic {
                             asm!(
                                 // load from val (ptr) to val (val)
                                 concat!("ldr", $asm_suffix, " {val}, [{val}]"),
-                                // (atomic) swap
+                                // (atomic) swap (LL/SC loop)
                                 "2:",
                                     // load from dst to tmp
                                     concat!("ld", $acquire, "ex", $asm_suffix, " {tmp}, [{dst}]"),
@@ -177,6 +177,7 @@ macro_rules! atomic {
                                 // load from old/new (ptr) to old/new (val)
                                 concat!("ldr", $asm_suffix, " {old}, [{old}]"),
                                 concat!("ldr", $asm_suffix, " {new}, [{new}]"),
+                                // (atomic) CAS (LL/SC loop)
                                 "2:",
                                     // load from dst to tmp
                                     concat!("ld", $acquire, "ex", $asm_suffix, " {tmp}, [{dst}]"),
@@ -338,7 +339,7 @@ macro_rules! atomic64 {
                             asm!(
                                 // load from val to val pair
                                 "ldrd r2, r3, [{val}]",
-                                // (atomic) store val pair to dst
+                                // (atomic) store val pair to dst (LL/SC loop)
                                 "2:",
                                     // load from dst to tmp pair
                                     concat!("ld", $acquire, "exd r4, r5, [{dst}]"),
@@ -385,7 +386,7 @@ macro_rules! atomic64 {
                             asm!(
                                 // load from val to val pair
                                 "ldrd r2, r3, [{val}]",
-                                // (atomic) swap
+                                // (atomic) swap (LL/SC loop)
                                 "2:",
                                     // load from dst to out pair
                                     concat!("ld", $acquire, "exd r4, r5, [{dst}]"),
@@ -440,6 +441,7 @@ macro_rules! atomic64 {
                             asm!(
                                 "ldrd r2, r3, [{old}]",
                                 "ldrd r8, r9, [{new}]",
+                                // (atomic) CAS (LL/SC loop)
                                 "2:",
                                     concat!("ld", $acquire, "exd r4, r5, [{dst}]"),
                                     "eor {tmp}, r5, r3",

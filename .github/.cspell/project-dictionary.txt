@@ -1,6 +1,4 @@
 addi
-addiu
-addiw
 amoswap
 amswap
 andc
@@ -18,12 +16,10 @@ cdsg
 cinc
 cirruslabs
 clrex
-clrlwi
 cmpd
 cmpw
 cmpxchg
 cset
-daddiu
 dbar
 DWCAS
 IMAFD
@@ -36,8 +32,6 @@ ldrd
 ldrex
 ldrexd
 ldxp
-llcr
-llhr
 lqarx
 lrcpc
 lwarx
@@ -61,8 +55,6 @@ quadword
 qword
 rcpc
 risbg
-rldicr
-rlwinm
 rsbegin
 rsend
 sched
@@ -70,13 +62,10 @@ seqz
 sete
 shufps
 signedness
-slli
 sllv
-sllw
 sltiu
 sltui
 srlv
-srlw
 stlxp
 stpq
 stqcx
@@ -90,7 +79,6 @@ virt
 xadd
 xchg
 xmmword
-xori
 xorps
 yonah
 Zsanitizer
