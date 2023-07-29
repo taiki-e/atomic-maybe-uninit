@@ -1,10 +1,13 @@
 // MIPS32 and MIPS64
 //
 // Generated asm:
-// - mips https://godbolt.org/z/oraj5srMn
-// - mipsel https://godbolt.org/z/41hexMPsf
-// - mips64 https://godbolt.org/z/3exjdnMWG
-// - mips64el https://godbolt.org/z/z5rhsKzsj
+// - mips https://godbolt.org/z/38oKcY5bj
+// - mipsel https://godbolt.org/z/M18x694zh
+// - mips64 https://godbolt.org/z/GMMda9rM8
+// - mips64el https://godbolt.org/z/31ovT3vzW
+
+#[path = "partword.rs"]
+mod partword;
 
 use core::{
     arch::asm,
@@ -13,32 +16,6 @@ use core::{
 };
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
-
-#[cfg(target_endian = "little")]
-macro_rules! if_be {
-    ($($tt:tt)*) => {
-        ""
-    };
-}
-#[cfg(target_endian = "big")]
-macro_rules! if_be {
-    ($($tt:tt)*) => {
-        $($tt)*
-    };
-}
-
-#[cfg(any(target_arch = "mips", target_arch = "mips32r6"))]
-macro_rules! daddiu {
-    () => {
-        "addiu"
-    };
-}
-#[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
-macro_rules! daddiu {
-    () => {
-        "daddiu"
-    };
-}
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -58,8 +35,9 @@ type XSize = u32;
 #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
 type XSize = u64;
 
+#[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
+    ($int_type:ident, $asm_suffix:tt, $l_u_suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -117,7 +95,7 @@ macro_rules! atomic_load_store {
                                 ".set push",
                                 ".set noat",
                                 // load from val to tmp
-                                concat!("l", $asm_suffix, $asm_u_suffix, " {tmp}, 0({val})"),
+                                concat!("l", $asm_suffix, $l_u_suffix, " {tmp}, 0({val})"),
                                 // (atomic) store tmp to dst
                                 $release, // release fence
                                 concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
@@ -139,7 +117,7 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt, $asm_ll_suffix:tt) => {
+    ($int_type:ident, $asm_suffix:tt, $ll_sc_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix, "");
         impl AtomicSwap for $int_type {
             #[inline]
@@ -162,14 +140,14 @@ macro_rules! atomic {
                                 ".set noat",
                                 // load from val to val_tmp
                                 concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
-                                // (atomic) swap
+                                // (atomic) swap (LL/SC loop)
                                 $release, // release fence
                                 "2:",
                                     // load from dst to out_tmp
-                                    concat!("ll", $asm_ll_suffix, " {out_tmp}, 0({dst})"),
+                                    concat!("ll", $ll_sc_suffix, " {out_tmp}, 0({dst})"),
                                     "move {r}, {val_tmp}",
                                     // try to store val to dst
-                                    concat!("sc", $asm_ll_suffix, " {r}, 0({dst})"),
+                                    concat!("sc", $ll_sc_suffix, " {r}, 0({dst})"),
                                     // 1 if the store was successful, 0 if no store was performed
                                     "beqz {r}, 2b",
                                 $acquire, // acquire fence
@@ -217,14 +195,15 @@ macro_rules! atomic {
                                 // load from old/new to old_tmp/new_tmp
                                 concat!("l", $asm_suffix, " {old_tmp}, 0({old})"),
                                 concat!("l", $asm_suffix, " {new_tmp}, 0({new})"),
+                                // (atomic) CAS (LL/SC loop)
                                 $release, // release fence
                                 "2:",
                                     // load from dst to out_tmp
-                                    concat!("ll", $asm_ll_suffix, " {out_tmp}, 0({dst})"),
+                                    concat!("ll", $ll_sc_suffix, " {out_tmp}, 0({dst})"),
                                     "bne {out_tmp}, {old_tmp}, 3f", // compare and jump if compare failed
                                     "move {r}, {new_tmp}",
                                     // try to store new to dst
-                                    concat!("sc", $asm_ll_suffix, " {r}, 0({dst})"),
+                                    concat!("sc", $ll_sc_suffix, " {r}, 0({dst})"),
                                     // 1 if the store was successful, 0 if no store was performed
                                     "beqz {r}, 2b", // continue loop if store failed
                                 "3:",
@@ -257,7 +236,7 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $asm_suffix:tt, $xor_mask:tt, $max:tt) => {
+    ($int_type:ident, $asm_suffix:tt, $max:tt) => {
         atomic_load_store!($int_type, $asm_suffix, "u");
         impl AtomicSwap for $int_type {
             #[inline]
@@ -270,50 +249,43 @@ macro_rules! atomic_sub_word {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // Based on assemblies generated by rustc/LLVM.
+                    // See also partword.rs.
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // Implement sub-word atomic operations using word-sized LL/SC loop.
-                                // Based on assemblies generated by rustc/LLVM.
-                                // Refs:
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/Mips/atomic.ll
                                 ".set push",
                                 ".set noat",
-                                concat!(daddiu!(), " $2, $zero, -4"),
-                                "andi $3, $4, 3",
                                 concat!("l", $asm_suffix, "u {tmp}, 0($5)"),
+                                "sllv {mask}, {mask}, {shift}",
+                                "sllv $7, {tmp}, {shift}",
+                                "nor $5, $zero, {mask}",
+                                // (atomic) swap (LL/SC loop)
                                 $release,
-                                if_be!(concat!("xori $3, $3, ", $xor_mask)),
-                                "and $2, $4, $2",
-                                "sll $3, $3, 3",
-                                concat!("ori $4, $zero, ", $max),
-                                "sllv $4, $4, $3",
-                                "sllv $7, {tmp}, $3",
-                                "nor $5, $zero, $4",
-                                // (atomic) swap
                                 "2:",
-                                    "ll $8, 0($2)",
-                                    "and $9, $7, $4",
+                                    "ll $8, 0({dst})",
+                                    "and $9, $7, {mask}",
                                     "and $10, $8, $5",
                                     "or $10, $10, $9",
-                                    "sc $10, 0($2)",
+                                    "sc $10, 0({dst})",
                                     "beqz $10, 2b",
-                                "and {tmp}, $8, $4",
-                                "srlv {tmp}, {tmp}, $3",
+                                "and {tmp}, $8, {mask}",
+                                "srlv {tmp}, {tmp}, {shift}",
                                 concat!("se", $asm_suffix, " {tmp}, {tmp}"),
                                 $acquire,
                                 concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 ".set pop",
+                                dst = in(reg) ptr_reg!(aligned_ptr),
                                 out = in(reg) ptr_reg!(out),
+                                shift = in(reg) shift,
+                                mask = inout(reg) mask => _,
                                 tmp = out(reg) _,
-                                out("$2") _, // dst ptr (aligned)
-                                out("$3") _,
-                                inout("$4") ptr_reg!(dst) => _,
-                                inout("$5") ptr_reg!(val) => _,
+                                inout("$5") ptr_reg!(val) => _, // val => inv_mask
                                 out("$7") _,
                                 out("$8") _,
                                 out("$9") _,
@@ -341,58 +313,53 @@ macro_rules! atomic_sub_word {
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
+                let (aligned_ptr, shift, _mask) = partword::create_mask_values(dst);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: XSize;
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // Based on assemblies generated by rustc/LLVM.
+                    // See also partword.rs.
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // Implement sub-word atomic operations using word-sized LL/SC loop.
-                                // Based on assemblies generated by rustc/LLVM.
-                                // Refs:
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/Mips/atomic.ll
                                 ".set push",
                                 ".set noat",
-                                concat!(daddiu!(), " $3, $zero, -4"),
                                 concat!("l", $asm_suffix, "u $2, 0($6)"), // new
                                 concat!("l", $asm_suffix, " {tmp}, 0($5)"),  // old
                                 concat!("ori $5, $zero, ", $max),
-                                $release,
-                                "and $3, $4, $3",
-                                "andi $4, $4, 3",
-                                if_be!(concat!("xori $4, $4, ", $xor_mask)),
-                                "sll $4, $4, 3",
                                 concat!("andi $8, {tmp}, ", $max),
                                 concat!("andi $2, $2, ", $max),
-                                "sllv $5, $5, $4",
-                                "sllv $8, $8, $4",
-                                "sllv $9, $2, $4",
+                                "sllv $5, $5, {shift}",
+                                "sllv $8, $8, {shift}",
+                                "sllv $9, $2, {shift}",
                                 "nor $6, $zero, $5",
+                                // (atomic) CAS (LL/SC loop)
+                                $release,
                                 "2:",
-                                    "ll $10, 0($3)",
+                                    "ll $10, 0({dst})",
                                     "and $11, $10, $5",
                                     "bne $11, $8, 3f",
                                     "and $10, $10, $6",
                                     "or $10, $10, $9",
-                                    "sc $10, 0($3)",
+                                    "sc $10, 0({dst})",
                                     "beqz $10, 2b",
                                 "3:",
-                                "srlv $2, $11, $4",
+                                "srlv $2, $11, {shift}",
                                 concat!("se", $asm_suffix, " $2, $2"),
                                 $acquire,
                                 "xor {tmp}, $2, {tmp}",
                                 concat!("s", $asm_suffix, " $2, 0({out})"),
                                 "sltiu $2, {tmp}, 1",
                                 ".set pop",
+                                dst = in(reg) ptr_reg!(aligned_ptr),
                                 out = in(reg) ptr_reg!(out),
+                                shift = in(reg) shift,
                                 tmp = out(reg) _,
                                 out("$2") r,
-                                out("$3") _, // dst (aligned)
-                                inout("$4") ptr_reg!(dst) => _,
-                                inout("$5") ptr_reg!(old) => _,
-                                inout("$6") ptr_reg!(new) => _,
+                                inout("$5") ptr_reg!(old) => _, // old => mask
+                                inout("$6") ptr_reg!(new) => _, // new => inv_mask
                                 out("$8") _,
                                 out("$9") _,
                                 out("$10") _,
@@ -410,10 +377,10 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(i8, "b", "3", "255");
-atomic_sub_word!(u8, "b", "3", "255");
-atomic_sub_word!(i16, "h", "2", "65535");
-atomic_sub_word!(u16, "h", "2", "65535");
+atomic_sub_word!(i8, "b", "255");
+atomic_sub_word!(u8, "b", "255");
+atomic_sub_word!(i16, "h", "65535");
+atomic_sub_word!(u16, "h", "65535");
 atomic!(i32, "w", "");
 atomic!(u32, "w", "");
 #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]

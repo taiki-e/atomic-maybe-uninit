@@ -6,8 +6,12 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/aMqh7dd4r
-// - s390x (z196) https://godbolt.org/z/6716oaY4a
+// - s390x https://godbolt.org/z/qv8s6o13G
+// - s390x (z196) https://godbolt.org/z/jW67E4YEq
+
+#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+#[path = "partword.rs"]
+mod partword;
 
 use core::{
     arch::asm,
@@ -19,6 +23,9 @@ use core::{
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
+#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+type XSize = u64;
+
 // Extracts and checks condition code.
 #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
 #[inline]
@@ -28,8 +35,14 @@ fn extract_cc(r: i64) -> bool {
     r != 0
 }
 
+#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+#[inline]
+fn complement(v: u32) -> u32 {
+    (v ^ !0).wrapping_add(1)
+}
+
 macro_rules! atomic_load_store {
-    ($int_type:ident, $asm_suffix:tt, $st_suffix:tt) => {
+    ($int_type:ident, $l_suffix:tt, $asm_suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -45,9 +58,9 @@ macro_rules! atomic_load_store {
                     // atomic load is always SeqCst.
                     asm!(
                         // (atomic) load from src to r0
-                        concat!("l", $asm_suffix, " %r0, 0({src})"),
+                        concat!("l", $l_suffix, " %r0, 0({src})"),
                         // store r0 to out
-                        concat!("st", $st_suffix, " %r0, 0({out})"),
+                        concat!("st", $asm_suffix, " %r0, 0({out})"),
                         src = in(reg) ptr_reg!(src),
                         out = in(reg) ptr_reg!(out),
                         out("r0") _,
@@ -72,9 +85,9 @@ macro_rules! atomic_load_store {
                         ($fence:tt) => {
                             asm!(
                                 // load from val to r0
-                                concat!("l", $asm_suffix, " %r0, 0({val})"),
+                                concat!("l", $l_suffix, " %r0, 0({val})"),
                                 // (atomic) store r0 to dst
-                                concat!("st", $st_suffix, " %r0, 0({dst})"),
+                                concat!("st", $asm_suffix, " %r0, 0({dst})"),
                                 $fence,
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) ptr_reg!(val),
@@ -106,8 +119,8 @@ macro_rules! atomic_load_store {
 }
 
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt, $st_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix, $st_suffix);
+    ($int_type:ident, $asm_suffix:tt) => {
+        atomic_load_store!($int_type, $asm_suffix, $asm_suffix);
         #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicSwap for $int_type {
             #[inline]
@@ -133,7 +146,7 @@ macro_rules! atomic {
                             concat!("cs", $asm_suffix, " %r0, {val_tmp}, 0({dst})"),
                             "jl 2b",
                         // store r0 to out
-                        concat!("st", $st_suffix, " %r0, 0({out})"),
+                        concat!("st", $asm_suffix, " %r0, 0({out})"),
                         dst = in(reg) ptr_reg!(dst),
                         val = in(reg) ptr_reg!(val),
                         val_tmp = out(reg) _,
@@ -168,12 +181,12 @@ macro_rules! atomic {
                         // load from old/new to r0/tmp
                         concat!("l", $asm_suffix, " %r0, 0({old})"),
                         concat!("l", $asm_suffix, " {tmp}, 0({new})"),
-                        // (atomic) compare and exchange
+                        // (atomic) CAS
                         concat!("cs", $asm_suffix, " %r0, {tmp}, 0({dst})"),
                         // store condition code
                         "ipm {tmp}",
                         // store r0 to out
-                        concat!("st", $st_suffix, " %r0, 0({out})"),
+                        concat!("st", $asm_suffix, " %r0, 0({out})"),
                         dst = in(reg) ptr_reg!(dst),
                         old = in(reg) ptr_reg!(old),
                         new = in(reg) ptr_reg!(new),
@@ -189,9 +202,9 @@ macro_rules! atomic {
     };
 }
 
-macro_rules! atomic8 {
-    ($int_type:ident, $asm_suffix:tt, $st_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix, $st_suffix);
+macro_rules! atomic_sub_word {
+    ($int_type:ident, $l_suffix:tt, $asm_suffix:tt, $bits:tt, $risbg_swap:tt, $risbg_cas:tt) => {
+        atomic_load_store!($int_type, $l_suffix, $asm_suffix);
         #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
         impl AtomicSwap for $int_type {
             #[inline]
@@ -204,35 +217,30 @@ macro_rules! atomic8 {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let (aligned_ptr, shift, _mask) = partword::create_mask_values(dst);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    // atomic swap is always SeqCst.
+                    // Implement sub-word atomic operations using word-sized CAS loop.
+                    // Based on assemblies generated by rustc/LLVM.
+                    // See also partword.rs.
                     asm!(
-                        // Implement sub-word atomic operations using word-sized CAS loop.
-                        // Based on assemblies generated by rustc/LLVM.
-                        // Refs:
-                        // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                        // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/SystemZ/atomicrmw-xchg-01.ll
-                        "lb %r0, 0(%r3)",
-                        "risbg %r1, %r2, 0, 189, 0",
-                        "l %r3, 0(%r1)",
-                        "sll %r2, 3",
-                        "lcr %r5, %r2",
+                        concat!("l", $l_suffix, " %r0, 0(%r3)"),
+                        "l %r3, 0({dst})",
                         "2:",
-                            "rll %r14, %r3, 0(%r2)",
-                            "risbg %r14, %r0, 32, 39, 24",
-                            "rll %r14, %r14, 0(%r5)",
-                            "cs %r3, %r14, 0(%r1)",
+                            "rll %r14, %r3, 0({shift})",
+                            concat!("risbg %r14, %r0, 32, ", $risbg_swap),
+                            "rll %r14, %r14, 0({shift_c})",
+                            "cs %r3, %r14, 0({dst})",
                             "jl 2b",
-                        "rll %r0, %r3, 8(%r2)",
-                        "stc %r0, 0({out})",
+                        concat!("rll %r0, %r3, ", $bits ,"({shift})"),
+                        concat!("st", $asm_suffix, " %r0, 0({out})"),
+                        dst = in(reg) ptr_reg!(aligned_ptr),
                         out = in(reg) ptr_reg!(out),
+                        shift = in(reg) shift as u32,
+                        shift_c = in(reg) complement(shift as u32),
                         out("r0") _,
-                        out("r1") _, // dst ptr (aligned)
-                        inout("r2") ptr_reg!(dst) => _,
                         inout("r3") ptr_reg!(val) => _,
-                        out("r5") _,
                         out("r14") _,
                         options(nostack),
                     );
@@ -254,44 +262,40 @@ macro_rules! atomic8 {
                 debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let (aligned_ptr, shift, _mask) = partword::create_mask_values(dst);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i64;
-                    // compare_exchange is always SeqCst.
+                    // Implement sub-word atomic operations using word-sized CAS loop.
+                    // Based on assemblies generated by rustc/LLVM.
+                    // See also partword.rs.
                     asm!(
-                        // Implement sub-word atomic operations using word-sized CAS loop.
-                        // Based on assemblies generated by rustc/LLVM.
-                        // Refs:
-                        // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                        "llc %r0, 0(%r3)",
-                        "lb %r1, 0(%r4)",
-                        "risbg %r3, %r2, 0, 189, 0",
-                        "l %r4, 0(%r3)",
-                        "sll %r2, 3",
-                        "lcr %r14, %r2",
+                        concat!("ll", $asm_suffix, " %r0, 0(%r3)"),
+                        concat!("l", $l_suffix, " %r1, 0(%r4)"),
+                        "l %r4, 0({dst})",
                         "2:",
-                            "rll %r13, %r4, 8(%r2)",
-                            "risbg %r1, %r13, 32, 55, 0",
-                            "llcr %r13, %r13",
+                            concat!("rll %r13, %r4, ", $bits ,"({shift})"),
+                            concat!("risbg %r1, %r13, 32, ", $risbg_cas, ", 0"),
+                            concat!("ll", $asm_suffix, "r %r13, %r13"),
                             "cr %r13, %r0",
                             "jlh 3f",
-                            "rll %r12, %r1, -8(%r14)",
-                            "cs %r4, %r12, 0(%r3)",
+                            concat!("rll %r3, %r1, -", $bits ,"({shift_c})"),
+                            "cs %r4, %r3, 0({dst})",
                             "jl 2b",
                         "3:",
                         // store condition code
                         "ipm %r0",
-                        "stc %r13, 0({out})",
+                        concat!("st", $asm_suffix, " %r13, 0({out})"),
+                        dst = in(reg) ptr_reg!(aligned_ptr),
                         out = in(reg) ptr_reg!(out),
+                        shift = in(reg) shift as u32,
+                        shift_c = in(reg) complement(shift as u32),
                         out("r0") r,
                         out("r1") _,
-                        inout("r2") ptr_reg!(dst) => _,
                         inout("r3") ptr_reg!(old) => _,
                         inout("r4") ptr_reg!(new) => _,
-                        out("r12") _,
                         out("r13") _,
-                        out("r14") _,
                         options(nostack),
                     );
                     extract_cc(r)
@@ -301,128 +305,16 @@ macro_rules! atomic8 {
     };
 }
 
-macro_rules! atomic16 {
-    ($int_type:ident, $asm_suffix:tt, $st_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix, $st_suffix);
-        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
-        impl AtomicSwap for $int_type {
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
-                _order: Ordering,
-            ) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    // atomic swap is always SeqCst.
-                    asm!(
-                        // Implement sub-word atomic operations using word-sized CAS loop.
-                        // Based on assemblies generated by rustc/LLVM.
-                        // Refs:
-                        // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                        // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/SystemZ/atomicrmw-xchg-02.ll
-                        "lh %r0, 0(%r3)",
-                        "risbg %r1, %r2, 0, 189, 0",
-                        "l %r3, 0(%r1)",
-                        "sll %r2, 3",
-                        "lcr %r5, %r2",
-                        "2:",
-                            "rll %r14, %r3, 0(%r2)",
-                            "risbg %r14, %r0, 32, 47, 16",
-                            "rll %r14, %r14, 0(%r5)",
-                            "cs %r3, %r14, 0(%r1)",
-                            "jl 2b",
-                        "rll %r0, %r3, 16(%r2)",
-                        "sth %r0, 0({out})",
-                        out = in(reg) ptr_reg!(out),
-                        out("r0") _,
-                        out("r1") _, // dst ptr (aligned)
-                        inout("r2") ptr_reg!(dst) => _,
-                        inout("r3") ptr_reg!(val) => _,
-                        out("r5") _,
-                        out("r14") _,
-                        options(nostack),
-                    );
-                }
-            }
-        }
-        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
-        impl AtomicCompareExchange for $int_type {
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
-                _success: Ordering,
-                _failure: Ordering,
-            ) -> bool {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let mut r: i64;
-                    // compare_exchange is always SeqCst.
-                    asm!(
-                        // Implement sub-word atomic operations using word-sized CAS loop.
-                        // Based on assemblies generated by rustc/LLVM.
-                        // Refs:
-                        // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
-                        "llh %r0, 0(%r3)",
-                        "lh %r1, 0(%r4)",
-                        "risbg %r3, %r2, 0, 189, 0",
-                        "l %r4, 0(%r3)",
-                        "sll %r2, 3",
-                        "lcr %r14, %r2",
-                        "2:",
-                            "rll %r13, %r4, 16(%r2)",
-                            "risbg %r1, %r13, 32, 47, 0",
-                            "llhr %r13, %r13",
-                            "cr %r13, %r0",
-                            "jlh 3f",
-                            "rll %r12, %r1, -16(%r14)",
-                            "cs %r4, %r12, 0(%r3)",
-                            "jl 2b",
-                        "3:",
-                        // store condition code
-                        "ipm %r0",
-                        "sth %r13, 0({out})",
-                        out = in(reg) ptr_reg!(out),
-                        out("r0") r,
-                        out("r1") _,
-                        inout("r2") ptr_reg!(dst) => _,
-                        inout("r3") ptr_reg!(old) => _,
-                        inout("r4") ptr_reg!(new) => _,
-                        out("r12") _,
-                        out("r13") _,
-                        out("r14") _,
-                        options(nostack),
-                    );
-                    extract_cc(r)
-                }
-            }
-        }
-    };
-}
-
-atomic8!(i8, "b", "c");
-atomic8!(u8, "b", "c");
-atomic16!(i16, "h", "h");
-atomic16!(u16, "h", "h");
-atomic!(i32, "", "");
-atomic!(u32, "", "");
-atomic!(i64, "g", "g");
-atomic!(u64, "g", "g");
-atomic!(isize, "g", "g");
-atomic!(usize, "g", "g");
+atomic_sub_word!(i8, "b", "c", "8", "39, 24", "55");
+atomic_sub_word!(u8, "b", "c", "8", "39, 24", "55");
+atomic_sub_word!(i16, "h", "h", "16", "47, 16", "47");
+atomic_sub_word!(u16, "h", "h", "16", "47, 16", "47");
+atomic!(i32, "");
+atomic!(u32, "");
+atomic!(i64, "g");
+atomic!(u64, "g");
+atomic!(isize, "g");
+atomic!(usize, "g");
 
 // https://github.com/llvm/llvm-project/commit/a11f63a952664f700f076fd754476a2b9eb158cc
 macro_rules! atomic128 {
@@ -572,7 +464,7 @@ macro_rules! atomic128 {
                         "lg %r0, 0({old})",
                         "lg %r13, 8({new})",
                         "lg %r12, 0({new})",
-                        // (atomic) compare and exchange
+                        // (atomic) CAS
                         "cdsg %r0, %r12, 0({dst})",
                         // store condition code
                         "ipm {r}",

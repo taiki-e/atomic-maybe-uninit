@@ -156,7 +156,7 @@ macro_rules! atomic {
                 }
             }
         }
-        #[cfg(not(atomic_maybe_uninit_no_cmpxchg))]
+        #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -182,7 +182,7 @@ macro_rules! atomic {
                         // load from old/new to $cmpxchg_cmp_reg/tmp_new
                         concat!("mov ", $cmpxchg_cmp_reg, ", ", $ptr_size, " ptr [{old", ptr_modifier!(), "}]"),
                         concat!("mov {tmp_new", $val_modifier, "}, ", $ptr_size, " ptr [{new", ptr_modifier!(), "}]"),
-                        // (atomic) compare and exchange
+                        // (atomic) CAS
                         // - Compare $cmpxchg_cmp_reg with dst.
                         // - If equal, ZF is set and tmp_new is loaded into dst.
                         // - Else, clear ZF and load dst into $cmpxchg_cmp_reg.
@@ -397,7 +397,7 @@ macro_rules! atomic64 {
                         // CAS will check for consistency.
                         "mov eax, dword ptr [edi]",
                         "mov edx, dword ptr [edi + 4]",
-                        // (atomic) store by CAS loop
+                        // (atomic) store (CAS loop)
                         "2:",
                             "lock cmpxchg8b qword ptr [edi]",
                             "jne 2b",
@@ -441,7 +441,7 @@ macro_rules! atomic64 {
                         // CAS will check for consistency.
                         "mov eax, dword ptr [edi]",
                         "mov edx, dword ptr [edi + 4]",
-                        // (atomic) store by CAS loop
+                        // (atomic) swap (CAS loop)
                         "2:",
                             "lock cmpxchg8b qword ptr [edi]",
                             "jne 2b",
@@ -489,7 +489,7 @@ macro_rules! atomic64 {
                         "mov edx, dword ptr [edx + 4]",
                         "mov ebx, dword ptr [ecx]",
                         "mov ecx, dword ptr [ecx + 4]",
-                        // (atomic) compare and exchange
+                        // (atomic) CAS
                         "lock cmpxchg8b qword ptr [edi]",
                         "sete cl",
                         // store previous value to out
@@ -613,7 +613,7 @@ macro_rules! atomic128 {
                         // CAS will check for consistency.
                         concat!("mov rax, qword ptr [", $rdi, "]"),
                         concat!("mov rdx, qword ptr [", $rdi, " + 8]"),
-                        // (atomic) store by CAS loop
+                        // (atomic) store (CAS loop)
                         "2:",
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                             "jne 2b",
@@ -668,7 +668,7 @@ macro_rules! atomic128 {
                         // CAS will check for consistency.
                         concat!("mov rax, qword ptr [", $rdi, "]"),
                         concat!("mov rdx, qword ptr [", $rdi, " + 8]"),
-                        // (atomic) swap by CAS loop
+                        // (atomic) swap (CAS loop)
                         "2:",
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                             "jne 2b",
@@ -727,7 +727,7 @@ macro_rules! atomic128 {
                         concat!("mov rbx, qword ptr [", $rdx, "]"),
                         concat!("mov rcx, qword ptr [", $rdx, " + 8]"),
                         "mov rdx, rsi",
-                        // (atomic) compare and exchange
+                        // (atomic) CAS
                         concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                         "sete cl",
                         // store previous value to out

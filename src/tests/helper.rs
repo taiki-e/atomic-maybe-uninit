@@ -173,10 +173,34 @@ macro_rules! __test_atomic {
             fn quickcheck_swap(x: $int_type, y: $int_type) -> bool {
                 unsafe {
                     for order in SWAP_ORDERINGS {
-                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
-                        assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
-                        assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
-                        assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
+                        for base in [0, !0] {
+                            #[repr(C, align(16))]
+                            struct Align16<T>(T);
+                            let mut arr = Align16([
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                            ]);
+                            let a_idx = fastrand::usize(3..=6);
+                            arr.0[a_idx] = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
+                            let a = &arr.0[a_idx];
+                            assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
+                            assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
+                            assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
+                            for i in 0..a_idx {
+                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
+                            }
+                            for i in a_idx + 1..arr.0.len() {
+                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
+                            }
+                        }
                     }
                 }
                 true
@@ -386,43 +410,67 @@ macro_rules! __test_atomic {
                         }
                     };
                     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
-                        assert_eq!(
-                            a.compare_exchange(
-                                MaybeUninit::new(x),
-                                MaybeUninit::new(y),
-                                success,
-                                failure
-                            )
-                            .unwrap()
-                            .assume_init(),
-                            x
-                        );
-                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
-                        assert_eq!(
-                            a.compare_exchange(
-                                MaybeUninit::new(z),
-                                MaybeUninit::new(z),
-                                success,
-                                failure
-                            )
-                            .unwrap_err()
-                            .assume_init(),
-                            y
-                        );
-                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
-                        assert_eq!(
-                            a.compare_exchange(
-                                MaybeUninit::new(y),
-                                MaybeUninit::uninit(),
-                                success,
-                                failure
-                            )
-                            .unwrap()
-                            .assume_init(),
-                            y
-                        );
-                        let _v = a.load(Ordering::Relaxed);
+                        for base in [0, !0] {
+                            #[repr(C, align(16))]
+                            struct Align16<T>(T);
+                            let mut arr = Align16([
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                            ]);
+                            let a_idx = fastrand::usize(3..=6);
+                            arr.0[a_idx] = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
+                            let a = &arr.0[a_idx];
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(x),
+                                    MaybeUninit::new(y),
+                                    success,
+                                    failure
+                                )
+                                .unwrap()
+                                .assume_init(),
+                                x
+                            );
+                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(z),
+                                    MaybeUninit::new(z),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                y
+                            );
+                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(y),
+                                    MaybeUninit::uninit(),
+                                    success,
+                                    failure
+                                )
+                                .unwrap()
+                                .assume_init(),
+                                y
+                            );
+                            let _v = a.load(Ordering::Relaxed);
+                            for i in 0..a_idx {
+                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
+                            }
+                            for i in a_idx + 1..arr.0.len() {
+                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
+                            }
+                        }
                     }
                 }
                 true
@@ -436,31 +484,55 @@ macro_rules! __test_atomic {
                         }
                     };
                     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
-                        assert_eq!(
-                            a.fetch_update(success, failure, |_| Some(MaybeUninit::new(y)))
-                            .unwrap()
-                            .assume_init(),
-                            x
-                        );
-                        assert_eq!(
-                            a.fetch_update(success, failure, |_| Some(MaybeUninit::new(z)))
-                            .unwrap()
-                            .assume_init(),
-                            y
-                        );
-                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
-                        assert_eq!(
-                            a.fetch_update(success, failure, |z| if z.assume_init() == y {
-                                Some(z)
-                            } else {
-                                None
-                            })
-                            .unwrap_err()
-                            .assume_init(),
-                            z
-                        );
-                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
+                        for base in [0, !0] {
+                            #[repr(C, align(16))]
+                            struct Align16<T>(T);
+                            let mut arr = Align16([
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
+                            ]);
+                            let a_idx = fastrand::usize(3..=6);
+                            arr.0[a_idx] = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
+                            let a = &arr.0[a_idx];
+                            assert_eq!(
+                                a.fetch_update(success, failure, |_| Some(MaybeUninit::new(y)))
+                                .unwrap()
+                                .assume_init(),
+                                x
+                            );
+                            assert_eq!(
+                                a.fetch_update(success, failure, |_| Some(MaybeUninit::new(z)))
+                                .unwrap()
+                                .assume_init(),
+                                y
+                            );
+                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
+                            assert_eq!(
+                                a.fetch_update(success, failure, |z| if z.assume_init() == y {
+                                    Some(z)
+                                } else {
+                                    None
+                                })
+                                .unwrap_err()
+                                .assume_init(),
+                                z
+                            );
+                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
+                            for i in 0..a_idx {
+                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
+                            }
+                            for i in a_idx + 1..arr.0.len() {
+                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
+                            }
+                        }
                     }
                 }
                 true
