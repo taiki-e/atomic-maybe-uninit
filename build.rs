@@ -241,8 +241,8 @@ fn main() {
         }
         "s390x" => {
             // https://github.com/rust-lang/rust/pull/111331 merged in Rust 1.71 (nightly-2023-05-09).
-            if version.probe(71, 2023, 5, 8) {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_s390x_asm_cc_clobbered");
+            if !version.probe(71, 2023, 5, 8) {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_s390x_asm_cc_clobbered");
             }
 
             // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/SystemZ/SystemZFeatures.td#L37
