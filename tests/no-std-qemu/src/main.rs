@@ -7,9 +7,19 @@ use core::{mem::MaybeUninit, sync::atomic::Ordering};
 use atomic_maybe_uninit::*;
 use semihosting::{print, println};
 
-#[cfg(all(target_arch = "arm", target_feature = "mclass"))]
+#[cfg(mclass)]
 #[cortex_m_rt::entry]
 fn main() -> ! {
+    run();
+    semihosting::process::exit(0)
+}
+#[cfg(not(mclass))]
+#[no_mangle]
+unsafe fn _start(_: usize, _: usize) -> ! {
+    #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+    unsafe {
+        core::arch::asm!("la sp, _stack");
+    }
     run();
     semihosting::process::exit(0)
 }

@@ -22,6 +22,17 @@ default_targets=(
     thumbv8m.base-none-eabi
     thumbv8m.main-none-eabi
     thumbv8m.main-none-eabihf
+
+    # riscv32
+    riscv32i-unknown-none-elf
+    riscv32im-unknown-none-elf
+    riscv32imc-unknown-none-elf
+    riscv32imac-unknown-none-elf
+    riscv32gc-unknown-none-elf
+    # riscv64
+    riscv64i-unknown-none-elf
+    riscv64imac-unknown-none-elf
+    riscv64gc-unknown-none-elf
 )
 
 x() {
@@ -95,6 +106,15 @@ run() {
         thumb*)
             test_dir=tests/no-std-qemu
             linker=link.x
+            target_rustflags+=" -C link-arg=-T${linker}"
+            ;;
+        riscv*)
+            test_dir=tests/no-std-qemu
+            case "${target}" in
+                riscv32*) linker=riscv32.ld ;;
+                riscv64*) linker=riscv64.ld ;;
+                *) bail "unrecognized target '${target}'" ;;
+            esac
             target_rustflags+=" -C link-arg=-T${linker}"
             ;;
         *) bail "unrecognized target '${target}'" ;;

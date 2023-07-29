@@ -53,6 +53,7 @@ movsd
 movss
 neoverse
 noat
+opensbi
 orrs
 partword
 pshufd
@@ -85,6 +86,7 @@ strexd
 stwcx
 stxp
 subarch
+virt
 xadd
 xchg
 xmmword

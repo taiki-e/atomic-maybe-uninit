@@ -47,5 +47,5 @@
       "dictionaries": ["rust"]
     }
   ],
-  "ignorePaths": ["target-specs/**"]
+  "ignorePaths": ["target-specs/**", "**/*.ld", "**/*.x"]
 }
