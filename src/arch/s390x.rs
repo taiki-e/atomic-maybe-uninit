@@ -9,7 +9,7 @@
 // - s390x https://godbolt.org/z/qv8s6o13G
 // - s390x (z196) https://godbolt.org/z/jW67E4YEq
 
-#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+#[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
 #[path = "partword.rs"]
 mod partword;
 
@@ -19,15 +19,15 @@ use core::{
     sync::atomic::Ordering,
 };
 
-#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+#[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
-#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+#[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
 type XSize = u64;
 
 // Extracts and checks condition code.
-#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+#[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
 #[inline]
 fn extract_cc(r: i64) -> bool {
     let r = r.wrapping_add(-268435456) & (1 << 31);
@@ -35,7 +35,7 @@ fn extract_cc(r: i64) -> bool {
     r != 0
 }
 
-#[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+#[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
 #[inline]
 fn complement(v: u32) -> u32 {
     (v ^ !0).wrapping_add(1)
@@ -121,7 +121,7 @@ macro_rules! atomic_load_store {
 macro_rules! atomic {
     ($int_type:ident, $asm_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix, $asm_suffix);
-        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+        #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -157,7 +157,7 @@ macro_rules! atomic {
                 }
             }
         }
-        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+        #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -205,7 +205,7 @@ macro_rules! atomic {
 macro_rules! atomic_sub_word {
     ($int_type:ident, $l_suffix:tt, $asm_suffix:tt, $bits:tt, $risbg_swap:tt, $risbg_cas:tt) => {
         atomic_load_store!($int_type, $l_suffix, $asm_suffix);
-        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+        #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -247,7 +247,7 @@ macro_rules! atomic_sub_word {
                 }
             }
         }
-        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+        #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -397,7 +397,7 @@ macro_rules! atomic128 {
                 }
             }
         }
-        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+        #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -438,7 +438,7 @@ macro_rules! atomic128 {
                 }
             }
         }
-        #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+        #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -495,77 +495,77 @@ atomic128!(u128);
 
 #[cfg(test)]
 mod tests {
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(isize);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(usize);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(i8);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(u8);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(i16);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(u16);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(i32);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(u32);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(i64);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(u64);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(i128);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     test_atomic!(u128);
 
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(isize);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(usize);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(i8);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(u8);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(i16);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(u16);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(i32);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(u32);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(i64);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(u64);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(i128);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     test_atomic_load_store!(u128);
 
     // load/store/swap implementation is not affected by signedness, so it is
     // enough to test only unsigned types.
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     stress_test!(u8);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     stress_test!(u16);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     stress_test!(u32);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     stress_test!(u64);
-    #[cfg(atomic_maybe_uninit_s390x_asm_cc_clobbered)]
+    #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
     stress_test!(u128);
 
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     stress_test_load_store!(u8);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     stress_test_load_store!(u16);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     stress_test_load_store!(u32);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     stress_test_load_store!(u64);
-    #[cfg(not(atomic_maybe_uninit_s390x_asm_cc_clobbered))]
+    #[cfg(atomic_maybe_uninit_no_s390x_asm_cc_clobbered)]
     stress_test_load_store!(u128);
 }
