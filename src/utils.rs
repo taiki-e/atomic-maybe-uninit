@@ -86,3 +86,138 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
         _ => success,
     }
 }
+
+macro_rules! delegate_load_store {
+    ($ty:ident, $base:ident) => {
+        static_assert!(core::mem::size_of::<$ty>() == core::mem::size_of::<$base>());
+        impl AtomicLoad for $ty {
+            #[inline]
+            unsafe fn atomic_load(
+                src: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    <$base as AtomicLoad>::atomic_load(
+                        src.cast::<MaybeUninit<$base>>(),
+                        out.cast::<MaybeUninit<$base>>(),
+                        order,
+                    );
+                }
+            }
+        }
+        impl AtomicStore for $ty {
+            #[inline]
+            unsafe fn atomic_store(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    <$base as AtomicStore>::atomic_store(
+                        dst.cast::<MaybeUninit<$base>>(),
+                        val.cast::<MaybeUninit<$base>>(),
+                        order,
+                    );
+                }
+            }
+        }
+    };
+}
+#[allow(unused_macros)]
+macro_rules! delegate_swap_only {
+    ($ty:ident, $base:ident) => {
+        static_assert!(core::mem::size_of::<$ty>() == core::mem::size_of::<$base>());
+        impl AtomicSwap for $ty {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    <$base as AtomicSwap>::atomic_swap(
+                        dst.cast::<MaybeUninit<$base>>(),
+                        val.cast::<MaybeUninit<$base>>(),
+                        out.cast::<MaybeUninit<$base>>(),
+                        order,
+                    );
+                }
+            }
+        }
+    };
+}
+#[allow(unused_macros)]
+macro_rules! delegate_cas {
+    ($ty:ident, $base:ident) => {
+        delegate_swap_only!($ty, $base);
+        impl AtomicCompareExchange for $ty {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                current: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    <$base as AtomicCompareExchange>::atomic_compare_exchange(
+                        dst.cast::<MaybeUninit<$base>>(),
+                        current.cast::<MaybeUninit<$base>>(),
+                        new.cast::<MaybeUninit<$base>>(),
+                        out.cast::<MaybeUninit<$base>>(),
+                        success,
+                        failure,
+                    )
+                }
+            }
+            #[inline]
+            unsafe fn atomic_compare_exchange_weak(
+                dst: *mut MaybeUninit<Self>,
+                current: *const MaybeUninit<Self>,
+                new: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> bool {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    <$base as AtomicCompareExchange>::atomic_compare_exchange_weak(
+                        dst.cast::<MaybeUninit<$base>>(),
+                        current.cast::<MaybeUninit<$base>>(),
+                        new.cast::<MaybeUninit<$base>>(),
+                        out.cast::<MaybeUninit<$base>>(),
+                        success,
+                        failure,
+                    )
+                }
+            }
+        }
+    };
+}
+macro_rules! atomic_size {
+    ($delegate:ident) => {
+        #[cfg(target_pointer_width = "16")]
+        $delegate!(isize, i16);
+        #[cfg(target_pointer_width = "16")]
+        $delegate!(usize, u16);
+        #[cfg(target_pointer_width = "32")]
+        $delegate!(isize, i32);
+        #[cfg(target_pointer_width = "32")]
+        $delegate!(usize, u32);
+        #[cfg(target_pointer_width = "64")]
+        $delegate!(isize, i64);
+        #[cfg(target_pointer_width = "64")]
+        $delegate!(usize, u64);
+        #[cfg(target_pointer_width = "128")]
+        $delegate!(isize, i128);
+        #[cfg(target_pointer_width = "128")]
+        $delegate!(usize, u128);
+    };
+}

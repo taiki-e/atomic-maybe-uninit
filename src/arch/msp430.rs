@@ -1,5 +1,8 @@
 // MSP430
 
+atomic_size!(delegate_load_store);
+// atomic_size!(delegate_cas);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicLoad, AtomicStore};
@@ -61,8 +64,6 @@ atomic!(i8, ".b");
 atomic!(u8, ".b");
 atomic!(i16, ".w");
 atomic!(u16, ".w");
-atomic!(isize, ".w");
-atomic!(usize, ".w");
 
 #[cfg(test)]
 mod tests {

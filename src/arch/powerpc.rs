@@ -13,6 +13,9 @@
 // - powerpc64le https://godbolt.org/z/7f1b8WWd3
 // - powerpc64le (pwr7) https://godbolt.org/z/bKxv6W3Mn
 
+atomic_size!(delegate_load_store);
+atomic_size!(delegate_cas);
+
 #[cfg(not(all(
     target_arch = "powerpc64",
     any(
@@ -522,14 +525,6 @@ atomic!(u32, "wz", "w", "w");
 atomic!(i64, "d", "d", "d");
 #[cfg(target_arch = "powerpc64")]
 atomic!(u64, "d", "d", "d");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "wz", "w", "w");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "wz", "w", "w");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "d", "d", "d");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "d", "d", "d");
 
 // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
 // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/test/CodeGen/PowerPC/atomics-i128-ldst.ll

@@ -9,6 +9,10 @@
 // - s390x https://godbolt.org/z/qv8s6o13G
 // - s390x (z196) https://godbolt.org/z/jW67E4YEq
 
+atomic_size!(delegate_load_store);
+#[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
+atomic_size!(delegate_cas);
+
 #[cfg(not(atomic_maybe_uninit_no_s390x_asm_cc_clobbered))]
 #[path = "partword.rs"]
 mod partword;
@@ -313,8 +317,6 @@ atomic!(i32, "");
 atomic!(u32, "");
 atomic!(i64, "g");
 atomic!(u64, "g");
-atomic!(isize, "g");
-atomic!(usize, "g");
 
 // https://github.com/llvm/llvm-project/commit/a11f63a952664f700f076fd754476a2b9eb158cc
 macro_rules! atomic128 {

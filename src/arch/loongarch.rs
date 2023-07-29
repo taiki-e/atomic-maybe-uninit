@@ -3,6 +3,9 @@
 // Generated asm:
 // - loongarch64 https://godbolt.org/z/vTxfajT14
 
+atomic_size!(delegate_load_store);
+atomic_size!(delegate_cas);
+
 #[path = "partword.rs"]
 mod partword;
 
@@ -369,14 +372,6 @@ atomic!(u32, "w");
 atomic!(i64, "d");
 #[cfg(target_arch = "loongarch64")]
 atomic!(u64, "d");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "w");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "w");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "d");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "d");
 
 #[cfg(test)]
 mod tests {

@@ -15,6 +15,9 @@
 // - armv8-m baseline https://godbolt.org/z/P51ezojjW
 // - armv8-m mainline https://godbolt.org/z/WdajnbYTr
 
+atomic_size!(delegate_load_store);
+atomic_size!(delegate_cas);
+
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
@@ -276,8 +279,6 @@ atomic!(i16, "h");
 atomic!(u16, "h");
 atomic!(i32, "");
 atomic!(u32, "");
-atomic!(isize, "");
-atomic!(usize, "");
 
 #[rustfmt::skip]
 macro_rules! atomic64 {

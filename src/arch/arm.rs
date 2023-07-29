@@ -13,6 +13,13 @@
 // - armv6 https://godbolt.org/z/T5M337jYK
 // - armv6-m https://godbolt.org/z/q88qPah4W
 
+atomic_size!(delegate_load_store);
+#[cfg(any(
+    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
+))]
+atomic_size!(delegate_cas);
+
 use core::{
     mem::{self, MaybeUninit},
     sync::atomic::Ordering,
@@ -553,8 +560,6 @@ atomic!(i16, "h");
 atomic!(u16, "h");
 atomic!(i32, "");
 atomic!(u32, "");
-atomic!(isize, "");
-atomic!(usize, "");
 
 // Refs:
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/LDREXD

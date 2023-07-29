@@ -14,6 +14,12 @@
 // - x86 (i486) https://godbolt.org/z/nPaGY4oEM
 // - x86 (i386) https://godbolt.org/z/YWEc63Kac
 
+atomic_size!(delegate_load_store);
+#[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
+atomic_size!(delegate_cas);
+#[cfg(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg))]
+atomic_size!(delegate_swap_only);
+
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
@@ -219,14 +225,6 @@ atomic!(u32, reg, ":e", "dword", "eax");
 atomic!(i64, reg, "", "qword", "rax");
 #[cfg(target_arch = "x86_64")]
 atomic!(u64, reg, "", "qword", "rax");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, reg, ":e", "dword", "eax");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, reg, ":e", "dword", "eax");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, reg, "", "qword", "rax");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, reg, "", "qword", "rax");
 
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]

@@ -10,6 +10,10 @@
 // - riscv64gc https://godbolt.org/z/nW3Po8n4K
 // - riscv32imac https://godbolt.org/z/51nPPMYze
 
+atomic_size!(delegate_load_store);
+#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+atomic_size!(delegate_cas);
+
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
 #[path = "partword.rs"]
 mod partword;
@@ -384,14 +388,6 @@ atomic!(u32, "w");
 atomic!(i64, "d");
 #[cfg(target_arch = "riscv64")]
 atomic!(u64, "d");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "w");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "w");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "d");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "d");
 
 #[cfg(test)]
 mod tests {

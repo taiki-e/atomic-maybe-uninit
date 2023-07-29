@@ -19,6 +19,9 @@
 // - aarch64 (+lse,+lse2) https://godbolt.org/z/Mc1W1z8e3
 // - aarch64 (+rcpc) https://godbolt.org/z/c4eccqa41
 
+atomic_size!(delegate_load_store);
+atomic_size!(delegate_cas);
+
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
@@ -373,14 +376,6 @@ atomic!(i32, "", ":w");
 atomic!(u32, "", ":w");
 atomic!(i64, "", "");
 atomic!(u64, "", "");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "", ":w");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "", ":w");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "", "");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "", "");
 
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //

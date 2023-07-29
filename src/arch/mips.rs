@@ -6,6 +6,9 @@
 // - mips64 https://godbolt.org/z/GMMda9rM8
 // - mips64el https://godbolt.org/z/31ovT3vzW
 
+atomic_size!(delegate_load_store);
+atomic_size!(delegate_cas);
+
 #[path = "partword.rs"]
 mod partword;
 
@@ -387,14 +390,6 @@ atomic!(u32, "w", "");
 atomic!(i64, "d", "d");
 #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
 atomic!(u64, "d", "d");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "w", "");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "w", "");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "d", "d");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "d", "d");
 
 #[cfg(test)]
 mod tests {
