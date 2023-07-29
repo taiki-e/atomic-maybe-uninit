@@ -74,6 +74,8 @@ jobs:
             target: arm-unknown-linux-gnueabi
           - rust: nightly
             target: arm-unknown-linux-gnueabi
+          - rust: '1.59'
+            target: armv7-unknown-linux-gnueabi
           - rust: stable
             target: armv7-unknown-linux-gnueabi
           - rust: nightly
@@ -194,68 +196,73 @@ jobs:
         if: matrix.target != ''
       - run: echo "RUSTFLAGS=${RUSTFLAGS} --cfg qemu" >>"${GITHUB_ENV}"
         if: matrix.target != '' && !startsWith(matrix.target, 'i686') && !startsWith(matrix.target, 'x86_64')
-      - run: echo "TARGET=--target ${{ matrix.target }}" >>"${GITHUB_ENV}"
+      - run: echo "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
         if: matrix.target != ''
+      # TODO: LLVM bug: Undefined temporary symbol error when building std.
+      - run: echo "RELEASE=--release" >>"${GITHUB_ENV}"
+        if: matrix.target == 'mips-unknown-linux-gnu' || matrix.target == 'mipsel-unknown-linux-gnu'
 
-      - run: tools/test.sh -vv ${{ matrix.tests }} $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv ${{ matrix.tests }} $TARGET $DOCTEST_XCOMPILE $BUILD_STD $RELEASE
       # We test doctest only once with the default build conditions because doctest is slow.
       # src/tests has extended copies of doctest, so this will not reduce test coverage.
-      # +cmpxchg16b
+      # x86_64 +cmpxchg16b
       # macOS is skipped because it is +cmpxchg16b by default
-      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
         if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos')
-      # -sse2
-      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      # x86 -sse2
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
         if: startsWith(matrix.target, 'i686')
-      # +lse
+      # aarch64 +lse
       # As of QEMU 8.0, QEMU has not yet implemented FEAT_LSE2: https://linaro.atlassian.net/browse/QEMU-300
       # FEAT_LSE2 is tested on Cirrus CI's aarch64 macOS VM.
-      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
         if: startsWith(matrix.target, 'aarch64')
-      # +rcpc
-      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      # aarch64 +rcpc
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc
           # cortex-a76 is armv8.2-a but supports armv8.3-a LDAPR instructions.
           QEMU_CPU: cortex-a76
         if: startsWith(matrix.target, 'aarch64')
-      # pwr7
+      # arm v8 little endian
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+        env:
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
+        if: matrix.target == 'armv7-unknown-linux-gnueabi'
+      # powerpc64 pwr7
       # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
-      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
         if: startsWith(matrix.target, 'powerpc64le-')
-      # pwr8
+      # powerpc64 pwr8
       # powerpc64le- (little-endian) is skipped because it is pwr8 by default
-      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8
         if: startsWith(matrix.target, 'powerpc64-')
-      # z196 (arch9)
-      - run: tools/test.sh -vv --tests $TARGET $DOCTEST_XCOMPILE $BUILD_STD
+      # s390x z196 (arch9)
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
           # TODO: disable high-word LLVM target-feature to avoid LLVM codegen bug.
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=z196 -C target-feature=-high-word
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196 -C target-feature=-high-word
         if: startsWith(matrix.target, 's390x')
 
-      - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private $TARGET $BUILD_STD
-        # TODO: LLVM bug: Undefined temporary symbol error when building std.
-        if: matrix.target != 'mips-unknown-linux-gnu' && matrix.target != 'mipsel-unknown-linux-gnu'
-      - run: cargo minimal-versions build -vvv --release --workspace --all-features --ignore-private $TARGET $BUILD_STD
-        if: matrix.target == 'mips-unknown-linux-gnu' || matrix.target == 'mipsel-unknown-linux-gnu'
+      - run: cargo minimal-versions build -vvv --workspace --all-features --ignore-private $TARGET $BUILD_STD $RELEASE
 
   build:
     needs: tidy
@@ -284,6 +291,7 @@ jobs:
       fail-fast: false
       matrix:
         rust:
+          - '1.64'
           - stable
           - nightly
     runs-on: ubuntu-latest
@@ -293,8 +301,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install Rust
-        run: rustup toolchain add nightly --no-self-update && rustup default nightly
-      - uses: taiki-e/install-action@cargo-hack
+        run: rustup toolchain add ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
       - run: |
           set -euxo pipefail
           sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \

@@ -24,13 +24,15 @@ aarch64_linux_test_task:
   test_script:
     - set -ex
     - ./tools/test.sh -vv
+    # We test doctest only once with the default build conditions because doctest is slow. Both api-test
+    # and src/tests have extended copies of doctest, so this will not reduce test coverage.
     # +lse
     # Neoverse N1 is ARMv8.2-a and doesn't support FEAT_LSE2.
     # FEAT_LSE2 is tested on aarch64 macOS VM.
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh -vv
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh -vv --tests
     # +rcpc
     # Neoverse N1 is armv8.2-a but supports armv8.3-a LDAPR instructions.
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" ./tools/test.sh -vv
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" ./tools/test.sh -vv --tests
 
 aarch64_macos_test_task:
   name: test ($TARGET)
@@ -65,6 +67,8 @@ aarch64_linux_valgrind_task:
   test_script:
     - set -ex
     - ./tools/test.sh valgrind -vv
+    # We test doctest only once with the default build conditions because doctest is slow. Both api-test
+    # and src/tests have extended copies of doctest, so this will not reduce test coverage.
     # +lse
     # As of Valgrind 3.19, Valgrind supports atomic instructions of ARMv8.0 and ARMv8.1 (FEAT_LSE).
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh valgrind -vv
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh valgrind -vv --tests
