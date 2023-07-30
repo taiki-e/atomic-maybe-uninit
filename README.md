@@ -18,32 +18,34 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, ARM, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, PowerPC, s390x, and MSP430 are supported.
+Currently, x86, x86_64, ARM, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, PowerPC, s390x, MSP430, and Hexagon are supported.
 
-| target_arch                          | primitives                                          | load/store | swap/CAS |
-| ------------------------------------ | --------------------------------------------------- |:----------:|:--------:|
-| x86                                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| x86_64                               | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| x86_64 (+cmpxchg16b)                 | i128,u128                                           | ✓          | ✓        |
-| arm (v6+ or linux/android)           | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| arm (v6+ except for M-profile) \[2]  | i64,u64                                             | ✓          | ✓        |
-| aarch64                              | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| riscv32                              | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| riscv64                              | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
-| loongarch64 \[3]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| mips / mips32r6 \[4]                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| mips64 / mips64r6 \[4]               | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| powerpc \[4]                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| powerpc64 \[4]                       | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| powerpc64 (pwr8+) \[4] \[5]          | i128,u128                                           | ✓          | ✓        |
-| s390x \[4]                           | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| msp430 \[4]                          | isize,usize,i8,u8,i16,u16                           | ✓          |          |
+| target_arch                      | primitives                                          | load/store | swap/CAS |
+| -------------------------------- | --------------------------------------------------- |:----------:|:--------:|
+| x86                              | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| x86_64                           | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| x86_64 (+cmpxchg16b) \[5]        | i128,u128                                           | ✓          | ✓        |
+| arm (v6+ or Linux/Android)       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| arm (except for M-profile) \[2]  | i64,u64                                             | ✓          | ✓        |
+| aarch64                          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| riscv32                          | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| riscv64                          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
+| loongarch64 \[3]                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| mips / mips32r6 \[4]             | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| mips64 / mips64r6 \[4]           | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| powerpc \[4]                     | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| powerpc64 \[4]                   | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| powerpc64 (pwr8+) \[4] \[6]      | i128,u128                                           | ✓          | ✓        |
+| s390x \[4]                       | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| msp430 \[4]                      | isize,usize,i8,u8,i16,u16                           | ✓          |          |
+| hexagon \[4] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 
 \[1] ARM's atomic RMW operations are not available on v6-m (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc.<br>
-\[2] ARMv6+ except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
+\[2] ARMv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[3] Requires Rust 1.72+.<br>
 \[4] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
-\[5] target-cpu `pwr8`, `pwr9`, or `pwr10`. powerpc64le is `pwr8` by default.<br>
+\[5] Requires cmpxchg16b target feature (enabled by default on Apple targets).<br>
+\[6] Requires target-cpu pwr8+ (powerpc64le is pwr8 by default).<br>
 
 Feel free to submit an issue if your target is not supported yet.
 

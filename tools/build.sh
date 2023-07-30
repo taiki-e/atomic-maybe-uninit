@@ -120,6 +120,10 @@ default_targets=(
     # msp430
     # rustc --print target-list | grep -E '^msp430'
     msp430-none-elf
+
+    # hexagon
+    # rustc --print target-list | grep -E '^hexagon'
+    hexagon-unknown-linux-musl
 )
 known_cfgs=()
 
