@@ -12,7 +12,12 @@
     target_arch = "x86_64",
     all(
         target_arch = "arm",
-        any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+        any(
+            target_feature = "v6",
+            atomic_maybe_uninit_target_feature = "v6",
+            target_os = "linux",
+            target_os = "android",
+        ),
     ),
     target_arch = "aarch64",
     target_arch = "riscv32",
@@ -42,6 +47,12 @@ mod aarch64;
     )),
 ))]
 mod arm;
+#[cfg(target_arch = "arm")]
+#[cfg(all(
+    any(target_os = "linux", target_os = "android"),
+    not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+))]
+mod arm_linux;
 #[cfg(target_arch = "arm")]
 #[cfg(any(
     target_feature = "v8",

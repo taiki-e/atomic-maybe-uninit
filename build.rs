@@ -174,6 +174,7 @@ fn main() {
                 }
             }
             target_feature_if("mclass", is_mclass, &version, None, true);
+            let mut v5te = known && subarch.starts_with("v5te");
             let mut v6 = known && subarch.starts_with("v6");
             let mut v7 = known && subarch.starts_with("v7");
             let (v8, v8m) = if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
@@ -196,7 +197,8 @@ fn main() {
             v7 |= target_feature_if("v8", v8, &version, None, true);
             v6 |= target_feature_if("v8m", v8m, &version, None, false);
             v6 |= target_feature_if("v7", v7, &version, None, true);
-            target_feature_if("v6", v6, &version, None, true);
+            v5te |= target_feature_if("v6", v6, &version, None, true);
+            target_feature_if("v5te", v5te, &version, None, true);
         }
         _ if target_arch.starts_with("riscv") => {
             // #[cfg(target_feature = "a")] doesn't work on stable.

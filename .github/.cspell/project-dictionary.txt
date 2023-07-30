@@ -25,6 +25,7 @@ DWCAS
 IMAFD
 ishld
 isync
+kuser
 ldapr
 ldar
 ldaxp
