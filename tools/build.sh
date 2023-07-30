@@ -40,7 +40,11 @@ default_targets=(
     aarch64-apple-darwin
 
     # arm
-    # rustc --print target-list | grep -E '^(arm|thumb)(eb)?(v(6|7|8|9)|-)'
+    # rustc --print target-list | grep -E '^(arm|thumb)'
+    # armv4t
+    armv4t-unknown-linux-gnueabi
+    # armv5te
+    armv5te-unknown-linux-gnueabi
     # armv6
     arm-unknown-linux-gnueabi
     arm-unknown-linux-gnueabihf

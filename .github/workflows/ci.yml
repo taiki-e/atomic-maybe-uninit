@@ -69,6 +69,12 @@ jobs:
           - rust: nightly
             target: aarch64_be-unknown-linux-gnu
           - rust: '1.59'
+            target: armv5te-unknown-linux-gnueabi
+          - rust: stable
+            target: armv5te-unknown-linux-gnueabi
+          - rust: nightly
+            target: armv5te-unknown-linux-gnueabi
+          - rust: '1.59'
             target: arm-unknown-linux-gnueabi
           - rust: stable
             target: arm-unknown-linux-gnueabi
@@ -247,6 +253,12 @@ jobs:
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_LINKER: armeb-unknown-linux-gnueabi-gcc
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
         if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi'
+      # arm v4t
+      - run: tools/test.sh -vv --tests --target armv4t-unknown-linux-gnueabi -Z build-std $RELEASE
+        env:
+          CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_LINKER: arm-linux-gnueabi-gcc
+          CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-arm
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armv5te-unknown-linux-gnueabi'
       # powerpc64 pwr7
       # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
       - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE

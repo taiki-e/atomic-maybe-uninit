@@ -18,14 +18,14 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, ARM (v6+), AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, PowerPC, s390x, and MSP430 are supported.
+Currently, x86, x86_64, ARM, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, PowerPC, s390x, and MSP430 are supported.
 
 | target_arch                          | primitives                                          | load/store | swap/CAS |
 | ------------------------------------ | --------------------------------------------------- |:----------:|:--------:|
 | x86                                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | x86_64                               | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | x86_64 (+cmpxchg16b)                 | i128,u128                                           | ✓          | ✓        |
-| arm (v6+)                            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| arm (v6+ or linux/android)           | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | arm (v6+ except for M-profile) \[2]  | i64,u64                                             | ✓          | ✓        |
 | aarch64                              | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | riscv32                              | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |

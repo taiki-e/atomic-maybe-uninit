@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support pre-v6 ARM Linux/Android (e.g., armv5te-unknown-linux-gnueabi, arm-linux-androideabi, etc.).
+
 ## [0.2.19] - 2023-07-27
 
 - Support LoongArch64.
