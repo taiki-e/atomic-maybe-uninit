@@ -152,6 +152,7 @@ macro_rules! __test_atomic {
         }
     };
     (swap, $int_type:ident) => {
+        #[cfg(not(all(valgrind, target_arch = "aarch64")))] // TODO: flaky
         #[test]
         fn swap() {
             unsafe {

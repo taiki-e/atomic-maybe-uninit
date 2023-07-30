@@ -23,6 +23,7 @@
     target_arch = "riscv32",
     target_arch = "riscv64",
     target_arch = "loongarch64",
+    target_arch = "hexagon",
     target_arch = "mips",
     target_arch = "mips32r6",
     target_arch = "mips64",
@@ -61,6 +62,8 @@ mod arm_linux;
     atomic_maybe_uninit_target_feature = "v8m",
 ))]
 mod armv8;
+#[cfg(target_arch = "hexagon")]
+mod hexagon;
 #[cfg(target_arch = "loongarch64")]
 mod loongarch;
 #[cfg(any(

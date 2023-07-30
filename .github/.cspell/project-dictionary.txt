@@ -26,6 +26,7 @@ IMAFD
 ishld
 isync
 kuser
+lclang
 ldapr
 ldar
 ldaxp
@@ -33,11 +34,14 @@ ldrd
 ldrex
 ldrexd
 ldxp
+libunwind
 lqarx
 lrcpc
 lwarx
 lwsync
 machdep
+memd
+memw
 mfcr
 mfence
 movd
