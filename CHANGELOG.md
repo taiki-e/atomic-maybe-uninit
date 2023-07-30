@@ -14,6 +14,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Support Hexagon (experimental).
 
+- Support AVR atomic load/store.
+
 ## [0.2.19] - 2023-07-27
 
 - Support LoongArch64.

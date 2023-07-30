@@ -67,9 +67,11 @@ seqz
 sete
 shufps
 signedness
+simavr
 sllv
 sltiu
 sltui
+sreg
 srlv
 stlxp
 stpq
@@ -80,6 +82,9 @@ strexd
 stwcx
 stxp
 subarch
+usart
+uwrite
+uwriteln
 virt
 xadd
 xchg

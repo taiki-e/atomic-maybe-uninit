@@ -121,6 +121,10 @@ default_targets=(
     # rustc --print target-list | grep -E '^msp430'
     msp430-none-elf
 
+    # avr
+    # rustc --print target-list | grep -E '^avr'
+    avr-unknown-gnu-atmega2560 # custom target
+
     # hexagon
     # rustc --print target-list | grep -E '^hexagon'
     hexagon-unknown-linux-musl
@@ -160,6 +164,8 @@ rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -Vv | grep 'release: ' | sed 's/release: //')
 rustc_minor_version="${rustc_version#*.}"
 rustc_minor_version="${rustc_minor_version%%.*}"
+llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -Vv | (grep 'LLVM version: ' || true) | (sed 's/LLVM version: //' || true))
+llvm_version="${llvm_version%%.*}"
 base_args=(${pre_args[@]+"${pre_args[@]}"} hack build)
 nightly=''
 if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]]; then
@@ -207,7 +213,7 @@ build() {
     fi
     if [[ -z "${nightly}" ]]; then
         case "${target}" in
-            mips* | powerpc* | s390* | msp430*)
+            avr* | hexagon* | mips* | msp430* | powerpc* | s390*)
                 echo "target '${target}' requires nightly compiler (skipped all checks)"
                 return 0
                 ;;
@@ -218,6 +224,15 @@ build() {
                 fi
                 ;;
         esac
+    fi
+    if [[ "${target}" == "avr"* ]]; then
+        if [[ "${llvm_version}" -eq 16 ]]; then
+            # https://github.com/rust-lang/compiler-builtins/issues/523
+            target_rustflags+=" -C linker-plugin-lto -C codegen-units=1"
+        elif [[ "${llvm_version}" -le 15 ]]; then
+            # https://github.com/rust-lang/rust/issues/88252
+            target_rustflags+=" -C opt-level=s"
+        fi
     fi
 
     args+=(

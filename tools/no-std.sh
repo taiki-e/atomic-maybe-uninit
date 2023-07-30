@@ -33,6 +33,9 @@ default_targets=(
     riscv64i-unknown-none-elf
     riscv64imac-unknown-none-elf
     riscv64gc-unknown-none-elf
+
+    # avr
+    avr-unknown-gnu-atmega2560
 )
 
 x() {
@@ -116,6 +119,9 @@ run() {
                 *) bail "unrecognized target '${target}'" ;;
             esac
             target_rustflags+=" -C link-arg=-T${linker}"
+            ;;
+        avr*)
+            test_dir=tests/avr
             ;;
         *) bail "unrecognized target '${target}'" ;;
     esac

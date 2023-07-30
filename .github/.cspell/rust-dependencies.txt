@@ -4,3 +4,4 @@
 fastrand
 quickcheck
 semihosting
+ufmt
