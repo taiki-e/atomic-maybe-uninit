@@ -36,6 +36,20 @@ macro_rules! atomic_rmw {
     };
 }
 
+// Adds S suffix if needed. We prefer MOV over MOVS, but ARMv8-M Baseline doesn't support thumb2 instructions.
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+macro_rules! s {
+    ($op:tt, $operand:tt) => {
+        concat!($op, " ", $operand)
+    };
+}
+#[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))]
+macro_rules! s {
+    ($op:tt, $operand:tt) => {
+        concat!($op, "s ", $operand)
+    };
+}
+
 macro_rules! atomic {
     ($int_type:ident, $asm_suffix:tt) => {
         impl AtomicLoad for $int_type {
@@ -190,8 +204,9 @@ macro_rules! atomic {
                                     "bne 2b", // continue loop if store failed
                                     "b 4f",
                                 "3:",
+                                    // compare failed, mark r as failed and clear exclusive
                                     "clrex",
-                                    "movs {r}, #1", // mark as failed
+                                    s!("mov", "{r}, #1"),
                                 "4:",
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp}, [{out}]"),
@@ -201,7 +216,7 @@ macro_rules! atomic {
                                 out = in(reg) out,
                                 r = out(reg) r,
                                 tmp = out(reg) _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP and s! modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -244,8 +259,9 @@ macro_rules! atomic {
                                 concat!("st", $release, "ex", $asm_suffix, " {r}, {new}, [{dst}]"),
                                 "b 4f",
                                 "3:",
+                                    // compare failed, mark r as failed and clear exclusive
                                     "clrex",
-                                    "movs {r}, #1",
+                                    s!("mov", "{r}, #1"),
                                 "4:",
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp}, [{out}]"),
@@ -255,7 +271,7 @@ macro_rules! atomic {
                                 out = in(reg) out,
                                 r = out(reg) r,
                                 tmp = out(reg) _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                // Do not use `preserves_flags` because CMP and s! modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -454,9 +470,9 @@ macro_rules! atomic64 {
                                     "bne 2b", // continue loop if store failed
                                     "b 4f",
                                 "3:",
-                                    // compare failed, set r to 1 and clear exclusive
-                                    "mov {r}, #1",
+                                    // compare failed, mark r as failed and clear exclusive
                                     "clrex",
+                                    s!("mov", "{r}, #1"),
                                 "4:",
                                 // store out pair to out
                                 "strd r4, r5, [{out}]",
@@ -475,7 +491,7 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 out("r8") _,
                                 out("r9") _,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
+                                // Do not use `preserves_flags` because CMP, ORRS, and s! modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -517,9 +533,9 @@ macro_rules! atomic64 {
                                 concat!("st", $release, "exd  {r}, r8, r9, [{dst}]"),
                                 "b 4f",
                                 "3:",
-                                    // compare failed, set r to 1 and clear exclusive
-                                    "mov {r}, #1",
+                                    // compare failed, mark r as failed and clear exclusive
                                     "clrex",
+                                    s!("mov", "{r}, #1"),
                                 "4:",
                                 // store out pair to out
                                 "strd r4, r5, [{out}]",
@@ -538,7 +554,7 @@ macro_rules! atomic64 {
                                 // new pair - must be even-numbered and not R14
                                 out("r8") _,
                                 out("r9") _,
-                                // Do not use `preserves_flags` because ORRS modifies the condition flags.
+                                // Do not use `preserves_flags` because ORRS and s! modify the condition flags.
                                 options(nostack),
                             )
                         };
