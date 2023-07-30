@@ -240,6 +240,13 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
         if: matrix.target == 'armv7-unknown-linux-gnueabi'
+      # arm v7 big endian
+      # armeb-unknown-linux-gnueabi is v8 by default, use custom target instead
+      - run: tools/test.sh -vv --tests --target armebv7-unknown-linux-gnueabi -Z build-std $RELEASE
+        env:
+          CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_LINKER: armeb-unknown-linux-gnueabi-gcc
+          CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi'
       # powerpc64 pwr7
       # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
       - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
