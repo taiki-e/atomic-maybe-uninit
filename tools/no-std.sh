@@ -78,6 +78,7 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
     nightly=1
     rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
 fi
+export QEMU_AUDIO_DRV=none
 
 run() {
     local target="$1"
