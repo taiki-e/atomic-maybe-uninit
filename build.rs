@@ -206,6 +206,11 @@ fn main() {
             //        ^^
             let mut subarch = target.strip_prefix(target_arch).unwrap();
             subarch = subarch.split_once('-').unwrap().0;
+            // riscv64-linux-android is riscv64gc
+            // https://github.com/rust-lang/rust/blob/706a4d9a4eb6794f5516f5a67660952c2247e928/compiler/rustc_target/src/spec/riscv64_linux_android.rs#L12
+            if target == "riscv64-linux-android" {
+                subarch = "gc";
+            }
             target_feature_if(
                 "a",
                 // G = IMAFD
