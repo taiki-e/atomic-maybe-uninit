@@ -18,6 +18,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Support AVR atomic load/store.
 
+- Improve {8,16}-bit atomic implementations on RISC-V, PowerPC, MIPS, s390x, LoongArch64.
+
 ## [0.2.19] - 2023-07-27
 
 - Support LoongArch64.
