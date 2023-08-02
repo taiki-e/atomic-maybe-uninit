@@ -23,11 +23,11 @@ type XSize = usize;
 
 // https://www.kernel.org/doc/Documentation/arm/kernel_user_helpers.txt
 const KUSER_HELPER_VERSION: usize = 0xFFFF0FFC;
-// kuser_helper_version >= 2 (kernel version 2.6.12+)
+// __kuser_helper_version >= 2 (kernel version 2.6.12+)
 const KUSER_CMPXCHG: usize = 0xFFFF0FC0;
-// kuser_helper_version >= 3 (kernel version 2.6.15+)
+// __kuser_helper_version >= 3 (kernel version 2.6.15+)
 const KUSER_MEMORY_BARRIER: usize = 0xFFFF0FA0;
-// kuser_helper_version >= 5 (kernel version 3.1+)
+// __kuser_helper_version >= 5 (kernel version 3.1+)
 const KUSER_CMPXCHG64: usize = 0xFFFF0F60;
 
 #[inline]
