@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.2.20] - 2023-08-02
+
 - Support pre-v6 ARM Linux/Android (e.g., armv5te-unknown-linux-gnueabi, arm-linux-androideabi, etc.).
 
 - Support Hexagon (experimental).
@@ -180,7 +182,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.19...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.20...HEAD
+[0.2.20]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.19...v0.2.20
 [0.2.19]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.18...v0.2.19
 [0.2.18]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.17...v0.2.18
 [0.2.17]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.16...v0.2.17
