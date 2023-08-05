@@ -23,8 +23,10 @@ arduino-hal = { git = "https://github.com/taiki-e/avr-hal.git", branch = "dev", 
 codegen-units = 1
 lto = true
 opt-level = "s"
+panic = "abort"
 
 [profile.release]
 codegen-units = 1
 lto = true
 opt-level = "s"
+panic = "abort"
