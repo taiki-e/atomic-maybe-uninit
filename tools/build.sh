@@ -80,9 +80,9 @@ default_targets=(
     # riscv
     # rustc --print target-list | grep -E '^riscv'
     riscv64gc-unknown-linux-gnu
-    # riscv64 no atomic load/store
+    # riscv64 no atomic CAS
     riscv64i-unknown-none-elf # custom target
-    # riscv32 no atomic load/store
+    # riscv32 no atomic CAS
     riscv32i-unknown-none-elf
     riscv32im-unknown-none-elf
     riscv32imc-unknown-none-elf
