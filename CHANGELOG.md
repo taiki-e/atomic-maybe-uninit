@@ -16,7 +16,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Support Hexagon (experimental).
 
-- Support AVR atomic load/store.
+- Support AVR atomic load/store (experimental).
 
 - Improve {8,16}-bit atomic implementations on RISC-V, PowerPC, MIPS, s390x, LoongArch64.
 
