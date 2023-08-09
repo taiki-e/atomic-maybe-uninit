@@ -228,6 +228,8 @@ atomic!(isize, reg, "", "qword", "rax");
 #[cfg(target_pointer_width = "64")]
 atomic!(usize, reg, "", "qword", "rax");
 
+// For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE) instead of CMPXCHG8B.
+// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 macro_rules! atomic64 {
@@ -245,9 +247,6 @@ macro_rules! atomic64 {
                 #[cfg(target_feature = "sse")]
                 // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
-                //
-                // Refs:
-                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/X86/X86ISelLowering.cpp
                 unsafe {
                     #[cfg(target_feature = "sse2")]
                     {
@@ -257,7 +256,6 @@ macro_rules! atomic64 {
                             // - https://www.felixcloutier.com/x86/movq (SSE2)
                             // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
                             // - https://www.felixcloutier.com/x86/pshufd (SSE2)
-                            // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/X86/X86ISelLowering.cpp
                             // (atomic) load from src to tmp0
                             "movq {tmp0}, qword ptr [{src}]",
                             // extract lower 64-bits
@@ -343,7 +341,6 @@ macro_rules! atomic64 {
                 // - https://www.felixcloutier.com/x86/movsd (SSE2)
                 // - https://www.felixcloutier.com/x86/lock
                 // - https://www.felixcloutier.com/x86/or
-                // - https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/X86/X86ISelLowering.cpp
                 unsafe {
                     match order {
                         // Relaxed and Release stores are equivalent.

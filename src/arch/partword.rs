@@ -6,7 +6,7 @@ use super::XSize;
 
 type MinWord = u32;
 
-// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
+// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
 // (aligned_ptr, shift, mask)
 #[inline]
 pub(crate) fn create_mask_values<T>(ptr: *mut T) -> (*mut MinWord, XSize, XSize) {

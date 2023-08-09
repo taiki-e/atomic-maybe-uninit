@@ -4,6 +4,8 @@ use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicLoad, AtomicStore};
 
+// TODO: https://github.com/llvm/llvm-project/commit/2a528760bf20004066effcf8f91fedaabd261903
+
 macro_rules! atomic8 {
     ($int_type:ident) => {
         impl AtomicLoad for $int_type {

@@ -53,8 +53,8 @@ fn main() {
             // Script to get targets that support cmpxchg16b by default:
             // $ (for target in $(rustc --print target-list); do [[ "${target}" == "x86_64"* ]] && rustc --print cfg --target "${target}" | grep -q cmpxchg16b && echo "${target}"; done)
             let has_cmpxchg16b = is_apple;
-            // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/6dszGeYsf
-            // It is unlikely that rustc will support that name, so we ignore it.
+            // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/r8zWGcMhd
+            // However, it is unlikely that rustc will support that name, so we ignore it.
             // cmpxchg16b_target_feature stabilized in Rust 1.69.
             target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, Some(69), true);
         }
@@ -81,7 +81,7 @@ fn main() {
                     no_cmpxchg = true;
                 } else {
                     // Only i386 and i486 disables cmpxchg8b.
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/X86/X86.td#L1339-L1340
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/X86/X86.td#L1477
                     no_cmpxchg8b = false;
                     no_cmpxchg = false;
                 }
@@ -90,15 +90,15 @@ fn main() {
                 no_cmpxchg8b = true;
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg");
             }
-            // LLVM recognizes this also as cx8 target feature: https://godbolt.org/z/7qhr5TMPo
-            // It is unlikely that rustc will support that name, so we will ignore it for now.
+            // LLVM recognizes this also as cx8 target feature: https://godbolt.org/z/Trx1x6odK
+            // However, it is unlikely that rustc will support that name, so we will ignore it for now.
             if no_cmpxchg8b {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg8b");
             }
         }
         "aarch64" => {
             // aarch64 macOS always support FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is armv8.5-a:
-            // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/include/llvm/TargetParser/AArch64TargetParser.h#L458
+            // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/include/llvm/TargetParser/AArch64TargetParser.h#L494
             let is_macos = target_os == "macos";
             // aarch64_target_feature stabilized in Rust 1.61.
             target_feature_if("lse", is_macos, &version, Some(61), true);
@@ -151,7 +151,7 @@ fn main() {
             // In addition to above known sub-architectures, we also recognize armv{8,9}-{a,r}.
             // Note that there is a CPU that armv8-a but 32-bit only (Cortex-A32).
             //
-            // See also https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/ARM/ARMSubtarget.h#L96.
+            // See also https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/ARM/ARMSubtarget.h#L96.
             let mut is_mclass = false;
             match subarch {
                 "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8a" | "v9a" => {} // aclass
@@ -186,9 +186,8 @@ fn main() {
                 if subarch.contains('m') {
                     // ARMv8-M Mainline is a superset of ARMv7-M.
                     // ARMv8-M Baseline is a superset of ARMv6-M.
-                    // That said, it seems LLVM (as of LLVM 16) handles thumbv8m.main without v8m like v6m.
-                    // https://godbolt.org/z/Ph96v9zae
-                    // TODO: ARMv9-M has not yet been released and not supported by LLVM (as of LLVM 16),
+                    // That said, LLVM handles thumbv8m.main without v8m like v6m, not v7m: https://godbolt.org/z/Ph96v9zae
+                    // TODO: ARMv9-M has not yet been released and not supported by LLVM,
                     // so it is not clear how it will be handled here.
                     (false, true)
                 } else {
@@ -226,7 +225,8 @@ fn main() {
         "powerpc64" => {
             let target_endian =
                 env::var("CARGO_CFG_TARGET_ENDIAN").expect("CARGO_CFG_TARGET_ENDIAN not set");
-            // powerpc64le is pwr8+ by default https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/PowerPC/PPC.td#L663
+            // powerpc64le is pwr8+ by default
+            // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/PowerPC/PPC.td#L663
             // See also https://github.com/rust-lang/rust/issues/59932
             let mut has_pwr8_features = target_endian == "little";
             // https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
@@ -237,8 +237,8 @@ fn main() {
                         has_pwr8_features = cpu_version >= 8;
                     }
                 } else {
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/PowerPC/PPC.td#L663
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/PowerPC/PPC.td#L445-L447
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/PowerPC/PPC.td#L663
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/PowerPC/PPC.td#L445-L447
                     has_pwr8_features = cpu == "ppc64le" || cpu == "future";
                 }
             }
@@ -255,10 +255,10 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_s390x_asm_cc_clobbered");
             }
 
-            // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/SystemZ/SystemZFeatures.td#L37
+            // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/SystemZ/SystemZFeatures.td
             let mut has_arch9_features = false;
             if let Some(cpu) = target_cpu() {
-                // https://github.com/llvm/llvm-project/blob/llvmorg-16.0.0/llvm/lib/Target/SystemZ/SystemZProcessors.td
+                // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/SystemZ/SystemZProcessors.td
                 match &*cpu {
                     "arch9" | "z196" | "arch10" | "zEC12" | "arch11" | "z13" | "arch12" | "z14"
                     | "arch13" | "z15" | "arch14" | "z16" => has_arch9_features = true,
@@ -288,7 +288,7 @@ fn target_feature_if(
     // - CARGO_CFG_TARGET_FEATURE excludes unstable target features on stable.
     //
     // As mentioned in the [RFC2045], unstable target features are also passed to LLVM
-    // (e.g., https://godbolt.org/z/8Eh3z5Wzb), so this hack works properly on stable.
+    // (e.g., https://godbolt.org/z/TfaEx95jc), so this hack works properly on stable.
     //
     // [RFC2045]: https://rust-lang.github.io/rfcs/2045-target-feature.html#backend-compilation-options
     if is_rustc_target_feature
