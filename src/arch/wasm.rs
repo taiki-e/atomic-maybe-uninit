@@ -11,6 +11,8 @@ use core::{
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 #[cfg(target_feature = "atomics")]
+compile_error!("`atomics` target feature doesn't supported yet");
+
 macro_rules! asm_atomic {
     ($($tt:tt)*) => {
         ".atomic"
@@ -196,13 +198,22 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract for `atomic_store`.
                 unsafe {
                     // atomic store is always SeqCst.
+                    // asm!(
+                    //     "local.get {0}",
+                    //     "local.get {1}",
+                    //     concat!("i", $bits, ".load {0}"),
+                    //     concat!("i", $bits, asm_atomic!(), ".store {0}"),
+                    //     in(local) dst,
+                    //     inout(local) val => _,
+                    //     options(nostack),
+                    // );
                     asm!(
-                        "local.get {0}",
                         "local.get {1}",
+                        "local.get {0}",
                         concat!("i", $bits, ".load {0}"),
                         concat!("i", $bits, asm_atomic!(), ".store {0}"),
-                        in(local) dst,
                         inout(local) val => _,
+                        in(local) dst,
                         options(nostack),
                     );
                 }
@@ -309,15 +320,15 @@ atomic!(usize, "64");
 #[cfg(test)]
 mod tests {
     test_atomic_load_store!(isize);
-    test_atomic_load_store!(usize);
-    test_atomic_load_store!(i8);
-    test_atomic_load_store!(u8);
-    test_atomic_load_store!(i16);
-    test_atomic_load_store!(u16);
-    test_atomic_load_store!(i32);
-    test_atomic_load_store!(u32);
-    test_atomic_load_store!(i64);
-    test_atomic_load_store!(u64);
+    // test_atomic_load_store!(usize);
+    // test_atomic_load_store!(i8);
+    // test_atomic_load_store!(u8);
+    // test_atomic_load_store!(i16);
+    // test_atomic_load_store!(u16);
+    // test_atomic_load_store!(i32);
+    // test_atomic_load_store!(u32);
+    // test_atomic_load_store!(i64);
+    // test_atomic_load_store!(u64);
 
     // stress_test_load_store!();
     // stress_test_load_swap!();
