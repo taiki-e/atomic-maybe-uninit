@@ -17,7 +17,7 @@ default_targets=(
     x86_64-unknown-linux-gnu
     # x86_64 X32 ABI
     x86_64-unknown-linux-gnux32
-    # x86_64 always support cmpxchg16b
+    # x86_64 with CMPXCHG16B
     x86_64-apple-darwin
     # x86_64 without SSE
     x86_64-unknown-none
@@ -36,7 +36,7 @@ default_targets=(
     aarch64-unknown-linux-gnu_ilp32
     # aarch64 ILP32 ABI big endian
     aarch64_be-unknown-linux-gnu_ilp32
-    # aarch64 always support lse
+    # aarch64 with FEAT_LSE & FEAT_LSE2
     aarch64-apple-darwin
 
     # arm
@@ -79,15 +79,14 @@ default_targets=(
 
     # riscv
     # rustc --print target-list | grep -E '^riscv'
-    riscv64gc-unknown-linux-gnu
-    # riscv64 no atomic CAS
-    riscv64i-unknown-none-elf # custom target
-    # riscv32 no atomic CAS
-    riscv32i-unknown-none-elf
-    riscv32im-unknown-none-elf
-    riscv32imc-unknown-none-elf
-    # riscv32 with atomic
+    # riscv32 with A-extension
     riscv32imac-unknown-none-elf
+    # riscv32 without A-extension
+    riscv32i-unknown-none-elf
+    # riscv64 with A-extension
+    riscv64gc-unknown-linux-gnu
+    # riscv64 without A-extension
+    riscv64i-unknown-none-elf # custom target
 
     # loongarch
     loongarch64-unknown-linux-gnu

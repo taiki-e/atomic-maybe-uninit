@@ -97,7 +97,7 @@ fn main() {
             }
         }
         "aarch64" => {
-            // aarch64 macOS always support FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is armv8.5-a:
+            // aarch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is armv8.5-a:
             // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/include/llvm/TargetParser/AArch64TargetParser.h#L494
             let is_macos = target_os == "macos";
             // aarch64_target_feature stabilized in Rust 1.61.
