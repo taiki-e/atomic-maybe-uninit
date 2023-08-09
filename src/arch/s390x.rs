@@ -152,6 +152,7 @@ macro_rules! atomic {
                         val_tmp = out(reg) _,
                         out = in(reg) ptr_reg!(out),
                         out("r0") _,
+                        // Do not use `preserves_flags` because CS modifies the condition code.
                         options(nostack),
                     );
                 }
@@ -193,6 +194,7 @@ macro_rules! atomic {
                         tmp = out(reg) r,
                         out = in(reg) ptr_reg!(out),
                         out("r0") _,
+                        // Do not use `preserves_flags` because CS modifies the condition code.
                         options(nostack),
                     );
                     extract_cc(r)
@@ -242,6 +244,7 @@ macro_rules! atomic_sub_word {
                         out("r0") _,
                         inout("r3") ptr_reg!(val) => _,
                         out("r14") _,
+                        // Do not use `preserves_flags` because CS modifies the condition code.
                         options(nostack),
                     );
                 }
@@ -296,6 +299,7 @@ macro_rules! atomic_sub_word {
                         inout("r3") ptr_reg!(old) => _,
                         inout("r4") ptr_reg!(new) => _,
                         out("r13") _,
+                        // Do not use `preserves_flags` because CS modifies the condition code.
                         options(nostack),
                     );
                     extract_cc(r)
@@ -433,6 +437,7 @@ macro_rules! atomic128 {
                         out("r1") _, // val (lo)
                         lateout("r2") _, // out (hi)
                         lateout("r3") _, // out (lo)
+                        // Do not use `preserves_flags` because CDSG modifies the condition code.
                         options(nostack),
                     );
                 }
@@ -481,6 +486,7 @@ macro_rules! atomic128 {
                         out("r1") _, // old (lo) -> out (lo)
                         out("r12") _, // new (hi)
                         out("r13") _, // new (hi)
+                        // Do not use `preserves_flags` because CDSG modifies the condition code.
                         options(nostack),
                     );
                     extract_cc(r)

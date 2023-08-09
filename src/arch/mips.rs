@@ -17,6 +17,8 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
+// TODO: we can add options(preserves_flags) to some of asm!
+
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
         match $order {

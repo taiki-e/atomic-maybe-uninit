@@ -36,7 +36,8 @@ macro_rules! atomic_rmw {
     };
 }
 
-// Adds S suffix if needed. We prefer MOV over MOVS, but ARMv8-M Baseline doesn't support thumb2 instructions.
+// Adds S suffix if needed. We prefer instruction without S suffix,
+// but ARMv8-M Baseline doesn't support thumb2 instructions.
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! s {
     ($op:tt, $operand:tt) => {

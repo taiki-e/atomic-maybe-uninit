@@ -28,7 +28,7 @@ macro_rules! atomic8 {
                         tmp = out(reg) _,
                         in("X") src,
                         in("Z") out,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }
@@ -53,7 +53,7 @@ macro_rules! atomic8 {
                         tmp = out(reg) _,
                         in("X") dst,
                         in("Z") val,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }
@@ -86,7 +86,7 @@ macro_rules! atomic16 {
                         tmp1 = out(reg) _,
                         in("X") src,
                         in("Z") out,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }
@@ -114,7 +114,7 @@ macro_rules! atomic16 {
                         tmp1 = out(reg) _,
                         in("X") dst,
                         in("Z") val,
-                        options(nostack),
+                        options(nostack, preserves_flags),
                     );
                 }
             }

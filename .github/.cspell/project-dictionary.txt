@@ -47,7 +47,6 @@ mfence
 movd
 movlps
 movq
-movs
 movsd
 movss
 neoverse
