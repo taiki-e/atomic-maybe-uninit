@@ -108,6 +108,8 @@ Feel free to submit an issue if your target is not supported yet.
         target_arch = "powerpc",
         target_arch = "powerpc64",
         target_arch = "s390x",
+        target_arch = "wasm32",
+        target_arch = "wasm64",
     ),
     feature(asm_experimental_arch)
 )]

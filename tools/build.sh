@@ -128,6 +128,12 @@ default_targets=(
     # hexagon
     # rustc --print target-list | grep -E '^hexagon'
     hexagon-unknown-linux-musl
+
+    # wasm
+    # rustc --print target-list | grep -E '^wasm'
+    wasm32-unknown-unknown
+    wasm64-unknown-unknown
+    wasm32-wasi
 )
 known_cfgs=()
 

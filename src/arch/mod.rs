@@ -33,6 +33,8 @@
     target_arch = "powerpc",
     target_arch = "powerpc64",
     target_arch = "s390x",
+    target_arch = "wasm32",
+    target_arch = "wasm64",
 )))]
 compile_error!("this target is not supported yet");
 
@@ -84,5 +86,7 @@ mod powerpc;
 mod riscv;
 #[cfg(target_arch = "s390x")]
 mod s390x;
+#[cfg(any(target_arch = "wasm32", target_arch = "wasm64"))]
+mod wasm;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86;

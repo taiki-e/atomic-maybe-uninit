@@ -6,6 +6,9 @@
     clippy::wildcard_imports
 )]
 
+#[cfg(all(target_family = "wasm", not(target_os = "wasi")))]
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
 #[macro_use]
 pub(crate) mod helper;
 
@@ -20,6 +23,9 @@ macro_rules! test_common {
             )]
             mod [<test_common_ $int_type>] {
                 use std::mem::MaybeUninit;
+
+                #[cfg(all(target_family = "wasm", not(target_os = "wasi")))]
+                use wasm_bindgen_test::wasm_bindgen_test as test;
 
                 use crate::AtomicMaybeUninit;
 

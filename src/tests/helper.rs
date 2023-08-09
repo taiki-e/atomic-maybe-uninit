@@ -12,6 +12,8 @@ macro_rules! test_atomic_load_store {
                 clippy::undocumented_unsafe_blocks,
             )]
             mod [<test_atomic_ $int_type>] {
+                #[cfg(all(target_family = "wasm", not(target_os = "wasi")))]
+                use wasm_bindgen_test::wasm_bindgen_test as test;
                 __test_atomic!(load_store, $int_type);
             }
         }
@@ -27,6 +29,8 @@ macro_rules! test_atomic_load_store_swap {
                 clippy::undocumented_unsafe_blocks,
             )]
             mod [<test_atomic_ $int_type>] {
+                #[cfg(all(target_family = "wasm", not(target_os = "wasi")))]
+                use wasm_bindgen_test::wasm_bindgen_test as test;
                 __test_atomic!(load_store, $int_type);
                 __test_atomic!(swap, $int_type);
             }
@@ -43,6 +47,8 @@ macro_rules! test_atomic {
                 clippy::undocumented_unsafe_blocks,
             )]
             mod [<test_atomic_ $int_type>] {
+                #[cfg(all(target_family = "wasm", not(target_os = "wasi")))]
+                use wasm_bindgen_test::wasm_bindgen_test as test;
                 __test_atomic!(load_store, $int_type);
                 __test_atomic!(swap, $int_type);
                 __test_atomic!(cas, $int_type);
@@ -117,6 +123,7 @@ macro_rules! __test_atomic {
                 true
             }
         }
+        #[cfg(not(target_family = "wasm"))]
         #[test]
         fn stress_load_store() {
             unsafe {
@@ -207,6 +214,7 @@ macro_rules! __test_atomic {
                 true
             }
         }
+        #[cfg(not(target_family = "wasm"))]
         #[test]
         fn stress_swap() {
             unsafe {
@@ -539,6 +547,7 @@ macro_rules! __test_atomic {
                 true
             }
         }
+        #[cfg(not(target_family = "wasm"))]
         #[test]
         fn stress_compare_exchange() {
             unsafe {

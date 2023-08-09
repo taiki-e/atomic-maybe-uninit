@@ -1,0 +1,9 @@
+[target.wasm32-wasi]
+runner = "wasmtime run --wasm-features all"
+# rustflags = ["-C", "target-feature=+atomics"]
+# CARGO_TARGET_WASM32_WASI_LINKER="$(pwd)/tmp/wasi-sdk-16.0/bin/clang" RUSTFLAGS='-C target-feature=+atomics' cargo -Z build-std test --target wasm32-wasi
+# cargo test --target wasm32-wasi
+
+[target.wasm32-unknown-unknown]
+# rustflags = ["-C", "target-feature=+atomics"]
+# RUSTFLAGS='-C target-feature=+atomics' WASM_PACK_BUILD_STD='1' wasm-pack test --headless --chrome

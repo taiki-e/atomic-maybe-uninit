@@ -33,3 +33,9 @@ crossbeam-utils = "0.8"
 fastrand = "2"
 paste = "1"
 quickcheck = { default-features = false, git = "https://github.com/taiki-e/quickcheck.git", branch = "dev" } # https://github.com/BurntSushi/quickcheck/pull/304 + https://github.com/BurntSushi/quickcheck/pull/282 + lower MSRV
+
+[target.'cfg(all(target_family = "wasm", not(target_os = "wasi")))'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[target.wasm32-unknown-unknown.dev-dependencies]
+getrandom = { version = "0.2", features = ["js"] }

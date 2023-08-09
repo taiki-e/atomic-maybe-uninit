@@ -304,6 +304,16 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - run: tools/build.sh
 
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: taiki-e/install-action@wasm-pack
+      - run: wasm-pack test --headless --chrome
+
   no-std:
     needs: tidy
     strategy:
