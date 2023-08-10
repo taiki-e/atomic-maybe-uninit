@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.2.21] - 2023-08-10
+
 - Fix AVR 16-bit atomic load/store.
 
 - Optimize AArch64 128-bit store/swap when the `lse128` target feature is enabled at compile-time.
@@ -190,7 +192,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.20...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.21...HEAD
+[0.2.21]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.20...v0.2.21
 [0.2.20]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.19...v0.2.20
 [0.2.19]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.18...v0.2.19
 [0.2.18]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.17...v0.2.18
