@@ -31,11 +31,14 @@ lclang
 ldapr
 ldar
 ldaxp
+ldclr
 ldclrp
+ldeor
 ldiapp
 ldrd
 ldrex
 ldrexd
+ldset
 ldsetp
 ldxp
 libunwind

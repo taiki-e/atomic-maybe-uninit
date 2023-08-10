@@ -244,3 +244,28 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
         unsafe { Self::atomic_compare_exchange(dst, current, new, out, success, failure) }
     }
 }
+
+#[allow(clippy::missing_safety_doc, missing_docs)] // TODO
+/// Atomic RMWs.
+///
+/// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
+pub trait AtomicRMW: Copy {
+    unsafe fn atomic_and(
+        dst: *mut MaybeUninit<Self>,
+        val: *const MaybeUninit<Self>,
+        out: *mut MaybeUninit<Self>,
+        order: Ordering,
+    );
+    unsafe fn atomic_or(
+        dst: *mut MaybeUninit<Self>,
+        val: *const MaybeUninit<Self>,
+        out: *mut MaybeUninit<Self>,
+        order: Ordering,
+    );
+    unsafe fn atomic_xor(
+        dst: *mut MaybeUninit<Self>,
+        val: *const MaybeUninit<Self>,
+        out: *mut MaybeUninit<Self>,
+        order: Ordering,
+    );
+}

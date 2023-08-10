@@ -12,14 +12,14 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/6TKofhrbb
+// - aarch64 https://godbolt.org/z/ffdqb5r7s
 // - aarch64 msvc https://godbolt.org/z/5GzETjcE7
-// - aarch64 (+lse) https://godbolt.org/z/7jK5vej7b
+// - aarch64 (+lse) https://godbolt.org/z/6Wax1e8ed
 // - aarch64 msvc (+lse) https://godbolt.org/z/896zWazdW
 // - aarch64 (+lse,+lse2) https://godbolt.org/z/66cMd4Ys6
 // - aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/ojbaYn9Kf
 // - aarch64 (+rcpc) https://godbolt.org/z/4ahePW8TK
-// - aarch64 (+lse2,+lse128) https://godbolt.org/z/joMq5vv1h
+// - aarch64 (+lse2,+lse128) https://godbolt.org/z/arfdjPd9a
 // - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/WdbsccKcz
 
 use core::{
@@ -28,7 +28,7 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicRMW, AtomicStore, AtomicSwap};
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -365,6 +365,204 @@ macro_rules! atomic {
                 }
             }
         }
+        impl AtomicRMW for $int_type {
+            #[inline]
+            unsafe fn atomic_and(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    macro_rules! and {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to tmp
+                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val}]"),
+                                // (atomic) and
+                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
+                                concat!("mvn {tmp", $val_modifier, "}, {tmp", $val_modifier, "}"),
+                                concat!("ldclr", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst}]"),
+                                $fence,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
+                                tmp = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+                    macro_rules! and {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val_tmp
+                                concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val}]"),
+                                // (atomic) and
+                                "2:",
+                                    // load from dst to out_tmp
+                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
+                                    concat!("and {tmp", $val_modifier, "}, {out_tmp", $val_modifier, "}, {val_tmp", $val_modifier, "}"),
+                                    // store val to dst
+                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {tmp", $val_modifier, "}, [{dst}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cbnz {r:w}, 2b",
+                                $fence,
+                                // store out_tmp to out
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                val_tmp = out(reg) _,
+                                out = inout(reg) ptr_reg!(out) => _,
+                                out_tmp = lateout(reg) _,
+                                tmp = lateout(reg) _,
+                                r = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(and, order);
+                }
+            }
+            #[inline]
+            unsafe fn atomic_or(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    macro_rules! or {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to tmp
+                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val}]"),
+                                // (atomic) or
+                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
+                                concat!("ldset", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst}]"),
+                                $fence,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
+                                tmp = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+                    macro_rules! or {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val_tmp
+                                concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val}]"),
+                                // (atomic) or
+                                "2:",
+                                    // load from dst to out_tmp
+                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
+                                    concat!("orr {tmp", $val_modifier, "}, {out_tmp", $val_modifier, "}, {val_tmp", $val_modifier, "}"),
+                                    // store val to dst
+                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {tmp", $val_modifier, "}, [{dst}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cbnz {r:w}, 2b",
+                                $fence,
+                                // store out_tmp to out
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                val_tmp = out(reg) _,
+                                out = inout(reg) ptr_reg!(out) => _,
+                                out_tmp = lateout(reg) _,
+                                tmp = lateout(reg) _,
+                                r = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(or, order);
+                }
+            }
+            #[inline]
+            unsafe fn atomic_xor(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    macro_rules! xor {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to tmp
+                                concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val}]"),
+                                // (atomic) xor
+                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
+                                concat!("ldeor", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst}]"),
+                                $fence,
+                                // store tmp to out
+                                concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
+                                tmp = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+                    macro_rules! xor {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val_tmp
+                                concat!("ldr", $asm_suffix, " {val_tmp", $val_modifier, "}, [{val}]"),
+                                // (atomic) xor
+                                "2:",
+                                    // load from dst to out_tmp
+                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out_tmp", $val_modifier, "}, [{dst}]"),
+                                    concat!("eor {tmp", $val_modifier, "}, {out_tmp", $val_modifier, "}, {val_tmp", $val_modifier, "}"),
+                                    // store val to dst
+                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {tmp", $val_modifier, "}, [{dst}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cbnz {r:w}, 2b",
+                                $fence,
+                                // store out_tmp to out
+                                concat!("str", $asm_suffix, " {out_tmp", $val_modifier, "}, [{out}]"),
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                val_tmp = out(reg) _,
+                                out = inout(reg) ptr_reg!(out) => _,
+                                out_tmp = lateout(reg) _,
+                                tmp = lateout(reg) _,
+                                r = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(xor, order);
+                }
+            }
+        }
     };
 }
 
@@ -395,7 +593,7 @@ atomic!(usize, "", "");
 //
 // If FEAT_LSE is available at compile-time, we use CASP for load/CAS. Otherwise, use LDXP/STXP loop.
 // If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.
-// If FEAT_LSE128 is available at compile-time, we use SWPP for swap/{release,seqcst}-store.
+// If FEAT_LSE128 is available at compile-time, we use LDCLRP/LDSETP/SWPP for fetch_and/fetch_or/swap/{release,seqcst}-store.
 // If FEAT_LSE2 and FEAT_LRCPC3 are available at compile-time, we use LDIAPP/STILP for acquire-load/release-store.
 //
 // Note: FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2.
@@ -829,6 +1027,196 @@ macro_rules! atomic128 {
                         }};
                     }
                     atomic_rmw!(cmpxchg, order, write = success)
+                }
+            }
+        }
+        impl AtomicRMW for $int_type {
+            #[inline]
+            unsafe fn atomic_and(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
+                    macro_rules! and {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val pair
+                                "ldp {val_lo}, {val_hi}, [{val}]",
+                                "mvn {val_lo}, {val_lo}",
+                                "mvn {val_hi}, {val_hi}",
+                                // (atomic) and
+                                concat!("ldclrp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"),
+                                $fence,
+                                // store out pair to out
+                                "stp {val_lo}, {val_hi}, [{out}]",
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) ptr_reg!(val),
+                                out = in(reg) ptr_reg!(out),
+                                val_hi = out(reg) _,
+                                val_lo = out(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
+                    macro_rules! and {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val pair
+                                "ldp {val_lo}, {val_hi}, [{val}]",
+                                // (atomic) and
+                                "2:",
+                                    // load from dst to out pair
+                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),
+                                    "and {new_lo}, {prev_lo}, {val_lo}",
+                                    "and {new_hi}, {prev_hi}, {val_hi}",
+                                    // store val pair to dst
+                                    concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cbnz {r:w}, 2b",
+                                $fence,
+                                // store out pair to out
+                                "stp {prev_lo}, {prev_hi}, [{out}]",
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
+                                val_hi = out(reg) _,
+                                val_lo = out(reg) _,
+                                prev_hi = lateout(reg) _,
+                                prev_lo = lateout(reg) _,
+                                new_hi = lateout(reg) _,
+                                new_lo = lateout(reg) _,
+                                r = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(and, order);
+                }
+            }
+            #[inline]
+            unsafe fn atomic_or(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
+                    macro_rules! or {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val pair
+                                "ldp {val_lo}, {val_hi}, [{val}]",
+                                // (atomic) or
+                                concat!("ldsetp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"),
+                                $fence,
+                                // store out pair to out
+                                "stp {val_lo}, {val_hi}, [{out}]",
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) ptr_reg!(val),
+                                out = in(reg) ptr_reg!(out),
+                                val_hi = out(reg) _,
+                                val_lo = out(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
+                    macro_rules! or {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val pair
+                                "ldp {val_lo}, {val_hi}, [{val}]",
+                                // (atomic) or
+                                "2:",
+                                    // load from dst to out pair
+                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),
+                                    "orr {new_lo}, {prev_lo}, {val_lo}",
+                                    "orr {new_hi}, {prev_hi}, {val_hi}",
+                                    // store val pair to dst
+                                    concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cbnz {r:w}, 2b",
+                                $fence,
+                                // store out pair to out
+                                "stp {prev_lo}, {prev_hi}, [{out}]",
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
+                                val_hi = out(reg) _,
+                                val_lo = out(reg) _,
+                                prev_hi = lateout(reg) _,
+                                prev_lo = lateout(reg) _,
+                                new_hi = lateout(reg) _,
+                                new_lo = lateout(reg) _,
+                                r = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(or, order);
+                }
+            }
+            #[inline]
+            unsafe fn atomic_xor(
+                dst: *mut MaybeUninit<Self>,
+                val: *const MaybeUninit<Self>,
+                out: *mut MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    macro_rules! xor {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val pair
+                                "ldp {val_lo}, {val_hi}, [{val}]",
+                                // (atomic) xor
+                                "2:",
+                                    // load from dst to out pair
+                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),
+                                    "eor {new_lo}, {prev_lo}, {val_lo}",
+                                    "eor {new_hi}, {prev_hi}, {val_hi}",
+                                    // store val pair to dst
+                                    concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst}]"),
+                                    // 0 if the store was successful, 1 if no store was performed
+                                    "cbnz {r:w}, 2b",
+                                $fence,
+                                // store out pair to out
+                                "stp {prev_lo}, {prev_hi}, [{out}]",
+                                dst = inout(reg) ptr_reg!(dst) => _,
+                                val = in(reg) ptr_reg!(val),
+                                out = inout(reg) ptr_reg!(out) => _,
+                                val_hi = out(reg) _,
+                                val_lo = out(reg) _,
+                                prev_hi = lateout(reg) _,
+                                prev_lo = lateout(reg) _,
+                                new_hi = lateout(reg) _,
+                                new_lo = lateout(reg) _,
+                                r = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(xor, order);
                 }
             }
         }
