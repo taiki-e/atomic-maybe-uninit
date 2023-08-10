@@ -14,9 +14,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Fix AVR 16-bit atomic load/store.
 
-- Optimize AArch64 128-bit store/swap when the `lse128` target feature is enabled at compile-time.
+- Optimize AArch64 128-bit atomic store/swap when the `lse128` target feature is enabled at compile-time.
 
-- Optimize AArch64 128-bit load/store when the `rcpc3` target feature is enabled at compile-time.
+- Optimize AArch64 128-bit atomic load/store when the `rcpc3` target feature is enabled at compile-time.
 
 ## [0.2.20] - 2023-08-02
 
