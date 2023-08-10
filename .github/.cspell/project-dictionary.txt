@@ -30,10 +30,12 @@ lclang
 ldapr
 ldar
 ldaxp
+ldclrp
 ldiapp
 ldrd
 ldrex
 ldrexd
+ldsetp
 ldxp
 libunwind
 lqarx
@@ -83,6 +85,7 @@ strexd
 stwcx
 stxp
 subarch
+swpp
 usart
 uwrite
 uwriteln

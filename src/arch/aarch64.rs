@@ -12,13 +12,15 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/Yobx165PP
-// - aarch64 msvc https://godbolt.org/z/T5af7s747
-// - aarch64 (+lse) https://godbolt.org/z/eW7n171o5
-// - aarch64 msvc (+lse) https://godbolt.org/z/de8n7aGrK
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/Mc1W1z8e3
-// - aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/xdo11jGz7
-// - aarch64 (+rcpc) https://godbolt.org/z/c4eccqa41
+// - aarch64 https://godbolt.org/z/6TKofhrbb
+// - aarch64 msvc https://godbolt.org/z/5GzETjcE7
+// - aarch64 (+lse) https://godbolt.org/z/7jK5vej7b
+// - aarch64 msvc (+lse) https://godbolt.org/z/896zWazdW
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/66cMd4Ys6
+// - aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/ojbaYn9Kf
+// - aarch64 (+rcpc) https://godbolt.org/z/4ahePW8TK
+// - aarch64 (+lse2,+lse128) https://godbolt.org/z/joMq5vv1h
+// - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/WdbsccKcz
 
 use core::{
     arch::asm,
@@ -389,12 +391,14 @@ atomic!(usize, "", "");
 // - CASP (DWCAS) added as FEAT_LSE (mandatory from armv8.1-a)
 // - LDP/STP (DW load/store) if FEAT_LSE2 (optional from armv8.2-a, mandatory from armv8.4-a) is available
 // - LDIAPP/STILP (DW acquire-load/release-store) added as FEAT_LRCPC3 (optional from armv8.9-a/armv9.4-a) (if FEAT_LSE2 is also available)
+// - LDCLRP/LDSETP/SWPP (DW RMW) added as FEAT_LSE128 (optional from armv9.4-a)
 //
 // If FEAT_LSE is available at compile-time, we use CASP for load/CAS. Otherwise, use LDXP/STXP loop.
 // If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.
+// If FEAT_LSE128 is available at compile-time, we use SWPP for swap/{release,seqcst}-store.
 // If FEAT_LSE2 and FEAT_LRCPC3 are available at compile-time, we use LDIAPP/STILP for acquire-load/release-store.
 //
-// Note: FEAT_LSE2 doesn't imply FEAT_LSE.
+// Note: FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2.
 //
 // Refs:
 // - LDP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/LDP
@@ -570,6 +574,25 @@ macro_rules! atomic128 {
                             )
                         };
                     }
+                    // Use swpp if stp requires fences.
+                    // https://reviews.llvm.org/D143506
+                    #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
+                    macro_rules! atomic_store_swpp {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val pair
+                                "ldp {val_lo}, {val_hi}, [{val}]",
+                                // (atomic) swap
+                                concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"),
+                                $fence,
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) ptr_reg!(val),
+                                val_hi = out(reg) _,
+                                val_lo = out(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
                     match order {
                         Ordering::Relaxed => atomic_store!("", ""),
                         #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
@@ -588,8 +611,15 @@ macro_rules! atomic128 {
                                 options(nostack, preserves_flags),
                             );
                         }
+                        #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
+                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
+                        Ordering::Release => atomic_rmw!(atomic_store_swpp, order),
+                        #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
                         #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
                         Ordering::Release => atomic_store!("", "dmb ish"),
+                        #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
+                        Ordering::SeqCst => atomic_rmw!(atomic_store_swpp, order),
+                        #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
                         Ordering::SeqCst => atomic_store!("dmb ish", "dmb ish"),
                         _ => unreachable!("{:?}", order),
                     }
@@ -638,6 +668,27 @@ macro_rules! atomic128 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
+                    macro_rules! swap {
+                        ($acquire:tt, $release:tt, $fence:tt) => {
+                            asm!(
+                                // load from val to val pair
+                                "ldp {val_lo}, {val_hi}, [{val}]",
+                                // (atomic) swap
+                                concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"),
+                                $fence,
+                                // store out pair to out
+                                "stp {val_lo}, {val_hi}, [{out}]",
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) ptr_reg!(val),
+                                out = in(reg) ptr_reg!(out),
+                                val_hi = out(reg) _,
+                                val_lo = out(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(

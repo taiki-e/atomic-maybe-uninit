@@ -265,10 +265,15 @@ build() {
                         x_cargo "${args[@]}" --target-dir target/rcpc "$@"
                     ;;
             esac
-            # Support for FEAT_LRCPC3 requires LLVM 16+.
+            # Support for FEAT_LRCPC3 and FEAT_LSE128 requires LLVM 16+.
             if [[ "${llvm_version}" -ge 16 ]]; then
                 RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2,+rcpc3" \
                     x_cargo "${args[@]}" --target-dir target/rcpc3 "$@"
+                # FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2.
+                RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128" \
+                    x_cargo "${args[@]}" --target-dir target/lse128 "$@"
+                RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128,+rcpc3" \
+                    x_cargo "${args[@]}" --target-dir target/lse128-rcpc3 "$@"
             fi
             ;;
         powerpc64-*)
