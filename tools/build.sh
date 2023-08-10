@@ -265,6 +265,11 @@ build() {
                         x_cargo "${args[@]}" --target-dir target/rcpc "$@"
                     ;;
             esac
+            # Support for FEAT_LRCPC3 requires LLVM 16+.
+            if [[ "${llvm_version}" -ge 16 ]]; then
+                RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2,+rcpc3" \
+                    x_cargo "${args[@]}" --target-dir target/rcpc3 "$@"
+            fi
             ;;
         powerpc64-*)
             # powerpc64le- (little-endian) is skipped because it is pwr8 by default

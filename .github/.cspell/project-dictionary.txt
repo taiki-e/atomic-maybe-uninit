@@ -30,6 +30,7 @@ lclang
 ldapr
 ldar
 ldaxp
+ldiapp
 ldrd
 ldrex
 ldrexd
@@ -72,6 +73,7 @@ sltiu
 sltui
 sreg
 srlv
+stilp
 stlxp
 stpq
 stqcx

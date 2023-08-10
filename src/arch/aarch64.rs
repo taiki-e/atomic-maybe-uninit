@@ -17,6 +17,7 @@
 // - aarch64 (+lse) https://godbolt.org/z/eW7n171o5
 // - aarch64 msvc (+lse) https://godbolt.org/z/de8n7aGrK
 // - aarch64 (+lse,+lse2) https://godbolt.org/z/Mc1W1z8e3
+// - aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/xdo11jGz7
 // - aarch64 (+rcpc) https://godbolt.org/z/c4eccqa41
 
 use core::{
@@ -387,9 +388,11 @@ atomic!(usize, "", "");
 // - LDXP/STXP loop (DW LL/SC)
 // - CASP (DWCAS) added as FEAT_LSE (mandatory from armv8.1-a)
 // - LDP/STP (DW load/store) if FEAT_LSE2 (optional from armv8.2-a, mandatory from armv8.4-a) is available
+// - LDIAPP/STILP (DW acquire-load/release-store) added as FEAT_LRCPC3 (optional from armv8.9-a/armv9.4-a) (if FEAT_LSE2 is also available)
 //
 // If FEAT_LSE is available at compile-time, we use CASP for load/CAS. Otherwise, use LDXP/STXP loop.
 // If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.
+// If FEAT_LSE2 and FEAT_LRCPC3 are available at compile-time, we use LDIAPP/STILP for acquire-load/release-store.
 //
 // Note: FEAT_LSE2 doesn't imply FEAT_LSE.
 //
@@ -441,6 +444,23 @@ macro_rules! atomic128 {
                     }
                     match order {
                         Ordering::Relaxed => atomic_load_relaxed!(""),
+                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
+                        Ordering::Acquire => {
+                            // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
+                            // Refs: https://developer.arm.com/documentation/ddi0602/2023-03/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-Pair-of-registers-
+                            asm!(
+                                // (atomic) load from src to tmp pair
+                                "ldiapp {tmp_lo}, {tmp_hi}, [{src}]",
+                                // store tmp pair to out
+                                "stp {tmp_lo}, {tmp_hi}, [{out}]",
+                                src = in(reg) ptr_reg!(src),
+                                out = in(reg) ptr_reg!(out),
+                                tmp_hi = out(reg) _,
+                                tmp_lo = out(reg) _,
+                                options(nostack, preserves_flags),
+                            );
+                        }
+                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
                         Ordering::Acquire => atomic_load_relaxed!("dmb ishld"),
                         Ordering::SeqCst => {
                             asm!(
@@ -552,6 +572,23 @@ macro_rules! atomic128 {
                     }
                     match order {
                         Ordering::Relaxed => atomic_store!("", ""),
+                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
+                        Ordering::Release => {
+                            // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
+                            // Refs: https://developer.arm.com/documentation/ddi0602/2023-03/Base-Instructions/STILP--Store-Release-ordered-Pair-of-registers-
+                            asm!(
+                                // load from val to val pair
+                                "ldp {val_lo}, {val_hi}, [{val}]",
+                                // (atomic) store val pair to dst
+                                "stilp {val_lo}, {val_hi}, [{dst}]",
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) ptr_reg!(val),
+                                val_hi = out(reg) _,
+                                val_lo = out(reg) _,
+                                options(nostack, preserves_flags),
+                            );
+                        }
+                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
                         Ordering::Release => atomic_store!("", "dmb ish"),
                         Ordering::SeqCst => atomic_store!("dmb ish", "dmb ish"),
                         _ => unreachable!("{:?}", order),
