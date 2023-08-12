@@ -107,18 +107,9 @@ run() {
 
     local test_dir
     case "${target}" in
-        thumb*)
+        thumb* | riscv*)
             test_dir=tests/no-std-qemu
             linker=link.x
-            target_rustflags+=" -C link-arg=-T${linker}"
-            ;;
-        riscv*)
-            test_dir=tests/no-std-qemu
-            case "${target}" in
-                riscv32*) linker=riscv32.ld ;;
-                riscv64*) linker=riscv64.ld ;;
-                *) bail "unrecognized target '${target}'" ;;
-            esac
             target_rustflags+=" -C link-arg=-T${linker}"
             ;;
         avr*)
