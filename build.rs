@@ -407,9 +407,9 @@ mod version {
                     }
                     Some(Date::new(year, month, day))
                 })();
-                Some(Version { minor, nightly, commit_date: commit_date.unwrap_or(Date::UNKNOWN) })
+                Some(Self { minor, nightly, commit_date: commit_date.unwrap_or(Date::UNKNOWN) })
             } else {
-                Some(Version::stable(minor))
+                Some(Self::stable(minor))
             }
         }
     }
