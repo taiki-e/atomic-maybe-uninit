@@ -44,7 +44,6 @@ jobs:
     uses: taiki-e/workflows/.github/workflows/msrv.yml@main
     with:
       event_name: ${{ github.event_name }}
-      args: --feature-powerset --optional-deps
   tidy:
     uses: taiki-e/workflows/.github/workflows/tidy.yml@main
 
@@ -358,7 +357,6 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
 
   codegen:
-    needs: tidy
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
