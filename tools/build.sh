@@ -36,7 +36,7 @@ default_targets=(
     aarch64-unknown-linux-gnu_ilp32
     # aarch64 ILP32 ABI big endian
     aarch64_be-unknown-linux-gnu_ilp32
-    # aarch64 with FEAT_LSE & FEAT_LSE2
+    # aarch64 with FEAT_LSE & FEAT_LSE2 & FEAT_LRCPC
     aarch64-apple-darwin
 
     # arm
