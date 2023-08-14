@@ -347,7 +347,8 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     }
 
     /// Stores a value into the atomic integer if the current value is the same as
-    /// the `current` value.
+    /// the `current` value. Here, "the same" is determined using byte-wise
+    /// equality, not `PartialEq`.
     ///
     /// The return value is a result indicating whether the new value was written and
     /// containing the previous value. On success this value is guaranteed to be equal to
@@ -368,8 +369,8 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// # Notes
     ///
     /// Comparison of two values containing uninitialized bytes may fail even if
-    /// they are equivalent as Rust's type, because their contents are not frozen
-    /// until a pointer to the value containing uninitialized bytes is passed to `asm!`.
+    /// they are equivalent as Rust's type, because values can be byte-wise
+    /// inequal even when they are equal as Rust values.
     ///
     /// For example, the following example could be an infinite loop:
     ///
@@ -423,7 +424,10 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///     loop {
     ///         match v.compare_exchange_weak(current_raw, new_raw, Ordering::AcqRel, Ordering::Acquire)
     ///         {
-    ///             Ok(_) => break Ok(current),
+    ///             Ok(_) => {
+    ///                 // The values are byte-wise equal; for `Test` we know this implies they are `PartialEq`-equal.
+    ///                 break Ok(current);
+    ///             }
     ///             Err(previous_raw) => {
     ///                 let previous = mem::transmute_copy(&previous_raw);
     ///
@@ -449,10 +453,13 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// }
     /// ```
     ///
-    /// See [crossbeam-rs/crossbeam#315](https://github.com/crossbeam-rs/crossbeam/issues/315) for more details.
-    ///
     /// Also, Valgrind reports "Conditional jump or move depends on uninitialized value(s)"
-    /// error if there is such comparison because it doesn't understand LLVM's freeze.
+    /// error if there is such a comparison -- which is correct, that's exactly
+    /// what the implementation does, but we are doing this inside inline
+    /// assembly so it should be fine. (Effectively we are adding partial
+    /// `freeze` capabilities to Rust via inline assembly. This pattern has not
+    /// been blessed by the language team, but is also not known to cause any
+    /// problems.)
     ///
     /// # Examples
     ///
