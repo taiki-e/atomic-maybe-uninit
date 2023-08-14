@@ -1,6 +1,7 @@
 // AVR
 //
 // Refs:
+// - AVR Instruction Set Manual https://ww1.microchip.com/downloads/en/DeviceDoc/AVR-InstructionSet-Manual-DS40002198.pdf
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};

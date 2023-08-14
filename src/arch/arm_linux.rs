@@ -3,6 +3,8 @@
 // Refs:
 // - https://www.kernel.org/doc/Documentation/arm/kernel_user_helpers.txt
 // - https://github.com/rust-lang/compiler-builtins/blob/0.1.88/src/arm_linux.rs
+// - ARMv4 and ARMv5 Differences
+//   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences?lang=en
 //
 // Generated asm:
 // - armv5te https://godbolt.org/z/r61s7cnG8
