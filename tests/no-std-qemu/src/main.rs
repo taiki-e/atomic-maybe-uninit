@@ -169,6 +169,10 @@ fn run() {
     test_atomic!(u16);
     test_atomic!(i32);
     test_atomic!(u32);
+    cfg_has_atomic_64! {
+        test_atomic!(i64);
+        test_atomic!(u64);
+    }
 }
 
 fn load_orderings() -> [Ordering; 3] {

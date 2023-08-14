@@ -210,20 +210,6 @@ build() {
         echo "target '${target}' requires nightly compiler (skipped all checks)"
         return 0
     fi
-    if [[ -z "${nightly}" ]]; then
-        case "${target}" in
-            avr* | hexagon* | mips* | msp430* | powerpc* | s390*)
-                echo "target '${target}' requires nightly compiler (skipped all checks)"
-                return 0
-                ;;
-            loongarch*)
-                if [[ "${rustc_minor_version}" -lt 72 ]]; then
-                    echo "target '${target}' requires Rust 1.72+ (skipped all checks)"
-                    return 0
-                fi
-                ;;
-        esac
-    fi
     if [[ "${target}" == "avr"* ]]; then
         if [[ "${llvm_version}" -eq 16 ]]; then
             # https://github.com/rust-lang/compiler-builtins/issues/523

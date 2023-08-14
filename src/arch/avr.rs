@@ -80,12 +80,43 @@ atomic!(u16);
 atomic!(isize);
 atomic!(usize);
 
-#[cfg(test)]
-mod tests {
-    test_atomic!(isize);
-    test_atomic!(usize);
-    test_atomic!(i8);
-    test_atomic!(u8);
-    test_atomic!(i16);
-    test_atomic!(u16);
+#[macro_export]
+macro_rules! cfg_has_atomic_8 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_8 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_16 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_16 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_32 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_32 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_64 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_64 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
 }

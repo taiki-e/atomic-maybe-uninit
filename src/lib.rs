@@ -96,21 +96,7 @@ Feel free to submit an issue if your target is not supported yet.
     clippy::type_complexity,
     clippy::unreadable_literal
 )]
-#![cfg_attr(
-    any(
-        target_arch = "avr",
-        target_arch = "hexagon",
-        target_arch = "mips",
-        target_arch = "mips32r6",
-        target_arch = "mips64",
-        target_arch = "mips64r6",
-        target_arch = "msp430",
-        target_arch = "powerpc",
-        target_arch = "powerpc64",
-        target_arch = "s390x",
-    ),
-    feature(asm_experimental_arch)
-)]
+#![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
 
 #[cfg(test)]
 extern crate std;
@@ -729,6 +715,15 @@ int!(u128, Align16);
 int!(isize, AlignPtr);
 int!(usize, AlignPtr);
 
+#[cfg(target_pointer_width = "128")]
+pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_atomic_ptr};
+#[cfg(target_pointer_width = "16")]
+pub use {cfg_has_atomic_16 as cfg_has_atomic_ptr, cfg_no_atomic_16 as cfg_no_atomic_ptr};
+#[cfg(target_pointer_width = "32")]
+pub use {cfg_has_atomic_32 as cfg_has_atomic_ptr, cfg_no_atomic_32 as cfg_no_atomic_ptr};
+#[cfg(target_pointer_width = "64")]
+pub use {cfg_has_atomic_64 as cfg_has_atomic_ptr, cfg_no_atomic_64 as cfg_no_atomic_ptr};
+
 mod private {
     use core::panic::{RefUnwindSafe, UnwindSafe};
 
@@ -763,4 +758,53 @@ mod private {
     pub(crate) type AlignPtr = Align8;
     #[cfg(target_pointer_width = "128")]
     pub(crate) type AlignPtr = Align16;
+
+    // Check that all cfg_ macros work.
+    #[allow(unused_imports)]
+    use crate::{
+        cfg_has_atomic_128, cfg_has_atomic_16, cfg_has_atomic_32, cfg_has_atomic_64,
+        cfg_has_atomic_8, cfg_no_atomic_128, cfg_no_atomic_16, cfg_no_atomic_32, cfg_no_atomic_64,
+        cfg_no_atomic_8, AtomicMaybeUninit,
+    };
+    // TODO: make these type aliases public?
+    cfg_has_atomic_8! {
+        type _AtomicMaybeUninitI8 = AtomicMaybeUninit<i8>;
+        type _AtomicMaybeUninitU8 = AtomicMaybeUninit<u8>;
+    }
+    cfg_no_atomic_8! {
+        type _AtomicMaybeUninitI8 = AtomicMaybeUninit<i8>;
+        type _AtomicMaybeUninitU8 = AtomicMaybeUninit<u8>;
+    }
+    cfg_has_atomic_16! {
+        type _AtomicMaybeUninitI16 = AtomicMaybeUninit<i16>;
+        type _AtomicMaybeUninitU16 = AtomicMaybeUninit<u16>;
+    }
+    cfg_no_atomic_16! {
+        type _AtomicMaybeUninitI16 = AtomicMaybeUninit<i16>;
+        type _AtomicMaybeUninitU16 = AtomicMaybeUninit<u16>;
+    }
+    cfg_has_atomic_32! {
+        type _AtomicMaybeUninitI32 = AtomicMaybeUninit<i32>;
+        type _AtomicMaybeUninitU32 = AtomicMaybeUninit<u32>;
+    }
+    cfg_no_atomic_32! {
+        type _AtomicMaybeUninitI32 = AtomicMaybeUninit<i32>;
+        type _AtomicMaybeUninitU32 = AtomicMaybeUninit<u32>;
+    }
+    cfg_has_atomic_64! {
+        type _AtomicMaybeUninitI64 = AtomicMaybeUninit<i64>;
+        type _AtomicMaybeUninitU64 = AtomicMaybeUninit<u64>;
+    }
+    cfg_no_atomic_64! {
+        type _AtomicMaybeUninitI64 = AtomicMaybeUninit<i64>;
+        type _AtomicMaybeUninitU64 = AtomicMaybeUninit<u64>;
+    }
+    cfg_has_atomic_128! {
+        type _AtomicMaybeUninitI128 = AtomicMaybeUninit<i128>;
+        type _AtomicMaybeUninitU128 = AtomicMaybeUninit<u128>;
+    }
+    cfg_no_atomic_128! {
+        type _AtomicMaybeUninitI128 = AtomicMaybeUninit<i128>;
+        type _AtomicMaybeUninitU128 = AtomicMaybeUninit<u128>;
+    }
 }

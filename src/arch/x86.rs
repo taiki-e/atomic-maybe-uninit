@@ -758,35 +758,67 @@ atomic128!(i128);
 #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
 atomic128!(u128);
 
-#[cfg(test)]
-mod tests {
-    test_atomic!(isize);
-    test_atomic!(usize);
-    test_atomic!(i8);
-    test_atomic!(u8);
-    test_atomic!(i16);
-    test_atomic!(u16);
-    test_atomic!(i32);
-    test_atomic!(u32);
-    #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-    test_atomic!(i64);
-    #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-    test_atomic!(u64);
-    #[cfg(target_arch = "x86_64")]
-    #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
-    test_atomic!(i128);
-    #[cfg(target_arch = "x86_64")]
-    #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
-    test_atomic!(u128);
-
-    // load/store/swap implementation is not affected by signedness, so it is
-    // enough to test only unsigned types.
-    stress_test!(u8);
-    stress_test!(u16);
-    stress_test!(u32);
-    #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-    stress_test!(u64);
-    #[cfg(target_arch = "x86_64")]
-    #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
-    stress_test!(u128);
+#[macro_export]
+macro_rules! cfg_has_atomic_8 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_8 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_16 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_16 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_32 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_32 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_64 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_64 {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(all(
+    target_arch = "x86_64",
+    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
+)))]
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(all(
+    target_arch = "x86_64",
+    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
+)))]
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(all(
+    target_arch = "x86_64",
+    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
+))]
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(all(
+    target_arch = "x86_64",
+    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
+))]
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => {};
 }
