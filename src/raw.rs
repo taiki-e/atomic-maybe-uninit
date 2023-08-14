@@ -12,6 +12,8 @@ use core::{mem::MaybeUninit, sync::atomic::Ordering};
 /// Primitive types that may support atomic operations.
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
+///
+/// Currently this is implemented only for integer types.
 pub trait Primitive: crate::private::PrimitivePriv {}
 
 /// Atomic load.

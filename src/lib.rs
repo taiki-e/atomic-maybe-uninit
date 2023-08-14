@@ -135,7 +135,7 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Pri
 /// A potentially uninitialized integer type which can be safely shared between threads.
 ///
 /// This type has the same in-memory representation as the underlying
-/// integer type, `MaybeUninit<T>`.
+/// value type, `MaybeUninit<T>`.
 #[repr(C)]
 pub struct AtomicMaybeUninit<T: Primitive> {
     v: UnsafeCell<MaybeUninit<T>>,
@@ -148,7 +148,7 @@ pub struct AtomicMaybeUninit<T: Primitive> {
 }
 
 impl<T: Primitive> From<MaybeUninit<T>> for AtomicMaybeUninit<T> {
-    /// Creates a new atomic value from a potentially uninitialized integer.
+    /// Creates a new atomic value from a potentially uninitialized value.
     #[inline]
     fn from(v: MaybeUninit<T>) -> Self {
         Self::new(v)
@@ -156,7 +156,7 @@ impl<T: Primitive> From<MaybeUninit<T>> for AtomicMaybeUninit<T> {
 }
 
 impl<T: Primitive> From<T> for AtomicMaybeUninit<T> {
-    /// Creates a new atomic value from an initialized integer.
+    /// Creates a new atomic value from an initialized value.
     #[inline]
     fn from(v: T) -> Self {
         Self::new(MaybeUninit::new(v))
@@ -180,7 +180,7 @@ impl<T: Primitive> core::panic::RefUnwindSafe for AtomicMaybeUninit<T> {}
 impl<T: Primitive> AtomicMaybeUninit<T> {
     const_fn! {
         const_if: #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))];
-        /// Creates a new atomic value from a potentially uninitialized integer.
+        /// Creates a new atomic value from a potentially uninitialized value.
         ///
         /// This is `const fn` on Rust 1.61+. See also `const_new` function.
         ///
@@ -203,7 +203,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         }
     }
 
-    /// Returns a mutable reference to the underlying integer.
+    /// Returns a mutable reference to the underlying value.
     ///
     /// This is safe because the mutable reference guarantees that no other threads are
     /// concurrently accessing the atomic data.
@@ -243,7 +243,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         self.v.into_inner()
     }
 
-    /// Loads a value from the atomic integer.
+    /// Loads a value from the atomic value.
     ///
     /// `load` takes an [`Ordering`] argument which describes the memory ordering of this operation.
     /// Possible values are [`SeqCst`], [`Acquire`] and [`Relaxed`].
@@ -279,7 +279,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         out
     }
 
-    /// Stores a value into the atomic integer.
+    /// Stores a value into the atomic value.
     ///
     /// `store` takes an [`Ordering`] argument which describes the memory ordering of this operation.
     ///  Possible values are [`SeqCst`], [`Release`] and [`Relaxed`].
@@ -314,7 +314,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         unsafe { T::atomic_store(self.v.get(), &val, order) }
     }
 
-    /// Stores a value into the atomic integer, returning the previous value.
+    /// Stores a value into the atomic value, returning the previous value.
     ///
     /// `swap` takes an [`Ordering`] argument which describes the memory ordering
     /// of this operation. All ordering modes are possible. Note that using
@@ -346,7 +346,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         out
     }
 
-    /// Stores a value into the atomic integer if the current value is the same as
+    /// Stores a value into the atomic value if the current value is the same as
     /// the `current` value. Here, "the same" is determined using byte-wise
     /// equality, not `PartialEq`.
     ///
@@ -527,7 +527,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         }
     }
 
-    /// Stores a value into the atomic integer if the current value is the same as
+    /// Stores a value into the atomic value if the current value is the same as
     /// the `current` value.
     ///
     /// This function is allowed to spuriously fail even when the comparison succeeds,
@@ -700,7 +700,7 @@ macro_rules! int {
             type Align = crate::private::$align;
         }
         impl AtomicMaybeUninit<$ty> {
-            /// Creates a new atomic value from a potentially uninitialized integer.
+            /// Creates a new atomic value from a potentially uninitialized value.
             /// Unlike [`new`](Self::new), this is always `const fn`.
             #[inline]
             #[must_use]
