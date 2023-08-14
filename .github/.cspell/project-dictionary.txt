@@ -23,6 +23,7 @@ cset
 dbar
 DWCAS
 IMAFD
+inequal
 ishld
 isync
 kuser
