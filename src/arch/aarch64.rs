@@ -838,6 +838,319 @@ macro_rules! atomic128 {
 atomic128!(i128);
 atomic128!(u128);
 
+// https://godbolt.org/z/vnTr7vEn8
+#[inline]
+pub unsafe fn atomic_load_memcpy<T>(mut src: *const MaybeUninit<T>, mut out: *mut MaybeUninit<T>) {
+    unsafe {
+        macro_rules! ldrb_ {
+            ($offset:tt $($tt:tt)*) => {
+                concat!(
+                    "\n",
+                    "ldrb {tmp:w}, [{src}", $offset, "]", "\n",
+                    "ldrb {tmp:w}, [{out}", $offset, "]",
+                    ldrb_!($($tt)*),
+                )
+            };
+            () => {
+                "\n"
+            };
+        }
+        macro_rules! ldrb {
+            ($($tt:tt)*) => {
+                asm!(
+                    ldrb_!($($tt)*),
+                    src = in(reg) ptr_reg!(src),
+                    out = in(reg) ptr_reg!(out),
+                    tmp = out(reg) _,
+                    options(nostack, preserves_flags),
+                )
+            };
+        }
+        macro_rules! ldrh_ {
+            ($offset:tt $($tt:tt)*) => {
+                concat!(
+                    "\n",
+                    "ldrh {tmp:w}, [{src}", $offset, "]", "\n",
+                    "ldrh {tmp:w}, [{out}", $offset, "]",
+                    ldrh_!($($tt)*),
+                )
+            };
+            () => {
+                "\n"
+            };
+        }
+        macro_rules! ldrh {
+            ($($tt:tt)*) => {
+                asm!(
+                    ldrh_!($($tt)*),
+                    src = in(reg) ptr_reg!(src),
+                    out = in(reg) ptr_reg!(out),
+                    tmp = out(reg) _,
+                    options(nostack, preserves_flags),
+                )
+            };
+        }
+        macro_rules! ldr32_ {
+            ($offset:tt $($tt:tt)*) => {
+                concat!(
+                    "\n",
+                    "ldr {tmp:w}, [{src}", $offset, "]", "\n",
+                    "ldr {tmp:w}, [{out}", $offset, "]",
+                    ldr32_!($($tt)*),
+                )
+            };
+            () => {
+                "\n"
+            };
+        }
+        macro_rules! ldr32 {
+            ($($tt:tt)*) => {
+                asm!(
+                    ldr32_!($($tt)*),
+                    src = in(reg) ptr_reg!(src),
+                    out = in(reg) ptr_reg!(out),
+                    tmp = out(reg) _,
+                    options(nostack, preserves_flags),
+                )
+            };
+        }
+        macro_rules! ldr64_ {
+            ($offset:tt $($tt:tt)*) => {
+                concat!(
+                    "\n",
+                    "ldr {tmp}, [{src}", $offset, "]", "\n",
+                    "ldr {tmp}, [{out}", $offset, "]",
+                    ldr64_!($($tt)*),
+                )
+            };
+            () => {
+                "\n"
+            };
+        }
+        macro_rules! ldr64 {
+            ($($tt:tt)*) => {
+                asm!(
+                    ldr64_!($($tt)*),
+                    src = in(reg) ptr_reg!(src),
+                    out = in(reg) ptr_reg!(out),
+                    tmp = out(reg) _,
+                    options(nostack, preserves_flags),
+                )
+            };
+        }
+        macro_rules! ldp_ {
+            ($offset:tt $($tt:tt)*) => {
+                concat!(
+                    "\n",
+                    "ldp {tmp_lo}, {tmp_hi}, [{src}", $offset, "]", "\n",
+                    "stp {tmp_lo}, {tmp_hi}, [{out}", $offset, "]",
+                    ldp_!($($tt)*),
+                )
+            };
+            () => {
+                "\n"
+            };
+        }
+        macro_rules! ldp {
+            ($($tt:tt)*) => {
+                asm!(
+                    ldp_!($($tt)*),
+                    src = in(reg) ptr_reg!(src),
+                    out = in(reg) ptr_reg!(out),
+                    tmp_hi = out(reg) _,
+                    tmp_lo = out(reg) _,
+                    options(nostack, preserves_flags),
+                )
+            };
+        }
+        if mem::size_of::<T>() == 0 {
+            return;
+        }
+        if mem::align_of::<T>() >= 16 && mem::size_of::<T>() >= 16 {
+            if mem::size_of::<T>() / 16 < 8 {
+                match mem::size_of::<T>() / 16 {
+                    1 => ldp!(""),
+                    2 => ldp!("" ",16"),
+                    3 => ldp!("" ",16" ",32"),
+                    4 => ldp!("" ",16" ",32" ",48"),
+                    5 => ldp!("" ",16" ",32" ",48" ",64"),
+                    6 => ldp!("" ",16" ",32" ",48" ",64" ",80"),
+                    7 => ldp!("" ",16" ",32" ",48" ",64" ",80" ",96"),
+                    _ => unreachable!(),
+                }
+                return;
+            }
+            for _ in 0..(mem::size_of::<T>() / 16 / 8) - 1 {
+                ldp!("" ",16" ",32" ",48" ",64" ",80" ",96" ",112");
+                src = src.cast::<u8>().add(16 * 8).cast::<MaybeUninit<T>>();
+                out = out.cast::<u8>().add(16 * 8).cast::<MaybeUninit<T>>();
+            }
+            ldp!("" ",16" ",32" ",48" ",64" ",80" ",96" ",112");
+            if mem::size_of::<T>() / 16 % 8 == 0 {
+                return;
+            }
+            src = src.cast::<u8>().add(16 * 8).cast::<MaybeUninit<T>>();
+            out = out.cast::<u8>().add(16 * 8).cast::<MaybeUninit<T>>();
+            match mem::size_of::<T>() / 16 % 8 {
+                1 => ldp!(""),
+                2 => ldp!("" ",16"),
+                3 => ldp!("" ",16" ",32"),
+                4 => ldp!("" ",16" ",32" ",48"),
+                5 => ldp!("" ",16" ",32" ",48" ",64"),
+                6 => ldp!("" ",16" ",32" ",48" ",64" ",80"),
+                7 => ldp!("" ",16" ",32" ",48" ",64" ",80" ",96"),
+                _ => unreachable!(),
+            }
+            return;
+        }
+        if mem::align_of::<T>() >= 8 && mem::size_of::<T>() >= 8 {
+            if mem::size_of::<T>() / 8 < 8 {
+                match mem::size_of::<T>() / 8 {
+                    1 => ldr64!(""),
+                    2 => ldr64!("" ",8"),
+                    3 => ldr64!("" ",8" ",16"),
+                    4 => ldr64!("" ",8" ",16" ",24"),
+                    5 => ldr64!("" ",8" ",16" ",24" ",32"),
+                    6 => ldr64!("" ",8" ",16" ",24" ",32" ",40"),
+                    7 => ldr64!("" ",8" ",16" ",24" ",32" ",40" ",48"),
+                    _ => unreachable!(),
+                }
+                return;
+            }
+            for _ in 0..(mem::size_of::<T>() / 8 / 8) - 1 {
+                ldr64!("" ",8" ",16" ",24" ",32" ",40" ",48" ",56");
+                src = src.cast::<u8>().add(8 * 8).cast::<MaybeUninit<T>>();
+                out = out.cast::<u8>().add(8 * 8).cast::<MaybeUninit<T>>();
+            }
+            ldr64!("" ",8" ",16" ",24" ",32" ",40" ",48" ",56");
+            if mem::size_of::<T>() / 8 % 8 == 0 {
+                return;
+            }
+            src = src.cast::<u8>().add(8 * 8).cast::<MaybeUninit<T>>();
+            out = out.cast::<u8>().add(8 * 8).cast::<MaybeUninit<T>>();
+            match mem::size_of::<T>() / 8 % 8 {
+                1 => ldr64!(""),
+                2 => ldr64!("" ",8"),
+                3 => ldr64!("" ",8" ",16"),
+                4 => ldr64!("" ",8" ",16" ",24"),
+                5 => ldr64!("" ",8" ",16" ",24" ",32"),
+                6 => ldr64!("" ",8" ",16" ",24" ",32" ",40"),
+                7 => ldr64!("" ",8" ",16" ",24" ",32" ",40" ",48"),
+                _ => unreachable!(),
+            }
+            return;
+        }
+        if mem::align_of::<T>() >= 4 && mem::size_of::<T>() >= 4 {
+            if mem::size_of::<T>() / 4 < 8 {
+                match mem::size_of::<T>() / 4 {
+                    1 => ldr32!(""),
+                    2 => ldr32!("" ",4"),
+                    3 => ldr32!("" ",4" ",8"),
+                    4 => ldr32!("" ",4" ",8" ",12"),
+                    5 => ldr32!("" ",4" ",8" ",12" ",16"),
+                    6 => ldr32!("" ",4" ",8" ",12" ",16" ",20"),
+                    7 => ldr32!("" ",4" ",8" ",12" ",16" ",20" ",24"),
+                    _ => unreachable!(),
+                }
+                return;
+            }
+            for _ in 0..(mem::size_of::<T>() / 4 / 8) - 1 {
+                ldr32!("" ",4" ",8" ",12" ",16" ",20" ",24" ",28");
+                src = src.cast::<u8>().add(4 * 8).cast::<MaybeUninit<T>>();
+                out = out.cast::<u8>().add(4 * 8).cast::<MaybeUninit<T>>();
+            }
+            ldr32!("" ",4" ",8" ",12" ",16" ",20" ",24" ",28");
+            if mem::size_of::<T>() / 4 % 8 == 0 {
+                return;
+            }
+            src = src.cast::<u8>().add(4 * 8).cast::<MaybeUninit<T>>();
+            out = out.cast::<u8>().add(4 * 8).cast::<MaybeUninit<T>>();
+            match mem::size_of::<T>() / 4 % 8 {
+                1 => ldr32!(""),
+                2 => ldr32!("" ",4"),
+                3 => ldr32!("" ",4" ",8"),
+                4 => ldr32!("" ",4" ",8" ",12"),
+                5 => ldr32!("" ",4" ",8" ",12" ",16"),
+                6 => ldr32!("" ",4" ",8" ",12" ",16" ",20"),
+                7 => ldr32!("" ",4" ",8" ",12" ",16" ",20" ",24"),
+                _ => unreachable!(),
+            }
+            return;
+        }
+        if mem::align_of::<T>() >= 2 && mem::size_of::<T>() >= 2 {
+            if mem::size_of::<T>() / 2 < 8 {
+                match mem::size_of::<T>() / 2 {
+                    1 => ldrh!(""),
+                    2 => ldrh!("" ",2"),
+                    3 => ldrh!("" ",2" ",4"),
+                    4 => ldrh!("" ",2" ",4" ",6"),
+                    5 => ldrh!("" ",2" ",4" ",6" ",8"),
+                    6 => ldrh!("" ",2" ",4" ",6" ",8" ",10"),
+                    7 => ldrh!("" ",2" ",4" ",6" ",8" ",10" ",12"),
+                    _ => unreachable!(),
+                }
+                return;
+            }
+            for _ in 0..(mem::size_of::<T>() / 2 / 8) - 1 {
+                ldrh!("" ",2" ",4" ",6" ",8" ",10" ",12" ",14");
+                src = src.cast::<u8>().add(2 * 8).cast::<MaybeUninit<T>>();
+                out = out.cast::<u8>().add(2 * 8).cast::<MaybeUninit<T>>();
+            }
+            ldrh!("" ",2" ",4" ",6" ",8" ",10" ",12" ",14");
+            if mem::size_of::<T>() / 2 % 8 == 0 {
+                return;
+            }
+            src = src.cast::<u8>().add(2 * 8).cast::<MaybeUninit<T>>();
+            out = out.cast::<u8>().add(2 * 8).cast::<MaybeUninit<T>>();
+            match mem::size_of::<T>() / 2 % 8 {
+                1 => ldrh!(""),
+                2 => ldrh!("" ",2"),
+                3 => ldrh!("" ",2" ",4"),
+                4 => ldrh!("" ",2" ",4" ",6"),
+                5 => ldrh!("" ",2" ",4" ",6" ",8"),
+                6 => ldrh!("" ",2" ",4" ",6" ",8" ",10"),
+                7 => ldrh!("" ",2" ",4" ",6" ",8" ",10" ",12"),
+                _ => unreachable!(),
+            }
+            return;
+        }
+        if mem::size_of::<T>() < 8 {
+            match mem::size_of::<T>() {
+                1 => ldrb!(""),
+                2 => ldrb!("" ",1"),
+                3 => ldrb!("" ",1" ",2"),
+                4 => ldrb!("" ",1" ",2" ",3"),
+                5 => ldrb!("" ",1" ",2" ",3" ",4"),
+                6 => ldrb!("" ",1" ",2" ",3" ",4" ",5"),
+                7 => ldrb!("" ",1" ",2" ",3" ",4" ",5" ",6"),
+                _ => unreachable!(),
+            }
+            return;
+        }
+        for _ in 0..(mem::size_of::<T>() / 8) - 1 {
+            ldrb!("" ",1" ",2" ",3" ",4" ",5" ",6" ",7");
+            src = src.cast::<u8>().add(8).cast::<MaybeUninit<T>>();
+            out = out.cast::<u8>().add(8).cast::<MaybeUninit<T>>();
+        }
+        ldrh!("" ",2" ",4" ",6" ",8" ",10" ",12" ",14");
+        if mem::size_of::<T>() % 8 == 0 {
+            return;
+        }
+        src = src.cast::<u8>().add(8).cast::<MaybeUninit<T>>();
+        out = out.cast::<u8>().add(8).cast::<MaybeUninit<T>>();
+        match mem::size_of::<T>() % 8 {
+            1 => ldrb!(""),
+            2 => ldrb!("" ",1"),
+            3 => ldrb!("" ",1" ",2"),
+            4 => ldrb!("" ",1" ",2" ",3"),
+            5 => ldrb!("" ",1" ",2" ",3" ",4"),
+            6 => ldrb!("" ",1" ",2" ",3" ",4" ",5"),
+            7 => ldrb!("" ",1" ",2" ",3" ",4" ",5" ",6"),
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! cfg_has_atomic_8 {
     ($($tt:tt)*) => { $($tt)* };
