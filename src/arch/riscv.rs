@@ -445,3 +445,23 @@ macro_rules! cfg_has_atomic_128 {
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+#[macro_export]
+macro_rules! cfg_has_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+#[macro_export]
+macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a")))]
+#[macro_export]
+macro_rules! cfg_has_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a")))]
+#[macro_export]
+macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
+}

@@ -763,8 +763,9 @@ mod private {
     #[allow(unused_imports)]
     use crate::{
         cfg_has_atomic_128, cfg_has_atomic_16, cfg_has_atomic_32, cfg_has_atomic_64,
-        cfg_has_atomic_8, cfg_no_atomic_128, cfg_no_atomic_16, cfg_no_atomic_32, cfg_no_atomic_64,
-        cfg_no_atomic_8, AtomicMaybeUninit,
+        cfg_has_atomic_8, cfg_has_atomic_cas, cfg_has_atomic_ptr, cfg_no_atomic_128,
+        cfg_no_atomic_16, cfg_no_atomic_32, cfg_no_atomic_64, cfg_no_atomic_8, cfg_no_atomic_cas,
+        cfg_no_atomic_ptr, AtomicMaybeUninit,
     };
     // TODO: make these type aliases public?
     cfg_has_atomic_8! {
@@ -806,5 +807,21 @@ mod private {
     cfg_no_atomic_128! {
         type _AtomicMaybeUninitI128 = AtomicMaybeUninit<i128>;
         type _AtomicMaybeUninitU128 = AtomicMaybeUninit<u128>;
+    }
+    cfg_has_atomic_ptr! {
+        type _AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
+        type _AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
+    }
+    cfg_no_atomic_ptr! {
+        type _AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
+        type _AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
+    }
+    cfg_has_atomic_cas! {
+        type __AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
+        type __AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
+    }
+    cfg_no_atomic_cas! {
+        type __AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
+        type __AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
     }
 }

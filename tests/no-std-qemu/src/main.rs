@@ -36,9 +36,9 @@ macro_rules! __test_atomic {
                 }
             }
         }
+        cfg_has_atomic_cas! {
         swap();
         fn swap() {
-            #[cfg(target_has_atomic = "ptr")]
             unsafe {
                 for order in swap_orderings() {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
@@ -53,7 +53,6 @@ macro_rules! __test_atomic {
         }
         compare_exchange();
         fn compare_exchange() {
-            #[cfg(target_has_atomic = "ptr")]
             unsafe {
                 for (success, failure) in compare_exchange_orderings() {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
@@ -86,7 +85,6 @@ macro_rules! __test_atomic {
         }
         compare_exchange_weak();
         fn compare_exchange_weak() {
-            #[cfg(target_has_atomic = "ptr")]
             unsafe {
                 for (success, failure) in compare_exchange_orderings() {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(4));
@@ -115,7 +113,6 @@ macro_rules! __test_atomic {
         }
         fetch_update();
         fn fetch_update() {
-            #[cfg(target_has_atomic = "ptr")]
             unsafe {
                 for (success, failure) in compare_exchange_orderings() {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(7));
@@ -143,6 +140,7 @@ macro_rules! __test_atomic {
                 }
             }
         }
+        }
     };
 }
 
@@ -161,6 +159,12 @@ fn run() {
         };
     }
 
+    cfg_has_atomic_cas! {
+        println!("target_has_cas: true");
+    }
+    cfg_no_atomic_cas! {
+        println!("target_has_cas: false");
+    }
     test_atomic!(isize);
     test_atomic!(usize);
     test_atomic!(i8);
@@ -181,11 +185,10 @@ fn load_orderings() -> [Ordering; 3] {
 fn store_orderings() -> [Ordering; 3] {
     [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst]
 }
-#[cfg(target_has_atomic = "ptr")]
+cfg_has_atomic_cas! {
 fn swap_orderings() -> [Ordering; 5] {
     [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst]
 }
-#[cfg(target_has_atomic = "ptr")]
 fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
     [
         (Ordering::Relaxed, Ordering::Relaxed),
@@ -204,4 +207,5 @@ fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
         (Ordering::SeqCst, Ordering::Acquire),
         (Ordering::SeqCst, Ordering::SeqCst),
     ]
+}
 }

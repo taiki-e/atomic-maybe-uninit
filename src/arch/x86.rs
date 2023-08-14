@@ -822,3 +822,11 @@ macro_rules! cfg_has_atomic_128 {
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => {};
 }
+#[macro_export]
+macro_rules! cfg_has_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
