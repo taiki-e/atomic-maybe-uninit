@@ -10,6 +10,12 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Add `cfg_{has,no}_atomic_{8,16,32,64,128,ptr}` macros to enable code when the corresponding atomic implementation is available/unavailable. ([#9](https://github.com/taiki-e/atomic-maybe-uninit/pull/9))
+
+- Add `cfg_{has,no}_atomic_cas` macros to enable code when atomic swap/CAS implementation is available/unavailable. ([#9](https://github.com/taiki-e/atomic-maybe-uninit/pull/9))
+
+- Documentation improvements. ([#17](https://github.com/taiki-e/atomic-maybe-uninit/pull/17), [#18](https://github.com/taiki-e/atomic-maybe-uninit/pull/18), thanks @RalfJung)
+
 ## [0.2.21] - 2023-08-10
 
 - Fix AVR 16-bit atomic load/store.
