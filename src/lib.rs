@@ -272,7 +272,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         let mut out = MaybeUninit::<T>::uninit();
         // SAFETY: any data races are prevented by atomic intrinsics, the raw
         // pointer passed in is valid because we got it from a reference,
-        // and we've checked the order is valid.
+        // and we've checked the order is valid. Alignment is upheld because
+        // `PrimitivePriv` is a private trait that ensures sufficient alignment
+        // of `T::Align`, and we got our `_align` field.
         unsafe { T::atomic_load(self.v.get(), &mut out, order) }
         out
     }
@@ -306,7 +308,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         utils::assert_store_ordering(order);
         // SAFETY: any data races are prevented by atomic intrinsics, the raw
         // pointer passed in is valid because we got it from a reference,
-        // and we've checked the order is valid.
+        // and we've checked the order is valid. Alignment is upheld because
+        // `PrimitivePriv` is a private trait that ensures sufficient alignment
+        // of `T::Align`, and we got our `_align` field.
         unsafe { T::atomic_store(self.v.get(), &val, order) }
     }
 
@@ -503,6 +507,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         let mut out = MaybeUninit::<T>::uninit();
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
+        // Alignment is upheld because `PrimitivePriv` is a private trait that
+        // ensures sufficient alignment of `T::Align`, and we got our `_align`
+        // field.
         let res = unsafe {
             T::atomic_compare_exchange(self.v.get(), &current, &new, &mut out, success, failure)
         };
@@ -582,6 +589,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         let mut out = MaybeUninit::<T>::uninit();
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
+        // Alignment is upheld because `PrimitivePriv` is a private trait that
+        // ensures sufficient alignment of `T::Align`, and we got our `_align`
+        // field.
         let res = unsafe {
             T::atomic_compare_exchange_weak(
                 self.v.get(),
@@ -716,6 +726,8 @@ mod private {
     use core::panic::{RefUnwindSafe, UnwindSafe};
 
     // Auto traits is needed to better docs.
+    //
+    // Crucially, all implementations guarantee that `align_of::<Self::Align>() == size_of::<Self>()`.
     pub trait PrimitivePriv: Copy + Send + Sync + Unpin + UnwindSafe + RefUnwindSafe {
         // See _align field of AtomicMaybeUninit.
         type Align: Send + Sync + Unpin + UnwindSafe + RefUnwindSafe;
