@@ -167,9 +167,6 @@ jobs:
             target: s390x-unknown-linux-gnu
           - rust: nightly-2023-05-09 # Rust 1.71, LLVM 16 (oldest version we can implement atomic RMWs on this target)
             target: s390x-unknown-linux-gnu
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
-            target: s390x-unknown-linux-gnu
-            tests: --tests # doctest needs atomic RMWs
           - rust: stable
             target: thumbv7neon-unknown-linux-gnueabihf
           - rust: nightly
@@ -207,7 +204,7 @@ jobs:
       - run: echo "RELEASE=--release" >>"${GITHUB_ENV}"
         if: matrix.target == 'mips-unknown-linux-gnu' || matrix.target == 'mipsel-unknown-linux-gnu'
 
-      - run: tools/test.sh -vv ${{ matrix.tests }} $TARGET $DOCTEST_XCOMPILE $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD $RELEASE
       # We test doctest only once with the default build conditions because doctest is slow.
       # src/tests has extended copies of doctest, so this will not reduce test coverage.
       # x86_64 +cmpxchg16b

@@ -43,6 +43,30 @@ fn main() {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
     }
 
+    match target_arch {
+        "loongarch64" => {
+            if version.minor < 72 {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_loongarch64_asm");
+            }
+        }
+        "avr" | "hexagon" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430" | "powerpc"
+        | "powerpc64" => {
+            if version.nightly && is_allowed_feature("asm_experimental_arch") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
+            }
+        }
+        // https://github.com/rust-lang/rust/pull/111331 merged in Rust 1.71 (nightly-2023-05-09).
+        "s390x" => {
+            if version.nightly
+                && version.probe(71, 2023, 5, 8)
+                && is_allowed_feature("asm_experimental_arch")
+            {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
+            }
+        }
+        _ => {}
+    }
+
     let is_apple =
         target_os == "macos" || target_os == "ios" || target_os == "tvos" || target_os == "watchos";
     match target_arch {
@@ -258,11 +282,6 @@ fn main() {
             target_feature_if("quadword-atomics", has_pwr8_features, &version, None, false);
         }
         "s390x" => {
-            // https://github.com/rust-lang/rust/pull/111331 merged in Rust 1.71 (nightly-2023-05-09).
-            if !version.probe(71, 2023, 5, 8) {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_s390x_asm_cc_clobbered");
-            }
-
             // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/SystemZ/SystemZFeatures.td
             let mut has_arch9_features = false;
             if let Some(cpu) = target_cpu() {
@@ -337,6 +356,21 @@ fn target_cpu() -> Option<String> {
         }
     }
     cpu.map(str::to_owned)
+}
+
+fn is_allowed_feature(name: &str) -> bool {
+    // allowed by default
+    let mut allowed = true;
+    if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
+        for mut flag in rustflags.to_string_lossy().split('\x1f') {
+            flag = flag.strip_prefix("-Z").unwrap_or(flag);
+            if let Some(flag) = flag.strip_prefix("allow-features=") {
+                // If it is specified multiple times, the last value will be preferred.
+                allowed = flag.split(',').any(|allowed| allowed == name);
+            }
+        }
+    }
+    allowed
 }
 
 mod version {

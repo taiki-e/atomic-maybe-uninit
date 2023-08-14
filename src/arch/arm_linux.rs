@@ -602,6 +602,48 @@ fn assert_has_kuser_cmpxchg64() {
     }
 }
 
+#[macro_export]
+macro_rules! cfg_has_atomic_8 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_8 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_16 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_16 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_32 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_32 {
+    ($($tt:tt)*) => {};
+}
+// TODO: set has_atomic_64 to true
+#[macro_export]
+macro_rules! cfg_has_atomic_64 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_64 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -610,21 +652,8 @@ mod tests {
         assert!(version >= 5, "{:?}", version);
     }
 
-    test_atomic!(isize);
-    test_atomic!(usize);
-    test_atomic!(i8);
-    test_atomic!(u8);
-    test_atomic!(i16);
-    test_atomic!(u16);
-    test_atomic!(i32);
-    test_atomic!(u32);
+    // TODO: set has_atomic_64 to true
     test_atomic!(i64);
     test_atomic!(u64);
-
-    // load/store/swap implementation is not affected by signedness, so it is
-    // enough to test only unsigned types.
-    stress_test!(u8);
-    stress_test!(u16);
-    stress_test!(u32);
     stress_test!(u64);
 }
