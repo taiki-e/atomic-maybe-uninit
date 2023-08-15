@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.2.22] - 2023-08-15
+
 - Add `cfg_{has,no}_atomic_{8,16,32,64,128,ptr}` macros to enable code when the corresponding atomic implementation is available/unavailable. ([#9](https://github.com/taiki-e/atomic-maybe-uninit/pull/9))
 
 - Add `cfg_{has,no}_atomic_cas` macros to enable code when atomic swap/CAS implementation is available/unavailable. ([#9](https://github.com/taiki-e/atomic-maybe-uninit/pull/9))
@@ -198,7 +200,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.21...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.22...HEAD
+[0.2.22]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.21...v0.2.22
 [0.2.21]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.20...v0.2.21
 [0.2.20]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.19...v0.2.20
 [0.2.19]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.18...v0.2.19
