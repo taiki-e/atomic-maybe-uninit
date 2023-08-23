@@ -195,7 +195,14 @@ jobs:
       - uses: taiki-e/setup-cross-toolchain-action@v1
         with:
           target: ${{ matrix.target }}
-        if: matrix.target != ''
+          qemu: '8.1'
+        # TODO: QEMU 8.1 128-bit atomic bug in big endian powerpc64
+        if: matrix.target != '' && !startsWith(matrix.target, 'powerpc64-')
+      - uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+          qemu: '8.0'
+        if: matrix.target != '' && startsWith(matrix.target, 'powerpc64-')
       - run: echo "RUSTFLAGS=${RUSTFLAGS} --cfg qemu" >>"${GITHUB_ENV}"
         if: matrix.target != '' && !startsWith(matrix.target, 'i686') && !startsWith(matrix.target, 'x86_64')
       - run: echo "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
@@ -221,20 +228,16 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
         if: startsWith(matrix.target, 'i686')
       # aarch64 +lse
-      # As of QEMU 8.0, QEMU has not yet implemented FEAT_LSE2: https://linaro.atlassian.net/browse/QEMU-300
-      # FEAT_LSE2 is tested on Cirrus CI's aarch64 macOS VM.
       - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
         if: startsWith(matrix.target, 'aarch64')
-      # aarch64 +rcpc
+      # aarch64 +rcpc,+lse,+lse2
       - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc
-          # cortex-a76 is armv8.2-a but supports armv8.3-a LDAPR instructions.
-          QEMU_CPU: cortex-a76
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc,+lse,+lse2
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc,+lse,+lse2
         if: startsWith(matrix.target, 'aarch64')
       # arm v8 little endian
       - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
