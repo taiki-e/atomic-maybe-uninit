@@ -101,6 +101,7 @@ fn extract_cr0(r: Cr) -> bool {
     r & 0x20000000 != 0
 }
 
+#[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($int_type:ident, $l_suffix:tt, $asm_suffix:tt) => {
         impl AtomicLoad for $int_type {
@@ -113,9 +114,25 @@ macro_rules! atomic_load_store {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
 
-                #[cfg(target_arch = "powerpc64")]
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    macro_rules! atomic_load {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // (atomic) load from src to tmp
+                                $release,
+                                concat!("l", $l_suffix, " {tmp}, 0({src})"),
+                                $acquire,
+                                // store tmp to out
+                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
+                                src = in(reg_nonzero) ptr_reg!(src),
+                                out = inout(reg_nonzero) ptr_reg!(out) => _,
+                                tmp = lateout(reg_nonzero) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(target_arch = "powerpc64")]
                     macro_rules! atomic_load_acquire {
                         ($release:tt) => {
                             asm!(
@@ -139,45 +156,14 @@ macro_rules! atomic_load_store {
                         };
                     }
                     match order {
-                        Ordering::Relaxed => {
-                            asm!(
-                                // (atomic) load from src to tmp
-                                concat!("l", $l_suffix, " {tmp}, 0({src})"),
-                                // store tmp to out
-                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg_nonzero) ptr_reg!(src),
-                                out = inout(reg_nonzero) ptr_reg!(out) => _,
-                                tmp = lateout(reg_nonzero) _,
-                                options(nostack, preserves_flags),
-                            )
-                        }
-                        Ordering::Acquire => atomic_load_acquire!(""),
-                        Ordering::SeqCst =>  atomic_load_acquire!("sync"),
-                        _ => unreachable!("{:?}", order),
-                    }
-                }
-                #[cfg(target_arch = "powerpc")]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! atomic_load {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                // (atomic) load from src to tmp
-                                $release,
-                                concat!("l", $l_suffix, " {tmp}, 0({src})"),
-                                $acquire,
-                                // store tmp to out
-                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg_nonzero) ptr_reg!(src),
-                                out = inout(reg_nonzero) ptr_reg!(out) => _,
-                                tmp = lateout(reg_nonzero) _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
                         Ordering::Relaxed => atomic_load!("", ""),
+                        #[cfg(target_arch = "powerpc64")]
+                        Ordering::Acquire => atomic_load_acquire!(""),
+                        #[cfg(target_arch = "powerpc64")]
+                        Ordering::SeqCst => atomic_load_acquire!("sync"),
+                        #[cfg(target_arch = "powerpc")]
                         Ordering::Acquire => atomic_load!("lwsync", ""),
+                        #[cfg(target_arch = "powerpc")]
                         Ordering::SeqCst => atomic_load!("lwsync", "sync"),
                         _ => unreachable!("{:?}", order),
                     }
@@ -596,7 +582,7 @@ macro_rules! atomic128 {
                             )
                         }
                         Ordering::Acquire => atomic_load_acquire!(""),
-                        Ordering::SeqCst =>  atomic_load_acquire!("sync"),
+                        Ordering::SeqCst => atomic_load_acquire!("sync"),
                         _ => unreachable!("{:?}", order),
                     }
                 }
