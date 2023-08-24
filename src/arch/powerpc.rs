@@ -316,7 +316,10 @@ macro_rules! atomic {
 
 #[cfg(not(all(
     target_arch = "powerpc64",
-    any(target_feature = "partword-atomics", atomic_maybe_uninit_target_feature = "partword-atomics"),
+    any(
+        target_feature = "partword-atomics",
+        atomic_maybe_uninit_target_feature = "partword-atomics",
+    ),
 )))]
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {

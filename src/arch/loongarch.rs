@@ -190,7 +190,6 @@ macro_rules! atomic {
     };
 }
 
-#[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($int_type:ident, $asm_suffix:tt) => {
         atomic_load!($int_type, $asm_suffix);
