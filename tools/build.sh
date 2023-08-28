@@ -221,7 +221,7 @@ build() {
     fi
 
     args+=(
-        --workspace --ignore-private
+        --workspace --no-private
         --feature-powerset --optional-deps
     )
     RUSTFLAGS="${target_rustflags}" \
