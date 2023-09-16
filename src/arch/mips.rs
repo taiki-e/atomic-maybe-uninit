@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 // MIPS32 and MIPS64
 //
 // Generated asm:

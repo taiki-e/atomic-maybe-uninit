@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 // MSP430
 //
 // Refs: https://www.ti.com/lit/ug/slau208q/slau208q.pdf

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 // ARMv8 AArch32
 //
 // LLVM doesn't generate CLREX for ARMv8-M Baseline, but it actually supports CLREX.

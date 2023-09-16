@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 // Helper for implementing sub-word atomic operations using word-sized LL/SC loop or CAS loop.
 
 use core::mem;

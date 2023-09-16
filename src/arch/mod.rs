@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 // Refs:
 // - inline assembly reference: https://doc.rust-lang.org/nightly/reference/inline-assembly.html
 // - inline assembly rust by example: https://doc.rust-lang.org/nightly/rust-by-example/unsafe/asm.html

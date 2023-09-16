@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 // Pre-v6 ARM Linux/Android
 //
 // Refs:
