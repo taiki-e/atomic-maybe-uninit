@@ -65,30 +65,30 @@ Feel free to submit an issue if your target is not supported yet.
     )
 ))]
 #![warn(
-    missing_debug_implementations,
-    missing_docs,
     rust_2018_idioms,
     single_use_lifetimes,
     unreachable_pub,
-    unsafe_op_in_unsafe_fn
-)]
-#![warn(
     clippy::pedantic,
-    // lints for public library
+    // Lints that may help when writing public library.
+    missing_debug_implementations,
+    missing_docs,
     clippy::alloc_instead_of_core,
     clippy::exhaustive_enums,
     clippy::exhaustive_structs,
+    clippy::impl_trait_in_params,
+    clippy::missing_inline_in_public_items,
     clippy::std_instead_of_alloc,
     clippy::std_instead_of_core,
-    // lints that help writing unsafe code
+    // Lints that may help when writing unsafe code.
+    improper_ctypes,
+    improper_ctypes_definitions,
+    unsafe_op_in_unsafe_fn,
     clippy::as_ptr_cast_mut,
     clippy::default_union_representation,
+    clippy::inline_asm_x86_att_syntax,
     clippy::trailing_empty_array,
     clippy::transmute_undefined_repr,
     clippy::undocumented_unsafe_blocks,
-    // misc
-    clippy::inline_asm_x86_att_syntax,
-    clippy::missing_inline_in_public_items,
 )]
 #![allow(
     clippy::doc_markdown,
@@ -727,6 +727,8 @@ pub use {cfg_has_atomic_32 as cfg_has_atomic_ptr, cfg_no_atomic_32 as cfg_no_ato
 pub use {cfg_has_atomic_64 as cfg_has_atomic_ptr, cfg_no_atomic_64 as cfg_no_atomic_ptr};
 
 mod private {
+    #![allow(missing_debug_implementations)]
+
     use core::panic::{RefUnwindSafe, UnwindSafe};
 
     // Auto traits is needed to better docs.
@@ -737,19 +739,14 @@ mod private {
         type Align: Send + Sync + Unpin + UnwindSafe + RefUnwindSafe;
     }
 
-    #[allow(missing_debug_implementations)]
     #[repr(align(1))]
     pub struct Align1(u8);
-    #[allow(missing_debug_implementations)]
     #[repr(align(2))]
     pub struct Align2(u16);
-    #[allow(missing_debug_implementations)]
     #[repr(align(4))]
     pub struct Align4(u32);
-    #[allow(missing_debug_implementations)]
     #[repr(align(8))]
     pub struct Align8(u64);
-    #[allow(missing_debug_implementations)]
     #[repr(align(16))]
     pub struct Align16(u128);
     #[cfg(target_pointer_width = "16")]
