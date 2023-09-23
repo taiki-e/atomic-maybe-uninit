@@ -63,6 +63,9 @@ macro_rules! __test_atomic {
 
         #[test]
         fn load_store() {
+            #[repr(C, align(16))]
+            struct Align16<T>(T);
+            static VAR_RO: Align16<$int_type> = Align16(10);
             static VAR: AtomicMaybeUninit<$int_type> =
                 AtomicMaybeUninit::<$int_type>::const_new(MaybeUninit::new(10));
             #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
@@ -74,6 +77,24 @@ macro_rules! __test_atomic {
                     VAR.load(Ordering::Relaxed).assume_init(),
                     var.load(Ordering::Relaxed).assume_init()
                 );
+                #[allow(clippy::ptr_as_ptr)]
+                if core::mem::size_of::<$int_type>() <= core::mem::size_of::<usize>()
+                    || cfg!(all(
+                        target_arch = "aarch64",
+                        any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"),
+                    ))
+                    || cfg!(all(
+                        target_arch = "powerpc64",
+                        any(target_feature = "quadword-atomics", atomic_maybe_uninit_target_feature = "quadword-atomics"),
+                    ))
+                    || cfg!(target_arch = "s390x") || cfg!(target_arch = "hexagon") {
+                    assert_eq!(
+                        (*(&VAR_RO as *const Align16<$int_type>
+                                   as *const AtomicMaybeUninit<$int_type>))
+                            .load(Ordering::Relaxed).assume_init(),
+                        var.load(Ordering::Relaxed).assume_init()
+                    );
+                }
             }
             test_load_ordering(|order| VAR.load(order));
             test_store_ordering(|order| VAR.store(MaybeUninit::new(10), order));
