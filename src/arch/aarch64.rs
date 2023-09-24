@@ -59,11 +59,11 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -75,7 +75,7 @@ macro_rules! atomic {
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out}]"),
                                 src = in(reg) ptr_reg!(src),
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -92,7 +92,7 @@ macro_rules! atomic {
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out}]"),
                                 src = in(reg) ptr_reg!(src),
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             );
@@ -103,17 +103,18 @@ macro_rules! atomic {
                         _ => unreachable!("{:?}", order),
                     }
                 }
+                out
             }
         }
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -151,13 +152,13 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -175,7 +176,7 @@ macro_rules! atomic {
                                 concat!("str", $asm_suffix, " {tmp", $val_modifier, "}, [{out}]"),
                                 dst = inout(reg) ptr_reg!(dst) => _,
                                 val = in(reg) ptr_reg!(val),
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
@@ -201,7 +202,7 @@ macro_rules! atomic {
                                 dst = inout(reg) ptr_reg!(dst) => _,
                                 val = in(reg) ptr_reg!(val),
                                 val_tmp = out(reg) _,
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 out_tmp = out(reg) _,
                                 r = lateout(reg) _,
                                 options(nostack, preserves_flags),
@@ -210,23 +211,24 @@ macro_rules! atomic {
                     }
                     atomic_rmw!(swap, order);
                 }
+                out
             }
         }
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 success: Ordering,
                 failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -254,14 +256,14 @@ macro_rules! atomic {
                                 old_tmp = out(reg) _,
                                 new = in(reg) ptr_reg!(new),
                                 new_tmp = out(reg) _,
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 out_tmp = out(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
-                            r != 0
+                            (out, r != 0)
                         }};
                     }
                     #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
@@ -292,7 +294,7 @@ macro_rules! atomic {
                                 old_tmp = out(reg) _,
                                 new = in(reg) ptr_reg!(new),
                                 new_tmp = out(reg) _,
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 out_tmp = out(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -300,7 +302,7 @@ macro_rules! atomic {
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
                             // 0 if the store was successful, 1 if no store was performed
-                            r == 0
+                            (out, r == 0)
                         }};
                     }
                     atomic_rmw!(cmpxchg, order, write = success)
@@ -310,17 +312,17 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 success: Ordering,
                 failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -352,7 +354,7 @@ macro_rules! atomic {
                                 old_tmp = out(reg) _,
                                 new = in(reg) ptr_reg!(new),
                                 new_tmp = out(reg) _,
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 out_tmp = out(reg) _,
                                 r = lateout(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -363,7 +365,7 @@ macro_rules! atomic {
                     atomic_rmw!(cmpxchg_weak, order, write = success);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    r == 0
+                    (out, r == 0)
                 }
             }
         }
@@ -421,11 +423,11 @@ macro_rules! atomic128 {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
 
                 #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
                 // SAFETY: the caller must guarantee that `dst` is valid for reads,
@@ -441,7 +443,7 @@ macro_rules! atomic128 {
                                 // store tmp pair to out
                                 "stp {tmp_lo}, {tmp_hi}, [{out}]",
                                 src = in(reg) ptr_reg!(src),
-                                out = in(reg) ptr_reg!(out),
+                                out = in(reg) ptr_reg!(out_ptr),
                                 tmp_hi = out(reg) _,
                                 tmp_lo = out(reg) _,
                                 options(nostack, preserves_flags),
@@ -460,7 +462,7 @@ macro_rules! atomic128 {
                                 // store tmp pair to out
                                 "stp {tmp_lo}, {tmp_hi}, [{out}]",
                                 src = in(reg) ptr_reg!(src),
-                                out = in(reg) ptr_reg!(out),
+                                out = in(reg) ptr_reg!(out_ptr),
                                 tmp_hi = out(reg) _,
                                 tmp_lo = out(reg) _,
                                 options(nostack, preserves_flags),
@@ -479,7 +481,7 @@ macro_rules! atomic128 {
                                 // store tmp pair to out
                                 "stp {tmp_lo}, {tmp_hi}, [{out}]",
                                 src = in(reg) ptr_reg!(src),
-                                out = in(reg) ptr_reg!(out),
+                                out = in(reg) ptr_reg!(out_ptr),
                                 tmp_hi = out(reg) _,
                                 tmp_lo = out(reg) _,
                                 tmp = out(reg) _,
@@ -504,7 +506,7 @@ macro_rules! atomic128 {
                                 // store out pair to out
                                 "stp x2, x3, [{out}]",
                                 src = in(reg) ptr_reg!(src),
-                                out = in(reg) ptr_reg!(out),
+                                out = in(reg) ptr_reg!(out_ptr),
                                 // must be allocated to even/odd register pair
                                 inout("x2") 0_u64 => _, // out_lo
                                 inout("x3") 0_u64 => _, // out_lo
@@ -527,7 +529,7 @@ macro_rules! atomic128 {
                                 // store tmp pair to out
                                 "stp {tmp_lo}, {tmp_hi}, [{out}]",
                                 src = in(reg) ptr_reg!(src),
-                                out = in(reg) ptr_reg!(out),
+                                out = in(reg) ptr_reg!(out_ptr),
                                 tmp_hi = out(reg) _,
                                 tmp_lo = out(reg) _,
                                 r = out(reg) _,
@@ -542,17 +544,18 @@ macro_rules! atomic128 {
                         _ => unreachable!("{:?}", order),
                     }
                 }
+                out
             }
         }
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                let val = val.as_ptr();
 
                 #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
                 // SAFETY: the caller must guarantee that `dst` is valid for writes,
@@ -660,13 +663,13 @@ macro_rules! atomic128 {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -683,7 +686,7 @@ macro_rules! atomic128 {
                                 "stp {val_lo}, {val_hi}, [{out}]",
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) ptr_reg!(val),
-                                out = in(reg) ptr_reg!(out),
+                                out = in(reg) ptr_reg!(out_ptr),
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
                                 options(nostack, preserves_flags),
@@ -709,7 +712,7 @@ macro_rules! atomic128 {
                                 "stp {out_lo}, {out_hi}, [{out}]",
                                 dst = inout(reg) ptr_reg!(dst) => _,
                                 val = in(reg) ptr_reg!(val),
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 val_hi = out(reg) _,
                                 val_lo = out(reg) _,
                                 out_hi = out(reg) _,
@@ -721,23 +724,24 @@ macro_rules! atomic128 {
                     }
                     atomic_rmw!(swap, order);
                 }
+                out
             }
         }
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 success: Ordering,
                 failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -766,7 +770,7 @@ macro_rules! atomic128 {
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) ptr_reg!(old),
                                 new = in(reg) ptr_reg!(new),
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 old_lo = out(reg) _,
                                 old_hi = out(reg) _,
                                 r = lateout(reg) r,
@@ -780,7 +784,7 @@ macro_rules! atomic128 {
                                 options(nostack),
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
-                            r != 0
+                            (out, r != 0)
                         }};
                     }
                     #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
@@ -818,7 +822,7 @@ macro_rules! atomic128 {
                                 new = in(reg) ptr_reg!(new),
                                 new_hi = out(reg) _,
                                 new_lo = out(reg) _,
-                                out = inout(reg) ptr_reg!(out) => _,
+                                out = inout(reg) ptr_reg!(out_ptr) => _,
                                 out_hi = out(reg) _,
                                 out_lo = out(reg) _,
                                 r = lateout(reg) r,
@@ -827,7 +831,7 @@ macro_rules! atomic128 {
                             );
                             debug_assert!(r == 0 || r == 1, "r={}", r);
                             // 0 if the store was successful, 1 if no store was performed
-                            r == 0
+                            (out, r == 0)
                         }};
                     }
                     atomic_rmw!(cmpxchg, order, write = success)

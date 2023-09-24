@@ -35,10 +35,6 @@ pub trait AtomicLoad: Primitive {
     ///   Otherwise, `src` must be valid for reads.
     /// - `src` must be properly aligned **to the size of `Self`**.
     ///   (For example, if `Self` is `u128`, `src` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
-    /// - `src` must go through [`UnsafeCell::get`].
-    /// - `src` must *not* overlap with `out`.
-    /// - `out` must be valid for writes.
-    /// - `out` must be properly aligned.
     /// - `order` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
     ///
     /// The rules for the validity of pointer follow [the rules applied to
@@ -46,11 +42,7 @@ pub trait AtomicLoad: Primitive {
     /// except that concurrent atomic operations on `src` are allowed.
     ///
     /// [validity]: core::ptr#safety
-    unsafe fn atomic_load(
-        src: *const MaybeUninit<Self>,
-        out: *mut MaybeUninit<Self>,
-        order: Ordering,
-    );
+    unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self>;
 }
 
 /// Atomic store.
@@ -70,10 +62,6 @@ pub trait AtomicStore: Primitive {
     ///   Otherwise, `dst` must be valid for writes.
     /// - `dst` must be properly aligned **to the size of `Self`**.
     ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
-    /// - `dst` must go through [`UnsafeCell::get`].
-    /// - `dst` must *not* overlap with `val`.
-    /// - `val` must be valid for reads.
-    /// - `val` must be properly aligned.
     /// - `order` must be [`SeqCst`], [`Release`], or [`Relaxed`].
     ///
     /// The rules for the validity of pointer follow [the rules applied to
@@ -81,11 +69,7 @@ pub trait AtomicStore: Primitive {
     /// except that concurrent atomic operations on `dst` are allowed.
     ///
     /// [validity]: core::ptr#safety
-    unsafe fn atomic_store(
-        dst: *mut MaybeUninit<Self>,
-        val: *const MaybeUninit<Self>,
-        order: Ordering,
-    );
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering);
 }
 
 /// Atomic swap.
@@ -106,12 +90,6 @@ pub trait AtomicSwap: AtomicLoad + AtomicStore {
     /// - `dst` must be valid for both reads and writes.
     /// - `dst` must be properly aligned **to the size of `Self`**.
     ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
-    /// - `dst` must go through [`UnsafeCell::get`].
-    /// - `dst` must *not* overlap with `val` or `out`.
-    /// - `val` must be valid for reads.
-    /// - `val` must be properly aligned.
-    /// - `out` must be valid for writes.
-    /// - `out` must be properly aligned.
     /// - `order` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     ///
     /// The rules for the validity of pointer follow [the rules applied to
@@ -121,10 +99,9 @@ pub trait AtomicSwap: AtomicLoad + AtomicStore {
     /// [validity]: core::ptr#safety
     unsafe fn atomic_swap(
         dst: *mut MaybeUninit<Self>,
-        val: *const MaybeUninit<Self>,
-        out: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
         order: Ordering,
-    );
+    ) -> MaybeUninit<Self>;
 }
 
 /// Atomic compare and exchange.
@@ -153,14 +130,6 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     /// - `dst` must be valid for both reads and writes.
     /// - `dst` must be properly aligned **to the size of `Self`**.
     ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
-    /// - `dst` must go through [`UnsafeCell::get`].
-    /// - `dst` must *not* overlap with `current`, `new`, or `out`.
-    /// - `current` must be valid for reads.
-    /// - `current` must be properly aligned.
-    /// - `new` must be valid for reads.
-    /// - `new` must be properly aligned.
-    /// - `out` must be valid for writes.
-    /// - `out` must be properly aligned.
     /// - `success` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     /// - `failure` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
     ///
@@ -179,12 +148,11 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     /// See [`AtomicMaybeUninit::compare_exchange`](crate::AtomicMaybeUninit::compare_exchange) for details.
     unsafe fn atomic_compare_exchange(
         dst: *mut MaybeUninit<Self>,
-        current: *const MaybeUninit<Self>,
-        new: *const MaybeUninit<Self>,
-        out: *mut MaybeUninit<Self>,
+        current: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
         success: Ordering,
         failure: Ordering,
-    ) -> bool;
+    ) -> (MaybeUninit<Self>, bool);
 
     /// Stores a value from `new` into `dst` if the current value is the same as
     /// the value at `current`, writes the previous value to `out`.
@@ -209,14 +177,6 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     /// - `dst` must be valid for both reads and writes.
     /// - `dst` must be properly aligned **to the size of `Self`**.
     ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
-    /// - `dst` must go through [`UnsafeCell::get`].
-    /// - `dst` must *not* overlap with `current`, `new`, or `out`.
-    /// - `current` must be valid for reads.
-    /// - `current` must be properly aligned.
-    /// - `new` must be valid for reads.
-    /// - `new` must be properly aligned.
-    /// - `out` must be valid for writes.
-    /// - `out` must be properly aligned.
     /// - `success` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     /// - `failure` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
     ///
@@ -236,13 +196,12 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     #[inline]
     unsafe fn atomic_compare_exchange_weak(
         dst: *mut MaybeUninit<Self>,
-        current: *const MaybeUninit<Self>,
-        new: *const MaybeUninit<Self>,
-        out: *mut MaybeUninit<Self>,
+        current: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
         success: Ordering,
         failure: Ordering,
-    ) -> bool {
+    ) -> (MaybeUninit<Self>, bool) {
         // SAFETY: the caller must uphold the safety contract.
-        unsafe { Self::atomic_compare_exchange(dst, current, new, out, success, failure) }
+        unsafe { Self::atomic_compare_exchange(dst, current, new, success, failure) }
     }
 }

@@ -14,9 +14,11 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic load is always SeqCst.
@@ -27,20 +29,23 @@ macro_rules! atomic {
                         // store tmp to out
                         concat!("mov", $asm_suffix, " {tmp}, 0({out})"),
                         src = in(reg) src,
-                        out = inout(reg) out => _,
+                        out = inout(reg) out_ptr => _,
                         tmp = lateout(reg) _,
                         options(nostack, preserves_flags),
                     );
                 }
+                out
             }
         }
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                let val = val.as_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic store is always SeqCst.
