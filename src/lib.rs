@@ -110,6 +110,7 @@ mod utils;
 #[macro_use]
 mod tests;
 
+#[cfg_attr(atomic_maybe_uninit_no_asm_maybe_uninit, path = "arch_legacy/mod.rs")]
 mod arch;
 
 pub mod raw;

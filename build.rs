@@ -45,6 +45,10 @@ fn main() {
     if !version.probe(61, 2022, 3, 7) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
     }
+    // https://github.com/rust-lang/rust/pull/114790 merged in nightly-2023-08-24
+    if !version.probe(74, 2023, 8, 23) {
+        println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm_maybe_uninit");
+    }
 
     match target_arch {
         "loongarch64" => {
