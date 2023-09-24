@@ -21,9 +21,11 @@ macro_rules! atomic_load_store {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
@@ -32,20 +34,23 @@ macro_rules! atomic_load_store {
                         // store tmp to out
                         concat!("mem", $asm_suffix, "({out}) = {tmp}"),
                         src = in(reg) src,
-                        out = inout(reg) out => _,
+                        out = inout(reg) out_ptr => _,
                         tmp = lateout(reg) _,
                         options(nostack, preserves_flags),
                     );
                 }
+                out
             }
         }
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                let val = val.as_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
@@ -71,10 +76,13 @@ macro_rules! atomic {
             #[inline(never)] // TODO: there is no way to mark p0 as clobbered
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
@@ -86,23 +94,28 @@ macro_rules! atomic {
                         "memw({out}) = {tmp}",
                         dst = in(reg) dst,
                         val = inout(reg) val => _,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         tmp = out(reg) _,
                         options(nostack),
                     );
                 }
+                out
             }
         }
         impl AtomicCompareExchange for $int_type {
             #[inline(never)] // TODO: there is no way to mark p0 as clobbered
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 _success: Ordering,
                 _failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32 = 1;
@@ -123,13 +136,13 @@ macro_rules! atomic {
                         dst = in(reg) dst,
                         old = inout(reg) old => _,
                         new = inout(reg) new => _,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         tmp = out(reg) _,
                         r = inout(reg) r,
                         options(nostack),
                     );
                     debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    (out, r != 0)
                 }
             }
         }
@@ -143,11 +156,13 @@ macro_rules! atomic_sub_word {
             #[inline(never)] // TODO: there is no way to mark p0 as clobbered
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -167,7 +182,7 @@ macro_rules! atomic_sub_word {
                         concat!("mem", $asm_suffix, "({out}) = {out_tmp}"),
                         dst = in(reg) aligned_ptr,
                         val = inout(reg) val => _,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         shift = in(reg) shift,
                         mask = inout(reg) mask => _,
                         inv_mask = out(reg) _,
@@ -176,19 +191,23 @@ macro_rules! atomic_sub_word {
                         options(nostack),
                     );
                 }
+                out
             }
         }
         impl AtomicCompareExchange for $int_type {
             #[inline(never)] // TODO: there is no way to mark p0 as clobbered
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 _success: Ordering,
                 _failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -220,7 +239,7 @@ macro_rules! atomic_sub_word {
                         dst = in(reg) aligned_ptr,
                         old = inout(reg) old => _,
                         new = inout(reg) new => _,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         shift = in(reg) shift,
                         mask = inout(reg) mask => _,
                         inv_mask = out(reg) _,
@@ -230,7 +249,7 @@ macro_rules! atomic_sub_word {
                         options(nostack),
                     );
                     debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    (out, r != 0)
                 }
             }
         }
@@ -252,9 +271,11 @@ macro_rules! atomic64 {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
@@ -263,21 +284,24 @@ macro_rules! atomic64 {
                         // store tmp pair to out
                         "memd({out}) = r3:2",
                         src = in(reg) src,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         out("r2") _, // tmp
                         out("r3") _, // tmp
                         options(nostack, preserves_flags),
                     );
                 }
+                out
             }
         }
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                let val = val.as_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
@@ -298,10 +322,13 @@ macro_rules! atomic64 {
             #[inline(never)] // TODO: there is no way to mark p0 as clobbered
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
@@ -313,7 +340,7 @@ macro_rules! atomic64 {
                         "memd({out}) = r5:4",
                         dst = in(reg) dst,
                         val = in(reg) val,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         out("r2") _, // val
                         out("r3") _, // val
                         out("r4") _, // tmp
@@ -321,18 +348,23 @@ macro_rules! atomic64 {
                         options(nostack),
                     );
                 }
+                out
             }
         }
         impl AtomicCompareExchange for $int_type {
             #[inline(never)] // TODO: there is no way to mark p0 as clobbered
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 _success: Ordering,
                 _failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32 = 1;
@@ -356,18 +388,18 @@ macro_rules! atomic64 {
                         dst = in(reg) dst,
                         old = in(reg) old,
                         new = in(reg) new,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
+                        r = inout(reg) r,
                         out("r2") _, // old
                         out("r3") _, // old
                         out("r4") _, // new
                         out("r5") _, // new
                         out("r6") _, // tmp
                         out("r7") _, // tmp
-                        r = inout(reg) r,
                         options(nostack),
                     );
                     debug_assert!(r == 0 || r == 1, "r={}", r);
-                    r != 0
+                    (out, r != 0)
                 }
             }
         }

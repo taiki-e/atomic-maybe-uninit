@@ -120,11 +120,11 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -138,7 +138,7 @@ macro_rules! atomic {
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 src = in(reg) src,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 tmp = lateout(reg) _,
                             )
                         };
@@ -150,17 +150,18 @@ macro_rules! atomic {
                         _ => unreachable!("{:?}", order),
                     }
                 }
+                out
             }
         }
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -197,13 +198,13 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -229,7 +230,7 @@ macro_rules! atomic {
                                 concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 dst = in(reg) dst,
                                 val = inout(reg) val => _,
-                                out = in(reg) out,
+                                out = in(reg) out_ptr,
                                 r = out(reg) _,
                                 tmp = out(reg) _,
                             )
@@ -246,6 +247,7 @@ macro_rules! atomic {
                         _ => unreachable!("{:?}", order),
                     }
                 }
+                out
             }
         }
         #[rustfmt::skip]
@@ -257,16 +259,16 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 success: Ordering,
                 failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -303,7 +305,7 @@ macro_rules! atomic {
                                 r = out(reg) r,
                                 old = inout(reg) old => _,
                                 new = inout(reg) new => _,
-                                out = in(reg) out,
+                                out = in(reg) out_ptr,
                                 tmp = out(reg) _,
                             )
                         };
@@ -341,7 +343,7 @@ macro_rules! atomic {
                                 r = out(reg) r,
                                 old = inout(reg) old => _,
                                 new = inout(reg) new => _,
-                                out = in(reg) out,
+                                out = in(reg) out_ptr,
                                 tmp = out(reg) _,
                             )
                         };
@@ -382,7 +384,7 @@ macro_rules! atomic {
                                 r = out(reg) r,
                                 old = inout(reg) old => _,
                                 new = inout(reg) new => _,
-                                out = in(reg) out,
+                                out = in(reg) out_ptr,
                                 tmp = out(reg) _,
                             )
                         };
@@ -405,22 +407,22 @@ macro_rules! atomic {
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    r == 0
+                    (out, r == 0)
                 }
             }
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 success: Ordering,
                 failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -452,7 +454,7 @@ macro_rules! atomic {
                                 r = out(reg) r,
                                 old = inout(reg) old => _,
                                 new = inout(reg) new => _,
-                                out = in(reg) out,
+                                out = in(reg) out_ptr,
                                 tmp = out(reg) _,
                             )
                         };
@@ -488,7 +490,7 @@ macro_rules! atomic {
                                 r = out(reg) r,
                                 old = inout(reg) old => _,
                                 new = inout(reg) new => _,
-                                out = in(reg) out,
+                                out = in(reg) out_ptr,
                                 tmp = out(reg) _,
                             )
                         };
@@ -523,7 +525,7 @@ macro_rules! atomic {
                                 r = out(reg) r,
                                 old = inout(reg) old => _,
                                 new = inout(reg) new => _,
-                                out = in(reg) out,
+                                out = in(reg) out_ptr,
                                 tmp = out(reg) _,
                             )
                         };
@@ -542,7 +544,7 @@ macro_rules! atomic {
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    r == 0
+                    (out, r == 0)
                 }
             }
         }
@@ -569,11 +571,11 @@ macro_rules! atomic64 {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -588,7 +590,7 @@ macro_rules! atomic64 {
                                 // store tmp pair to out
                                 "strd r2, r3, [{out}]",
                                 src = in(reg) src,
-                                out = in(reg) out,
+                                out = in(reg) out_ptr,
                                 // tmp pair - must be even-numbered and not R14
                                 out("r2") _,
                                 out("r3") _,
@@ -602,6 +604,7 @@ macro_rules! atomic64 {
                         _ => unreachable!("{:?}", order),
                     }
                 }
+                out
             }
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
@@ -609,11 +612,11 @@ macro_rules! atomic64 {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -661,13 +664,13 @@ macro_rules! atomic64 {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -693,7 +696,7 @@ macro_rules! atomic64 {
                                 "strd r4, r5, [{out}]",
                                 dst = inout(reg) dst => _,
                                 val = in(reg) val,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 r = lateout(reg) _,
                                 // val pair - must be even-numbered and not R14
                                 out("r2") _,
@@ -713,6 +716,7 @@ macro_rules! atomic64 {
                         _ => unreachable!("{:?}", order),
                     }
                 }
+                out
             }
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
@@ -720,16 +724,16 @@ macro_rules! atomic64 {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 success: Ordering,
                 failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -767,7 +771,7 @@ macro_rules! atomic64 {
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
@@ -817,7 +821,7 @@ macro_rules! atomic64 {
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
@@ -870,7 +874,7 @@ macro_rules! atomic64 {
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
@@ -898,22 +902,22 @@ macro_rules! atomic64 {
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    r == 0
+                    (out, r == 0)
                 }
             }
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 success: Ordering,
                 failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -946,7 +950,7 @@ macro_rules! atomic64 {
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
@@ -992,7 +996,7 @@ macro_rules! atomic64 {
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
@@ -1037,7 +1041,7 @@ macro_rules! atomic64 {
                                 r = lateout(reg) r,
                                 old = in(reg) old,
                                 new = in(reg) new,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 tmp = out(reg) _,
                                 // old pair - must be even-numbered and not R14
                                 out("r2") _,
@@ -1065,7 +1069,7 @@ macro_rules! atomic64 {
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    r == 0
+                    (out, r == 0)
                 }
             }
         }

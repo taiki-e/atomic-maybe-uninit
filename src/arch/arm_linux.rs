@@ -60,11 +60,11 @@ macro_rules! atomic_load_store {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -76,7 +76,7 @@ macro_rules! atomic_load_store {
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 src = in(reg) src,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             );
@@ -91,7 +91,7 @@ macro_rules! atomic_load_store {
                                 // store tmp to out
                                 concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 src = in(reg) src,
-                                out = inout(reg) out => _,
+                                out = inout(reg) out_ptr => _,
                                 tmp = lateout(reg) _,
                                 kuser_memory_barrier = inout(reg) KUSER_MEMORY_BARRIER => _,
                                 out("lr") _,
@@ -101,17 +101,18 @@ macro_rules! atomic_load_store {
                         _ => unreachable!("{:?}", order),
                     }
                 }
+                out
             }
         }
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -164,14 +165,14 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -184,7 +185,7 @@ macro_rules! atomic {
                             "cmp r0, #0",
                             "bne 2b",
                         "str {out_tmp}, [{out}]",
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         out_tmp = out(reg) _,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
                         out("r0") _,
@@ -197,23 +198,24 @@ macro_rules! atomic {
                         options(nostack),
                     );
                 }
+                out
             }
         }
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 _success: Ordering,
                 _failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -242,7 +244,7 @@ macro_rules! atomic {
                         "str {out_tmp}, [{out}]",
                         old = inout(reg) old => _,
                         new = inout(reg) new => _,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         out_tmp = out(reg) _,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
                         out("r0") r,
@@ -256,7 +258,7 @@ macro_rules! atomic {
                     );
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    r == 0
+                    (out, r == 0)
                 }
             }
         }
@@ -270,15 +272,15 @@ macro_rules! atomic_sub_word {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -299,7 +301,7 @@ macro_rules! atomic_sub_word {
                         "lsr {out_tmp}, {out_tmp}, {shift}",
                         concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
                         val = inout(reg) val => _,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         shift = in(reg) shift,
                         mask = inout(reg) mask => _,
                         inv_mask = out(reg) _,
@@ -315,24 +317,25 @@ macro_rules! atomic_sub_word {
                         options(nostack),
                     );
                 }
+                out
             }
         }
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 _success: Ordering,
                 _failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -371,7 +374,7 @@ macro_rules! atomic_sub_word {
                         concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
                         old = inout(reg) old => _,
                         new = inout(reg) new => _,
-                        out = in(reg) out,
+                        out = in(reg) out_ptr,
                         shift = in(reg) shift,
                         mask = inout(reg) mask => _,
                         out_tmp = out(reg) _,
@@ -387,7 +390,7 @@ macro_rules! atomic_sub_word {
                     );
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    r == 0
+                    (out, r == 0)
                 }
             }
         }
@@ -409,16 +412,15 @@ macro_rules! atomic64 {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 assert_has_kuser_cmpxchg64();
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut out_tmp = MaybeUninit::<Self>::uninit();
                     asm!(
                         "2:",
                             "ldr r0, [r2]",
@@ -431,27 +433,27 @@ macro_rules! atomic64 {
                             "bne 2b",
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
                         out("r0") _,
-                        in("r1") out_tmp.as_mut_ptr(), // new_val
+                        in("r1") out_ptr, // new_val
                         in("r2") src, // ptr
                         out("r3") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because CMP and __kuser_cmpxchg64 modify the condition flags.
                         options(nostack),
                     );
-                    out.write(out_tmp);
                 }
+                out
             }
         }
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
                 assert_has_kuser_cmpxchg64();
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -483,18 +485,17 @@ macro_rules! atomic64 {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(val as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 assert_has_kuser_cmpxchg64();
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut out_tmp = MaybeUninit::<Self>::uninit();
                     asm!(
                         "2:",
                             "ldr r0, [r2]",
@@ -505,7 +506,7 @@ macro_rules! atomic64 {
                             blx!("{kuser_cmpxchg64}"),
                             "cmp r0, #0",
                             "bne 2b",
-                        out_tmp = in(reg) out_tmp.as_mut_ptr(),
+                        out_tmp = in(reg) out_ptr,
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
                         out("r0") _,
                         in("r1") val, // new_val
@@ -515,30 +516,29 @@ macro_rules! atomic64 {
                         // Do not use `preserves_flags` because CMP and __kuser_cmpxchg64 modify the condition flags.
                         options(nostack),
                     );
-                    out.write(out_tmp);
                 }
+                out
             }
         }
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
-                old: *const MaybeUninit<Self>,
-                new: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
                 _success: Ordering,
                 _failure: Ordering,
-            ) -> bool {
+            ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                debug_assert!(old as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(new as usize % mem::align_of::<$int_type>() == 0);
-                debug_assert!(out as usize % mem::align_of::<$int_type>() == 0);
                 assert_has_kuser_cmpxchg64();
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
-                    let mut out_tmp = MaybeUninit::<Self>::uninit();
                     asm!(
                         "ldr {old_lo}, [{old_hi}]",
                         "ldr {old_hi}, [{old_hi}, #4]",
@@ -567,7 +567,7 @@ macro_rules! atomic64 {
                             "mov r0, #1",
                         "4:",
                         new = in(reg) new,
-                        out_tmp = in(reg) out_tmp.as_mut_ptr(),
+                        out_tmp = in(reg) out_ptr,
                         old_lo = out(reg) _,
                         old_hi = inout(reg) old => _,
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
@@ -579,10 +579,9 @@ macro_rules! atomic64 {
                         // Do not use `preserves_flags` because CMP, ORRS, and __kuser_cmpxchg64 modify the condition flags.
                         options(nostack),
                     );
-                    out.write(out_tmp);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    r == 0
+                    (out, r == 0)
                 }
             }
         }

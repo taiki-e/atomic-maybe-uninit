@@ -45,15 +45,14 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
-                out: *mut MaybeUninit<Self>,
                 _order: Ordering,
-            ) {
+            ) -> MaybeUninit<Self> {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let s = disable();
-                    let v = src.read();
+                    let out = src.read();
                     restore(s);
-                    out.write(v);
+                    out
                 }
             }
         }
@@ -61,14 +60,13 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: *const MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let v = val.read();
                     let s = disable();
-                    dst.write(v);
+                    dst.write(val);
                     restore(s);
                 }
             }

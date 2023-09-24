@@ -257,14 +257,12 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         T: AtomicLoad,
     {
         utils::assert_load_ordering(order);
-        let mut out = MaybeUninit::<T>::uninit();
         // SAFETY: any data races are prevented by atomic intrinsics, the raw
         // pointer passed in is valid because we got it from a reference,
         // and we've checked the order is valid. Alignment is upheld because
         // `PrimitivePriv` is a private trait that ensures sufficient alignment
         // of `T::Align`, and we got our `_align` field.
-        unsafe { T::atomic_load(self.v.get(), &mut out, order) }
-        out
+        unsafe { T::atomic_load(self.v.get(), order) }
     }
 
     /// Stores a value into the atomic value.
@@ -299,7 +297,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         // and we've checked the order is valid. Alignment is upheld because
         // `PrimitivePriv` is a private trait that ensures sufficient alignment
         // of `T::Align`, and we got our `_align` field.
-        unsafe { T::atomic_store(self.v.get(), &val, order) }
+        unsafe { T::atomic_store(self.v.get(), val, order) }
     }
 
     /// Stores a value into the atomic value, returning the previous value.
@@ -327,11 +325,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     where
         T: AtomicSwap,
     {
-        let mut out = MaybeUninit::<T>::uninit();
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
-        unsafe { T::atomic_swap(self.v.get(), &val, &mut out, order) }
-        out
+        unsafe { T::atomic_swap(self.v.get(), val, order) }
     }
 
     /// Stores a value into the atomic value if the current value is the same as
@@ -499,16 +495,14 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         T: AtomicCompareExchange,
     {
         utils::assert_compare_exchange_ordering(success, failure);
-        let mut out = MaybeUninit::<T>::uninit();
-        // SAFETY: any data races are prevented by atomic intrinsics and the raw
-        // pointer passed in is valid because we got it from a reference.
-        // Alignment is upheld because `PrimitivePriv` is a private trait that
-        // ensures sufficient alignment of `T::Align`, and we got our `_align`
-        // field.
-        let res = unsafe {
-            T::atomic_compare_exchange(self.v.get(), &current, &new, &mut out, success, failure)
-        };
-        if res {
+        let (out, ok) =
+            // SAFETY: any data races are prevented by atomic intrinsics and the raw
+            // pointer passed in is valid because we got it from a reference.
+            // Alignment is upheld because `PrimitivePriv` is a private trait that
+            // ensures sufficient alignment of `T::Align`, and we got our `_align`
+            // field.
+            unsafe { T::atomic_compare_exchange(self.v.get(), current, new, success, failure) };
+        if ok {
             Ok(out)
         } else {
             Err(out)
@@ -581,23 +575,15 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         T: AtomicCompareExchange,
     {
         utils::assert_compare_exchange_ordering(success, failure);
-        let mut out = MaybeUninit::<T>::uninit();
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
         // Alignment is upheld because `PrimitivePriv` is a private trait that
         // ensures sufficient alignment of `T::Align`, and we got our `_align`
         // field.
-        let res = unsafe {
-            T::atomic_compare_exchange_weak(
-                self.v.get(),
-                &current,
-                &new,
-                &mut out,
-                success,
-                failure,
-            )
+        let (out, ok) = unsafe {
+            T::atomic_compare_exchange_weak(self.v.get(), current, new, success, failure)
         };
-        if res {
+        if ok {
             Ok(out)
         } else {
             Err(out)
