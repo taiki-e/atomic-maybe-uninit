@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Refs:
-// - inline assembly reference: https://doc.rust-lang.org/nightly/reference/inline-assembly.html
-// - inline assembly rust by example: https://doc.rust-lang.org/nightly/rust-by-example/unsafe/asm.html
-// - feature(asm_experimental_arch): https://doc.rust-lang.org/nightly/unstable-book/language-features/asm-experimental-arch.html
-// - asm module in rustc_target: https://github.com/rust-lang/rust/tree/HEAD/compiler/rustc_target/src/asm
-// - asm module in rustc_codegen_llvm: https://github.com/rust-lang/rust/blob/HEAD/compiler/rustc_codegen_llvm/src/asm.rs
-// - LLVM LangRef: https://llvm.org/docs/LangRef.html#inline-assembler-expressions
-// - inline assembly related issues in rust-lang/rust: https://github.com/rust-lang/rust/labels/A-inline-assembly
+// This module contains the atomic implementation for older rustc that does not support MaybeUninit registers.
+//
+// The implementation is based on the code just before we started using MaybeUninit registers.
 
 #![allow(missing_docs)] // For cfg macros
 
@@ -26,7 +21,7 @@
     target_arch = "aarch64",
     target_arch = "riscv32",
     target_arch = "riscv64",
-    target_arch = "loongarch64",
+    all(target_arch = "loongarch64", not(atomic_maybe_uninit_no_loongarch64_asm)),
     all(
         any(
             target_arch = "avr",
@@ -43,6 +38,7 @@
         atomic_maybe_uninit_unstable_asm_experimental_arch,
     ),
 )))]
+#[path = "../arch/unsupported.rs"]
 mod unsupported;
 
 #[cfg(target_arch = "aarch64")]
@@ -74,11 +70,13 @@ mod arm_linux;
 mod armv8;
 #[cfg(target_arch = "avr")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+#[path = "../arch/avr.rs"]
 mod avr;
 #[cfg(target_arch = "hexagon")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod hexagon;
 #[cfg(target_arch = "loongarch64")]
+#[cfg(not(atomic_maybe_uninit_no_loongarch64_asm))]
 mod loongarch;
 #[cfg(any(
     target_arch = "mips",
