@@ -248,14 +248,9 @@ fn main() {
             if target == "riscv64-linux-android" {
                 subarch = "gc";
             }
-            target_feature_if(
-                "a",
-                // G = IMAFD
-                subarch.contains('a') || subarch.contains('g'),
-                &version,
-                None,
-                true,
-            );
+            // G = IMAFD
+            let has_a = subarch.contains('a') || subarch.contains('g');
+            target_feature_if("a", has_a, &version, None, true);
         }
         "powerpc64" => {
             let target_endian =
@@ -286,19 +281,19 @@ fn main() {
         }
         "s390x" => {
             // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/SystemZ/SystemZFeatures.td
-            let mut has_arch9_features = false;
+            let mut arch9_features = false;
             if let Some(cpu) = target_cpu() {
                 // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/SystemZ/SystemZProcessors.td
                 match &*cpu {
                     "arch9" | "z196" | "arch10" | "zEC12" | "arch11" | "z13" | "arch12" | "z14"
-                    | "arch13" | "z15" | "arch14" | "z16" => has_arch9_features = true,
+                    | "arch13" | "z15" | "arch14" | "z16" => arch9_features = true,
                     _ => {}
                 }
             }
             // Note: As of rustc 1.70, target_feature "fast-serialization" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs
             // bcr 14,0
-            target_feature_if("fast-serialization", has_arch9_features, &version, None, false);
+            target_feature_if("fast-serialization", arch9_features, &version, None, false);
         }
         _ => {}
     }
