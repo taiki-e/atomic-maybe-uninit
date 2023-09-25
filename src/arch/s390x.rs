@@ -11,6 +11,9 @@
 // - s390x https://godbolt.org/z/WMa8541M5
 // - s390x (z196) https://godbolt.org/z/86d5fPhEW
 
+#[path = "cfgs/s390x.rs"]
+mod cfgs;
+
 #[path = "partword.rs"]
 mod partword;
 
@@ -433,52 +436,3 @@ macro_rules! atomic128 {
 
 atomic128!(i128);
 atomic128!(u128);
-
-#[macro_export]
-macro_rules! cfg_has_atomic_8 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_8 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_16 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_16 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_32 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_32 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_64 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_64 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_128 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_128 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_cas {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_cas {
-    ($($tt:tt)*) => {};
-}

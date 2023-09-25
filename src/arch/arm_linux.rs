@@ -12,6 +12,9 @@
 // - armv5te https://godbolt.org/z/63Kojd799
 // - armv4t https://godbolt.org/z/M9Trn87To
 
+#[path = "cfgs/arm_linux.rs"]
+mod cfgs;
+
 #[path = "partword.rs"]
 mod partword;
 
@@ -566,56 +569,6 @@ fn assert_has_kuser_cmpxchg64() {
         }
         p()
     }
-}
-
-#[macro_export]
-macro_rules! cfg_has_atomic_8 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_8 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_16 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_16 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_32 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_32 {
-    ($($tt:tt)*) => {};
-}
-// TODO: set has_atomic_64 to true
-#[macro_export]
-macro_rules! cfg_has_atomic_64 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_64 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_128 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_128 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_cas {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_cas {
-    ($($tt:tt)*) => {};
 }
 
 #[cfg(test)]

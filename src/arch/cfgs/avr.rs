@@ -1,23 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[cfg(test)]
-compile_error!("testing this target is not supported yet");
+#![allow(missing_docs)]
 
 #[macro_export]
 macro_rules! cfg_has_atomic_8 {
-    ($($tt:tt)*) => {};
+    ($($tt:tt)*) => { $($tt)* };
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_8 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_16 {
     ($($tt:tt)*) => {};
 }
 #[macro_export]
-macro_rules! cfg_no_atomic_16 {
+macro_rules! cfg_has_atomic_16 {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_16 {
+    ($($tt:tt)*) => {};
 }
 #[macro_export]
 macro_rules! cfg_has_atomic_32 {

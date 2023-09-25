@@ -16,6 +16,9 @@
 // - x86 (i486) https://godbolt.org/z/a5YjTPvxd
 // - x86 (i386) https://godbolt.org/z/ovoYPW8jc
 
+#[path = "cfgs/x86.rs"]
+mod cfgs;
+
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
@@ -646,88 +649,3 @@ atomic128!(i128);
 #[cfg(target_arch = "x86_64")]
 #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
 atomic128!(u128);
-
-#[macro_export]
-macro_rules! cfg_has_atomic_8 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_8 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_16 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_16 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_32 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_32 {
-    ($($tt:tt)*) => {};
-}
-#[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg8b)))]
-#[macro_export]
-macro_rules! cfg_has_atomic_64 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg8b)))]
-#[macro_export]
-macro_rules! cfg_no_atomic_64 {
-    ($($tt:tt)*) => {};
-}
-#[cfg(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg8b))]
-#[macro_export]
-macro_rules! cfg_has_atomic_64 {
-    ($($tt:tt)*) => {};
-}
-#[cfg(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg8b))]
-#[macro_export]
-macro_rules! cfg_no_atomic_64 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[cfg(not(all(
-    target_arch = "x86_64",
-    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
-)))]
-#[macro_export]
-macro_rules! cfg_has_atomic_128 {
-    ($($tt:tt)*) => {};
-}
-#[cfg(not(all(
-    target_arch = "x86_64",
-    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
-)))]
-#[macro_export]
-macro_rules! cfg_no_atomic_128 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[cfg(all(
-    target_arch = "x86_64",
-    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
-))]
-#[macro_export]
-macro_rules! cfg_has_atomic_128 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[cfg(all(
-    target_arch = "x86_64",
-    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
-))]
-#[macro_export]
-macro_rules! cfg_no_atomic_128 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_cas {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_cas {
-    ($($tt:tt)*) => {};
-}

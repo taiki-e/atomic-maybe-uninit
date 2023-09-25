@@ -14,6 +14,9 @@
 // - riscv64gc https://godbolt.org/z/nW3Po8n4K
 // - riscv32imac https://godbolt.org/z/51nPPMYze
 
+#[path = "../arch/cfgs/riscv.rs"]
+mod cfgs;
+
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
 #[path = "../arch/partword.rs"]
 mod partword;
@@ -399,76 +402,3 @@ atomic!(usize, "w");
 atomic!(isize, "d");
 #[cfg(target_pointer_width = "64")]
 atomic!(usize, "d");
-
-#[macro_export]
-macro_rules! cfg_has_atomic_8 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_8 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_16 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_16 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_32 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_32 {
-    ($($tt:tt)*) => {};
-}
-#[cfg(target_arch = "riscv32")]
-#[macro_export]
-macro_rules! cfg_has_atomic_64 {
-    ($($tt:tt)*) => {};
-}
-#[cfg(target_arch = "riscv32")]
-#[macro_export]
-macro_rules! cfg_no_atomic_64 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[cfg(target_arch = "riscv64")]
-#[macro_export]
-macro_rules! cfg_has_atomic_64 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[cfg(target_arch = "riscv64")]
-#[macro_export]
-macro_rules! cfg_no_atomic_64 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_has_atomic_128 {
-    ($($tt:tt)*) => {};
-}
-#[macro_export]
-macro_rules! cfg_no_atomic_128 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-#[macro_export]
-macro_rules! cfg_has_atomic_cas {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-#[macro_export]
-macro_rules! cfg_no_atomic_cas {
-    ($($tt:tt)*) => {};
-}
-#[cfg(not(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a")))]
-#[macro_export]
-macro_rules! cfg_has_atomic_cas {
-    ($($tt:tt)*) => {};
-}
-#[cfg(not(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a")))]
-#[macro_export]
-macro_rules! cfg_no_atomic_cas {
-    ($($tt:tt)*) => { $($tt)* };
-}
