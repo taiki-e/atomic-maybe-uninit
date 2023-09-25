@@ -250,6 +250,12 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
         if: matrix.target == 'armv7-unknown-linux-gnueabi'
+      # arm v6 with legacy cp15_barrier
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+        env:
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
+        if: matrix.target == 'arm-unknown-linux-gnueabi'
       # arm v7 big endian
       # armeb-unknown-linux-gnueabi is v8 by default, use custom target instead
       - run: tools/test.sh -vv --tests --target armebv7-unknown-linux-gnueabi -Z build-std $RELEASE
