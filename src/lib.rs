@@ -533,8 +533,8 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// # Notes
     ///
     /// Comparison of two values containing uninitialized bytes may fail even if
-    /// they are equivalent as Rust's type, because their contents are not frozen
-    /// until a pointer to the value containing uninitialized bytes is passed to `asm!`.
+    /// they are equivalent as Rust's type, because values can be byte-wise
+    /// inequal even when they are equal as Rust values.
     ///
     /// See [`compare_exchange`](Self::compare_exchange) for details.
     ///
