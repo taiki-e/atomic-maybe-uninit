@@ -74,8 +74,8 @@ fn main() {
         _ => {}
     }
 
-    let is_apple =
-        target_os == "macos" || target_os == "ios" || target_os == "tvos" || target_os == "watchos";
+    let is_macos = target_os == "macos";
+    let is_apple = is_macos || target_os == "ios" || target_os == "tvos" || target_os == "watchos";
     match target_arch {
         "x86_64" => {
             // x86_64 Apple targets always support CMPXCHG16B:
@@ -130,7 +130,6 @@ fn main() {
         "aarch64" => {
             // aarch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is armv8.5-a:
             // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/include/llvm/TargetParser/AArch64TargetParser.h#L494
-            let is_macos = target_os == "macos";
             let mut has_lse = is_macos;
             let mut has_rcpc = is_macos;
             // FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2. FEAT_LRCPC3 implies FEAT_LRCPC.

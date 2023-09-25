@@ -9,8 +9,8 @@
 //   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences?lang=en
 //
 // Generated asm:
-// - armv5te https://godbolt.org/z/r61s7cnG8
-// - armv4t https://godbolt.org/z/xrxfKx1rc
+// - armv5te https://godbolt.org/z/63Kojd799
+// - armv4t https://godbolt.org/z/M9Trn87To
 
 #[path = "partword.rs"]
 mod partword;
@@ -21,7 +21,10 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::{
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+    utils::MaybeUninit64,
+};
 
 type XSize = usize;
 
@@ -63,21 +66,17 @@ macro_rules! atomic_load_store {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                // (atomic) load from src to tmp
-                                concat!("ldr", $asm_suffix, " {tmp}, [{src}]"),
-                                // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
+                                // (atomic) load from src to out
+                                concat!("ldr", $asm_suffix, " {out}, [{src}]"),
                                 src = in(reg) src,
-                                out = inout(reg) out_ptr => _,
-                                tmp = lateout(reg) _,
+                                out = lateout(reg) out,
                                 options(nostack, preserves_flags),
                             );
                         }
@@ -85,14 +84,11 @@ macro_rules! atomic_load_store {
                         Ordering::Acquire | Ordering::SeqCst => {
                             debug_assert!(kuser_helper_version() >= 3);
                             asm!(
-                                // (atomic) load from src to tmp
-                                concat!("ldr", $asm_suffix, " {tmp}, [{src}]"),
+                                // (atomic) load from src to out
+                                concat!("ldr", $asm_suffix, " {out}, [{src}]"),
                                 blx!("{kuser_memory_barrier}"), // acquire fence
-                                // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 src = in(reg) src,
-                                out = inout(reg) out_ptr => _,
-                                tmp = lateout(reg) _,
+                                out = lateout(reg) out,
                                 kuser_memory_barrier = inout(reg) KUSER_MEMORY_BARRIER => _,
                                 out("lr") _,
                                 options(nostack, preserves_flags),
@@ -112,7 +108,6 @@ macro_rules! atomic_load_store {
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -120,16 +115,13 @@ macro_rules! atomic_load_store {
                         ($acquire:expr) => {{
                             debug_assert!(kuser_helper_version() >= 3);
                             asm!(
-                                // load from val to tmp
-                                concat!("ldr", $asm_suffix, " {tmp}, [{val}]"),
-                                // (atomic) store tmp to dst
+                                // (atomic) store val to dst
                                 blx!("{kuser_memory_barrier}"), // release fence
-                                concat!("str", $asm_suffix, " {tmp}, [{dst}]"),
+                                concat!("str", $asm_suffix, " {val}, [{dst}]"),
                                 $acquire, // acquire fence
-                                dst = inout(reg) dst => _,
+                                dst = in(reg) dst,
                                 val = in(reg) val,
-                                tmp = lateout(reg) _,
-                                kuser_memory_barrier = inout(reg) KUSER_MEMORY_BARRIER => _,
+                                kuser_memory_barrier = in(reg) KUSER_MEMORY_BARRIER,
                                 out("lr") _,
                                 options(nostack, preserves_flags),
                             )
@@ -138,13 +130,10 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                // load from val to tmp
-                                concat!("ldr", $asm_suffix, " {tmp}, [{val}]"),
-                                // (atomic) store tmp to dst
-                                concat!("str", $asm_suffix, " {tmp}, [{dst}]"),
-                                dst = inout(reg) dst => _,
+                                // (atomic) store val to dst
+                                concat!("str", $asm_suffix, " {val}, [{dst}]"),
+                                dst = in(reg) dst,
                                 val = in(reg) val,
-                                tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             );
                         }
@@ -170,26 +159,21 @@ macro_rules! atomic {
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        "ldr r1, [r1]", // new_val
                         "2:",
                             "ldr r0, [r2]", // old_val
-                            "mov {out_tmp}, r0",
+                            "mov {out}, r0",
                             blx!("{kuser_cmpxchg}"),
                             "cmp r0, #0",
                             "bne 2b",
-                        "str {out_tmp}, [{out}]",
-                        out = in(reg) out_ptr,
-                        out_tmp = out(reg) _,
+                        out = out(reg) out,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
                         out("r0") _,
-                        inout("r1") val => _,
+                        in("r1") val, // new_val
                         in("r2") dst, // ptr
                         out("r3") _,
                         out("ip") _,
@@ -212,20 +196,15 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
                     asm!(
-                        "ldr {old}, [{old}]",
-                        "ldr {new}, [{new}]",
                         "2:",
                             "ldr r0, [r2]", // old_val
-                            "mov {out_tmp}, r0",
+                            "mov {out}, r0",
                             "cmp r0, {old}",
                             "bne 3f",
                             "mov r1, {new}", // new_val
@@ -241,11 +220,9 @@ macro_rules! atomic {
                             "bne 2b",
                             "mov r0, #1",
                         "4:",
-                        "str {out_tmp}, [{out}]",
-                        old = inout(reg) old => _,
-                        new = inout(reg) new => _,
-                        out = in(reg) out_ptr,
-                        out_tmp = out(reg) _,
+                        old = in(reg) old,
+                        new = in(reg) new,
+                        out = out(reg) out,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
                         out("r0") r,
                         out("r1") _,
@@ -278,34 +255,29 @@ macro_rules! atomic_sub_word {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("ldr", $asm_suffix, " {val}, [{val}]"),
                         "lsl {mask}, {mask}, {shift}",
                         "lsl {val}, {val}, {shift}",
                         "and {val}, {val}, {mask}",
                         "mvn {inv_mask}, {mask}",
                         "2:",
                             "ldr r0, [r2]", // old_val
-                            "mov {out_tmp}, r0",
+                            "mov {out}, r0",
                             "and r1, r0, {inv_mask}",
                             "orr r1, r1, {val}", // new_val
                             blx!("{kuser_cmpxchg}"),
                             "cmp r0, #0",
                             "bne 2b",
-                        "lsr {out_tmp}, {out_tmp}, {shift}",
-                        concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                        val = inout(reg) val => _,
-                        out = in(reg) out_ptr,
+                        "lsr {out}, {out}, {shift}",
+                        val = inout(reg) crate::utils::zero_extend(val) => _,
+                        out = out(reg) out,
                         shift = in(reg) shift,
                         mask = inout(reg) mask => _,
                         inv_mask = out(reg) _,
-                        out_tmp = out(reg) _,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
                         out("r0") _,
                         out("r1") _,
@@ -332,17 +304,12 @@ macro_rules! atomic_sub_word {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
                     asm!(
-                        concat!("ldr", $asm_suffix, " {old}, [{old}]"),
-                        concat!("ldr", $asm_suffix, " {new}, [{new}]"),
                         "lsl {mask}, {mask}, {shift}",
                         "lsl {old}, {old}, {shift}",
                         "lsl {new}, {new}, {shift}",
@@ -352,8 +319,8 @@ macro_rules! atomic_sub_word {
                         // "mvn {inv_mask}, {mask}",
                         "2:",
                             "ldr r0, [r2]", // old_val
-                            "and {out_tmp}, r0, {mask}",
-                            "cmp {out_tmp}, {old}",
+                            "and {out}, r0, {mask}",
+                            "cmp {out}, {old}",
                             "bne 3f",
                             "mvn r1, {mask}",
                             "and r1, r0, r1",
@@ -370,14 +337,12 @@ macro_rules! atomic_sub_word {
                             "bne 2b",
                             "mov r0, #1",
                         "4:",
-                        "lsr {out_tmp}, {out_tmp}, {shift}",
-                        concat!("str", $asm_suffix, " {out_tmp}, [{out}]"),
-                        old = inout(reg) old => _,
-                        new = inout(reg) new => _,
-                        out = in(reg) out_ptr,
+                        "lsr {out}, {out}, {shift}",
+                        old = inout(reg) crate::utils::zero_extend(old) => _,
+                        new = inout(reg) crate::utils::zero_extend(new) => _,
+                        out = out(reg) out,
                         shift = in(reg) shift,
                         mask = inout(reg) mask => _,
-                        out_tmp = out(reg) _,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
                         out("r0") r,
                         out("r1") _,
@@ -531,17 +496,15 @@ macro_rules! atomic64 {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 assert_has_kuser_cmpxchg64();
+                let old = MaybeUninit64 { $int_type: old };
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
                 let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
                     asm!(
-                        "ldr {old_lo}, [{old_hi}]",
-                        "ldr {old_hi}, [{old_hi}, #4]",
                         "2:",
                             "ldr r0, [r2]",
                             "ldr r3, [r2, #4]",
@@ -568,8 +531,8 @@ macro_rules! atomic64 {
                         "4:",
                         new = in(reg) new,
                         out_tmp = in(reg) out_ptr,
-                        old_lo = out(reg) _,
-                        old_hi = inout(reg) old => _,
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
                         out("r0") r,
                         out("r1") _,

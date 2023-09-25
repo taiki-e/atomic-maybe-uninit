@@ -111,6 +111,8 @@ jobs:
             target: i686-unknown-linux-gnu
           - rust: nightly
             target: hexagon-unknown-linux-musl
+          - rust: nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
+            target: hexagon-unknown-linux-musl
           - rust: '1.72' # inline asm for loongarch has been stabilized in Rust 1.72
             target: loongarch64-unknown-linux-gnu
           - rust: stable
@@ -162,6 +164,8 @@ jobs:
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
             target: powerpc64le-unknown-linux-gnu
           - rust: nightly
+            target: riscv32gc-unknown-linux-gnu
+          - rust: nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
             target: riscv32gc-unknown-linux-gnu
           - rust: '1.59'
             target: riscv64gc-unknown-linux-gnu
@@ -292,6 +296,8 @@ jobs:
           - '1.59'
           - stable
           - beta
+          - nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
+          - nightly-2023-08-24 # The oldest nightly version that supports MaybeUninit registers: https://github.com/rust-lang/rust/pull/114790
           - nightly
     runs-on: ubuntu-latest
     timeout-minutes: 60

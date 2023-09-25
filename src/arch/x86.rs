@@ -7,14 +7,14 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - x86_64 https://godbolt.org/z/fvqWGT5E6
-// - x86_64 (+cmpxchg16b) https://godbolt.org/z/fGdj8naT9
-// - x86 (i686) https://godbolt.org/z/9jKcboaoG
-// - x86 (i686,-sse2) https://godbolt.org/z/sjYK57r96
-// - x86 (i586) https://godbolt.org/z/5rrzYGxPe
-// - x86 (i586,-x87) https://godbolt.org/z/GvcdhqxYo
-// - x86 (i486) https://godbolt.org/z/nPaGY4oEM
-// - x86 (i386) https://godbolt.org/z/YWEc63Kac
+// - x86_64 https://godbolt.org/z/4j1brEoKq
+// - x86_64 (+cmpxchg16b) https://godbolt.org/z/6j3oTKMn7
+// - x86 (i686) https://godbolt.org/z/Ehx43oKef
+// - x86 (i686,-sse2) https://godbolt.org/z/PzdGrvM98
+// - x86 (i586) https://godbolt.org/z/4cj5qcGo9
+// - x86 (i586,-x87) https://godbolt.org/z/41vGvY3j6
+// - x86 (i486) https://godbolt.org/z/a5YjTPvxd
+// - x86 (i386) https://godbolt.org/z/ovoYPW8jc
 
 use core::{
     arch::asm,
@@ -23,6 +23,12 @@ use core::{
 };
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+#[cfg(target_arch = "x86_64")]
+#[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+use crate::utils::{MaybeUninit128, Pair};
+#[cfg(target_arch = "x86")]
+#[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
+use crate::utils::{MaybeUninit64, Pair};
 
 #[cfg(target_pointer_width = "32")]
 macro_rules! ptr_modifier {
@@ -37,25 +43,6 @@ macro_rules! ptr_modifier {
     };
 }
 
-#[cfg(target_arch = "x86")]
-#[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-#[cfg(target_feature = "sse")]
-#[cfg(target_feature = "sse2")]
-macro_rules! if_sse2 {
-    ($then:expr, $else:expr) => {
-        $then
-    };
-}
-#[cfg(target_arch = "x86")]
-#[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-#[cfg(target_feature = "sse")]
-#[cfg(not(target_feature = "sse2"))]
-macro_rules! if_sse2 {
-    ($then:expr, $else:expr) => {
-        $else
-    };
-}
-
 macro_rules! atomic {
     ($int_type:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt) => {
         impl AtomicLoad for $int_type {
@@ -65,20 +52,16 @@ macro_rules! atomic {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load from src to tmp
-                        concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"),
-                        // store tmp to out
-                        concat!("mov ", $ptr_size, " ptr [{out", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
+                        // (atomic) load from src to out
+                        concat!("mov {out", $val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"),
                         src = in(reg) src,
-                        out = inout(reg) out_ptr => _,
-                        tmp = lateout($val_reg) _,
+                        out = lateout($val_reg) out,
                         options(nostack, preserves_flags),
                     );
                 }
@@ -93,7 +76,6 @@ macro_rules! atomic {
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -101,25 +83,19 @@ macro_rules! atomic {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => {
                             asm!(
-                                // load from val to tmp
-                                concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", ptr_modifier!(), "}]"),
-                                // (atomic) store tmp to dst
-                                concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                tmp = lateout($val_reg) _,
+                                // (atomic) store val to dst
+                                concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"),
+                                dst = in(reg) dst,
+                                val = in($val_reg) val,
                                 options(nostack, preserves_flags),
                             );
                         }
                         Ordering::SeqCst => {
                             asm!(
-                                // load from val to tmp
-                                concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", ptr_modifier!(), "}]"),
-                                // (atomic) store tmp to dst (SeqCst store is xchg, not mov)
-                                concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                tmp = lateout($val_reg) _,
+                                // (atomic) store val to dst (SeqCst store is xchg, not mov)
+                                concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"),
+                                dst = in(reg) dst,
+                                val = inout($val_reg) val => _,
                                 options(nostack, preserves_flags),
                             );
                         }
@@ -136,24 +112,16 @@ macro_rules! atomic {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
-                        // load from val to tmp
-                        concat!("mov {tmp", $val_modifier, "}, ", $ptr_size, " ptr [{val", ptr_modifier!(), "}]"),
-                        // (atomic) swap tmp and dst
-                        concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
-                        // store tmp to out
-                        concat!("mov ", $ptr_size, " ptr [{out", ptr_modifier!(), "}], {tmp", $val_modifier, "}"),
-                        dst = inout(reg) dst => _,
-                        val = in(reg) val,
-                        out = inout(reg) out_ptr => _,
-                        tmp = lateout($val_reg) _,
+                        // (atomic) swap val and dst
+                        concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"),
+                        dst = in(reg) dst,
+                        val = inout($val_reg) val => out,
                         options(nostack, preserves_flags),
                     );
                 }
@@ -171,10 +139,7 @@ macro_rules! atomic {
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 //
@@ -183,26 +148,18 @@ macro_rules! atomic {
                     let r: u8;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // load from old/new to $cmpxchg_cmp_reg/tmp_new
-                        concat!("mov ", $cmpxchg_cmp_reg, ", ", $ptr_size, " ptr [{old", ptr_modifier!(), "}]"),
-                        concat!("mov {tmp_new", $val_modifier, "}, ", $ptr_size, " ptr [{new", ptr_modifier!(), "}]"),
                         // (atomic) CAS
                         // - Compare $cmpxchg_cmp_reg with dst.
-                        // - If equal, ZF is set and tmp_new is loaded into dst.
+                        // - If equal, ZF is set and new is loaded into dst.
                         // - Else, clear ZF and load dst into $cmpxchg_cmp_reg.
-                        concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp_new", $val_modifier, "}"),
+                        concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {new", $val_modifier, "}"),
                         // load ZF to r
                         "sete {r}",
-                        // store $cmpxchg_cmp_reg to out
-                        concat!("mov ", $ptr_size, " ptr [{out", ptr_modifier!(), "}], ", $cmpxchg_cmp_reg, ""),
                         dst = in(reg) dst,
-                        old = in(reg) old,
-                        new = in(reg) new,
-                        out = in(reg) out_ptr,
-                        tmp_new = out($val_reg) _,
+                        new = in($val_reg) new,
                         r = out(reg_byte) r,
-                        out($cmpxchg_cmp_reg) _,
-                        // Do not use `preserves_flags` because CMPXCHG modifies the ZF flag.
+                        inout($cmpxchg_cmp_reg) old => out,
+                        // Do not use `preserves_flags` because CMPXCHG modifies the ZF, CF, PF, AF, SF, and OF flags.
                         options(nostack),
                     );
                     debug_assert!(r == 0 || r == 1, "r={}", r);
@@ -245,13 +202,12 @@ macro_rules! atomic64 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
 
                 #[cfg(target_feature = "sse")]
                 // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
                 unsafe {
+                    let mut out: MaybeUninit<core::arch::x86::__m128>;
                     #[cfg(target_feature = "sse2")]
                     {
                         // atomic load is always SeqCst.
@@ -259,18 +215,10 @@ macro_rules! atomic64 {
                             // Refs:
                             // - https://www.felixcloutier.com/x86/movq (SSE2)
                             // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
-                            // - https://www.felixcloutier.com/x86/pshufd (SSE2)
-                            // (atomic) load from src to tmp0
-                            "movq {tmp0}, qword ptr [{src}]",
-                            // extract lower 64-bits
-                            "pshufd {tmp1}, {tmp0}, 85",
-                            // store tmp0/tmp1 to out
-                            "movd dword ptr [{out}], {tmp0}",
-                            "movd dword ptr [{out} + 4], {tmp1}",
+                            // (atomic) load from src to out
+                            "movq {out}, qword ptr [{src}]",
                             src = in(reg) src,
-                            out = in(reg) out_ptr,
-                            tmp0 = out(xmm_reg) _,
-                            tmp1 = out(xmm_reg) _,
+                            out = out(xmm_reg) out,
                             options(nostack, preserves_flags),
                         );
                     }
@@ -281,49 +229,37 @@ macro_rules! atomic64 {
                             // Refs:
                             // - https://www.felixcloutier.com/x86/xorps (SSE)
                             // - https://www.felixcloutier.com/x86/movlps (SSE)
-                            // - https://www.felixcloutier.com/x86/movss (SSE)
-                            // - https://www.felixcloutier.com/x86/shufps (SSE)
-                            "xorps {tmp}, {tmp}",
-                            // (atomic) load from src to tmp
-                            "movlps {tmp}, qword ptr [{src}]",
-                            // store tmp to out
-                            "movss dword ptr [{out}], {tmp}",
-                            "shufps {tmp}, {tmp}, 85",
-                            "movss dword ptr [{out} + 4], {tmp}",
+                            "xorps {out}, {out}",
+                            // (atomic) load from src to out
+                            "movlps {out}, qword ptr [{src}]",
                             src = in(reg) src,
-                            out = in(reg) out_ptr,
-                            tmp = out(xmm_reg) _,
+                            out = out(xmm_reg) out,
                             options(nostack, preserves_flags),
                         );
                     }
+                    core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
                 }
                 #[cfg(not(target_feature = "sse"))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
+                    let (prev_lo, prev_hi);
                     // atomic load is always SeqCst.
                     asm!(
-                        // esi is reserved by LLVM
-                        "xchg {esi_tmp}, esi",
                         // (atomic) load by cmpxchg(0, 0)
                         "lock cmpxchg8b qword ptr [edi]",
-                        // store current value to out
-                        "mov dword ptr [esi], eax",
-                        "mov dword ptr [esi + 4], edx",
-                        "mov esi, {esi_tmp}", // restore esi
-                        esi_tmp = inout(reg) out_ptr => _,
                         // set old/new args of cmpxchg8b to 0
-                        inout("eax") 0_u32 => _,
-                        inout("edx") 0_u32 => _,
                         in("ebx") 0_u32,
                         in("ecx") 0_u32,
+                        inout("eax") 0_u32 => prev_lo,
+                        inout("edx") 0_u32 => prev_hi,
                         in("edi") src,
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         impl AtomicStore for $int_type {
@@ -334,7 +270,6 @@ macro_rules! atomic64 {
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = val.as_ptr();
 
                 #[cfg(target_feature = "sse")]
                 // SAFETY: the caller must uphold the safety contract.
@@ -342,38 +277,30 @@ macro_rules! atomic64 {
                 //
                 // Refs:
                 // - https://www.felixcloutier.com/x86/movlps (SSE)
-                // - https://www.felixcloutier.com/x86/xorps (SSE)
-                // - https://www.felixcloutier.com/x86/movsd (SSE2)
                 // - https://www.felixcloutier.com/x86/lock
                 // - https://www.felixcloutier.com/x86/or
                 unsafe {
+                    let val: MaybeUninit<core::arch::x86::__m128>
+                        = core::mem::transmute([val, MaybeUninit::uninit()]);
                     match order {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => {
                             asm!(
-                                if_sse2!("", "xorps {tmp}, {tmp}"),
-                                // load from val to tmp
-                                if_sse2!("movsd {tmp}, qword ptr [{val}]", "movlps {tmp}, qword ptr [{val}]"),
-                                // (atomic) store tmp to dst
-                                "movlps qword ptr [{dst}], {tmp}",
+                                // (atomic) store val to dst
+                                "movlps qword ptr [{dst}], {val}",
                                 dst = in(reg) dst,
-                                val = in(reg) val,
-                                tmp = out(xmm_reg) _,
+                                val = in(xmm_reg) val,
                                 options(nostack, preserves_flags),
                             );
                         }
                         Ordering::SeqCst => {
                             let p = core::cell::UnsafeCell::new(0_u32);
                             asm!(
-                                // load from val to tmp
-                                if_sse2!("", "xorps {tmp}, {tmp}"),
-                                if_sse2!("movsd {tmp}, qword ptr [{val}]", "movlps {tmp}, qword ptr [{val}]"),
-                                // (atomic) store tmp to dst
-                                "movlps qword ptr [{dst}], {tmp}",
+                                // (atomic) store val to dst
+                                "movlps qword ptr [{dst}], {val}",
                                 "lock or dword ptr [{p}], 0", // equivalent to mfence, but doesn't require SSE2
                                 dst = in(reg) dst,
-                                val = in(reg) val,
-                                tmp = out(xmm_reg) _,
+                                val = in(xmm_reg) val,
                                 p = in(reg) p.get(),
                                 // Do not use `preserves_flags` because OR modifies the OF, CF, SF, ZF, and PF flags.
                                 options(nostack),
@@ -387,11 +314,10 @@ macro_rules! atomic64 {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
+                    let val = MaybeUninit64 { $int_type: val };
                     // atomic store is always SeqCst.
                     let _ = order;
                     asm!(
-                        "mov ebx, dword ptr [eax]",
-                        "mov ecx, dword ptr [eax + 4]",
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
@@ -403,10 +329,10 @@ macro_rules! atomic64 {
                         "2:",
                             "lock cmpxchg8b qword ptr [edi]",
                             "jne 2b",
-                        inout("eax") val => _,
+                        in("ebx") val.pair.lo,
+                        in("ecx") val.pair.hi,
+                        out("eax") _,
                         out("edx") _,
-                        out("ebx") _,
-                        out("ecx") _,
                         in("edi") dst,
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
@@ -422,9 +348,8 @@ macro_rules! atomic64 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let val = MaybeUninit64 { $int_type: val };
+                let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
                 //
@@ -432,10 +357,6 @@ macro_rules! atomic64 {
                 unsafe {
                     // atomic store is always SeqCst.
                     asm!(
-                        // esi is reserved by LLVM
-                        "xchg {esi_tmp}, esi",
-                        "mov ebx, dword ptr [eax]",
-                        "mov ecx, dword ptr [eax + 4]",
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
@@ -447,21 +368,16 @@ macro_rules! atomic64 {
                         "2:",
                             "lock cmpxchg8b qword ptr [edi]",
                             "jne 2b",
-                        // store previous value to out
-                        "mov dword ptr [esi], eax",
-                        "mov dword ptr [esi + 4], edx",
-                        "mov esi, {esi_tmp}", // restore esi
-                        esi_tmp = inout(reg) out_ptr => _,
-                        inout("eax") val => _,
-                        out("edx") _,
-                        out("ebx") _,
-                        out("ecx") _,
+                        in("ebx") val.pair.lo,
+                        in("ecx") val.pair.hi,
+                        out("eax") prev_lo,
+                        out("edx") prev_hi,
                         in("edi") dst,
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         impl AtomicCompareExchange for $int_type {
@@ -474,42 +390,33 @@ macro_rules! atomic64 {
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let old = MaybeUninit64 { $int_type: old };
+                let new = MaybeUninit64 { $int_type: new };
+                let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
                 //
-                // Refs: https://www.felixcloutier.com/x86/cmpxchg
+                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    let mut r: u32;
+                    let r: u32;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // esi is reserved by LLVM
-                        "xchg {esi_tmp}, esi",
-                        "mov eax, dword ptr [edx]",
-                        "mov edx, dword ptr [edx + 4]",
-                        "mov ebx, dword ptr [ecx]",
-                        "mov ecx, dword ptr [ecx + 4]",
                         // (atomic) CAS
                         "lock cmpxchg8b qword ptr [edi]",
                         "sete cl",
-                        // store previous value to out
-                        "mov dword ptr [esi], eax",
-                        "mov dword ptr [esi + 4], edx",
-                        "mov esi, {esi_tmp}", // restore esi
-                        esi_tmp = inout(reg) out_ptr => _,
-                        out("eax") _,
-                        inout("edx") old => _,
-                        out("ebx") _,
-                        inout("ecx") new => r,
+                        in("ebx") new.pair.lo,
+                        inout("ecx") new.pair.hi => r,
+                        inout("eax") old.pair.lo => prev_lo,
+                        inout("edx") old.pair.hi => prev_hi,
                         in("edi") dst,
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
                     debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);
-                    (out, r as u8 != 0)
+                    (
+                        MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
+                        r as u8 != 0
+                    )
                 }
             }
         }
@@ -540,8 +447,7 @@ macro_rules! atomic128 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must guarantee that `src` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
@@ -563,22 +469,18 @@ macro_rules! atomic128 {
                         "xor rbx, rbx", // zeroed rbx
                         // (atomic) load by cmpxchg(0, 0)
                         concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
-                        // store current value to out
-                        concat!("mov qword ptr [", $rsi, "], rax"),
-                        concat!("mov qword ptr [", $rsi, " + 8], rdx"),
                         "mov rbx, {rbx_tmp}", // restore rbx
                         // set old/new args of cmpxchg16b to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
                         rbx_tmp = out(reg) _,
                         in("rcx") 0_u64,
-                        inout("rax") 0_u64 => _,
-                        inout("rdx") 0_u64 => _,
+                        inout("rax") 0_u64 => prev_lo,
+                        inout("rdx") 0_u64 => prev_hi,
                         in($rdi) src,
-                        in($rsi) out_ptr,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         impl AtomicStore for $int_type {
@@ -589,7 +491,7 @@ macro_rules! atomic128 {
                 _order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = val.as_ptr();
+                let val = MaybeUninit128 { $int_type: val };
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
@@ -607,9 +509,7 @@ macro_rules! atomic128 {
                     // atomic store is always SeqCst.
                     asm!(
                         // rbx is reserved by LLVM
-                        "mov {rbx_tmp}, rbx",
-                        concat!("mov rbx, qword ptr [", $rsi, "]"),
-                        concat!("mov rcx, qword ptr [", $rsi, " + 8]"),
+                        "xchg {rbx_tmp}, rbx",
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
@@ -622,12 +522,11 @@ macro_rules! atomic128 {
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                             "jne 2b",
                         "mov rbx, {rbx_tmp}", // restore rbx
-                        rbx_tmp = out(reg) _,
+                        rbx_tmp = inout(reg) val.pair.lo => _,
+                        in("rcx") val.pair.hi,
                         out("rax") _,
-                        out("rcx") _,
                         out("rdx") _,
                         in($rdi) dst,
-                        in($rsi) val,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
@@ -642,9 +541,8 @@ macro_rules! atomic128 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let val = MaybeUninit128 { $int_type: val };
+                let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
@@ -662,9 +560,7 @@ macro_rules! atomic128 {
                     // atomic swap is always SeqCst.
                     asm!(
                         // rbx is reserved by LLVM
-                        "mov {rbx_tmp}, rbx",
-                        concat!("mov rbx, qword ptr [", $rsi, "]"),
-                        concat!("mov rcx, qword ptr [", $rsi, " + 8]"),
+                        "xchg {rbx_tmp}, rbx",
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
@@ -676,22 +572,17 @@ macro_rules! atomic128 {
                         "2:",
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                             "jne 2b",
-                        // store previous value to out
-                        concat!("mov qword ptr [", $r8, "], rax"),
-                        concat!("mov qword ptr [", $r8, " + 8], rdx"),
                         "mov rbx, {rbx_tmp}", // restore rbx
-                        rbx_tmp = out(reg) _,
-                        out("rax") _,
-                        out("rcx") _,
-                        out("rdx") _,
+                        rbx_tmp = inout(reg) val.pair.lo => _,
+                        in("rcx") val.pair.hi,
+                        out("rax") prev_lo,
+                        out("rdx") prev_hi,
                         in($rdi) dst,
-                        in($rsi) val,
-                        in($r8) out_ptr,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         impl AtomicCompareExchange for $int_type {
@@ -704,10 +595,9 @@ macro_rules! atomic128 {
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let old = MaybeUninit128 { $int_type: old };
+                let new = MaybeUninit128 { $int_type: new };
+                let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
@@ -726,33 +616,24 @@ macro_rules! atomic128 {
                     // compare_exchange is always SeqCst.
                     asm!(
                         // rbx is reserved by LLVM
-                        "mov {rbx_tmp}, rbx",
-                        concat!("mov rax, qword ptr [", $rsi, "]"),
-                        concat!("mov rsi, qword ptr [", $rsi, " + 8]"),
-                        concat!("mov rbx, qword ptr [", $rdx, "]"),
-                        concat!("mov rcx, qword ptr [", $rdx, " + 8]"),
-                        "mov rdx, rsi",
+                        "xchg {rbx_tmp}, rbx",
                         // (atomic) CAS
                         concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                         "sete cl",
-                        // store previous value to out
-                        concat!("mov qword ptr [", $r8, "], rax"),
-                        concat!("mov qword ptr [", $r8, " + 8], rdx"),
                         "mov rbx, {rbx_tmp}", // restore rbx
-                        rbx_tmp = out(reg) _,
-                        out("rax") _,
-                        out("rcx") r,
-                        lateout("rdx") _,
-                        lateout("rsi") _,
+                        rbx_tmp = inout(reg) new.pair.lo => _,
+                        inout("rcx") new.pair.hi => r,
+                        inout("rax") old.pair.lo => prev_lo,
+                        inout("rdx") old.pair.hi => prev_hi,
                         in($rdi) dst,
-                        in($rsi) old,
-                        in($rdx) new,
-                        in($r8) out_ptr,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
                     debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);
-                    (out, r as u8 != 0)
+                    (
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
+                        r as u8 != 0
+                    )
                 }
             }
         }
@@ -790,13 +671,25 @@ macro_rules! cfg_has_atomic_32 {
 macro_rules! cfg_no_atomic_32 {
     ($($tt:tt)*) => {};
 }
+#[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg8b)))]
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg8b)))]
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => {};
+}
+#[cfg(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg8b))]
+#[macro_export]
+macro_rules! cfg_has_atomic_64 {
+    ($($tt:tt)*) => {};
+}
+#[cfg(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg8b))]
+#[macro_export]
+macro_rules! cfg_no_atomic_64 {
+    ($($tt:tt)*) => { $($tt)* };
 }
 #[cfg(not(all(
     target_arch = "x86_64",
