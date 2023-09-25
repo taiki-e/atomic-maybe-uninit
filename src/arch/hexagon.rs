@@ -9,17 +9,12 @@
 #[path = "cfgs/hexagon.rs"]
 mod cfgs;
 
-#[path = "partword.rs"]
-mod partword;
-
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::{
     raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
     utils::{MaybeUninit64, Pair},
 };
-
-type XSize = usize;
 
 macro_rules! atomic_load_store {
     ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
@@ -144,7 +139,7 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
+                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -183,7 +178,7 @@ macro_rules! atomic_sub_word {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
+                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.

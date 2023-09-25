@@ -15,9 +15,6 @@
 #[path = "cfgs/arm_linux.rs"]
 mod cfgs;
 
-#[path = "partword.rs"]
-mod partword;
-
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
@@ -28,8 +25,6 @@ use crate::{
     raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
     utils::MaybeUninit64,
 };
-
-type XSize = usize;
 
 // https://www.kernel.org/doc/Documentation/arm/kernel_user_helpers.txt
 const KUSER_HELPER_VERSION: usize = 0xFFFF0FFC;
@@ -257,7 +252,7 @@ macro_rules! atomic_sub_word {
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
-                let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
+                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -306,7 +301,7 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
-                let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
+                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
