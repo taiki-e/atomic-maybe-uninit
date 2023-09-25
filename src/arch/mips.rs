@@ -3,10 +3,10 @@
 // MIPS32 and MIPS64
 //
 // Generated asm:
-// - mips https://godbolt.org/z/38oKcY5bj
-// - mipsel https://godbolt.org/z/M18x694zh
-// - mips64 https://godbolt.org/z/GMMda9rM8
-// - mips64el https://godbolt.org/z/31ovT3vzW
+// - mips https://godbolt.org/z/hbK74Y17c
+// - mipsel https://godbolt.org/z/aoazd4rjY
+// - mips64 https://godbolt.org/z/18ees8xqx
+// - mips64el https://godbolt.org/z/rrcP1o19q
 
 #[path = "partword.rs"]
 mod partword;
@@ -49,8 +49,7 @@ macro_rules! atomic_load_store {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -59,15 +58,12 @@ macro_rules! atomic_load_store {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                // (atomic) load from src to tmp
-                                concat!("l", $asm_suffix, " {tmp}, 0({src})"),
+                                // (atomic) load from src to out
+                                concat!("l", $asm_suffix, " {out}, 0({src})"),
                                 $acquire,
-                                // store tmp to out
-                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 ".set pop",
                                 src = in(reg) ptr_reg!(src),
-                                out = in(reg) ptr_reg!(out_ptr),
-                                tmp = out(reg) _,
+                                out = out(reg) out,
                                 options(nostack),
                             )
                         };
@@ -90,7 +86,6 @@ macro_rules! atomic_load_store {
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -99,16 +94,13 @@ macro_rules! atomic_load_store {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                // load from val to tmp
-                                concat!("l", $asm_suffix, $l_u_suffix, " {tmp}, 0({val})"),
-                                // (atomic) store tmp to dst
+                                // (atomic) store val to dst
                                 $release, // release fence
-                                concat!("s", $asm_suffix, " {tmp}, 0({dst})"),
+                                concat!("s", $asm_suffix, " {val}, 0({dst})"),
                                 $acquire, // acquire fence
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
-                                val = in(reg) ptr_reg!(val),
-                                tmp = out(reg) _,
+                                val = in(reg) val,
                                 options(nostack),
                             )
                         };
@@ -132,9 +124,7 @@ macro_rules! atomic {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -143,28 +133,22 @@ macro_rules! atomic {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                // load from val to val_tmp
-                                concat!("l", $asm_suffix, " {val_tmp}, 0({val})"),
                                 // (atomic) swap (LL/SC loop)
                                 $release, // release fence
                                 "2:",
-                                    // load from dst to out_tmp
-                                    concat!("ll", $ll_sc_suffix, " {out_tmp}, 0({dst})"),
-                                    "move {r}, {val_tmp}",
+                                    // load from dst to out
+                                    concat!("ll", $ll_sc_suffix, " {out}, 0({dst})"),
+                                    "move {r}, {val}",
                                     // try to store val to dst
                                     concat!("sc", $ll_sc_suffix, " {r}, 0({dst})"),
                                     // 1 if the store was successful, 0 if no store was performed
                                     "beqz {r}, 2b",
                                 $acquire, // acquire fence
-                                // store out_tmp to out
-                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
                                 ".set pop",
-                                dst = inout(reg) ptr_reg!(dst) => _,
-                                val = in(reg) ptr_reg!(val),
-                                out = inout(reg) ptr_reg!(out_ptr) => _,
-                                val_tmp = out(reg) _,
-                                out_tmp = out(reg) _,
-                                r = lateout(reg) _,
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) val,
+                                out = out(reg) out,
+                                r = out(reg) _,
                                 options(nostack),
                             )
                         };
@@ -185,10 +169,7 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -198,35 +179,27 @@ macro_rules! atomic {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                // load from old/new to old_tmp/new_tmp
-                                concat!("l", $asm_suffix, " {old_tmp}, 0({old})"),
-                                concat!("l", $asm_suffix, " {new_tmp}, 0({new})"),
                                 // (atomic) CAS (LL/SC loop)
                                 $release, // release fence
                                 "2:",
-                                    // load from dst to out_tmp
-                                    concat!("ll", $ll_sc_suffix, " {out_tmp}, 0({dst})"),
-                                    "bne {out_tmp}, {old_tmp}, 3f", // compare and jump if compare failed
-                                    "move {r}, {new_tmp}",
+                                    // load from dst to out
+                                    concat!("ll", $ll_sc_suffix, " {out}, 0({dst})"),
+                                    "bne {out}, {old}, 3f", // compare and jump if compare failed
+                                    "move {r}, {new}",
                                     // try to store new to dst
                                     concat!("sc", $ll_sc_suffix, " {r}, 0({dst})"),
                                     // 1 if the store was successful, 0 if no store was performed
                                     "beqz {r}, 2b", // continue loop if store failed
                                 "3:",
                                 $acquire, // acquire fence
-                                "xor {new_tmp}, {out_tmp}, {old_tmp}",
-                                // store out_tmp to out
-                                concat!("s", $asm_suffix, " {out_tmp}, 0({out})"),
-                                "sltiu {r}, {new_tmp}, 1",
+                                "xor {new}, {out}, {old}",
+                                "sltiu {r}, {new}, 1",
                                 ".set pop",
-                                dst = inout(reg) ptr_reg!(dst) => _,
-                                old = in(reg) ptr_reg!(old),
-                                new = in(reg) ptr_reg!(new),
-                                out = inout(reg) ptr_reg!(out_ptr) => _,
-                                new_tmp = out(reg) _,
-                                old_tmp = out(reg) _,
-                                out_tmp = out(reg) _,
-                                r = lateout(reg) r,
+                                dst = in(reg) ptr_reg!(dst),
+                                old = in(reg) old,
+                                new = inout(reg) new => _,
+                                out = out(reg) out,
+                                r = out(reg) r,
                                 options(nostack),
                             )
                         };
@@ -253,9 +226,7 @@ macro_rules! atomic_sub_word {
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -267,35 +238,30 @@ macro_rules! atomic_sub_word {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                concat!("l", $asm_suffix, "u {tmp}, 0($5)"),
                                 "sllv {mask}, {mask}, {shift}",
-                                "sllv $7, {tmp}, {shift}",
-                                "nor $5, $zero, {mask}",
+                                "sllv {val}, {val}, {shift}",
+                                "and {val}, {val}, {mask}",
+                                "nor {inv_mask}, $zero, {mask}",
                                 // (atomic) swap (LL/SC loop)
                                 $release,
                                 "2:",
-                                    "ll $8, 0({dst})",
-                                    "and $9, $7, {mask}",
-                                    "and $10, $8, $5",
-                                    "or $10, $10, $9",
-                                    "sc $10, 0({dst})",
-                                    "beqz $10, 2b",
-                                "and {tmp}, $8, {mask}",
-                                "srlv {tmp}, {tmp}, {shift}",
-                                concat!("se", $asm_suffix, " {tmp}, {tmp}"),
+                                    "ll {out}, 0({dst})",
+                                    "and {tmp}, {out}, {inv_mask}",
+                                    "or {tmp}, {tmp}, {val}",
+                                    "sc {tmp}, 0({dst})",
+                                    "beqz {tmp}, 2b",
+                                "and {out}, {out}, {mask}",
+                                "srlv {out}, {out}, {shift}",
+                                concat!("se", $asm_suffix, " {out}, {out}"),
                                 $acquire,
-                                concat!("s", $asm_suffix, " {tmp}, 0({out})"),
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(aligned_ptr),
-                                out = in(reg) ptr_reg!(out_ptr),
+                                val = inout(reg) crate::utils::zero_extend(val) => _,
+                                out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,
+                                inv_mask = out(reg) _,
                                 tmp = out(reg) _,
-                                inout("$5") ptr_reg!(val) => _, // val => inv_mask
-                                out("$7") _,
-                                out("$8") _,
-                                out("$9") _,
-                                out("$10") _,
                                 options(nostack),
                             )
                         };
@@ -317,14 +283,11 @@ macro_rules! atomic_sub_word {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (aligned_ptr, shift, _mask) = partword::create_mask_values(dst);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: XSize;
+                    let mut r: XSize = 1;
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // Based on assemblies generated by rustc/LLVM.
                     // See also partword.rs.
@@ -333,44 +296,40 @@ macro_rules! atomic_sub_word {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                concat!("l", $asm_suffix, "u $2, 0($6)"), // new
-                                concat!("l", $asm_suffix, " {tmp}, 0($5)"),  // old
-                                concat!("ori $5, $zero, ", $max),
-                                concat!("andi $8, {tmp}, ", $max),
-                                concat!("andi $2, $2, ", $max),
-                                "sllv $5, $5, {shift}",
-                                "sllv $8, $8, {shift}",
-                                "sllv $9, $2, {shift}",
-                                "nor $6, $zero, $5",
+                                concat!("ori {mask}, $zero, ", $max),
+                                concat!("andi {old}, {old}, ", $max),
+                                concat!("andi {new}, {new}, ", $max),
+                                "sllv {mask}, {mask}, {shift}",
+                                "sllv {old}, {old}, {shift}",
+                                "sllv {new}, {new}, {shift}",
+                                "nor {inv_mask}, $zero, {mask}",
                                 // (atomic) CAS (LL/SC loop)
                                 $release,
                                 "2:",
-                                    "ll $10, 0({dst})",
-                                    "and $11, $10, $5",
-                                    "bne $11, $8, 3f",
-                                    "and $10, $10, $6",
-                                    "or $10, $10, $9",
-                                    "sc $10, 0({dst})",
-                                    "beqz $10, 2b",
+                                    "ll {tmp}, 0({dst})",
+                                    "and {out}, {tmp}, {mask}",
+                                    "bne {out}, {old}, 3f",
+                                    "and {tmp}, {tmp}, {inv_mask}",
+                                    "or {tmp}, {tmp}, {new}",
+                                    "sc {tmp}, 0({dst})",
+                                    "beqz {tmp}, 2b",
+                                    "b 4f",
                                 "3:",
-                                "srlv $2, $11, {shift}",
-                                concat!("se", $asm_suffix, " $2, $2"),
+                                    "li {r}, 0",
+                                "4:",
+                                "srlv {out}, {out}, {shift}",
+                                concat!("se", $asm_suffix, " {out}, {out}"),
                                 $acquire,
-                                "xor {tmp}, $2, {tmp}",
-                                concat!("s", $asm_suffix, " $2, 0({out})"),
-                                "sltiu $2, {tmp}, 1",
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(aligned_ptr),
-                                out = in(reg) ptr_reg!(out_ptr),
+                                old = inout(reg) old => _,
+                                new = inout(reg) crate::utils::zero_extend(new) => _,
+                                out = out(reg) out,
                                 shift = in(reg) shift,
+                                mask = out(reg) _,
+                                inv_mask = out(reg) _,
                                 tmp = out(reg) _,
-                                out("$2") r,
-                                inout("$5") ptr_reg!(old) => _, // old => mask
-                                inout("$6") ptr_reg!(new) => _, // new => inv_mask
-                                out("$8") _,
-                                out("$9") _,
-                                out("$10") _,
-                                out("$11") _,
+                                r = inout(reg) r,
                                 options(nostack),
                             )
                         };

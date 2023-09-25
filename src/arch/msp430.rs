@@ -16,21 +16,16 @@ macro_rules! atomic {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        // TODO: use mem to mem mov?
-                        // (atomic) load from src to tmp
-                        concat!("mov", $asm_suffix, " @{src}, {tmp}"),
-                        // store tmp to out
-                        concat!("mov", $asm_suffix, " {tmp}, 0({out})"),
+                        // (atomic) load from src to out
+                        concat!("mov", $asm_suffix, " @{src}, {out}"),
                         src = in(reg) src,
-                        out = inout(reg) out_ptr => _,
-                        tmp = lateout(reg) _,
+                        out = lateout(reg) out,
                         options(nostack, preserves_flags),
                     );
                 }
@@ -44,20 +39,14 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                let val = val.as_ptr();
-
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic store is always SeqCst.
                     asm!(
-                        // TODO: use mem to mem mov?
-                        // load from val to tmp
-                        concat!("mov", $asm_suffix, " @{val}, {tmp}"),
-                        // (atomic) store tmp to dst
-                        concat!("mov", $asm_suffix, " {tmp}, 0({dst})"),
-                        dst = inout(reg) dst => _,
+                        // (atomic) store val to dst
+                        concat!("mov", $asm_suffix, " {val}, 0({dst})"),
+                        dst = in(reg) dst,
                         val = in(reg) val,
-                        tmp = lateout(reg) _,
                         options(nostack, preserves_flags),
                     );
                 }

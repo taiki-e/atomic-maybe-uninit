@@ -11,7 +11,10 @@ mod partword;
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::{
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+    utils::{MaybeUninit64, Pair},
+};
 
 type XSize = usize;
 
@@ -23,19 +26,15 @@ macro_rules! atomic_load_store {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        // (atomic) load from src to tmp
-                        concat!("{tmp} = mem", $asm_u_suffix, $asm_suffix, "({src})"),
-                        // store tmp to out
-                        concat!("mem", $asm_suffix, "({out}) = {tmp}"),
+                        // (atomic) load from src to out
+                        concat!("{out} = mem", $asm_u_suffix, $asm_suffix, "({src})"),
                         src = in(reg) src,
-                        out = inout(reg) out_ptr => _,
-                        tmp = lateout(reg) _,
+                        out = lateout(reg) out,
                         options(nostack, preserves_flags),
                     );
                 }
@@ -49,18 +48,13 @@ macro_rules! atomic_load_store {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                let val = val.as_ptr();
-
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        // load from val to tmp
-                        concat!("{tmp} = mem", $asm_u_suffix, $asm_suffix, "({val})"),
-                        // (atomic) store tmp to dst
-                        concat!("mem", $asm_suffix, "({dst}) = {tmp}"),
-                        dst = inout(reg) dst => _,
+                        // (atomic) store val to dst
+                        concat!("mem", $asm_suffix, "({dst}) = {val}"),
+                        dst = in(reg) dst,
                         val = in(reg) val,
-                        tmp = lateout(reg) _,
                         options(nostack, preserves_flags),
                     );
                 }
@@ -79,23 +73,18 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        "{val} = memw({val})",
                         "2:",
-                            "{tmp} = memw_locked({dst})",
+                            "{out} = memw_locked({dst})",
                             "memw_locked({dst},p0) = {val}",
                             "if (!p0) jump 2b",
-                        "memw({out}) = {tmp}",
                         dst = in(reg) dst,
-                        val = inout(reg) val => _,
-                        out = in(reg) out_ptr,
-                        tmp = out(reg) _,
+                        val = in(reg) val,
+                        out = out(reg) out,
                         options(nostack),
                     );
                 }
@@ -111,20 +100,15 @@ macro_rules! atomic {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32 = 1;
                     asm!(
-                        "{old} = memw({old})",
-                        "{new} = memw({new})",
                         "2:",
-                            "{tmp} = memw_locked({dst})",
-                            "{{ p0 = cmp.eq({tmp},{old})",
+                            "{out} = memw_locked({dst})",
+                            "{{ p0 = cmp.eq({out},{old})",
                                 "if (!p0.new) jump:nt 3f }}",
                             "memw_locked({dst},p0) = {new}",
                             "if (!p0) jump 2b",
@@ -132,12 +116,10 @@ macro_rules! atomic {
                         "3:",
                             "{r} = #0",
                         "4:",
-                        "memw({out}) = {tmp}",
                         dst = in(reg) dst,
-                        old = inout(reg) old => _,
-                        new = inout(reg) new => _,
-                        out = in(reg) out_ptr,
-                        tmp = out(reg) _,
+                        old = in(reg) old,
+                        new = in(reg) new,
+                        out = out(reg) out,
                         r = inout(reg) r,
                         options(nostack),
                     );
@@ -160,33 +142,28 @@ macro_rules! atomic_sub_word {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("{val} = mem", $asm_u_suffix, $asm_suffix, "({val})"),
                         "{mask} = asl({mask},{shift})",
                         "{val} = asl({val},{shift})",
                         "{val} = and({val},{mask})",
                         "{inv_mask} = not({mask})",
                         "2:",
-                            "{out_tmp} = memw_locked({dst})",
-                            "{tmp} = and({out_tmp},{inv_mask})",
+                            "{out} = memw_locked({dst})",
+                            "{tmp} = and({out},{inv_mask})",
                             "{tmp} = or({tmp},{val})",
                             "memw_locked({dst},p0) = {tmp}",
                             "if (!p0) jump 2b",
-                        "{out_tmp} = asr({out_tmp},{shift})",
-                        concat!("mem", $asm_suffix, "({out}) = {out_tmp}"),
+                        "{out} = asr({out},{shift})",
                         dst = in(reg) aligned_ptr,
-                        val = inout(reg) val => _,
-                        out = in(reg) out_ptr,
+                        val = inout(reg) crate::utils::zero_extend(val) => _,
+                        out = out(reg) out,
                         shift = in(reg) shift,
                         mask = inout(reg) mask => _,
                         inv_mask = out(reg) _,
-                        out_tmp = out(reg) _,
                         tmp = out(reg) _,
                         options(nostack),
                     );
@@ -204,17 +181,12 @@ macro_rules! atomic_sub_word {
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32 = 1;
                     asm!(
-                        concat!("{old} = mem", $asm_u_suffix, $asm_suffix, "({old})"),
-                        concat!("{new} = mem", $asm_u_suffix, $asm_suffix, "({new})"),
                         "{mask} = asl({mask},{shift})",
                         "{old} = asl({old},{shift})",
                         "{new} = asl({new},{shift})",
@@ -223,8 +195,8 @@ macro_rules! atomic_sub_word {
                         "{inv_mask} = not({mask})",
                         "2:",
                             "{tmp} = memw_locked({dst})",
-                            "{out_tmp} = and({tmp},{mask})",
-                            "{{ p0 = cmp.eq({out_tmp},{old})",
+                            "{out} = and({tmp},{mask})",
+                            "{{ p0 = cmp.eq({out},{old})",
                                 "if (!p0.new) jump:nt 3f }}",
                             "{tmp} = and({tmp},{inv_mask})",
                             "{tmp} = or({tmp},{new})",
@@ -234,16 +206,14 @@ macro_rules! atomic_sub_word {
                         "3:",
                             "{r} = #0",
                         "4:",
-                        "{out_tmp} = asr({out_tmp},{shift})",
-                        concat!("mem", $asm_suffix, "({out}) = {out_tmp}"),
+                        "{out} = asr({out},{shift})",
                         dst = in(reg) aligned_ptr,
-                        old = inout(reg) old => _,
-                        new = inout(reg) new => _,
-                        out = in(reg) out_ptr,
+                        old = inout(reg) crate::utils::zero_extend(old) => _,
+                        new = inout(reg) crate::utils::zero_extend(new) => _,
+                        out = out(reg) out,
                         shift = in(reg) shift,
                         mask = inout(reg) mask => _,
                         inv_mask = out(reg) _,
-                        out_tmp = out(reg) _,
                         tmp = out(reg) _,
                         r = inout(reg) r,
                         options(nostack),
@@ -273,24 +243,20 @@ macro_rules! atomic64 {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        // (atomic) load from src to tmp pair
+                        // (atomic) load from src to prev pair
                         "{{ r3:2 = memd({src}) }}",
-                        // store tmp pair to out
-                        "memd({out}) = r3:2",
                         src = in(reg) src,
-                        out = in(reg) out_ptr,
-                        out("r2") _, // tmp
-                        out("r3") _, // tmp
+                        out("r2") prev_lo,
+                        out("r3") prev_hi,
                         options(nostack, preserves_flags),
                     );
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         impl AtomicStore for $int_type {
@@ -300,19 +266,16 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                let val = val.as_ptr();
+                let val = MaybeUninit64 { $int_type: val };
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        // load from val to tmp pair
-                        "{{ r3:2 = memd({val}) }}",
-                        // (atomic) store tmp pair to dst
+                        // (atomic) store val pair to dst
                         "memd({dst}) = r3:2",
                         dst = in(reg) dst,
-                        val = in(reg) val,
-                        out("r2") _, // tmp
-                        out("r3") _, // tmp
+                        in("r2") val.pair.lo,
+                        in("r3") val.pair.hi,
                         options(nostack, preserves_flags),
                     );
                 }
@@ -325,30 +288,25 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let val = MaybeUninit64 { $int_type: val };
+                let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        "{{ r3:2 = memd({val}) }}",
                         "2:",
                             "{{ r5:4 = memd_locked({dst}) }}",
                             "memd_locked({dst},p0) = r3:2",
                             "if (!p0) jump 2b",
-                        "memd({out}) = r5:4",
                         dst = in(reg) dst,
-                        val = in(reg) val,
-                        out = in(reg) out_ptr,
-                        out("r2") _, // val
-                        out("r3") _, // val
-                        out("r4") _, // tmp
-                        out("r5") _, // tmp
+                        in("r2") val.pair.lo,
+                        in("r3") val.pair.hi,
+                        out("r4") prev_lo,
+                        out("r5") prev_hi,
                         options(nostack),
                     );
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         impl AtomicCompareExchange for $int_type {
@@ -360,17 +318,14 @@ macro_rules! atomic64 {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let old = MaybeUninit64 { $int_type: old };
+                let new = MaybeUninit64 { $int_type: new };
+                let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32 = 1;
                     asm!(
-                        "{{ r3:2 = memd({old}) }}",
-                        "{{ r5:4 = memd({new}) }}",
                         "2:",
                             "{{ r7:6 = memd_locked({dst}) }}",
                             // TODO: merge two cmp?
@@ -384,22 +339,18 @@ macro_rules! atomic64 {
                         "3:",
                             "{r} = #0",
                         "4:",
-                        "memd({out}) = r7:6",
                         dst = in(reg) dst,
-                        old = in(reg) old,
-                        new = in(reg) new,
-                        out = in(reg) out_ptr,
                         r = inout(reg) r,
-                        out("r2") _, // old
-                        out("r3") _, // old
-                        out("r4") _, // new
-                        out("r5") _, // new
-                        out("r6") _, // tmp
-                        out("r7") _, // tmp
+                        in("r2") old.pair.lo,
+                        in("r3") old.pair.hi,
+                        in("r4") new.pair.lo,
+                        in("r5") new.pair.hi,
+                        out("r6") prev_lo,
+                        out("r7") prev_hi,
                         options(nostack),
                     );
                     debug_assert!(r == 0 || r == 1, "r={}", r);
-                    (out, r != 0)
+                    (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type, r != 0)
                 }
             }
         }

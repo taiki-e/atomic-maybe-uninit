@@ -13,9 +13,9 @@
 //   https://developer.arm.com/documentation/ddi0553/latest
 //
 // Generated asm:
-// - armv8-a https://godbolt.org/z/Mx8z81463
-// - armv8-m baseline https://godbolt.org/z/P51ezojjW
-// - armv8-m mainline https://godbolt.org/z/WdajnbYTr
+// - armv8-a https://godbolt.org/z/caGGPfvdT
+// - armv8-m baseline https://godbolt.org/z/dMddroqj7
+// - armv8-m mainline https://godbolt.org/z/xYn1bs1rh
 
 use core::{
     arch::asm,
@@ -24,6 +24,8 @@ use core::{
 };
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+use crate::utils::{MaybeUninit64, Pair};
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -62,21 +64,17 @@ macro_rules! atomic {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                // (atomic) load from src to tmp
-                                concat!("ld", $acquire, $asm_suffix, " {tmp}, [{src}]"),
-                                // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
+                                // (atomic) load from src to out
+                                concat!("ld", $acquire, $asm_suffix, " {out}, [{src}]"),
                                 src = in(reg) src,
-                                out = inout(reg) out_ptr => _,
-                                tmp = lateout(reg) _,
+                                out = lateout(reg) out,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -99,20 +97,16 @@ macro_rules! atomic {
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
                         ($release:tt) => {
                             asm!(
-                                // load from val to tmp
-                                concat!("ldr", $asm_suffix, " {tmp}, [{val}]"),
-                                // (atomic) store tmp to dst
-                                concat!("st", $release, $asm_suffix, " {tmp}, [{dst}]"),
-                                dst = inout(reg) dst => _,
+                                // (atomic) store val to dst
+                                concat!("st", $release, $asm_suffix, " {val}, [{dst}]"),
+                                dst = in(reg) dst,
                                 val = in(reg) val,
-                                tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -134,33 +128,26 @@ macro_rules! atomic {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from val (ptr) to val (val)
-                                concat!("ldr", $asm_suffix, " {val}, [{val}]"),
                                 // (atomic) swap (LL/SC loop)
                                 "2:",
                                     // load from dst to tmp
-                                    concat!("ld", $acquire, "ex", $asm_suffix, " {tmp}, [{dst}]"),
+                                    concat!("ld", $acquire, "ex", $asm_suffix, " {out}, [{dst}]"),
                                     // try to store val to dst
                                     concat!("st", $release, "ex", $asm_suffix, " {r}, {val}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
                                     "bne 2b",
-                                // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 dst = in(reg) dst,
                                 val = inout(reg) val => _,
-                                out = in(reg) out_ptr,
+                                out = out(reg) out,
                                 r = out(reg) _,
-                                tmp = out(reg) _,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
@@ -182,10 +169,7 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -193,14 +177,11 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from old/new (ptr) to old/new (val)
-                                concat!("ldr", $asm_suffix, " {old}, [{old}]"),
-                                concat!("ldr", $asm_suffix, " {new}, [{new}]"),
                                 // (atomic) CAS (LL/SC loop)
                                 "2:",
-                                    // load from dst to tmp
-                                    concat!("ld", $acquire, "ex", $asm_suffix, " {tmp}, [{dst}]"),
-                                    "cmp {tmp}, {old}",
+                                    // load from dst to out
+                                    concat!("ld", $acquire, "ex", $asm_suffix, " {out}, [{dst}]"),
+                                    "cmp {out}, {old}",
                                     "bne 3f", // jump if compare failed
                                     // try to store val to dst
                                     concat!("st", $release, "ex", $asm_suffix, " {r}, {new}, [{dst}]"),
@@ -213,14 +194,11 @@ macro_rules! atomic {
                                     "clrex",
                                     s!("mov", "{r}, #1"),
                                 "4:",
-                                // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 dst = in(reg) dst,
-                                old = inout(reg) old => _,
+                                old = in(reg) crate::utils::zero_extend(old),
                                 new = inout(reg) new => _,
-                                out = in(reg) out_ptr,
+                                out = out(reg) out,
                                 r = out(reg) r,
-                                tmp = out(reg) _,
                                 // Do not use `preserves_flags` because CMP and s! modify the condition flags.
                                 options(nostack),
                             )
@@ -242,10 +220,7 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -253,12 +228,9 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from old/new (ptr) to old/new (val)
-                                concat!("ldr", $asm_suffix, " {old}, [{old}]"),
-                                concat!("ldr", $asm_suffix, " {new}, [{new}]"),
-                                // load from dst to tmp
-                                concat!("ld", $acquire, "ex", $asm_suffix, " {tmp}, [{dst}]"),
-                                "cmp {tmp}, {old}",
+                                // load from dst to out
+                                concat!("ld", $acquire, "ex", $asm_suffix, " {out}, [{dst}]"),
+                                "cmp {out}, {old}",
                                 "bne 3f",
                                 // try to store new to dst
                                 concat!("st", $release, "ex", $asm_suffix, " {r}, {new}, [{dst}]"),
@@ -268,14 +240,11 @@ macro_rules! atomic {
                                     "clrex",
                                     s!("mov", "{r}, #1"),
                                 "4:",
-                                // store tmp to out
-                                concat!("str", $asm_suffix, " {tmp}, [{out}]"),
                                 dst = in(reg) dst,
-                                old = inout(reg) old => _,
+                                old = in(reg) crate::utils::zero_extend(old),
                                 new = inout(reg) new => _,
-                                out = in(reg) out_ptr,
+                                out = out(reg) out,
                                 r = out(reg) r,
-                                tmp = out(reg) _,
                                 // Do not use `preserves_flags` because CMP and s! modify the condition flags.
                                 options(nostack),
                             )
@@ -311,8 +280,7 @@ macro_rules! atomic64 {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -322,13 +290,10 @@ macro_rules! atomic64 {
                                 // (atomic) load from src to tmp pair
                                 concat!("ld", $acquire, "exd r2, r3, [{src}]"),
                                 "clrex",
-                                // store tmp pair to out
-                                "strd r2, r3, [{out}]",
                                 src = in(reg) src,
-                                out = in(reg) out_ptr,
-                                // tmp pair - must be even-numbered and not R14
-                                out("r2") _,
-                                out("r3") _,
+                                // prev pair - must be even-numbered and not R14
+                                out("r2") prev_lo,
+                                out("r3") prev_hi,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -339,8 +304,8 @@ macro_rules! atomic64 {
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
                         _ => unreachable!("{:?}", order),
                     }
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
@@ -352,30 +317,26 @@ macro_rules! atomic64 {
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = val.as_ptr();
+                let val = MaybeUninit64 { $int_type: val };
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from val to val pair
-                                "ldrd r2, r3, [{val}]",
                                 // (atomic) store val pair to dst (LL/SC loop)
                                 "2:",
                                     // load from dst to tmp pair
                                     concat!("ld", $acquire, "exd r4, r5, [{dst}]"),
                                     // try to store val pair to dst
-                                    concat!("st", $release, "exd {r}, r2, r3, [{dst}]"),
+                                    concat!("st", $release, "exd r4, r2, r3, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cmp {r}, 0x0",
+                                    "cmp r4, 0x0",
                                     "bne 2b",
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                r = lateout(reg) _,
+                                dst = in(reg) dst,
                                 // val pair - must be even-numbered and not R14
-                                out("r2") _,
-                                out("r3") _,
+                                inout("r2") val.pair.lo => _,
+                                inout("r3") val.pair.hi => _,
                                 // tmp pair - must be even-numbered and not R14
                                 out("r4") _,
                                 out("r5") _,
@@ -397,17 +358,14 @@ macro_rules! atomic64 {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let val = MaybeUninit64 { $int_type: val };
+                let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from val to val pair
-                                "ldrd r2, r3, [{val}]",
                                 // (atomic) swap (LL/SC loop)
                                 "2:",
                                     // load from dst to out pair
@@ -417,26 +375,22 @@ macro_rules! atomic64 {
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, 0x0",
                                     "bne 2b",
-                                // store out pair to out
-                                "strd r4, r5, [{out}]",
-                                dst = inout(reg) dst => _,
-                                val = in(reg) val,
-                                out = inout(reg) out_ptr => _,
-                                r = lateout(reg) _,
+                                dst = in(reg) dst,
+                                r = out(reg) _,
                                 // val pair - must be even-numbered and not R14
-                                out("r2") _,
-                                out("r3") _,
-                                // out pair - must be even-numbered and not R14
-                                out("r4") _,
-                                out("r5") _,
+                                inout("r2") val.pair.lo => _,
+                                inout("r3") val.pair.hi => _,
+                                // prev pair - must be even-numbered and not R14
+                                out("r4") prev_lo,
+                                out("r5") prev_hi,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
                         };
                     }
                     atomic_rmw!(swap, order);
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
@@ -451,10 +405,9 @@ macro_rules! atomic64 {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let old = MaybeUninit64 { $int_type: old };
+                let new = MaybeUninit64 { $int_type: new };
+                let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -462,13 +415,11 @@ macro_rules! atomic64 {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                "ldrd r2, r3, [{old}]",
-                                "ldrd r8, r9, [{new}]",
                                 // (atomic) CAS (LL/SC loop)
                                 "2:",
                                     concat!("ld", $acquire, "exd r4, r5, [{dst}]"),
-                                    "eor {tmp}, r5, r3",
-                                    "eor {r}, r4, r2",
+                                    "eor {tmp}, r5, {old_hi}",
+                                    "eor {r}, r4, {old_lo}",
                                     "orrs {r}, {r}, {tmp}",
                                     "bne 3f", // jump if compare failed
                                     concat!("st", $release, "exd  {r}, r8, r9, [{dst}]"),
@@ -481,23 +432,17 @@ macro_rules! atomic64 {
                                     "clrex",
                                     s!("mov", "{r}, #1"),
                                 "4:",
-                                // store out pair to out
-                                "strd r4, r5, [{out}]",
-                                dst = inout(reg) dst => _,
-                                r = lateout(reg) r,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out_ptr => _,
+                                dst = in(reg) dst,
+                                old_lo = in(reg) old.pair.lo,
+                                old_hi = in(reg) old.pair.hi,
+                                r = out(reg) r,
                                 tmp = out(reg) _,
-                                // old pair - must be even-numbered and not R14
-                                out("r2") _,
-                                out("r3") _,
-                                // out pair - must be even-numbered and not R14
-                                out("r4") _,
-                                out("r5") _,
+                                // prev pair - must be even-numbered and not R14
+                                out("r4") prev_lo,
+                                out("r5") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                out("r8") _,
-                                out("r9") _,
+                                inout("r8") new.pair.lo => _,
+                                inout("r9") new.pair.hi => _,
                                 // Do not use `preserves_flags` because CMP, ORRS, and s! modify the condition flags.
                                 options(nostack),
                             )
@@ -506,7 +451,7 @@ macro_rules! atomic64 {
                     atomic_rmw!(cmpxchg, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    (out, r == 0)
+                    (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type, r == 0)
                 }
             }
             #[inline]
@@ -519,10 +464,9 @@ macro_rules! atomic64 {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let old = MaybeUninit64 { $int_type: old };
+                let new = MaybeUninit64 { $int_type: new };
+                let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -530,11 +474,9 @@ macro_rules! atomic64 {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                "ldrd r2, r3, [{old}]",
-                                "ldrd r8, r9, [{new}]",
                                 concat!("ld", $acquire, "exd r4, r5, [{dst}]"),
-                                "eor {tmp}, r5, r3",
-                                "eor {r}, r4, r2",
+                                "eor {tmp}, r5, {old_hi}",
+                                "eor {r}, r4, {old_lo}",
                                 "orrs {r}, {r}, {tmp}",
                                 "bne 3f", // jump if compare failed
                                 concat!("st", $release, "exd  {r}, r8, r9, [{dst}]"),
@@ -544,23 +486,17 @@ macro_rules! atomic64 {
                                     "clrex",
                                     s!("mov", "{r}, #1"),
                                 "4:",
-                                // store out pair to out
-                                "strd r4, r5, [{out}]",
-                                dst = inout(reg) dst => _,
-                                r = lateout(reg) r,
-                                old = in(reg) old,
-                                new = in(reg) new,
-                                out = inout(reg) out_ptr => _,
+                                dst = in(reg) dst,
+                                old_lo = in(reg) old.pair.lo,
+                                old_hi = in(reg) old.pair.hi,
+                                r = out(reg) r,
                                 tmp = out(reg) _,
-                                // old pair - must be even-numbered and not R14
-                                out("r2") _,
-                                out("r3") _,
-                                // out pair - must be even-numbered and not R14
-                                out("r4") _,
-                                out("r5") _,
+                                // prev pair - must be even-numbered and not R14
+                                out("r4") prev_lo,
+                                out("r5") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                out("r8") _,
-                                out("r9") _,
+                                inout("r8") new.pair.lo => _,
+                                inout("r9") new.pair.hi => _,
                                 // Do not use `preserves_flags` because ORRS and s! modify the condition flags.
                                 options(nostack),
                             )
@@ -569,7 +505,7 @@ macro_rules! atomic64 {
                     atomic_rmw!(cmpxchg_weak, order);
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
-                    (out, r == 0)
+                    (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type, r == 0)
                 }
             }
         }

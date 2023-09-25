@@ -9,11 +9,11 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/PME7czo4P
-// - powerpc64 https://godbolt.org/z/forK75PK4
-// - powerpc64 (pwr8) https://godbolt.org/z/eGf47W164
-// - powerpc64le https://godbolt.org/z/7f1b8WWd3
-// - powerpc64le (pwr7) https://godbolt.org/z/bKxv6W3Mn
+// - powerpc https://godbolt.org/z/s7zvz8TWz
+// - powerpc64 https://godbolt.org/z/8GTKnn9vG
+// - powerpc64 (pwr8) https://godbolt.org/z/n55d5EGe9
+// - powerpc64le https://godbolt.org/z/r3xa399MP
+// - powerpc64le (pwr7) https://godbolt.org/z/TYsbsWGe3
 
 #[cfg(not(all(
     target_arch = "powerpc64",
@@ -32,51 +32,12 @@ use core::{
 };
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
-
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
-#[cfg(target_endian = "big")]
-macro_rules! p128h {
-    () => {
-        "0"
-    };
-}
-#[cfg(target_arch = "powerpc64")]
-#[cfg(any(
-    target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics",
-))]
-#[cfg(target_endian = "big")]
-macro_rules! p128l {
-    () => {
-        "8"
-    };
-}
-#[cfg(target_arch = "powerpc64")]
-#[cfg(any(
-    target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics",
-))]
-#[cfg(target_endian = "little")]
-macro_rules! p128h {
-    () => {
-        "8"
-    };
-}
-#[cfg(target_arch = "powerpc64")]
-#[cfg(any(
-    target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics",
-))]
-#[cfg(target_endian = "little")]
-macro_rules! p128l {
-    () => {
-        "0"
-    };
-}
+use crate::utils::{MaybeUninit128, Pair};
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -113,23 +74,19 @@ macro_rules! atomic_load_store {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) load from src to tmp
+                                // (atomic) load from src to out
                                 $release,
-                                concat!("l", $l_suffix, " {tmp}, 0({src})"),
+                                concat!("l", $l_suffix, " {out}, 0({src})"),
                                 $acquire,
-                                // store tmp to out
-                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
                                 src = in(reg_nonzero) ptr_reg!(src),
-                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                tmp = lateout(reg_nonzero) _,
+                                out = lateout(reg) out,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -139,19 +96,16 @@ macro_rules! atomic_load_store {
                         ($release:tt) => {
                             asm!(
                                 $release,
-                                // (atomic) load from src to tmp
-                                concat!("l", $l_suffix, " {tmp}, 0({src})"),
+                                // (atomic) load from src to out
+                                concat!("l", $l_suffix, " {out}, 0({src})"),
                                 // Lightweight acquire sync
                                 // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
-                                "cmpd %cr7, {tmp}, {tmp}",
+                                "cmpd %cr7, {out}, {out}",
                                 "bne- %cr7, 2f",
                                 "2:",
                                 "isync",
-                                // store tmp to out
-                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
                                 src = in(reg_nonzero) ptr_reg!(src),
-                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                tmp = lateout(reg_nonzero) _,
+                                out = lateout(reg) out,
                                 out("cr7") _,
                                 options(nostack, preserves_flags),
                             )
@@ -181,21 +135,17 @@ macro_rules! atomic_load_store {
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
                         ($release:tt) => {
                             asm!(
-                                // load from val to tmp
-                                concat!("l", $l_suffix, " {tmp}, 0({val})"),
-                                // (atomic) store tmp to dst
+                                // (atomic) store val to dst
                                 $release,
-                                concat!("st", $asm_suffix, " {tmp}, 0({dst})"),
-                                dst = inout(reg_nonzero) ptr_reg!(dst) => _,
-                                val = in(reg_nonzero) ptr_reg!(val),
-                                tmp = lateout(reg_nonzero) _,
+                                concat!("st", $asm_suffix, " {val}, 0({dst})"),
+                                dst = in(reg_nonzero) ptr_reg!(dst),
+                                val = in(reg) val,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -224,32 +174,25 @@ macro_rules! atomic {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from val (ptr) to val (val)
-                                concat!("l", $l_suffix, " {val}, 0({val})"),
                                 // (atomic) swap (LL/SC loop)
                                 $release,
                                 "2:",
-                                    // load from dst to tmp
-                                    concat!("l", $asm_suffix, "arx {tmp}, 0, {dst}"),
+                                    // load from dst to out
+                                    concat!("l", $asm_suffix, "arx {out}, 0, {dst}"),
                                     // try to store val to dst
                                     concat!("st", $asm_suffix, "cx. {val}, 0, {dst}"),
                                     "bne %cr0, 2b",
                                 $acquire,
-                                // store tmp to out
-                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                val = inout(reg_nonzero) ptr_reg!(val) => _,
-                                out = in(reg_nonzero) ptr_reg!(out_ptr),
-                                tmp = out(reg_nonzero) _,
+                                val = in(reg) val,
+                                out = out(reg) out,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
@@ -271,10 +214,7 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -282,14 +222,11 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from old/new (ptr) to old/new (val)
-                                concat!("l", $l_suffix, " {old}, 0({old})"),
-                                concat!("l", $l_suffix, " {new}, 0({new})"),
                                 // (atomic) CAS (LL/SC loop)
                                 $release,
                                 "2:",
-                                    concat!("l", $asm_suffix, "arx {tmp}, 0, {dst}"),
-                                    concat!("cmp", $cmp_suffix, " {old}, {tmp}"),
+                                    concat!("l", $asm_suffix, "arx {out}, 0, {dst}"),
+                                    concat!("cmp", $cmp_suffix, " {old}, {out}"),
                                     "bne %cr0, 3f", // jump if compare failed
                                     concat!("st", $asm_suffix, "cx. {new}, 0, {dst}"),
                                     "bne %cr0, 2b", // continue loop if store failed
@@ -297,14 +234,11 @@ macro_rules! atomic {
                                 // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
                                 "mfcr {r}",
                                 $acquire,
-                                // store tmp to out
-                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                old = inout(reg_nonzero) ptr_reg!(old) => _,
-                                new = inout(reg_nonzero) ptr_reg!(new) => _,
-                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                tmp = out(reg_nonzero) _,
-                                r = lateout(reg_nonzero) r,
+                                old = in(reg) crate::utils::zero_extend(old),
+                                new = in(reg) new,
+                                out = out(reg) out,
+                                r = lateout(reg) r,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
@@ -338,9 +272,7 @@ macro_rules! atomic_sub_word {
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -350,28 +282,25 @@ macro_rules! atomic_sub_word {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                concat!("l", $l_suffix, " {val}, 0({val})"),
                                 "slw {mask}, {mask}, {shift}",
                                 "slw {val}, {val}, {shift}",
                                 "and {val}, {val}, {mask}",
                                 // (atomic) swap (LL/SC loop)
                                 $release,
                                 "2:",
-                                    "lwarx {tmp1}, 0, {dst}",
-                                    "andc {tmp2}, {tmp1}, {mask}",
-                                    "or {tmp2}, {val}, {tmp2}",
-                                    "stwcx. {tmp2}, 0, {dst}",
+                                    "lwarx {out}, 0, {dst}",
+                                    "andc {tmp}, {out}, {mask}",
+                                    "or {tmp}, {val}, {tmp}",
+                                    "stwcx. {tmp}, 0, {dst}",
                                     "bne %cr0, 2b",
-                                "srw {tmp1}, {tmp1}, {shift}",
+                                "srw {out}, {out}, {shift}",
                                 $acquire,
-                                concat!("st", $asm_suffix, " {tmp1}, 0({out})"),
                                 dst = in(reg_nonzero) ptr_reg!(aligned_ptr),
-                                val = inout(reg_nonzero) ptr_reg!(val) => _,
-                                out = in(reg_nonzero) ptr_reg!(out_ptr),
-                                shift = in(reg_nonzero) shift,
-                                mask = inout(reg_nonzero) mask => _,
-                                tmp1 = out(reg_nonzero) _,
-                                tmp2 = out(reg_nonzero) _,
+                                val = inout(reg) crate::utils::zero_extend(val) => _,
+                                out = out(reg) out,
+                                shift = in(reg) shift,
+                                mask = inout(reg) mask => _,
+                                tmp = out(reg) _,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
@@ -394,10 +323,7 @@ macro_rules! atomic_sub_word {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (aligned_ptr, shift, mask) = partword::create_mask_values(dst);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -408,8 +334,6 @@ macro_rules! atomic_sub_word {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                concat!("l", $l_suffix, " {old}, 0({old})"),
-                                concat!("l", $l_suffix, " {new}, 0({new})"),
                                 "slw {mask}, {mask}, {shift}",
                                 "slw {old}, {old}, {shift}",
                                 "slw {new}, {new}, {shift}",
@@ -418,29 +342,27 @@ macro_rules! atomic_sub_word {
                                 // (atomic) CAS (LL/SC loop)
                                 $release,
                                 "2:",
-                                    "lwarx {tmp2}, 0, {dst}",
-                                    "and {tmp1}, {tmp2}, {mask}",
-                                    "cmpw {tmp1}, {old}",
+                                    "lwarx {tmp}, 0, {dst}",
+                                    "and {out}, {tmp}, {mask}",
+                                    "cmpw {out}, {old}",
                                     "bne %cr0, 3f",
-                                    "andc {tmp2}, {tmp2}, {mask}",
-                                    "or {tmp2}, {tmp2}, {new}",
-                                    "stwcx. {tmp2}, 0, {dst}",
+                                    "andc {tmp}, {tmp}, {mask}",
+                                    "or {tmp}, {tmp}, {new}",
+                                    "stwcx. {tmp}, 0, {dst}",
                                     "bne %cr0, 2b",
                                 "3:",
-                                "srw {tmp1}, {tmp1}, {shift}",
+                                "srw {out}, {out}, {shift}",
                                 // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
                                 "mfcr {r}",
                                 $acquire,
-                                concat!("st", $asm_suffix, " {tmp1}, 0({out})"),
                                 dst = in(reg_nonzero) ptr_reg!(aligned_ptr),
-                                old = inout(reg_nonzero) ptr_reg!(old) => _,
-                                new = inout(reg_nonzero) ptr_reg!(new) => _,
-                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                shift = in(reg_nonzero) shift,
-                                mask = inout(reg_nonzero) mask => _,
-                                r = lateout(reg_nonzero) r,
-                                tmp1 = out(reg_nonzero) _,
-                                tmp2 = out(reg_nonzero) _,
+                                old = inout(reg) crate::utils::zero_extend(old) => _,
+                                new = inout(reg) crate::utils::zero_extend(new) => _,
+                                out = out(reg) out,
+                                shift = in(reg) shift,
+                                mask = inout(reg) mask => _,
+                                r = lateout(reg) r,
+                                tmp = out(reg) _,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
@@ -542,8 +464,7 @@ macro_rules! atomic128 {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
+                let (prev_hi, prev_lo);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -553,20 +474,17 @@ macro_rules! atomic128 {
                                 // (atomic) load from src to out pair
                                 $release,
                                 "lq %r4, 0({src})",
+                                // Lightweight acquire sync
                                 // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
                                 "cmpd %cr7, %r4, %r4",
                                 "bne- %cr7, 2f",
                                 "2:",
                                 "isync",
-                                // store out pair to out
-                                concat!("std %r4, ", p128h!(), "({out})"),
-                                concat!("std %r5, ", p128l!(), "({out})"),
                                 src = in(reg_nonzero) ptr_reg!(src),
-                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                out("r4") _, // out (hi)
-                                out("r5") _, // out (lo)
+                                out("r4") prev_hi,
+                                out("r5") prev_lo,
                                 out("cr7") _,
                                 options(nostack, preserves_flags),
                             )
@@ -577,24 +495,20 @@ macro_rules! atomic128 {
                             asm!(
                                 // (atomic) load from src to out pair
                                 "lq %r4, 0({src})",
-                                // store out pair to out
-                                concat!("std %r4, ", p128h!(), "({out})"),
-                                concat!("std %r5, ", p128l!(), "({out})"),
                                 src = in(reg_nonzero) ptr_reg!(src),
-                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                out("r4") _, // out (hi)
-                                out("r5") _, // out (lo)
+                                out("r4") prev_hi,
+                                out("r5") prev_lo,
                                 options(nostack, preserves_flags),
-                            )
+                            );
                         }
                         Ordering::Acquire => atomic_load_acquire!(""),
                         Ordering::SeqCst => atomic_load_acquire!("sync"),
                         _ => unreachable!("{:?}", order),
                     }
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         impl AtomicStore for $int_type {
@@ -605,25 +519,21 @@ macro_rules! atomic128 {
                 order: Ordering,
             ) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = val.as_ptr();
+                let val = MaybeUninit128 { $int_type: val };
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
                         ($release:tt) => {
                             asm!(
-                                // load from val to val pair
-                                concat!("ld %r4, ", p128h!(), "({val})"),
-                                concat!("ld %r5, ", p128l!(), "({val})"),
                                 // (atomic) store val pair to dst
                                 $release,
                                 "stq %r4, 0({dst})",
-                                dst = inout(reg_nonzero) ptr_reg!(dst) => _,
-                                val = in(reg_nonzero) ptr_reg!(val),
+                                dst = in(reg_nonzero) ptr_reg!(dst),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                out("r4") _, // val (hi)
-                                lateout("r5") _, // val (lo)
+                                in("r4") val.pair.hi,
+                                in("r5") val.pair.lo,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -645,47 +555,38 @@ macro_rules! atomic128 {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
+                let val = MaybeUninit128 { $int_type: val };
+                let (mut prev_hi, mut prev_lo);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from val to val pair
-                                concat!("ld %r4, ", p128h!(), "({val})"),
-                                concat!("ld %r5, ", p128l!(), "({val})"),
                                 // (atomic) swap (LL/SC loop)
                                 $release,
                                 "2:",
                                     // load from dst to out pair
                                     "lqarx %r6, 0, {dst}",
                                     // try to store val pair to dst
-                                    "stqcx. %r4, 0, {dst}",
+                                    "stqcx. %r8, 0, {dst}",
                                     "bne %cr0, 2b",
                                 $acquire,
-                                // store out pair to out
-                                concat!("std %r6, ", p128h!(), "({out})"),
-                                concat!("std %r7, ", p128l!(), "({out})"),
-                                dst = inout(reg_nonzero) ptr_reg!(dst) => _,
-                                val = in(reg_nonzero) ptr_reg!(val),
-                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
+                                dst = in(reg_nonzero) ptr_reg!(dst),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                out("r4") _, // val (hi)
-                                lateout("r5") _, // val (lo)
-                                out("r6") _, // out (hi)
-                                out("r7") _, // out (lo)
+                                out("r6") prev_hi,
+                                out("r7") prev_lo,
+                                in("r8") val.pair.hi,
+                                in("r9") val.pair.lo,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
                         };
                     }
                     atomic_rmw!(swap, order);
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
-                out
             }
         }
         impl AtomicCompareExchange for $int_type {
@@ -699,10 +600,9 @@ macro_rules! atomic128 {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let old = old.as_ptr();
-                let new = new.as_ptr();
+                let old = MaybeUninit128 { $int_type: old };
+                let new = MaybeUninit128 { $int_type: new };
+                let (mut prev_hi, mut prev_lo);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -710,17 +610,12 @@ macro_rules! atomic128 {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from old/new to old/new pairs
-                                concat!("ld %r4, ", p128h!(), "({old})"),
-                                concat!("ld %r5, ", p128l!(), "({old})"),
-                                concat!("ld %r6, ", p128h!(), "({new})"),
-                                concat!("ld %r7, ", p128l!(), "({new})"),
                                 // (atomic) CAS (LL/SC loop)
                                 $release,
                                 "2:",
                                     "lqarx %r8, 0, {dst}",
-                                    "xor {tmp_lo}, %r9, %r5",
-                                    "xor {tmp_hi}, %r8, %r4",
+                                    "xor {tmp_lo}, %r9, {old_lo}",
+                                    "xor {tmp_hi}, %r8, {old_hi}",
                                     "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",
                                     "bne %cr0, 3f", // jump if compare failed
                                     "stqcx. %r6, 0, {dst}",
@@ -729,30 +624,27 @@ macro_rules! atomic128 {
                                 // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
                                 "mfcr {tmp_lo}",
                                 $acquire,
-                                // store out pair to out
-                                concat!("std %r8, ", p128h!(), "({out})"),
-                                concat!("std %r9, ", p128l!(), "({out})"),
-                                dst = inout(reg_nonzero) ptr_reg!(dst) => _,
-                                old = in(reg_nonzero) ptr_reg!(old),
-                                new = in(reg_nonzero) ptr_reg!(new),
-                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                tmp_hi = out(reg_nonzero) _,
-                                tmp_lo = out(reg_nonzero) r,
+                                dst = in(reg_nonzero) ptr_reg!(dst),
+                                old_hi = in(reg) old.pair.hi,
+                                old_lo = in(reg) old.pair.lo,
+                                tmp_hi = out(reg) _,
+                                tmp_lo = out(reg) r,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                out("r4") _, // old (hi)
-                                out("r5") _, // old (lo)
-                                out("r6") _, // new (hi)
-                                lateout("r7") _, // new (lo)
-                                lateout("r8") _, // out (hi)
-                                lateout("r9") _, // out (lo)
+                                in("r6") new.pair.hi,
+                                in("r7") new.pair.lo,
+                                out("r8") prev_hi,
+                                out("r9") prev_lo,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
-                    (out, extract_cr0(r))
+                    (
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
+                        extract_cr0(r)
+                    )
                 }
             }
         }
