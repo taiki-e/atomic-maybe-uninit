@@ -128,7 +128,9 @@ default_targets=(
     # rustc --print target-list | grep -E '^hexagon'
     hexagon-unknown-linux-musl
 )
-known_cfgs=()
+known_cfgs=(
+    atomic_maybe_uninit_use_cp15_barrier
+)
 
 x() {
     local cmd="$1"

@@ -34,11 +34,22 @@ macro_rules! dmb {
         "dmb ish"
     };
 }
-// ARMv6 does not support `dmb ish`, so use use special instruction equivalent to a DMB.
+// Only a full system barrier exists in the M-class architectures.
+#[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))]
+macro_rules! dmb {
+    () => {
+        "dmb sy"
+    };
+}
+// ARMv6 does not support `dmb`, so use use special instruction equivalent to a DMB.
 //
 // Refs:
 // - https://reviews.llvm.org/D5386
 // - https://developer.arm.com/documentation/ddi0360/e/control-coprocessor-cp15/register-descriptions/c7--cache-operations-register?lang=en
+#[cfg(not(all(
+    any(target_os = "linux", target_os = "android"),
+    not(atomic_maybe_uninit_use_cp15_barrier),
+)))]
 #[cfg(not(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")))]
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! dmb {
@@ -46,11 +57,18 @@ macro_rules! dmb {
         "mcr p15, #0, r0, c7, c10, #5"
     };
 }
-// Only a full system barrier exists in the M-class architectures.
-#[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))]
+// We prefer __kuser_memory_barrier over cp15_barrier because cp15_barrier is
+// trapped and emulated by default on Linux/Android with ARMv8+ (or ARMv7+?).
+// https://github.com/rust-lang/rust/issues/60605
+#[cfg(all(
+    any(target_os = "linux", target_os = "android"),
+    not(atomic_maybe_uninit_use_cp15_barrier),
+))]
+#[cfg(not(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")))]
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! dmb {
     () => {
-        "dmb sy"
+        "blx r0"
     };
 }
 
@@ -75,7 +93,6 @@ macro_rules! clrex {
     };
 }
 
-// On ARMv6, dmb! refers to r0, so when calling it, we must clobbering r0.
 macro_rules! asm_no_dmb {
     (options($($options:tt)*), $($asm:tt)*) => {
         core::arch::asm!(
@@ -98,6 +115,10 @@ macro_rules! asm_use_dmb {
         )
     };
 }
+#[cfg(not(all(
+    any(target_os = "linux", target_os = "android"),
+    not(atomic_maybe_uninit_use_cp15_barrier),
+)))]
 #[cfg(not(any(
     target_feature = "v7",
     atomic_maybe_uninit_target_feature = "v7",
@@ -106,9 +127,33 @@ macro_rules! asm_use_dmb {
 )))]
 macro_rules! asm_use_dmb {
     (options($($options:tt)*), $($asm:tt)*) => {
+        // In this case, dmb! calls `mcr p15, 0, <Rd>, c7, c10, 5`, and the value in the Rd register should be zero (SBZ).
         core::arch::asm!(
             $($asm)*
             inout("r0") 0_u32 => _,
+            options($($options)*),
+        )
+    };
+}
+#[cfg(all(
+    any(target_os = "linux", target_os = "android"),
+    not(atomic_maybe_uninit_use_cp15_barrier),
+))]
+#[cfg(not(any(
+    target_feature = "v7",
+    atomic_maybe_uninit_target_feature = "v7",
+    target_feature = "mclass",
+    atomic_maybe_uninit_target_feature = "mclass",
+)))]
+macro_rules! asm_use_dmb {
+    (options($($options:tt)*), $($asm:tt)*) => {
+        // In this case, dmb! calls __kuser_memory_barrier.
+        core::arch::asm!(
+            $($asm)*
+            // __kuser_memory_barrier (see also arm_linux.rs)
+            // https://www.kernel.org/doc/Documentation/arm/kernel_user_helpers.txt
+            inout("r0") 0xFFFF0FA0_usize => _,
+            out("lr") _,
             options($($options)*),
         )
     };
