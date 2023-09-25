@@ -129,7 +129,23 @@ default_targets=(
     hexagon-unknown-linux-musl
 )
 known_cfgs=(
+    # arm: Use cp15_barrier instead of __kuser_memory_barrier on ARMv6 Linux/Android.
+    # ARMv6 binaries compiled with this cfg may cause problems when run on ARMv7+ chips:
+    # https://github.com/rust-lang/rust/issues/60605
     atomic_maybe_uninit_use_cp15_barrier
+    # x86: Assume CPU does not have CMPXCHG8B instruction.
+    # This is a cfg for compatibility with 80486/80386, but
+    # note that LLVM does not support those CPUs well:
+    # https://reviews.llvm.org/D18802
+    # This cannot be supported by automatic detection in the build script,
+    # since rustc does not have a target feature to indicate this, and targets
+    # beginning with i386- may actually be i686 (e.g., i386-apple-ios)
+    # https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/apple_base.rs#L68
+    atomic_maybe_uninit_no_cmpxchg8b
+    # x86: Assume CPU does not have CMPXCHG instruction.
+    # This is a cfg for compatibility with 80386.
+    # See atomic_maybe_uninit_no_cmpxchg8b for details.
+    atomic_maybe_uninit_no_cmpxchg
 )
 
 x() {

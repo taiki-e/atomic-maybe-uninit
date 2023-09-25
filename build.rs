@@ -89,44 +89,6 @@ fn main() {
             // cmpxchg16b_target_feature stabilized in Rust 1.69.
             target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, Some(69), true);
         }
-        "x86" => {
-            // i486 doesn't have cmpxchg8b.
-            // i386 is additionally missing bswap, cmpxchg, and xadd.
-            // See also https://reviews.llvm.org/D18802.
-            let mut no_cmpxchg8b = false;
-            let mut no_cmpxchg = false;
-            if is_apple {
-                // Apple's i386 simulator is actually i686 (yonah).
-                // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/apple_base.rs#L68
-            } else if target.starts_with("i486") {
-                no_cmpxchg8b = true;
-            } else if target.starts_with("i386") {
-                no_cmpxchg = true;
-            }
-            // target-cpu is preferred over arch in target triple.
-            // e.g., --target=i486 --target-cpu=i386
-            if let Some(cpu) = target_cpu() {
-                if cpu == "i486" {
-                    no_cmpxchg8b = true;
-                } else if cpu == "i386" {
-                    no_cmpxchg = true;
-                } else {
-                    // Only i386 and i486 disables cmpxchg8b.
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/X86/X86.td#L1477
-                    no_cmpxchg8b = false;
-                    no_cmpxchg = false;
-                }
-            }
-            if no_cmpxchg {
-                no_cmpxchg8b = true;
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg");
-            }
-            // LLVM recognizes this also as cx8 target feature: https://godbolt.org/z/Trx1x6odK
-            // However, it is unlikely that rustc will support that name, so we will ignore it for now.
-            if no_cmpxchg8b {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg8b");
-            }
-        }
         "aarch64" => {
             // aarch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is armv8.5-a:
             // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/include/llvm/TargetParser/AArch64TargetParser.h#L494

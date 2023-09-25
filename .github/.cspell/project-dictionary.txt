@@ -8,7 +8,6 @@ aqrl
 armasm
 beqz
 bnez
-bswap
 casp
 cbnz
 ccmp
@@ -91,9 +90,7 @@ usart
 uwrite
 uwriteln
 virt
-xadd
 xchg
 xmmword
 xorps
-yonah
 Zsanitizer
