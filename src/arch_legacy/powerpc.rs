@@ -129,7 +129,7 @@ macro_rules! atomic_load_store {
                                 concat!("st", $asm_suffix, " {tmp}, 0({out})"),
                                 src = in(reg_nonzero) ptr_reg!(src),
                                 out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                tmp = lateout(reg_nonzero) _,
+                                tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -151,7 +151,7 @@ macro_rules! atomic_load_store {
                                 concat!("st", $asm_suffix, " {tmp}, 0({out})"),
                                 src = in(reg_nonzero) ptr_reg!(src),
                                 out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                tmp = lateout(reg_nonzero) _,
+                                tmp = lateout(reg) _,
                                 out("cr7") _,
                                 options(nostack, preserves_flags),
                             )
@@ -195,7 +195,7 @@ macro_rules! atomic_load_store {
                                 concat!("st", $asm_suffix, " {tmp}, 0({dst})"),
                                 dst = inout(reg_nonzero) ptr_reg!(dst) => _,
                                 val = in(reg_nonzero) ptr_reg!(val),
-                                tmp = lateout(reg_nonzero) _,
+                                tmp = lateout(reg) _,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -249,7 +249,7 @@ macro_rules! atomic {
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 val = inout(reg_nonzero) ptr_reg!(val) => _,
                                 out = in(reg_nonzero) ptr_reg!(out_ptr),
-                                tmp = out(reg_nonzero) _,
+                                tmp = out(reg) _,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
@@ -303,8 +303,8 @@ macro_rules! atomic {
                                 old = inout(reg_nonzero) ptr_reg!(old) => _,
                                 new = inout(reg_nonzero) ptr_reg!(new) => _,
                                 out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                tmp = out(reg_nonzero) _,
-                                r = lateout(reg_nonzero) r,
+                                tmp = out(reg) _,
+                                r = lateout(reg) r,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
@@ -368,10 +368,10 @@ macro_rules! atomic_sub_word {
                                 dst = in(reg_nonzero) ptr_reg!(aligned_ptr),
                                 val = inout(reg_nonzero) ptr_reg!(val) => _,
                                 out = in(reg_nonzero) ptr_reg!(out_ptr),
-                                shift = in(reg_nonzero) shift,
-                                mask = inout(reg_nonzero) mask => _,
-                                tmp1 = out(reg_nonzero) _,
-                                tmp2 = out(reg_nonzero) _,
+                                shift = in(reg) shift,
+                                mask = inout(reg) mask => _,
+                                tmp1 = out(reg) _,
+                                tmp2 = out(reg) _,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
@@ -436,11 +436,11 @@ macro_rules! atomic_sub_word {
                                 old = inout(reg_nonzero) ptr_reg!(old) => _,
                                 new = inout(reg_nonzero) ptr_reg!(new) => _,
                                 out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                shift = in(reg_nonzero) shift,
-                                mask = inout(reg_nonzero) mask => _,
-                                r = lateout(reg_nonzero) r,
-                                tmp1 = out(reg_nonzero) _,
-                                tmp2 = out(reg_nonzero) _,
+                                shift = in(reg) shift,
+                                mask = inout(reg) mask => _,
+                                r = lateout(reg) r,
+                                tmp1 = out(reg) _,
+                                tmp2 = out(reg) _,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
@@ -736,8 +736,8 @@ macro_rules! atomic128 {
                                 old = in(reg_nonzero) ptr_reg!(old),
                                 new = in(reg_nonzero) ptr_reg!(new),
                                 out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                tmp_hi = out(reg_nonzero) _,
-                                tmp_lo = out(reg_nonzero) r,
+                                tmp_hi = out(reg) _,
+                                tmp_lo = out(reg) r,
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
                                 out("r4") _, // old (hi)
