@@ -58,6 +58,8 @@ jobs:
           - rust: beta
           - rust: nightly
           - rust: nightly
+            flags: -C panic=abort -Z panic_abort_tests
+          - rust: nightly
             os: macos-latest
           - rust: '1.59'
             target: aarch64-unknown-linux-gnu
@@ -210,6 +212,10 @@ jobs:
         if: matrix.target != ''
       - run: echo "RUSTFLAGS=${RUSTFLAGS} --cfg qemu" >>"${GITHUB_ENV}"
         if: matrix.target != '' && !startsWith(matrix.target, 'i686') && !startsWith(matrix.target, 'x86_64')
+      - run: |
+          echo "RUSTFLAGS=${RUSTFLAGS} ${{ matrix.flags }}" >>"${GITHUB_ENV}"
+          echo "RUSTDOCFLAGS=${RUSTDOCFLAGS} ${{ matrix.flags }}" >>"${GITHUB_ENV}"
+        if: matrix.flags != ''
       - run: echo "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
         if: matrix.target != ''
       # TODO: LLVM bug: Undefined temporary symbol error when building std.
