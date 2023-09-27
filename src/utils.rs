@@ -101,6 +101,21 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
 pub(crate) fn zero_extend<T: ZeroExtend>(v: MaybeUninit<T>) -> T::Out {
     T::zero_extend(v)
 }
+/// Zero-extends the given 32-bit pointer to `MaybeUninit<u64>`.
+/// This is used for 64-bit architecture's 32-bit ABI (e.g., AArch64 ILP32 ABI).
+/// See ptr_reg! macro in src/gen/utils.rs for details.
+#[cfg(target_pointer_width = "32")]
+#[allow(dead_code)]
+#[inline]
+pub(crate) fn zero_extend64_ptr(v: *mut ()) -> MaybeUninit<u64> {
+    // SAFETY: we can safely transmute any 64-bit value to MaybeUninit<u64>.
+    unsafe {
+        mem::transmute(ZeroExtended::<*mut (), 1> {
+            v: MaybeUninit::new(v),
+            pad: [core::ptr::null_mut(); 1],
+        })
+    }
+}
 pub(crate) trait ZeroExtend: Copy {
     type Out: Copy;
     fn zero_extend(v: MaybeUninit<Self>) -> Self::Out;
