@@ -511,7 +511,8 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     }
 
     /// Stores a value into the atomic value if the current value is the same as
-    /// the `current` value.
+    /// the `current` value. Here, "the same" is determined using byte-wise
+    /// equality, not `PartialEq`.
     ///
     /// This function is allowed to spuriously fail even when the comparison succeeds,
     /// which can result in more efficient code on some platforms. The return value

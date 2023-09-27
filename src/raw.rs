@@ -22,7 +22,7 @@ pub trait Primitive: crate::private::PrimitivePriv {}
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
 pub trait AtomicLoad: Primitive {
-    /// Loads a value from `src` into `out`.
+    /// Loads a value from `src`.
     ///
     /// `atomic_load` takes an [`Ordering`] argument which describes the memory ordering of this operation.
     /// Possible values are [`SeqCst`], [`Acquire`] and [`Relaxed`].
@@ -37,9 +37,10 @@ pub trait AtomicLoad: Primitive {
     ///   (For example, if `Self` is `u128`, `src` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
     /// - `order` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
     ///
-    /// The rules for the validity of pointer follow [the rules applied to
+    /// The rules for the validity of the pointer follow [the rules applied to
     /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `src` are allowed.
+    /// except that concurrent atomic operations on `src` are allowed if the
+    /// pointer go through [`UnsafeCell::get`].
     ///
     /// [validity]: core::ptr#safety
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self>;
@@ -49,7 +50,7 @@ pub trait AtomicLoad: Primitive {
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
 pub trait AtomicStore: Primitive {
-    /// Stores a value from `val` into `dst`.
+    /// Stores a value into `dst`.
     ///
     /// `atomic_store` takes an [`Ordering`] argument which describes the memory ordering of this operation.
     ///  Possible values are [`SeqCst`], [`Release`] and [`Relaxed`].
@@ -64,9 +65,10 @@ pub trait AtomicStore: Primitive {
     ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
     /// - `order` must be [`SeqCst`], [`Release`], or [`Relaxed`].
     ///
-    /// The rules for the validity of pointer follow [the rules applied to
+    /// The rules for the validity of the pointer follow [the rules applied to
     /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `dst` are allowed.
+    /// except that concurrent atomic operations on `dst` are allowed if the
+    /// pointer go through [`UnsafeCell::get`].
     ///
     /// [validity]: core::ptr#safety
     unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering);
@@ -76,7 +78,7 @@ pub trait AtomicStore: Primitive {
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
 pub trait AtomicSwap: AtomicLoad + AtomicStore {
-    /// Stores a value from `val` into `dst`, writes the previous value to `out`.
+    /// Stores a value into `dst`, returning the previous value.
     ///
     /// `atomic_swap` takes an [`Ordering`] argument which describes the memory ordering
     /// of this operation. All ordering modes are possible. Note that using
@@ -92,9 +94,10 @@ pub trait AtomicSwap: AtomicLoad + AtomicStore {
     ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
     /// - `order` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     ///
-    /// The rules for the validity of pointer follow [the rules applied to
+    /// The rules for the validity of the pointer follow [the rules applied to
     /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `dst` are allowed.
+    /// except that concurrent atomic operations on `dst` are allowed if the
+    /// pointer go through [`UnsafeCell::get`].
     ///
     /// [validity]: core::ptr#safety
     unsafe fn atomic_swap(
@@ -108,12 +111,13 @@ pub trait AtomicSwap: AtomicLoad + AtomicStore {
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
 pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
-    /// Stores a value from `new` into `dst` if the current value is the same as
-    /// the value at `current`, writes the previous value to `out`.
+    /// Stores a value into `dst` if the current value is the same as
+    /// the `current` value. Here, "the same" is determined using byte-wise
+    /// equality, not `PartialEq`.
     ///
-    /// The return value is a result indicating whether the new value was written and
-    /// containing the previous value. On success the value at `out` is guaranteed to be equal to
-    /// the value at `current`.
+    /// The return value is a tuple of the previous value and the result indicating whether the new
+    /// value was written and containing the previous value. On success, the returned value is
+    /// guaranteed to be equal to the value at `current`.
     ///
     /// `atomic_compare_exchange` takes two [`Ordering`] arguments to describe the memory
     /// ordering of this operation. `success` describes the required ordering for the
@@ -133,17 +137,18 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     /// - `success` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     /// - `failure` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
     ///
-    /// The rules for the validity of pointer follow [the rules applied to
+    /// The rules for the validity of the pointer follow [the rules applied to
     /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `dst` are allowed.
+    /// except that concurrent atomic operations on `dst` are allowed if the
+    /// pointer go through [`UnsafeCell::get`].
     ///
     /// [validity]: core::ptr#safety
     ///
     /// # Notes
     ///
     /// Comparison of two values containing uninitialized bytes may fail even if
-    /// they are equivalent as Rust's type, because their contents are not frozen
-    /// until a pointer to the value containing uninitialized bytes is passed to `asm!`.
+    /// they are equivalent as Rust's type, because values can be byte-wise
+    /// inequal even when they are equal as Rust values.
     ///
     /// See [`AtomicMaybeUninit::compare_exchange`](crate::AtomicMaybeUninit::compare_exchange) for details.
     unsafe fn atomic_compare_exchange(
@@ -154,13 +159,14 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
         failure: Ordering,
     ) -> (MaybeUninit<Self>, bool);
 
-    /// Stores a value from `new` into `dst` if the current value is the same as
-    /// the value at `current`, writes the previous value to `out`.
+    /// Stores a value into `dst` if the current value is the same as
+    /// the `current` value. Here, "the same" is determined using byte-wise
+    /// equality, not `PartialEq`.
     ///
-    /// This function is allowed to spuriously fail even when the comparison succeeds,
-    /// which can result in more efficient code on some platforms. The return value
-    /// is a result indicating whether the new value was written and containing
-    /// the previous value.
+    /// This function is allowed to spuriously fail even when the comparison succeeds, which can
+    /// result in more efficient code on some platforms. The return value is a tuple of the previous
+    /// value and the result indicating whether the new value was written and containing the
+    /// previous value.
     ///
     /// `atomic_compare_exchange_weak` takes two [`Ordering`] arguments to describe the memory
     /// ordering of this operation. `success` describes the required ordering for the
@@ -180,17 +186,18 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     /// - `success` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     /// - `failure` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
     ///
-    /// The rules for the validity of pointer follow [the rules applied to
+    /// The rules for the validity of the pointer follow [the rules applied to
     /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `dst` are allowed.
+    /// except that concurrent atomic operations on `dst` are allowed if the
+    /// pointer go through [`UnsafeCell::get`].
     ///
     /// [validity]: core::ptr#safety
     ///
     /// # Notes
     ///
     /// Comparison of two values containing uninitialized bytes may fail even if
-    /// they are equivalent as Rust's type, because their contents are not frozen
-    /// until a pointer to the value containing uninitialized bytes is passed to `asm!`.
+    /// they are equivalent as Rust's type, because values can be byte-wise
+    /// inequal even when they are equal as Rust values.
     ///
     /// See [`AtomicMaybeUninit::compare_exchange`](crate::AtomicMaybeUninit::compare_exchange) for details.
     #[inline]
