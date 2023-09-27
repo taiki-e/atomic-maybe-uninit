@@ -438,11 +438,11 @@ atomic64!(u64);
 macro_rules! atomic128 {
     ($int_type:ident) => {
         #[cfg(target_pointer_width = "32")]
-        atomic128!($int_type, "edi", "esi", "r8d", "edx");
+        atomic128!($int_type, "edi");
         #[cfg(target_pointer_width = "64")]
-        atomic128!($int_type, "rdi", "rsi", "r8", "rdx");
+        atomic128!($int_type, "rdi");
     };
-    ($int_type:ident, $rdi:tt, $rsi:tt, $r8:tt, $rdx:tt) => {
+    ($int_type:ident, $rdi:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
