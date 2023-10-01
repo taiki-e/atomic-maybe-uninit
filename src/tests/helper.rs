@@ -786,7 +786,7 @@ macro_rules! __stress_test_acquire_release {
         paste::paste! {
             // Currently, to make this test work well enough outside of Miri, tens of thousands
             // of iterations are needed, but this test is slow in some environments.
-            // So, ignore by default.
+            // So, ignore by default. See also catch_unwind_on_weak_memory_arch.
             #[test]
             #[ignore]
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
@@ -852,7 +852,7 @@ macro_rules! __stress_test_seqcst {
             // Currently, to make this test work well enough outside of Miri, tens of thousands
             // of iterations are needed, but this test is very slow in some environments because
             // it creates two threads for each iteration.
-            // So, ignore by default.
+            // So, ignore by default. See also catch_unwind_on_non_seqcst_arch.
             #[test]
             #[ignore]
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
