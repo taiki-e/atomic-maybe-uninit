@@ -1,4 +1,4 @@
-only_if: $CIRRUS_TAG == '' && ($CIRRUS_PR != '' || $CIRRUS_BRANCH == 'main' || $CIRRUS_BRANCH == 'dev')
+only_if: $CIRRUS_TAG == '' && ($CIRRUS_PR != '' || $CIRRUS_BRANCH == 'main')
 auto_cancellation: $CIRRUS_PR != ''
 env:
   CARGO_INCREMENTAL: '0'
@@ -26,13 +26,11 @@ aarch64_linux_test_task:
     - ./tools/test.sh -vv
     # We test doctest only once with the default build conditions because doctest is slow. Both api-test
     # and src/tests have extended copies of doctest, so this will not reduce test coverage.
-    # +lse
+    # +lse,+rcpc
+    # Neoverse N1 is ARMv8.2-a but supports ARMv8.3-a LDAPR instructions.
     # Neoverse N1 is ARMv8.2-a and doesn't support FEAT_LSE2.
     # FEAT_LSE2 is tested on aarch64 macOS VM.
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh -vv --tests
-    # +rcpc
-    # Neoverse N1 is armv8.2-a but supports armv8.3-a LDAPR instructions.
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+rcpc" ./tools/test.sh -vv --tests
+    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse,+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse,+rcpc" ./tools/test.sh -vv --tests
 
 aarch64_macos_test_task:
   name: test ($TARGET)
