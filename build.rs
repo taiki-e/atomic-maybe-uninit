@@ -90,7 +90,7 @@ fn main() {
             target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, Some(69), true);
         }
         "aarch64" => {
-            // aarch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is armv8.5-a:
+            // AArch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is ARMv8.5-A:
             // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/include/llvm/TargetParser/AArch64TargetParser.h#L494
             let mut has_lse = is_macos;
             let mut has_rcpc = is_macos;
@@ -149,7 +149,7 @@ fn main() {
             // target_feature="v6"
             //
             // In addition to above known sub-architectures, we also recognize armv{8,9}-{a,r}.
-            // Note that there is a CPU that armv8-a but 32-bit only (Cortex-A32).
+            // Note that there is a CPU that ARMv8-A but 32-bit only (Cortex-A32).
             //
             // See also https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/ARM/ARMSubtarget.h#L96.
             let mut is_mclass = false;

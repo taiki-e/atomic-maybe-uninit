@@ -343,10 +343,10 @@ atomic!(usize, "", "");
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //
 // - LDXP/STXP loop (DW LL/SC)
-// - CASP (DWCAS) added as FEAT_LSE (mandatory from armv8.1-a)
-// - LDP/STP (DW load/store) if FEAT_LSE2 (optional from armv8.2-a, mandatory from armv8.4-a) is available
-// - LDIAPP/STILP (DW acquire-load/release-store) added as FEAT_LRCPC3 (optional from armv8.9-a/armv9.4-a) (if FEAT_LSE2 is also available)
-// - LDCLRP/LDSETP/SWPP (DW RMW) added as FEAT_LSE128 (optional from armv9.4-a)
+// - CASP (DWCAS) added as FEAT_LSE (mandatory from ARMv8.1-A)
+// - LDP/STP (DW load/store) if FEAT_LSE2 (optional from ARMv8.2-A, mandatory from ARMv8.4-A) is available
+// - LDIAPP/STILP (DW acquire-load/release-store) added as FEAT_LRCPC3 (optional from ARMv8.9-A/ARMv9.4-A) (if FEAT_LSE2 is also available)
+// - LDCLRP/LDSETP/SWPP (DW RMW) added as FEAT_LSE128 (optional from ARMv9.4-A)
 //
 // If FEAT_LSE is available at compile-time, we use CASP for load/CAS. Otherwise, use LDXP/STXP loop.
 // If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.

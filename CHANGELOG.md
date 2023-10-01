@@ -54,7 +54,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.18] - 2023-05-31
 
-- Fix build error on aarch64 ILP32 ABI targets (tier 3).
+- Fix build error on AArch64 ILP32 ABI targets (tier 3).
 
 - Optimize inline assemblies on PowerPC and s390x.
 
