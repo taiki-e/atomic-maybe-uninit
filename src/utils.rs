@@ -199,7 +199,6 @@ pub(crate) struct Pair<T: Copy> {
     pub(crate) lo: MaybeUninit<T>,
 }
 
-#[allow(dead_code)]
 type MinWord = u32;
 // Helper for implementing sub-word atomic operations using word-sized LL/SC loop or CAS loop.
 //
