@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.0] - 2023-10-01
+
 - Optimize inline assemblies using `MaybeUninit` input/output of inline assembly implemented by [rust-lang/rust#114790](https://github.com/rust-lang/rust/pull/114790), where it is available. This greatly improves performance and is almost equivalent to std atomic types. ([#19](https://github.com/taiki-e/atomic-maybe-uninit/pull/19))
 
 ## [0.2.22] - 2023-08-15
@@ -202,7 +204,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.22...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.22...v0.3.0
 [0.2.22]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.21...v0.2.22
 [0.2.21]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.20...v0.2.21
 [0.2.20]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.19...v0.2.20
