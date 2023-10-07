@@ -223,6 +223,10 @@ run() {
         x_cargo test ${build_std[@]+"${build_std[@]}"} --release --tests "$@"
     fi
 
+    case "$(basename "${cargo}")" in
+        cargo-clif | cargo-clif.exe) return ;; # LTO is not supported
+    esac
+
     case "${target}" in
         # TODO: segmentation fault (also happen without this crate)
         hexagon-unknown-linux-musl) ;;
