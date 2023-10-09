@@ -128,6 +128,7 @@ default_targets=(
     # rustc --print target-list | grep -E '^hexagon'
     hexagon-unknown-linux-musl
 )
+# List of known custom cfgs, excluding those that may be set from build script.
 known_cfgs=(
     # arm: Use cp15_barrier instead of __kuser_memory_barrier on ARMv6 Linux/Android.
     # ARMv6 binaries compiled with this cfg may cause problems when run on ARMv7+ chips:

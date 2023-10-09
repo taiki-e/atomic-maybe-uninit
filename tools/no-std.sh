@@ -73,6 +73,8 @@ fi
 rustup_target_list=$(rustup ${pre_args[@]+"${pre_args[@]}"} target list | sed 's/ .*//g')
 rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -Vv | grep 'release: ' | sed 's/release: //')
+metadata=$(cargo metadata --format-version=1 --no-deps)
+target_dir=$(jq <<<"${metadata}" -r '.target_directory')
 nightly=''
 if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]]; then
     nightly=1
@@ -121,9 +123,11 @@ run() {
 
     (
         cd "${test_dir}"
-        RUSTFLAGS="${target_rustflags}" \
+        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
             x_cargo "${args[@]}" "$@"
-        RUSTFLAGS="${target_rustflags}" \
+        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
             x_cargo "${args[@]}" --release "$@"
     )
 }
