@@ -10,6 +10,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Optimize weak CAS on PowerPC.
+
+- Optimize {8,16}-bit CAS on AArch64.
+
 ## [0.3.0] - 2023-10-01
 
 - Optimize inline assemblies using `MaybeUninit` input/output of inline assembly implemented by [rust-lang/rust#114790](https://github.com/rust-lang/rust/pull/114790), where it is available. This greatly improves performance and is almost equivalent to std atomic types. ([#19](https://github.com/taiki-e/atomic-maybe-uninit/pull/19))
@@ -80,7 +84,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Optimize AArch64 atomic load when the `rcpc` target feature is enabled at compile-time.
 
-- Optimize PowerPC/PowerPC64 atomic RMWs.
+- Optimize PowerPC atomic RMWs.
 
 ## [0.2.15] - 2022-12-25
 
