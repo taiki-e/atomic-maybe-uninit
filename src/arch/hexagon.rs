@@ -9,7 +9,11 @@
 #[path = "cfgs/hexagon.rs"]
 mod cfgs;
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 use crate::{
     raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
@@ -24,6 +28,7 @@ macro_rules! atomic_load_store {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
+                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -46,6 +51,8 @@ macro_rules! atomic_load_store {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
@@ -71,6 +78,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -98,6 +106,7 @@ macro_rules! atomic {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -139,6 +148,7 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
@@ -178,6 +188,7 @@ macro_rules! atomic_sub_word {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
@@ -241,6 +252,7 @@ macro_rules! atomic64 {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
+                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -264,6 +276,7 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let val = MaybeUninit64 { $int_type: val };
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -286,6 +299,7 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let val = MaybeUninit64 { $int_type: val };
                 let (mut prev_lo, mut prev_hi);
 
@@ -316,6 +330,7 @@ macro_rules! atomic64 {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let old = MaybeUninit64 { $int_type: old };
                 let new = MaybeUninit64 { $int_type: new };
                 let (mut prev_lo, mut prev_hi);
