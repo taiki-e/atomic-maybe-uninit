@@ -14,15 +14,15 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/Yc7YK3cYa
-// - aarch64 msvc https://godbolt.org/z/vYz67b7Pn
-// - aarch64 (+lse) https://godbolt.org/z/vveGb37f6
-// - aarch64 msvc (+lse) https://godbolt.org/z/b5WxaMP76
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/nhbs6aeWP
-// - aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/zWjhaGM3o
-// - aarch64 (+rcpc) https://godbolt.org/z/GWz6rYGn8
-// - aarch64 (+lse2,+lse128) https://godbolt.org/z/z5aTbbfEa
-// - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/rqa81e117
+// - aarch64 https://godbolt.org/z/15q1MjaGf
+// - aarch64 msvc https://godbolt.org/z/eo4eGEvGc
+// - aarch64 (+lse) https://godbolt.org/z/rr6ajW8Yc
+// - aarch64 msvc (+lse) https://godbolt.org/z/1PbxEKvvf
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/qceqjsr5T
+// - aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/fjsqPMz95
+// - aarch64 (+rcpc) https://godbolt.org/z/aE8evs6eq
+// - aarch64 (+lse2,+lse128) https://godbolt.org/z/e6fEMazxa
+// - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/Yvo7Ydqrr
 
 #[path = "cfgs/aarch64.rs"]
 mod cfgs;
@@ -60,7 +60,7 @@ macro_rules! atomic_rmw {
 }
 
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt, $val_modifier:tt) => {
+    ($int_type:ident, $asm_suffix:tt, $val_modifier:tt, $cmp_extend:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -161,10 +161,11 @@ macro_rules! atomic {
                             asm!(
                                 // (atomic) swap
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
-                                concat!("swp", $acquire, $release, $asm_suffix, " {val", $val_modifier, "}, {val", $val_modifier, "}, [{dst}]"),
+                                concat!("swp", $acquire, $release, $asm_suffix, " {val", $val_modifier, "}, {out", $val_modifier, "}, [{dst}]"),
                                 $fence,
                                 dst = in(reg) ptr_reg!(dst),
-                                val = inout(reg) val => out,
+                                val = in(reg) val,
+                                out = lateout(reg) out,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -222,10 +223,10 @@ macro_rules! atomic {
                                 // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASA--CASAL--CAS--CASL--CASAL--CAS--CASL
                                 concat!("cas", $acquire, $release, $asm_suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"),
                                 $fence,
-                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}"),
+                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_extend),
                                 "cset {r:w}, eq",
                                 dst = in(reg) ptr_reg!(dst),
-                                old = in(reg) crate::utils::zero_extend(old),
+                                old = in(reg) old,
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 r = lateout(reg) r,
@@ -243,7 +244,7 @@ macro_rules! atomic {
                                 // (atomic) CAS (LL/SC loop)
                                 "2:",
                                     concat!("ld", $acquire, "xr", $asm_suffix, " {out", $val_modifier, "}, [{dst}]"),
-                                    concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}"),
+                                    concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_extend),
                                     "b.ne 3f", // jump if compare failed
                                     concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
@@ -255,7 +256,7 @@ macro_rules! atomic {
                                     "clrex",
                                 "4:",
                                 dst = in(reg) ptr_reg!(dst),
-                                old = in(reg) crate::utils::zero_extend(old),
+                                old = in(reg) old,
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,
@@ -291,7 +292,7 @@ macro_rules! atomic {
                             asm!(
                                 // (atomic) CAS
                                 concat!("ld", $acquire, "xr", $asm_suffix, " {out", $val_modifier, "}, [{dst}]"),
-                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}"),
+                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_extend),
                                 "b.ne 3f",
                                 concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"),
                                 // TODO: only emit when the above sc succeed
@@ -304,7 +305,7 @@ macro_rules! atomic {
                                     "clrex",
                                 "4:",
                                 dst = inout(reg) ptr_reg!(dst) => _,
-                                old = in(reg) crate::utils::zero_extend(old),
+                                old = in(reg) old,
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,
@@ -323,22 +324,22 @@ macro_rules! atomic {
     };
 }
 
-atomic!(i8, "b", ":w");
-atomic!(u8, "b", ":w");
-atomic!(i16, "h", ":w");
-atomic!(u16, "h", ":w");
-atomic!(i32, "", ":w");
-atomic!(u32, "", ":w");
-atomic!(i64, "", "");
-atomic!(u64, "", "");
+atomic!(i8, "b", ":w", ", uxtb");
+atomic!(u8, "b", ":w", ", uxtb");
+atomic!(i16, "h", ":w", ", uxth");
+atomic!(u16, "h", ":w", ", uxth");
+atomic!(i32, "", ":w", "");
+atomic!(u32, "", ":w", "");
+atomic!(i64, "", "", "");
+atomic!(u64, "", "", "");
 #[cfg(target_pointer_width = "32")]
-atomic!(isize, "", ":w");
+atomic!(isize, "", ":w", "");
 #[cfg(target_pointer_width = "32")]
-atomic!(usize, "", ":w");
+atomic!(usize, "", ":w", "");
 #[cfg(target_pointer_width = "64")]
-atomic!(isize, "", "");
+atomic!(isize, "", "", "");
 #[cfg(target_pointer_width = "64")]
-atomic!(usize, "", "");
+atomic!(usize, "", "", "");
 
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //

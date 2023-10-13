@@ -7,14 +7,12 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - x86_64 https://godbolt.org/z/4j1brEoKq
-// - x86_64 (+cmpxchg16b) https://godbolt.org/z/6j3oTKMn7
-// - x86 (i686) https://godbolt.org/z/Ehx43oKef
-// - x86 (i686,-sse2) https://godbolt.org/z/PzdGrvM98
-// - x86 (i586) https://godbolt.org/z/4cj5qcGo9
-// - x86 (i586,-x87) https://godbolt.org/z/41vGvY3j6
-// - x86 (i486) https://godbolt.org/z/a5YjTPvxd
-// - x86 (i386) https://godbolt.org/z/ovoYPW8jc
+// - x86_64 https://godbolt.org/z/qfG4zasha
+// - x86_64 (+cmpxchg16b) https://godbolt.org/z/r3aEb8veh
+// - x86 (i686) https://godbolt.org/z/7E48E7vaP
+// - x86 (i686,-sse2) https://godbolt.org/z/feeGo3Woc
+// - x86 (i586) https://godbolt.org/z/nh8fK7Ecq
+// - x86 (i586,-x87) https://godbolt.org/z/sj6vfqzbd
 
 #[path = "cfgs/x86.rs"]
 mod cfgs;

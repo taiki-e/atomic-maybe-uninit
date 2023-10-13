@@ -90,6 +90,8 @@ swpp
 usart
 uwrite
 uwriteln
+uxtb
+uxth
 virt
 xchg
 xmmword

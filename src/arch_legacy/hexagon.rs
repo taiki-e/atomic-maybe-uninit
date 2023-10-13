@@ -157,19 +157,19 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
+                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // See also create_sub_word_mask_values.
                     asm!(
                         concat!("{val} = mem", $asm_u_suffix, $asm_suffix, "({val})"),
-                        "{mask} = asl({mask},{shift})",
                         "{val} = asl({val},{shift})",
                         "{val} = and({val},{mask})",
-                        "{inv_mask} = not({mask})",
                         "2:",
                             "{out_tmp} = memw_locked({dst})",
                             "{tmp} = and({out_tmp},{inv_mask})",
@@ -178,12 +178,12 @@ macro_rules! atomic_sub_word {
                             "if (!p0) jump 2b",
                         "{out_tmp} = asr({out_tmp},{shift})",
                         concat!("mem", $asm_suffix, "({out}) = {out_tmp}"),
-                        dst = in(reg) aligned_ptr,
+                        dst = in(reg) dst,
                         val = inout(reg) val => _,
                         out = in(reg) out_ptr,
                         shift = in(reg) shift,
-                        mask = inout(reg) mask => _,
-                        inv_mask = out(reg) _,
+                        mask = in(reg) mask,
+                        inv_mask = in(reg) !mask,
                         out_tmp = out(reg) _,
                         tmp = out(reg) _,
                         options(nostack),
@@ -201,7 +201,7 @@ macro_rules! atomic_sub_word {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
+                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let old = old.as_ptr();
@@ -210,15 +210,15 @@ macro_rules! atomic_sub_word {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32 = 1;
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // See also create_sub_word_mask_values.
                     asm!(
                         concat!("{old} = mem", $asm_u_suffix, $asm_suffix, "({old})"),
                         concat!("{new} = mem", $asm_u_suffix, $asm_suffix, "({new})"),
-                        "{mask} = asl({mask},{shift})",
                         "{old} = asl({old},{shift})",
                         "{new} = asl({new},{shift})",
                         "{old} = and({old},{mask})",
                         "{new} = and({new},{mask})",
-                        "{inv_mask} = not({mask})",
                         "2:",
                             "{tmp} = memw_locked({dst})",
                             "{out_tmp} = and({tmp},{mask})",
@@ -234,13 +234,13 @@ macro_rules! atomic_sub_word {
                         "4:",
                         "{out_tmp} = asr({out_tmp},{shift})",
                         concat!("mem", $asm_suffix, "({out}) = {out_tmp}"),
-                        dst = in(reg) aligned_ptr,
+                        dst = in(reg) dst,
                         old = inout(reg) old => _,
                         new = inout(reg) new => _,
                         out = in(reg) out_ptr,
                         shift = in(reg) shift,
-                        mask = inout(reg) mask => _,
-                        inv_mask = out(reg) _,
+                        mask = in(reg) mask,
+                        inv_mask = in(reg) !mask,
                         out_tmp = out(reg) _,
                         tmp = out(reg) _,
                         r = inout(reg) r,

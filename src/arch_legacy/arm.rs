@@ -10,7 +10,6 @@
 //
 // Generated asm:
 // - armv7-a https://godbolt.org/z/P93x9TjWs
-// - armv7-r https://godbolt.org/z/1z9q9vTcd
 // - armv7-m https://godbolt.org/z/WozEfbMbx
 // - armv6 https://godbolt.org/z/T5M337jYK
 // - armv6-m https://godbolt.org/z/q88qPah4W

@@ -129,30 +129,31 @@ struct ZeroExtended<T, const N: usize> {
     pad: [T; N],
 }
 macro_rules! zero_extend {
-    ($n:literal: $($ty:ident),*) => {$(
+    ($($ty:ident),* => $out:ident) => {$(
         impl ZeroExtend for $ty {
-            type Out = MaybeUninit<u32>;
+            type Out = MaybeUninit<$out>;
             #[inline]
-            fn zero_extend(v: MaybeUninit<$ty>) -> Self::Out {
-                // SAFETY: we can safely transmute any 32-bit value to MaybeUninit<u32>.
+            fn zero_extend(v: MaybeUninit<Self>) -> Self::Out {
+                const LEN: usize
+                    = (mem::size_of::<$out>() - mem::size_of::<$ty>()) / mem::size_of::<$ty>();
+                // SAFETY: we can safely transmute any same-size value to MaybeUninit<$out>.
                 unsafe {
-                    mem::transmute(ZeroExtended::<$ty, $n> { v, pad: [0; $n] })
+                    mem::transmute(ZeroExtended::<$ty, LEN> { v, pad: [0; LEN] })
                 }
             }
         }
     )*};
     ($($ty:ident),*) => {$(
         impl ZeroExtend for $ty {
-            type Out = MaybeUninit<$ty>;
+            type Out = MaybeUninit<Self>;
             #[inline]
-            fn zero_extend(v: MaybeUninit<$ty>) -> Self::Out {
+            fn zero_extend(v: MaybeUninit<Self>) -> Self::Out {
                 v
             }
         }
     )*};
 }
-zero_extend!(3: i8, u8);
-zero_extend!(1: i16, u16);
+zero_extend!(i8, u8, i16, u16 => u32);
 zero_extend!(i32, u32, i64, u64, isize, usize);
 
 #[allow(dead_code)]
@@ -206,26 +207,30 @@ type MinWord = u32;
 // (aligned_ptr, shift, mask)
 #[allow(dead_code)]
 #[inline]
-pub(crate) fn create_partword_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RegSize, RegSize) {
-    let ptr_mask = mem::size_of::<MinWord>() - 1;
-    let aligned_ptr = strict::with_addr(ptr, ptr as usize & !ptr_mask).cast::<MinWord>();
-    let ptr_lsb = if cfg!(any(
+pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RegSize, RegSize) {
+    const SHIFT_MASK: bool = !cfg!(any(
         target_arch = "riscv32",
         target_arch = "riscv64",
         target_arch = "loongarch64",
         target_arch = "s390x",
-    )) {
-        // We use 32-bit wrapping shift instructions on these platforms.
-        ptr as usize
-    } else {
+    ));
+    let ptr_mask = mem::size_of::<MinWord>() - 1;
+    let aligned_ptr = strict::with_addr(ptr, ptr as usize & !ptr_mask).cast::<MinWord>();
+    let ptr_lsb = if SHIFT_MASK {
         ptr as usize & ptr_mask
+    } else {
+        // We use 32-bit wrapping shift instructions in asm on these platforms.
+        ptr as usize
     };
     let shift = if cfg!(any(target_endian = "little", target_arch = "s390x")) {
         ptr_lsb.wrapping_mul(8)
     } else {
         (ptr_lsb ^ (mem::size_of::<MinWord>() - mem::size_of::<T>())).wrapping_mul(8)
     };
-    let mask = (1 << (mem::size_of::<T>() * 8)) - 1; // !0_T as RegSize
+    let mut mask: RegSize = (1 << (mem::size_of::<T>() * 8)) - 1; // !(0 as T) as RegSize
+    if SHIFT_MASK {
+        mask <<= shift;
+    }
     (aligned_ptr, shift as RegSize, mask)
 }
 
@@ -233,21 +238,8 @@ pub(crate) fn create_partword_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RegS
 ///
 /// Once strict_provenance is stable, migrate to the standard library's APIs.
 #[allow(dead_code)]
-#[allow(
-    clippy::cast_possible_wrap,
-    clippy::transmutes_expressible_as_ptr_casts,
-    clippy::useless_transmute
-)]
+#[allow(clippy::cast_possible_wrap)]
 mod strict {
-    use core::mem;
-
-    #[inline]
-    #[must_use]
-    pub(crate) fn addr<T>(ptr: *mut T) -> usize {
-        // SAFETY: Every sized pointer is a valid integer for the time being.
-        unsafe { mem::transmute(ptr) }
-    }
-
     #[inline]
     #[must_use]
     pub(crate) fn with_addr<T>(ptr: *mut T, addr: usize) -> *mut T {
@@ -256,7 +248,7 @@ mod strict {
         // In the mean-time, this operation is defined to be "as if" it was
         // a wrapping_offset, so we can emulate it as such. This should properly
         // restore pointer provenance even under today's compiler.
-        let self_addr = self::addr(ptr) as isize;
+        let self_addr = ptr as usize as isize;
         let dest_addr = addr as isize;
         let offset = dest_addr.wrapping_sub(self_addr);
 

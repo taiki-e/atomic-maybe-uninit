@@ -9,8 +9,8 @@
 //   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences?lang=en
 //
 // Generated asm:
-// - armv5te https://godbolt.org/z/63Kojd799
-// - armv4t https://godbolt.org/z/M9Trn87To
+// - armv5te https://godbolt.org/z/5GqKbYEfP
+// - armv4t https://godbolt.org/z/e94Tc1EPx
 
 #[path = "cfgs/arm_linux.rs"]
 mod cfgs;
@@ -252,16 +252,16 @@ macro_rules! atomic_sub_word {
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
-                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
+                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // See also create_sub_word_mask_values.
                     asm!(
-                        "lsl {mask}, {mask}, {shift}",
                         "lsl {val}, {val}, {shift}",
                         "and {val}, {val}, {mask}",
-                        "mvn {inv_mask}, {mask}",
                         "2:",
                             "ldr r0, [r2]", // old_val
                             "mov {out}, r0",
@@ -274,12 +274,12 @@ macro_rules! atomic_sub_word {
                         val = inout(reg) crate::utils::zero_extend(val) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
-                        mask = inout(reg) mask => _,
-                        inv_mask = out(reg) _,
+                        mask = in(reg) mask,
+                        inv_mask = in(reg) !mask,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
                         out("r0") _,
                         out("r1") _,
-                        in("r2") aligned_ptr, // ptr
+                        in("r2") dst, // ptr
                         out("r3") _,
                         out("ip") _,
                         out("lr") _,
@@ -301,20 +301,19 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 debug_assert!(kuser_helper_version() >= 2);
-                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
+                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // See also create_sub_word_mask_values.
                     asm!(
-                        "lsl {mask}, {mask}, {shift}",
                         "lsl {old}, {old}, {shift}",
                         "lsl {new}, {new}, {shift}",
                         "and {old}, {old}, {mask}",
                         "and {new}, {new}, {mask}",
-                        // We cannot create inv_mask here because there are no available registers
-                        // "mvn {inv_mask}, {mask}",
                         "2:",
                             "ldr r0, [r2]", // old_val
                             "and {out}, r0, {mask}",
@@ -340,11 +339,13 @@ macro_rules! atomic_sub_word {
                         new = inout(reg) crate::utils::zero_extend(new) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
-                        mask = inout(reg) mask => _,
+                        mask = in(reg) mask,
+                        // We cannot create inv_mask here because there are no available registers
+                        // inv_mask = in(reg) !mask,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
                         out("r0") r,
                         out("r1") _,
-                        in("r2") aligned_ptr, // ptr
+                        in("r2") dst, // ptr
                         out("r3") _,
                         out("ip") _,
                         out("lr") _,

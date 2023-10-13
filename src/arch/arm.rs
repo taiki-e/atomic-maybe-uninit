@@ -9,12 +9,11 @@
 //   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv6-Differences?lang=en
 //
 // Generated asm:
-// - armv7-a https://godbolt.org/z/Ws6o5ff6x
-// - armv7-r https://godbolt.org/z/EasKf9c3q
-// - armv7-m https://godbolt.org/z/Ef3hbfx7f
-// - armv6 (cp15_barrier) https://godbolt.org/z/EMvbbTcGx
-// - armv6 (__kuser_memory_barrier) https://godbolt.org/z/83z7oxxoh
-// - armv6-m https://godbolt.org/z/7nnaEq5zP
+// - armv7-a https://godbolt.org/z/3c8cnEx8K
+// - armv7-m https://godbolt.org/z/7xPe6j9ov
+// - armv6 (cp15_barrier) https://godbolt.org/z/jWvvvavxd
+// - armv6 (__kuser_memory_barrier) https://godbolt.org/z/zdaerjhPe
+// - armv6-m https://godbolt.org/z/E4asfqM9q
 
 #[path = "cfgs/arm.rs"]
 mod cfgs;

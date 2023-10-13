@@ -139,16 +139,16 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
+                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // See also create_sub_word_mask_values.
                     asm!(
-                        "{mask} = asl({mask},{shift})",
                         "{val} = asl({val},{shift})",
                         "{val} = and({val},{mask})",
-                        "{inv_mask} = not({mask})",
                         "2:",
                             "{out} = memw_locked({dst})",
                             "{tmp} = and({out},{inv_mask})",
@@ -156,12 +156,12 @@ macro_rules! atomic_sub_word {
                             "memw_locked({dst},p0) = {tmp}",
                             "if (!p0) jump 2b",
                         "{out} = asr({out},{shift})",
-                        dst = in(reg) aligned_ptr,
+                        dst = in(reg) dst,
                         val = inout(reg) crate::utils::zero_extend(val) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
-                        mask = inout(reg) mask => _,
-                        inv_mask = out(reg) _,
+                        mask = in(reg) mask,
+                        inv_mask = in(reg) !mask,
                         tmp = out(reg) _,
                         options(nostack),
                     );
@@ -178,19 +178,19 @@ macro_rules! atomic_sub_word {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                let (aligned_ptr, shift, mask) = crate::utils::create_partword_mask_values(dst);
+                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32 = 1;
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // See also create_sub_word_mask_values.
                     asm!(
-                        "{mask} = asl({mask},{shift})",
                         "{old} = asl({old},{shift})",
                         "{new} = asl({new},{shift})",
                         "{old} = and({old},{mask})",
                         "{new} = and({new},{mask})",
-                        "{inv_mask} = not({mask})",
                         "2:",
                             "{tmp} = memw_locked({dst})",
                             "{out} = and({tmp},{mask})",
@@ -205,13 +205,13 @@ macro_rules! atomic_sub_word {
                             "{r} = #0",
                         "4:",
                         "{out} = asr({out},{shift})",
-                        dst = in(reg) aligned_ptr,
+                        dst = in(reg) dst,
                         old = inout(reg) crate::utils::zero_extend(old) => _,
                         new = inout(reg) crate::utils::zero_extend(new) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
-                        mask = inout(reg) mask => _,
-                        inv_mask = out(reg) _,
+                        mask = in(reg) mask,
+                        inv_mask = in(reg) !mask,
                         tmp = out(reg) _,
                         r = inout(reg) r,
                         options(nostack),

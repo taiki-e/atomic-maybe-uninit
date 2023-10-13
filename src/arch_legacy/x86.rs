@@ -13,8 +13,6 @@
 // - x86 (i686,-sse2) https://godbolt.org/z/sjYK57r96
 // - x86 (i586) https://godbolt.org/z/5rrzYGxPe
 // - x86 (i586,-x87) https://godbolt.org/z/GvcdhqxYo
-// - x86 (i486) https://godbolt.org/z/nPaGY4oEM
-// - x86 (i386) https://godbolt.org/z/YWEc63Kac
 
 #[path = "../arch/cfgs/x86.rs"]
 mod cfgs;
