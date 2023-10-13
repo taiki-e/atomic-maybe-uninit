@@ -330,6 +330,7 @@ jobs:
         rust:
           - '1.64'
           - stable
+          - nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
           - nightly
     runs-on: ubuntu-latest
     timeout-minutes: 60
