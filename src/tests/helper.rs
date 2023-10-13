@@ -632,6 +632,73 @@ macro_rules! __test_atomic {
                 .unwrap();
             }
         }
+        #[test]
+        fn stress_fetch_update() {
+            unsafe {
+                let (iterations, threads) = stress_test_config();
+                let data1 = &(0..threads)
+                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .collect::<Vec<_>>();
+                let data2 = &(0..threads)
+                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .collect::<Vec<_>>();
+                let set = &data1
+                    .iter()
+                    .flat_map(|v| v.iter().copied())
+                    .chain(data2.iter().flat_map(|v| v.iter().copied()))
+                    .collect::<BTreeSet<_>>();
+                let a =
+                    &AtomicMaybeUninit::<$int_type>::from(data2[0][fastrand::usize(0..iterations)]);
+                let now = &std::time::Instant::now();
+                thread::scope(|s| {
+                    for thread in 0..threads {
+                        if thread % 2 == 0 {
+                            s.spawn(move |_| {
+                                let now = *now;
+                                for i in 0..iterations {
+                                    a.store(
+                                        MaybeUninit::new(data1[thread][i]),
+                                        rand_store_ordering(),
+                                    );
+                                }
+                                std::eprintln!("store end={:?}", now.elapsed());
+                            });
+                        } else {
+                            s.spawn(|_| {
+                                let now = *now;
+                                let mut v = vec![0; iterations];
+                                for i in 0..iterations {
+                                    v[i] = a.load(rand_load_ordering()).assume_init();
+                                }
+                                std::eprintln!("load end={:?}", now.elapsed());
+                                for v in v {
+                                    assert!(set.contains(&v), "v={}", v);
+                                }
+                            });
+                        }
+                        s.spawn(move |_| {
+                            let now = *now;
+                            let mut v = vec![0; iterations];
+                            for i in 0..iterations {
+                                v[i] = a
+                                    .fetch_update(
+                                        rand_swap_ordering(),
+                                        rand_load_ordering(),
+                                        |_| Some(MaybeUninit::new(data2[thread][i])),
+                                    )
+                                    .unwrap()
+                                    .assume_init();
+                            }
+                            std::eprintln!("swap end={:?}", now.elapsed());
+                            for v in v {
+                                assert!(set.contains(&v), "v={}", v);
+                            }
+                        });
+                    }
+                })
+                .unwrap();
+            }
+        }
     };
 }
 
