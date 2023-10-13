@@ -302,6 +302,57 @@ macro_rules! atomic {
                     (out, extract_cr0(r))
                 }
             }
+            #[inline]
+            unsafe fn atomic_compare_exchange_weak(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    let mut r: Cr;
+                    macro_rules! cmpxchg_weak {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // load from old/new (ptr) to old/new (val)
+                                concat!("l", $l_suffix, " {old}, 0({old})"),
+                                concat!("l", $l_suffix, " {new}, 0({new})"),
+                                // (atomic) CAS (LL/SC)
+                                $release,
+                                concat!("l", $asm_suffix, "arx {tmp}, 0, {dst}"),
+                                concat!("cmp", $cmp_suffix, " {old}, {tmp}"),
+                                "bne %cr0, 3f", // jump if compare failed
+                                concat!("st", $asm_suffix, "cx. {new}, 0, {dst}"),
+                                "3:",
+                                // if compare or stqcx failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
+                                "mfcr {r}",
+                                $acquire,
+                                // store tmp to out
+                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
+                                dst = in(reg_nonzero) ptr_reg!(dst),
+                                old = inout(reg_nonzero) ptr_reg!(old) => _,
+                                new = inout(reg_nonzero) ptr_reg!(new) => _,
+                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
+                                tmp = out(reg) _,
+                                r = lateout(reg) r,
+                                out("cr0") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(cmpxchg_weak, order);
+                    (out, extract_cr0(r))
+                }
+            }
         }
     };
 }
@@ -738,6 +789,70 @@ macro_rules! atomic128 {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
+                    (out, extract_cr0(r))
+                }
+            }
+            #[inline]
+            unsafe fn atomic_compare_exchange_weak(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
+                let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+                let out_ptr = out.as_mut_ptr();
+                let old = old.as_ptr();
+                let new = new.as_ptr();
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    let mut r: Cr;
+                    macro_rules! cmpxchg_weak {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // load from old/new to old/new pairs
+                                concat!("ld %r4, ", p128h!(), "({old})"),
+                                concat!("ld %r5, ", p128l!(), "({old})"),
+                                concat!("ld %r6, ", p128h!(), "({new})"),
+                                concat!("ld %r7, ", p128l!(), "({new})"),
+                                // (atomic) CAS (LL/SC)
+                                $release,
+                                "lqarx %r8, 0, {dst}",
+                                "xor {tmp_lo}, %r9, %r5",
+                                "xor {tmp_hi}, %r8, %r4",
+                                "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",
+                                "bne %cr0, 3f", // jump if compare failed
+                                "stqcx. %r6, 0, {dst}",
+                                "3:",
+                                // if compare or stqcx failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
+                                "mfcr {tmp_lo}",
+                                $acquire,
+                                // store out pair to out
+                                concat!("std %r8, ", p128h!(), "({out})"),
+                                concat!("std %r9, ", p128l!(), "({out})"),
+                                dst = inout(reg_nonzero) ptr_reg!(dst) => _,
+                                old = in(reg_nonzero) ptr_reg!(old),
+                                new = in(reg_nonzero) ptr_reg!(new),
+                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
+                                tmp_hi = out(reg) _,
+                                tmp_lo = out(reg) r,
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                                out("r4") _, // old (hi)
+                                out("r5") _, // old (lo)
+                                out("r6") _, // new (hi)
+                                lateout("r7") _, // new (lo)
+                                lateout("r8") _, // out (hi)
+                                lateout("r9") _, // out (lo)
+                                out("cr0") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(cmpxchg_weak, order);
                     (out, extract_cr0(r))
                 }
             }

@@ -9,11 +9,11 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/rbdx3jzT7
-// - powerpc64 https://godbolt.org/z/PEMMq74T6
-// - powerpc64 (pwr8) https://godbolt.org/z/jKMfaf38W
-// - powerpc64le https://godbolt.org/z/1GMszMana
-// - powerpc64le (pwr7) https://godbolt.org/z/KPnfd1bjx
+// - powerpc https://godbolt.org/z/c5eMd3cnf
+// - powerpc64 https://godbolt.org/z/98M1r8ePv
+// - powerpc64 (pwr8) https://godbolt.org/z/ojsz5PYW7
+// - powerpc64le https://godbolt.org/z/Geoj3q9fr
+// - powerpc64le (pwr7) https://godbolt.org/z/q8KTcYGcG
 
 #[path = "cfgs/powerpc.rs"]
 mod cfgs;
@@ -233,6 +233,48 @@ macro_rules! atomic {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
+                    (out, extract_cr0(r))
+                }
+            }
+            #[inline]
+            unsafe fn atomic_compare_exchange_weak(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
+                let mut out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    let mut r: Cr;
+                    macro_rules! cmpxchg_weak {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // (atomic) CAS (LL/SC)
+                                $release,
+                                concat!("l", $asm_suffix, "arx {out}, 0, {dst}"),
+                                concat!("cmp", $cmp_suffix, " {old}, {out}"),
+                                "bne %cr0, 3f", // jump if compare failed
+                                concat!("st", $asm_suffix, "cx. {new}, 0, {dst}"),
+                                "3:",
+                                // if compare or stqcx failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
+                                "mfcr {r}",
+                                $acquire,
+                                dst = in(reg_nonzero) ptr_reg!(dst),
+                                old = in(reg) crate::utils::zero_extend(old),
+                                new = in(reg) new,
+                                out = out(reg) out,
+                                r = lateout(reg) r,
+                                out("cr0") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(cmpxchg_weak, order);
                     (out, extract_cr0(r))
                 }
             }
@@ -627,6 +669,61 @@ macro_rules! atomic128 {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
+                    (
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
+                        extract_cr0(r)
+                    )
+                }
+            }
+            #[inline]
+            unsafe fn atomic_compare_exchange_weak(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
+                let old = MaybeUninit128 { $int_type: old };
+                let new = MaybeUninit128 { $int_type: new };
+                let (mut prev_hi, mut prev_lo);
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    let mut r: Cr;
+                    macro_rules! cmpxchg_weak {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                // (atomic) CAS (LL/SC)
+                                $release,
+                                "lqarx %r8, 0, {dst}",
+                                "xor {tmp_lo}, %r9, {old_lo}",
+                                "xor {tmp_hi}, %r8, {old_hi}",
+                                "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",
+                                "bne %cr0, 3f", // jump if compare failed
+                                "stqcx. %r6, 0, {dst}",
+                                "3:",
+                                // if compare or stqcx failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
+                                "mfcr {tmp_lo}",
+                                $acquire,
+                                dst = in(reg_nonzero) ptr_reg!(dst),
+                                old_hi = in(reg) old.pair.hi,
+                                old_lo = in(reg) old.pair.lo,
+                                tmp_hi = out(reg) _,
+                                tmp_lo = out(reg) r,
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                                in("r6") new.pair.hi,
+                                in("r7") new.pair.lo,
+                                out("r8") prev_hi,
+                                out("r9") prev_lo,
+                                out("cr0") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(cmpxchg_weak, order);
                     (
                         MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
                         extract_cr0(r)
