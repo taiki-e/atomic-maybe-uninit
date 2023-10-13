@@ -263,6 +263,7 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
     const SHIFT_MASK: bool = !cfg!(any(
         target_arch = "riscv32",
         target_arch = "riscv64",
+        target_arch = "riscv128",
         target_arch = "loongarch64",
         target_arch = "s390x",
     ));

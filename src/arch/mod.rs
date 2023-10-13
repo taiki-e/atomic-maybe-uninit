@@ -24,6 +24,7 @@
     target_arch = "aarch64",
     target_arch = "riscv32",
     target_arch = "riscv64",
+    target_arch = "riscv128",
     target_arch = "loongarch64",
     all(
         any(
@@ -97,7 +98,7 @@ mod msp430;
 #[cfg(any(target_arch = "powerpc", target_arch = "powerpc64"))]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod powerpc;
-#[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+#[cfg(any(target_arch = "riscv32", target_arch = "riscv64", target_arch = "riscv128"))]
 mod riscv;
 #[cfg(target_arch = "s390x")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]

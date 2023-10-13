@@ -36,23 +36,35 @@ macro_rules! cfg_has_atomic_64 {
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(target_arch = "riscv64")]
+#[cfg(any(target_arch = "riscv64", target_arch = "riscv128"))]
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(target_arch = "riscv64")]
+#[cfg(any(target_arch = "riscv64", target_arch = "riscv128"))]
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => {};
 }
+#[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {
     ($($tt:tt)*) => {};
 }
+#[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
 #[macro_export]
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(target_arch = "riscv128")]
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(target_arch = "riscv128")]
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => {};
 }
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
 #[macro_export]

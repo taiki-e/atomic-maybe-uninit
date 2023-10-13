@@ -9,6 +9,8 @@
 //   https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/HEAD/riscv-atomic.adoc
 // - "Mappings from C/C++ primitives to RISC-V primitives." table in RISC-V Instruction Set Manual:
 //   https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
+// - RISC-V Instruction Set Manual, RV128I Base Integer Instruction Set
+//   https://five-embeddev.com/riscv-isa-manual/latest/rv128.html
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
@@ -36,7 +38,7 @@ macro_rules! w {
     };
 }
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-#[cfg(target_arch = "riscv64")]
+#[cfg(any(target_arch = "riscv64", target_arch = "riscv128"))]
 macro_rules! w {
     () => {
         "w"
@@ -344,10 +346,14 @@ atomic_sub_word!(i16, "h");
 atomic_sub_word!(u16, "h");
 atomic!(i32, "w");
 atomic!(u32, "w");
-#[cfg(target_arch = "riscv64")]
+#[cfg(any(target_arch = "riscv64", target_arch = "riscv128"))]
 atomic!(i64, "d");
-#[cfg(target_arch = "riscv64")]
+#[cfg(any(target_arch = "riscv64", target_arch = "riscv128"))]
 atomic!(u64, "d");
+#[cfg(target_arch = "riscv128")]
+atomic!(i128, "q");
+#[cfg(target_arch = "riscv128")]
+atomic!(u128, "q");
 #[cfg(target_pointer_width = "32")]
 atomic!(isize, "w");
 #[cfg(target_pointer_width = "32")]
@@ -356,3 +362,7 @@ atomic!(usize, "w");
 atomic!(isize, "d");
 #[cfg(target_pointer_width = "64")]
 atomic!(usize, "d");
+#[cfg(target_pointer_width = "128")]
+atomic!(isize, "q");
+#[cfg(target_pointer_width = "128")]
+atomic!(usize, "q");
