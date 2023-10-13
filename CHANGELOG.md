@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Add `as_ptr`.
+
 - Optimize weak CAS on PowerPC.
 
 - Optimize {8,16}-bit CAS on AArch64.

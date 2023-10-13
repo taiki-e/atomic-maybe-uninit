@@ -192,6 +192,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         }
     }
 
+    // TODO: Add from_ptr once it is stable on std atomic types.
+    // https://github.com/rust-lang/rust/issues/108652
+
     /// Returns a mutable reference to the underlying value.
     ///
     /// This is safe because the mutable reference guarantees that no other threads are
@@ -666,6 +669,23 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
             }
         }
         Err(prev)
+    }
+
+    const_fn! {
+        const_if: #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))];
+        /// Returns a mutable pointer to the underlying value.
+        ///
+        /// Returning an `*mut` pointer from a shared reference to this atomic is safe because the
+        /// atomic types work with interior mutability. All modifications of an atomic change the value
+        /// through a shared reference, and can do so safely as long as they use atomic operations. Any
+        /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the same
+        /// restriction: operations on it must be atomic.
+        ///
+        /// This is `const fn` on Rust 1.61+.
+        #[inline]
+        pub const fn as_ptr(&self) -> *mut MaybeUninit<T> {
+            self.v.get()
+        }
     }
 }
 

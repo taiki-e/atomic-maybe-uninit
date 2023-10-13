@@ -40,6 +40,7 @@ macro_rules! test_common {
                     unsafe {
                         let mut a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(10));
                         assert_eq!(*a.get_mut().as_mut_ptr(), 10);
+                        assert_eq!(a.as_ptr() as *const (), &a as *const _ as *const ());
                         *a.get_mut() = MaybeUninit::new(5);
                         assert_eq!(a.into_inner().assume_init(), 5);
                     }
