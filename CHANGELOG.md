@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.1] - 2023-10-14
+
 - Add `as_ptr` and `from_ptr`.
 
 - Optimize weak CAS on PowerPC.
@@ -210,7 +212,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.22...v0.3.0
 [0.2.22]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.21...v0.2.22
 [0.2.21]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.20...v0.2.21
