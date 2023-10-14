@@ -364,18 +364,16 @@ macro_rules! atomic64 {
                             );
                         }
                         Ordering::SeqCst => {
-                            let p = core::cell::UnsafeCell::new(0_u32);
                             asm!(
                                 // load from val to tmp
                                 if_sse2!("", "xorps {tmp}, {tmp}"),
                                 if_sse2!("movsd {tmp}, qword ptr [{val}]", "movlps {tmp}, qword ptr [{val}]"),
                                 // (atomic) store tmp to dst
                                 "movlps qword ptr [{dst}], {tmp}",
-                                "lock or dword ptr [{p}], 0", // equivalent to mfence, but doesn't require SSE2
+                                "lock or dword ptr [esp], 0", // equivalent to mfence, but doesn't require SSE2
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 tmp = out(xmm_reg) _,
-                                p = in(reg) p.get(),
                                 // Do not use `preserves_flags` because OR modifies the OF, CF, SF, ZF, and PF flags.
                                 options(nostack),
                             );

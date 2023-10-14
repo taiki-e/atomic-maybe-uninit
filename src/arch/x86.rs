@@ -9,7 +9,7 @@
 // Generated asm:
 // - x86_64 https://godbolt.org/z/qfG4zasha
 // - x86_64 (+cmpxchg16b) https://godbolt.org/z/r3aEb8veh
-// - x86 (i686) https://godbolt.org/z/7E48E7vaP
+// - x86 (i686) https://godbolt.org/z/cd5dW5vcn
 // - x86 (i686,-sse2) https://godbolt.org/z/feeGo3Woc
 // - x86 (i586) https://godbolt.org/z/nh8fK7Ecq
 // - x86 (i586,-x87) https://godbolt.org/z/sj6vfqzbd
@@ -295,14 +295,12 @@ macro_rules! atomic64 {
                             );
                         }
                         Ordering::SeqCst => {
-                            let p = core::cell::UnsafeCell::new(0_u32);
                             asm!(
                                 // (atomic) store val to dst
                                 "movlps qword ptr [{dst}], {val}",
-                                "lock or dword ptr [{p}], 0", // equivalent to mfence, but doesn't require SSE2
+                                "lock or dword ptr [esp], 0", // equivalent to mfence, but doesn't require SSE2
                                 dst = in(reg) dst,
                                 val = in(xmm_reg) val,
-                                p = in(reg) p.get(),
                                 // Do not use `preserves_flags` because OR modifies the OF, CF, SF, ZF, and PF flags.
                                 options(nostack),
                             );

@@ -25,9 +25,7 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 // Extracts and checks condition code.
 #[inline]
 fn extract_cc(r: i64) -> bool {
-    let r = r.wrapping_add(-268435456) & (1 << 31);
-    debug_assert!(r == 0 || r == 2147483648, "r={r}");
-    r != 0
+    r.wrapping_add(-268435456) & (1 << 31) != 0
 }
 
 #[inline]
