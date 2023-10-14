@@ -4,6 +4,73 @@
 
 pub(crate) use std::sync::atomic::Ordering;
 
+macro_rules! test_common {
+    ($int_type:ident) => {
+        paste::paste! {
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks,
+            )]
+            mod [<test_common_ $int_type>] {
+                use std::{
+                    boxed::Box,
+                    mem::{self, MaybeUninit},
+                };
+
+                use crate::{tests::helper::*, AtomicMaybeUninit};
+
+                #[test]
+                fn assert_auto_traits() {
+                    fn _assert<
+                        T: Send + Sync + Unpin + std::panic::UnwindSafe + std::panic::RefUnwindSafe,
+                    >() {
+                    }
+                    _assert::<AtomicMaybeUninit<$int_type>>();
+                }
+                #[test]
+                fn accessor() {
+                    #[allow(clippy::ptr_as_ptr)]
+                    unsafe {
+                        let mut a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(10));
+                        assert_eq!(*a.get_mut().as_mut_ptr(), 10);
+                        assert_eq!(a.as_ptr() as *const (), &a as *const _ as *const ());
+                        *a.get_mut() = MaybeUninit::new(5);
+                        assert_eq!(a.into_inner().assume_init(), 5);
+
+                        let ptr: *mut Align16<MaybeUninit<$int_type>>
+                            = Box::into_raw(Box::new(Align16(MaybeUninit::new(0))));
+                        assert!(
+                            ptr as usize % mem::align_of::<AtomicMaybeUninit<$int_type>>() == 0
+                        );
+                        {
+                            let a = AtomicMaybeUninit::<$int_type>::from_ptr(
+                                ptr.cast::<MaybeUninit<$int_type>>()
+                            );
+                            *a.as_ptr() = MaybeUninit::new(1);
+                        }
+                        assert_eq!((*ptr).0.assume_init(), 1);
+                        drop(Box::from_raw(ptr));
+                    }
+                }
+                #[test]
+                fn impls() {
+                    unsafe {
+                        let a = AtomicMaybeUninit::<$int_type>::from(MaybeUninit::new(0));
+                        let b = AtomicMaybeUninit::<$int_type>::from(0);
+                        assert_eq!(
+                            std::format!("{:?}", a),
+                            concat!("atomic_maybe_uninit::AtomicMaybeUninit<", stringify!($int_type), ">"),
+                        );
+                        assert_eq!(a.into_inner().assume_init(), b.into_inner().assume_init());
+                    }
+                }
+            }
+        }
+    };
+}
+
 macro_rules! test_atomic_load_store {
     ($int_type:ident) => {
         paste::paste! {
@@ -63,8 +130,6 @@ macro_rules! __test_atomic {
 
         #[test]
         fn load_store() {
-            #[repr(C, align(16))]
-            struct Align16<T>(T);
             static VAR_RO: Align16<$int_type> = Align16(10);
             static VAR: AtomicMaybeUninit<$int_type> =
                 AtomicMaybeUninit::<$int_type>::const_new(MaybeUninit::new(10));
@@ -198,8 +263,6 @@ macro_rules! __test_atomic {
                 unsafe {
                     for order in SWAP_ORDERINGS {
                         for base in [0, !0] {
-                            #[repr(C, align(16))]
-                            struct Align16<T>(T);
                             let mut arr = Align16([
                                 AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
                                 AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
@@ -435,8 +498,6 @@ macro_rules! __test_atomic {
                     };
                     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                         for base in [0, !0] {
-                            #[repr(C, align(16))]
-                            struct Align16<T>(T);
                             let mut arr = Align16([
                                 AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
                                 AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
@@ -509,8 +570,6 @@ macro_rules! __test_atomic {
                     };
                     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                         for base in [0, !0] {
-                            #[repr(C, align(16))]
-                            struct Align16<T>(T);
                             let mut arr = Align16([
                                 AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
                                 AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
@@ -835,6 +894,9 @@ fn skip_should_panic_test() -> bool {
 fn is_panic_abort() -> bool {
     build_context::PANIC.contains("abort")
 }
+
+#[repr(C, align(16))]
+pub(crate) struct Align16<T>(pub(crate) T);
 
 // Test the cases that should not fail if the memory ordering is implemented correctly.
 // This is still not exhaustive and only tests a few cases.
