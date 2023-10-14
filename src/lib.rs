@@ -208,7 +208,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///     this guideline.
     ///   * This requirement is also trivially satisfied if all accesses (atomic or not) are
     ///     done from the same thread.
-    /// * This method should not be used to create overlapping or mixed-size atomic
+    /// * This method must not be used to create overlapping or mixed-size atomic
     ///   accesses, as these are not supported by the memory model.
     ///
     /// [valid]: core::ptr#safety
