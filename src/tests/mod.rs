@@ -23,7 +23,10 @@ macro_rules! test_common {
                 clippy::undocumented_unsafe_blocks,
             )]
             mod [<test_common_ $int_type>] {
-                use std::mem::MaybeUninit;
+                use std::{
+                    boxed::Box,
+                    mem::{self, MaybeUninit},
+                };
 
                 use crate::AtomicMaybeUninit;
 
@@ -37,12 +40,29 @@ macro_rules! test_common {
                 }
                 #[test]
                 fn accessor() {
+                    #[repr(C, align(16))]
+                    struct Align16<T>(T);
+                    #[allow(clippy::ptr_as_ptr)]
                     unsafe {
                         let mut a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(10));
                         assert_eq!(*a.get_mut().as_mut_ptr(), 10);
                         assert_eq!(a.as_ptr() as *const (), &a as *const _ as *const ());
                         *a.get_mut() = MaybeUninit::new(5);
                         assert_eq!(a.into_inner().assume_init(), 5);
+
+                        let ptr: *mut Align16<MaybeUninit<$int_type>>
+                            = Box::into_raw(Box::new(Align16(MaybeUninit::new(0))));
+                        assert!(
+                            ptr as usize % mem::align_of::<AtomicMaybeUninit<$int_type>>() == 0
+                        );
+                        {
+                            let a = AtomicMaybeUninit::<$int_type>::from_ptr(
+                                ptr.cast::<MaybeUninit<$int_type>>()
+                            );
+                            *a.as_ptr() = MaybeUninit::new(1);
+                        }
+                        assert_eq!((*ptr).0.assume_init(), 1);
+                        drop(Box::from_raw(ptr));
                     }
                 }
                 #[test]

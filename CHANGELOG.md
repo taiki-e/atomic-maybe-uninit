@@ -10,7 +10,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Add `as_ptr`.
+- Add `as_ptr` and `from_ptr`.
 
 - Optimize weak CAS on PowerPC.
 
