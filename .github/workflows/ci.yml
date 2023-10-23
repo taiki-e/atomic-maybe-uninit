@@ -297,7 +297,7 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196 -C target-feature=-high-word
         if: startsWith(matrix.target, 's390x')
 
-      - run: cargo minimal-versions build -vvv --workspace --no-private --all-features $TARGET $BUILD_STD $RELEASE
+      - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features $TARGET $BUILD_STD $RELEASE
 
   build:
     needs: tidy
