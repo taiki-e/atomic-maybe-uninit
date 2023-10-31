@@ -2,7 +2,7 @@
 
 // The rustc-cfg emitted by the build script are *not* public API.
 
-#![allow(clippy::match_same_arms)]
+#![allow(clippy::match_same_arms, clippy::needless_pass_by_value)]
 
 use std::{env, str};
 
@@ -86,7 +86,7 @@ fn main() {
             // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/r8zWGcMhd
             // However, it is unlikely that rustc will support that name, so we ignore it.
             // cmpxchg16b_target_feature stabilized in Rust 1.69.
-            target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, Some(69), true);
+            target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, Stable(69));
         }
         "aarch64" => {
             // AArch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is ARMv8.5-A:
@@ -96,15 +96,15 @@ fn main() {
             // FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2. FEAT_LRCPC3 implies FEAT_LRCPC.
             // As of rustc 1.70, target_feature "lse2"/"lse128"/"rcpc3" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs#L58
-            target_feature_if("lse2", is_macos, &version, None, false);
+            target_feature_if("lse2", is_macos, &version, Unavailable);
             // LLVM supports FEAT_LRCPC3 and FEAT_LSE128 on LLVM 16+:
             // https://github.com/llvm/llvm-project/commit/a6aaa969f7caec58a994142f8d855861cf3a1463
             // https://github.com/llvm/llvm-project/commit/7fea6f2e0e606e5339c3359568f680eaf64aa306
-            has_lse |= target_feature_if("lse128", false, &version, None, false);
-            has_rcpc |= target_feature_if("rcpc3", false, &version, None, false);
+            has_lse |= target_feature_if("lse128", false, &version, Unavailable);
+            has_rcpc |= target_feature_if("rcpc3", false, &version, Unavailable);
             // aarch64_target_feature stabilized in Rust 1.61.
-            target_feature_if("lse", has_lse, &version, Some(61), true);
-            target_feature_if("rcpc", has_rcpc, &version, Some(61), true);
+            target_feature_if("lse", has_lse, &version, Stable(61));
+            target_feature_if("rcpc", has_rcpc, &version, Stable(61));
         }
         "arm" => {
             // #[cfg(target_feature = "v7")] and others don't work on stable.
@@ -175,7 +175,7 @@ fn main() {
                     );
                 }
             }
-            target_feature_if("mclass", is_mclass, &version, None, true);
+            target_feature_if("mclass", is_mclass, &version, Nightly);
             let mut v5te = known && subarch.starts_with("v5te");
             let mut v6 = known && subarch.starts_with("v6");
             let mut v7 = known && subarch.starts_with("v7");
@@ -195,11 +195,11 @@ fn main() {
             } else {
                 (false, false)
             };
-            v7 |= target_feature_if("v8", v8, &version, None, true);
-            v6 |= target_feature_if("v8m", v8m, &version, None, false);
-            v6 |= target_feature_if("v7", v7, &version, None, true);
-            v5te |= target_feature_if("v6", v6, &version, None, true);
-            target_feature_if("v5te", v5te, &version, None, true);
+            v7 |= target_feature_if("v8", v8, &version, Nightly);
+            v6 |= target_feature_if("v8m", v8m, &version, Unavailable);
+            v6 |= target_feature_if("v7", v7, &version, Nightly);
+            v5te |= target_feature_if("v6", v6, &version, Nightly);
+            target_feature_if("v5te", v5te, &version, Nightly);
         }
         _ if target_arch.starts_with("riscv") => {
             // riscv64gc-unknown-linux-gnu
@@ -214,7 +214,7 @@ fn main() {
             // G = IMAFD
             let has_a = subarch.contains('a') || subarch.contains('g');
             // Ratified RISC-V target features stabilized in Rust 1.75. https://github.com/rust-lang/rust/pull/116485
-            target_feature_if("a", has_a, &version, Some(75), true);
+            target_feature_if("a", has_a, &version, Stable(75));
         }
         "powerpc64" => {
             let target_endian =
@@ -239,9 +239,9 @@ fn main() {
             // Note: As of rustc 1.70, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs#L226
             // l[bh]arx and st[bh]cx.
-            target_feature_if("partword-atomics", has_pwr8_features, &version, None, false);
+            target_feature_if("partword-atomics", has_pwr8_features, &version, Unavailable);
             // lqarx and stqcx.
-            target_feature_if("quadword-atomics", has_pwr8_features, &version, None, false);
+            target_feature_if("quadword-atomics", has_pwr8_features, &version, Unavailable);
         }
         "s390x" => {
             // https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/Target/SystemZ/SystemZFeatures.td
@@ -257,18 +257,24 @@ fn main() {
             // Note: As of rustc 1.70, target_feature "fast-serialization" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs
             // bcr 14,0
-            target_feature_if("fast-serialization", arch9_features, &version, None, false);
+            target_feature_if("fast-serialization", arch9_features, &version, Unavailable);
         }
         _ => {}
     }
 }
 
+enum Availability {
+    Stable(u32),
+    Nightly,
+    Unavailable,
+}
+use Availability::{Nightly, Stable, Unavailable};
+
 fn target_feature_if(
     name: &str,
     mut has_target_feature: bool,
     version: &Version,
-    stabilized: Option<u32>,
-    is_rustc_target_feature: bool,
+    availability: Availability,
 ) -> bool {
     // HACK: Currently, it seems that the only way to handle unstable target
     // features on the stable is to parse the `-C target-feature` in RUSTFLAGS.
@@ -280,12 +286,15 @@ fn target_feature_if(
     // (e.g., https://godbolt.org/z/TfaEx95jc), so this hack works properly on stable.
     //
     // [RFC2045]: https://rust-lang.github.io/rfcs/2045-target-feature.html#backend-compilation-options
-    if is_rustc_target_feature
-        && (version.nightly || stabilized.map_or(false, |stabilized| version.minor >= stabilized))
-    {
-        // In this case, cfg(target_feature = "...") would work, so skip emitting our own target_feature cfg.
-        return false;
-    } else if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
+    match availability {
+        // In these cases, cfg(target_feature = "...") would work, so skip emitting our own target_feature cfg.
+        Availability::Stable(stabilized) if version.nightly || version.minor >= stabilized => {
+            return false
+        }
+        Availability::Nightly if version.nightly => return false,
+        _ => {}
+    }
+    if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
         for mut flag in rustflags.to_string_lossy().split('\x1f') {
             flag = flag.strip_prefix("-C").unwrap_or(flag);
             if let Some(flag) = flag.strip_prefix("target-feature=") {
