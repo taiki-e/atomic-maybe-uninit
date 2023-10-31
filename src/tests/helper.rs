@@ -150,13 +150,19 @@ macro_rules! __test_atomic {
                     ))
                     || cfg!(all(
                         target_arch = "powerpc64",
-                        any(target_feature = "quadword-atomics", atomic_maybe_uninit_target_feature = "quadword-atomics"),
+                        any(
+                            target_feature = "quadword-atomics",
+                            atomic_maybe_uninit_target_feature = "quadword-atomics",
+                        ),
                     ))
-                    || cfg!(target_arch = "s390x") || cfg!(target_arch = "hexagon") {
+                    || cfg!(target_arch = "s390x")
+                    || cfg!(target_arch = "hexagon")
+                {
                     assert_eq!(
                         (*(&VAR_RO as *const Align16<$int_type>
-                                   as *const AtomicMaybeUninit<$int_type>))
-                            .load(Ordering::Relaxed).assume_init(),
+                            as *const AtomicMaybeUninit<$int_type>))
+                            .load(Ordering::Relaxed)
+                            .assume_init(),
                         var.load(Ordering::Relaxed).assume_init()
                     );
                 }
@@ -761,6 +767,7 @@ macro_rules! __test_atomic {
     };
 }
 
+#[allow(clippy::disallowed_methods)] // set_var/remove_var is fine as we run tests with RUST_TEST_THREADS=1
 #[track_caller]
 fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::String {
     let backtrace = std::env::var_os("RUST_BACKTRACE");
