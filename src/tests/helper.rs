@@ -4,6 +4,8 @@
 
 pub(crate) use std::sync::atomic::Ordering;
 
+use crate::*;
+
 macro_rules! test_common {
     ($int_type:ident) => {
         paste::paste! {
@@ -191,21 +193,27 @@ macro_rules! __test_atomic {
                 }
             }
         }
-        #[cfg(not(all(valgrind, target_arch = "aarch64")))] // TODO: flaky
         ::quickcheck::quickcheck! {
             fn quickcheck_load_store(x: $int_type, y: $int_type) -> bool {
                 unsafe {
                     for (load_order, store_order) in
                         LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS)
                     {
-                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
-                        assert_eq!(a.load(load_order).assume_init(), x);
-                        a.store(MaybeUninit::new(y), store_order);
-                        assert_eq!(a.load(load_order).assume_init(), y);
-                        a.store(MaybeUninit::new(x), store_order);
-                        assert_eq!(a.load(load_order).assume_init(), x);
-                        a.store(MaybeUninit::uninit(), store_order);
-                        let _v = a.load(load_order);
+                        for base in [0, !0] {
+                            let mut arr = Array::new(base);
+                            arr.set(x);
+                            let a = arr.get();
+                            assert_eq!(a.load(load_order).assume_init(), x);
+                            a.store(MaybeUninit::new(y), store_order);
+                            assert_eq!(a.load(load_order).assume_init(), y);
+                            a.store(MaybeUninit::new(x), store_order);
+                            assert_eq!(a.load(load_order).assume_init(), x);
+                            if !cfg!(all(valgrind, target_arch = "aarch64")) {
+                                a.store(MaybeUninit::uninit(), store_order);
+                                let _v = a.load(load_order);
+                            }
+                            arr.assert();
+                        }
                     }
                 }
                 true
@@ -246,7 +254,6 @@ macro_rules! __test_atomic {
         }
     };
     (swap, $int_type:ident) => {
-        #[cfg(not(all(valgrind, target_arch = "aarch64")))] // TODO: flaky
         #[test]
         fn swap() {
             unsafe {
@@ -255,44 +262,30 @@ macro_rules! __test_atomic {
                 for order in SWAP_ORDERINGS {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
                     assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), 5);
-                    assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
-                    let _v = a.swap(MaybeUninit::new(15), order);
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::uninit());
-                    let _v = a.swap(MaybeUninit::new(10), order);
-                    assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
+                    if !cfg!(all(valgrind, target_arch = "aarch64")) {
+                        assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
+                        let _v = a.swap(MaybeUninit::new(15), order);
+                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::uninit());
+                        let _v = a.swap(MaybeUninit::new(10), order);
+                        assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
+                    }
                 }
             }
         }
-        #[cfg(not(all(valgrind, target_arch = "aarch64")))] // TODO: flaky
         ::quickcheck::quickcheck! {
             fn quickcheck_swap(x: $int_type, y: $int_type) -> bool {
                 unsafe {
                     for order in SWAP_ORDERINGS {
                         for base in [0, !0] {
-                            let mut arr = Align16([
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                            ]);
-                            let a_idx = fastrand::usize(3..=6);
-                            arr.0[a_idx] = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
-                            let a = &arr.0[a_idx];
+                            let mut arr = Array::new(base);
+                            arr.set(x);
+                            let a = arr.get();
                             assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
                             assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
-                            assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
-                            for i in 0..a_idx {
-                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
+                            if !cfg!(all(valgrind, target_arch = "aarch64")) {
+                                assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
                             }
-                            for i in a_idx + 1..arr.0.len() {
-                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
-                            }
+                            arr.assert();
                         }
                     }
                 }
@@ -492,7 +485,6 @@ macro_rules! __test_atomic {
                 }
             }
         }
-        #[cfg(not(all(valgrind, target_arch = "aarch64")))] // TODO: flaky
         ::quickcheck::quickcheck! {
             fn quickcheck_compare_exchange(x: $int_type, y: $int_type) -> bool {
                 unsafe {
@@ -504,21 +496,9 @@ macro_rules! __test_atomic {
                     };
                     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                         for base in [0, !0] {
-                            let mut arr = Align16([
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                            ]);
-                            let a_idx = fastrand::usize(3..=6);
-                            arr.0[a_idx] = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
-                            let a = &arr.0[a_idx];
+                            let mut arr = Array::new(base);
+                            arr.set(x);
+                            let a = arr.get();
                             assert_eq!(
                                 a.compare_exchange(
                                     MaybeUninit::new(x),
@@ -543,24 +523,21 @@ macro_rules! __test_atomic {
                                 y
                             );
                             assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
-                            assert_eq!(
-                                a.compare_exchange(
-                                    MaybeUninit::new(y),
-                                    MaybeUninit::uninit(),
-                                    success,
-                                    failure
-                                )
-                                .unwrap()
-                                .assume_init(),
-                                y
-                            );
-                            let _v = a.load(Ordering::Relaxed);
-                            for i in 0..a_idx {
-                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
+                            if !cfg!(all(valgrind, target_arch = "aarch64")) {
+                                assert_eq!(
+                                    a.compare_exchange(
+                                        MaybeUninit::new(y),
+                                        MaybeUninit::uninit(),
+                                        success,
+                                        failure
+                                    )
+                                    .unwrap()
+                                    .assume_init(),
+                                    y
+                                );
+                                let _v = a.load(Ordering::Relaxed);
                             }
-                            for i in a_idx + 1..arr.0.len() {
-                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
-                            }
+                            arr.assert();
                         }
                     }
                 }
@@ -576,21 +553,9 @@ macro_rules! __test_atomic {
                     };
                     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                         for base in [0, !0] {
-                            let mut arr = Align16([
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                                AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(base)),
-                            ]);
-                            let a_idx = fastrand::usize(3..=6);
-                            arr.0[a_idx] = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(x));
-                            let a = &arr.0[a_idx];
+                            let mut arr = Array::new(base);
+                            arr.set(x);
+                            let a = arr.get();
                             assert_eq!(
                                 a.fetch_update(success, failure, |_| Some(MaybeUninit::new(y)))
                                 .unwrap()
@@ -615,12 +580,7 @@ macro_rules! __test_atomic {
                                 z
                             );
                             assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
-                            for i in 0..a_idx {
-                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
-                            }
-                            for i in a_idx + 1..arr.0.len() {
-                                assert_eq!(arr.0[i].load(Ordering::Relaxed).assume_init(), base, "invalid value written");
-                            }
+                            arr.assert();
                         }
                     }
                 }
@@ -904,6 +864,51 @@ fn is_panic_abort() -> bool {
 
 #[repr(C, align(16))]
 pub(crate) struct Align16<T>(pub(crate) T);
+
+pub(crate) struct Array<T: Primitive> {
+    arr: Align16<[AtomicMaybeUninit<T>; 10]>,
+    base: T,
+    idx: usize,
+}
+impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
+    pub(crate) fn new(base: T) -> Self {
+        Self {
+            arr: Align16([
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+                AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
+            ]),
+            base,
+            // 0 1 2 3 4 5 6 7 8 9
+            //       ^ ^ ^ ^
+            idx: fastrand::usize(3..=6),
+        }
+    }
+    pub(crate) fn get(&self) -> &AtomicMaybeUninit<T> {
+        &self.arr.0[self.idx]
+    }
+    pub(crate) fn set(&mut self, new: T) {
+        self.arr.0[self.idx] = AtomicMaybeUninit::<T>::new(MaybeUninit::new(new));
+    }
+    #[track_caller]
+    pub(crate) unsafe fn assert(&self) {
+        for i in (0..self.idx).chain(self.idx + 1..self.arr.0.len()) {
+            assert_eq!(
+                unsafe { self.arr.0[i].load(Ordering::Relaxed).assume_init() },
+                self.base,
+                "value at index {i} has changed, but must not change other than value at index {}",
+                self.idx,
+            );
+        }
+    }
+}
 
 // Test the cases that should not fail if the memory ordering is implemented correctly.
 // This is still not exhaustive and only tests a few cases.
