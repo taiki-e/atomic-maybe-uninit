@@ -202,7 +202,6 @@ fn main() {
             target_feature_if("v5te", v5te, &version, None, true);
         }
         _ if target_arch.starts_with("riscv") => {
-            // #[cfg(target_feature = "a")] doesn't work on stable.
             // riscv64gc-unknown-linux-gnu
             //        ^^
             let mut subarch = target.strip_prefix(target_arch).unwrap();
@@ -214,7 +213,8 @@ fn main() {
             }
             // G = IMAFD
             let has_a = subarch.contains('a') || subarch.contains('g');
-            target_feature_if("a", has_a, &version, None, true);
+            // Ratified RISC-V target features stabilized in Rust 1.75. https://github.com/rust-lang/rust/pull/116485
+            target_feature_if("a", has_a, &version, Some(75), true);
         }
         "powerpc64" => {
             let target_endian =
