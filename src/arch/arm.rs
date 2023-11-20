@@ -251,7 +251,7 @@ macro_rules! atomic {
                                     // try to store val to dst
                                     concat!("strex", $asm_suffix, " {r}, {val}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cmp {r}, 0x0",
+                                    "cmp {r}, #0",
                                     "bne 2b",
                                 $acquire, // acquire fence
                                 dst = in(reg) dst,
@@ -612,7 +612,7 @@ macro_rules! atomic64 {
                                     // try to store val pair to dst
                                     "strexd r4, r2, r3, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cmp r4, 0x0",
+                                    "cmp r4, #0",
                                     "bne 2b",
                                 $acquire, // acquire fence
                                 dst = in(reg) dst,
@@ -661,7 +661,7 @@ macro_rules! atomic64 {
                                     // try to store val pair to dst
                                     "strexd {r}, r2, r3, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cmp {r}, 0x0",
+                                    "cmp {r}, #0",
                                     "bne 2b",
                                 $acquire, // acquire fence
                                 dst = in(reg) dst,

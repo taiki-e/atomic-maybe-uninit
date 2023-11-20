@@ -145,7 +145,7 @@ macro_rules! atomic {
                                     // try to store val to dst
                                     concat!("st", $release, "ex", $asm_suffix, " {r}, {val}, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cmp {r}, 0x0",
+                                    "cmp {r}, #0",
                                     "bne 2b",
                                 dst = in(reg) dst,
                                 val = inout(reg) val => _,
@@ -334,7 +334,7 @@ macro_rules! atomic64 {
                                     // try to store val pair to dst
                                     concat!("st", $release, "exd r4, r2, r3, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cmp r4, 0x0",
+                                    "cmp r4, #0",
                                     "bne 2b",
                                 dst = in(reg) dst,
                                 // val pair - must be even-numbered and not R14
@@ -376,7 +376,7 @@ macro_rules! atomic64 {
                                     // try to store val pair to dst
                                     concat!("st", $release, "exd {r}, r2, r3, [{dst}]"),
                                     // 0 if the store was successful, 1 if no store was performed
-                                    "cmp {r}, 0x0",
+                                    "cmp {r}, #0",
                                     "bne 2b",
                                 dst = in(reg) dst,
                                 r = out(reg) _,
