@@ -14,7 +14,6 @@ ccmp
 cdsg
 cinc
 cirruslabs
-clif
 clrex
 cmpd
 cmpw
