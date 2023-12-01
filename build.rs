@@ -116,10 +116,11 @@ fn main() {
             subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
             subarch = subarch.split_once('.').unwrap_or((subarch, "")).0; // ignore .base/.main suffix
             let mut known = true;
-            // As of rustc nightly-2023-02-05, there are the following "vN*" patterns:
+            // As of rustc nightly-2023-11-21, there are the following "vN*" patterns:
             // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
             // ""
             // "64_32"
+            // "64e"
             // "v4t"
             // "v5te"
             // "v6"
@@ -138,7 +139,7 @@ fn main() {
             // - v7, v7a, v7neon, v7s, and v7k are aclass
             // - v6m, v7em, v7m, and v8m are mclass
             // - v7r is rclass
-            // - 64_32 is aarch64 https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/arm64_32_apple_watchos.rs#L10
+            // - 64_32 and 64e are aarch64
             //
             // Other targets don't have *class target feature.
             // For example:
