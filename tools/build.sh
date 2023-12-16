@@ -194,7 +194,7 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
     # shellcheck disable=SC2207
     if [[ "${rustc_minor_version}" -ge 76 ]]; then
         build_scripts=(build.rs)
-        check_cfg='-Z unstable-options --check-cfg=cfg(target_pointer_width,values("128")) --check-cfg=cfg(target_arch,values("xtensa"))'
+        check_cfg='-Z unstable-options --check-cfg=cfg(target_pointer_width,values("128")) --check-cfg=cfg(target_arch,values("xtensa")) --check-cfg=cfg(target_feature,values("lse2","lse128","rcpc3","v8m","partword-atomics","quadword-atomics","fast-serialization"))'
         known_cfgs+=($(grep -E 'cargo:rustc-cfg=' "${build_scripts[@]}" | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u))
         # TODO: handle multi-line target_feature_if
         known_target_feature_values+=($(grep -E 'target_feature_if\("' "${build_scripts[@]}" | sed -E 's/^.*target_feature_if\(//; s/",.*$/"/' | LC_ALL=C sort -u))
