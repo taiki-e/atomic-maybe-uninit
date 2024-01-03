@@ -172,6 +172,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         }
     }
 
+    // TODO: update docs based on https://github.com/rust-lang/rust/pull/116762
     /// Creates a new reference to an atomic value from a pointer.
     ///
     /// # Safety
