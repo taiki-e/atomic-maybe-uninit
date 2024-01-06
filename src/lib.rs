@@ -752,15 +752,15 @@ mod private {
     }
 
     #[repr(align(1))]
-    pub struct Align1(u8);
+    pub struct Align1(#[allow(dead_code)] u8);
     #[repr(align(2))]
-    pub struct Align2(u16);
+    pub struct Align2(#[allow(dead_code)] u16);
     #[repr(align(4))]
-    pub struct Align4(u32);
+    pub struct Align4(#[allow(dead_code)] u32);
     #[repr(align(8))]
-    pub struct Align8(u64);
+    pub struct Align8(#[allow(dead_code)] u64);
     #[repr(align(16))]
-    pub struct Align16(u128);
+    pub struct Align16(#[allow(dead_code)] u128);
     #[cfg(target_pointer_width = "16")]
     pub(crate) type AlignPtr = Align2;
     #[cfg(target_pointer_width = "32")]
