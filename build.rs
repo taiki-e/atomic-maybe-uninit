@@ -67,6 +67,10 @@ fn main() {
                 && version.probe(71, 2023, 5, 8)
                 && is_allowed_feature("asm_experimental_arch")
             {
+                // https://github.com/rust-lang/rust/pull/119431 merged in Rust 1.77 (nightly-2024-01-05).
+                if !version.probe(77, 2024, 1, 4) {
+                    println!("cargo:rustc-cfg=atomic_maybe_uninit_s390x_no_reg_addr");
+                }
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
         }

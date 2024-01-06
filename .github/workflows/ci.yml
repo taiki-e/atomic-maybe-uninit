@@ -179,6 +179,8 @@ jobs:
             target: riscv64gc-unknown-linux-gnu
           - rust: nightly
             target: s390x-unknown-linux-gnu
+          - rust: nightly-2024-01-04 # Rust 1.77, LLVM 17 (newest version that does not support reg_addr register class)
+            target: s390x-unknown-linux-gnu
           - rust: nightly-2023-05-09 # Rust 1.71, LLVM 16 (oldest version we can implement atomic RMWs on this target)
             target: s390x-unknown-linux-gnu
           - rust: '1.59'

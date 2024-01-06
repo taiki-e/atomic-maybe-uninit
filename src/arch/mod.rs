@@ -97,6 +97,7 @@ mod powerpc;
 mod riscv;
 #[cfg(target_arch = "s390x")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+#[cfg_attr(atomic_maybe_uninit_s390x_no_reg_addr, path = "s390x_no_reg_addr.rs")]
 mod s390x;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86;
