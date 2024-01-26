@@ -50,7 +50,7 @@ macro_rules! atomic_load {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("dbar 0"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -99,7 +99,7 @@ macro_rules! atomic {
                                 options(nostack, preserves_flags),
                             )
                         }
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }
@@ -226,7 +226,7 @@ macro_rules! atomic_sub_word {
                         Ordering::Relaxed => atomic_store!("", ""),
                         Ordering::Release => atomic_store!("", "dbar 0"),
                         Ordering::SeqCst => atomic_store!("dbar 0", "dbar 0"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }

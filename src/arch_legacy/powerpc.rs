@@ -79,7 +79,7 @@ macro_rules! atomic_rmw {
             Ordering::Release => $op!("", "lwsync"),
             Ordering::AcqRel => $op!("lwsync", "lwsync"),
             Ordering::SeqCst => $op!("lwsync", "sync"),
-            _ => unreachable!("{:?}", $order),
+            _ => unreachable!(),
         }
     };
 }
@@ -154,7 +154,7 @@ macro_rules! atomic_load_store {
                         Ordering::Acquire => atomic_load!("lwsync", ""),
                         #[cfg(target_arch = "powerpc")]
                         Ordering::SeqCst => atomic_load!("lwsync", "sync"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -191,7 +191,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_store!(""),
                         Ordering::Release => atomic_store!("lwsync"),
                         Ordering::SeqCst => atomic_store!("sync"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }
@@ -627,7 +627,7 @@ macro_rules! atomic128 {
                         }
                         Ordering::Acquire => atomic_load_acquire!(""),
                         Ordering::SeqCst => atomic_load_acquire!("sync"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -668,7 +668,7 @@ macro_rules! atomic128 {
                         Ordering::Relaxed => atomic_store!(""),
                         Ordering::Release => atomic_store!("lwsync"),
                         Ordering::SeqCst => atomic_store!("sync"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }

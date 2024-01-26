@@ -54,7 +54,7 @@ macro_rules! atomic_rmw {
             Ordering::SeqCst if $write == Ordering::SeqCst => $op!("a", "l", "dmb ish"),
             // AcqRel and SeqCst RMWs are equivalent in non-MSVC environments.
             Ordering::SeqCst => $op!("a", "l", ""),
-            _ => unreachable!("{:?}", $order),
+            _ => unreachable!(),
         }
     };
 }
@@ -99,7 +99,7 @@ macro_rules! atomic {
                         #[cfg(not(any(target_feature = "rcpc", atomic_maybe_uninit_target_feature = "rcpc")))]
                         Ordering::Acquire => atomic_load!("a"),
                         Ordering::SeqCst => atomic_load!("a"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -138,7 +138,7 @@ macro_rules! atomic {
                         // https://reviews.llvm.org/D141748
                         #[cfg(target_env = "msvc")]
                         Ordering::SeqCst => atomic_store!("l", "dmb ish"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }
@@ -430,7 +430,7 @@ macro_rules! atomic128 {
                                 options(nostack, preserves_flags),
                             );
                         },
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                     MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
@@ -478,7 +478,7 @@ macro_rules! atomic128 {
                         Ordering::Relaxed => atomic_load!("", ""),
                         Ordering::Acquire => atomic_load!("a", ""),
                         Ordering::SeqCst => atomic_load!("a", "l"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                     MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
                 }
@@ -554,7 +554,7 @@ macro_rules! atomic128 {
                         Ordering::SeqCst => atomic_rmw!(atomic_store_swpp, order),
                         #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
                         Ordering::SeqCst => atomic_store!("dmb ish", "dmb ish"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]

@@ -194,7 +194,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -232,7 +232,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
                         Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
                         Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }
@@ -291,7 +291,7 @@ macro_rules! atomic {
                         Ordering::AcqRel | Ordering::SeqCst => {
                             atomic_swap!(asm_use_dmb, dmb!(), dmb!());
                         }
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -450,7 +450,7 @@ macro_rules! atomic {
                         // AcqRel and SeqCst compare_exchange are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!(""),
                         (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
-                        _ => unreachable!("{:?}, {:?}", success, failure),
+                        _ => unreachable!(),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
@@ -587,7 +587,7 @@ macro_rules! atomic {
                         // AcqRel and SeqCst compare_exchange_weak are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_weak_fail_load_relaxed!(dmb!()),
                         (AcqRel | SeqCst, _) => cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!("{:?}, {:?}", success, failure),
+                        _ => unreachable!(),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
@@ -648,7 +648,7 @@ macro_rules! atomic64 {
                         Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -701,7 +701,7 @@ macro_rules! atomic64 {
                         Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
                         Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
                         Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }
@@ -760,7 +760,7 @@ macro_rules! atomic64 {
                         Ordering::Release => atomic_swap!(asm_use_dmb, "", dmb!()),
                         // AcqRel and SeqCst swaps are equivalent.
                         Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -945,7 +945,7 @@ macro_rules! atomic64 {
                         // AcqRel and SeqCst compare_exchange are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!(""),
                         (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
-                        _ => unreachable!("{:?}, {:?}", success, failure),
+                        _ => unreachable!(),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed
@@ -1112,7 +1112,7 @@ macro_rules! atomic64 {
                         // AcqRel and SeqCst compare_exchange_weak are equivalent.
                         (AcqRel | SeqCst, Relaxed) => cmpxchg_weak_fail_load_relaxed!(dmb!()),
                         (AcqRel | SeqCst, _) => cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!("{:?}, {:?}", success, failure),
+                        _ => unreachable!(),
                     }
                     debug_assert!(r == 0 || r == 1, "r={}", r);
                     // 0 if the store was successful, 1 if no store was performed

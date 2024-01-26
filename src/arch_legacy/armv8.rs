@@ -36,7 +36,7 @@ macro_rules! atomic_rmw {
             Ordering::Release => $op!("r", "l"),
             // AcqRel and SeqCst RMWs are equivalent.
             Ordering::AcqRel | Ordering::SeqCst => $op!("a", "l"),
-            _ => unreachable!("{:?}", $order),
+            _ => unreachable!(),
         }
     };
 }
@@ -88,7 +88,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_load!("r"),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -124,7 +124,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_store!("r"),
                         // Release and SeqCst stores are equivalent.
                         Ordering::Release | Ordering::SeqCst => atomic_store!("l"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }
@@ -340,7 +340,7 @@ macro_rules! atomic64 {
                         Ordering::Relaxed => atomic_load!("r"),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out

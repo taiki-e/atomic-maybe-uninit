@@ -92,7 +92,7 @@ macro_rules! atomic_load_store {
                                 options(nostack, preserves_flags),
                             );
                         }
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
                 out
@@ -137,7 +137,7 @@ macro_rules! atomic_load_store {
                         }
                         Ordering::Release => atomic_store_release!(""),
                         Ordering::SeqCst => atomic_store_release!(blx!("{kuser_memory_barrier}")),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }

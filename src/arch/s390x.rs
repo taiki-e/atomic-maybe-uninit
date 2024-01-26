@@ -98,7 +98,7 @@ macro_rules! atomic_load_store {
                             atomic_maybe_uninit_target_feature = "fast-serialization",
                         )))]
                         Ordering::SeqCst => atomic_store!("bcr 15, 0"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }
@@ -346,7 +346,7 @@ macro_rules! atomic128 {
                             atomic_maybe_uninit_target_feature = "fast-serialization",
                         )))]
                         Ordering::SeqCst => atomic_store!("bcr 15, 0"),
-                        _ => unreachable!("{:?}", order),
+                        _ => unreachable!(),
                     }
                 }
             }
