@@ -341,7 +341,7 @@ macro_rules! atomic {
                                 concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
                                 "b.ne 3f",
                                 concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new_tmp", $val_modifier, "}, [{dst}]"),
-                                // TODO: only emit when the above sc succeed
+                                // TODO: emit fence only when the above sc succeed?
                                 // // 0 if the store was successful, 1 if no store was performed
                                 // "cbnz {r:w}, 4f",
                                 $fence,

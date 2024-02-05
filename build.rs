@@ -194,7 +194,7 @@ fn main() {
                     // ARMv8-M Mainline is a superset of ARMv7-M.
                     // ARMv8-M Baseline is a superset of ARMv6-M.
                     // That said, LLVM handles thumbv8m.main without v8m like v6m, not v7m: https://godbolt.org/z/Ph96v9zae
-                    // TODO: ARMv9-M has not yet been released and not supported by LLVM,
+                    // TODO: ARMv9-M has not yet been released,
                     // so it is not clear how it will be handled here.
                     (false, true)
                 } else {
