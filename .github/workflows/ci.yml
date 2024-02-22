@@ -69,7 +69,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - rust: nightly
             target: aarch64-unknown-linux-gnu
-          - rust: nightly
+          - rust: nightly-2024-02-05 # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/396
             target: aarch64_be-unknown-linux-gnu
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use stable asm on this target)
             target: aarch64_be-unknown-linux-gnu

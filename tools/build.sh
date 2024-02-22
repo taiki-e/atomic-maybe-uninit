@@ -31,11 +31,13 @@ default_targets=(
     # rustc --print target-list | grep -E '^(aarch64|arm64)'
     aarch64-unknown-linux-gnu
     # aarch64 big endian
-    aarch64_be-unknown-linux-gnu
+    # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/396
+    # aarch64_be-unknown-linux-gnu
     # aarch64 ILP32 ABI
     aarch64-unknown-linux-gnu_ilp32
     # aarch64 ILP32 ABI big endian
-    aarch64_be-unknown-linux-gnu_ilp32
+    # TODO: core_simd bug https://github.com/rust-lang/portable-simd/pull/396
+    # aarch64_be-unknown-linux-gnu_ilp32
     # aarch64 with FEAT_LSE & FEAT_LSE2 & FEAT_LRCPC
     aarch64-apple-darwin
 
