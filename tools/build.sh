@@ -65,9 +65,9 @@ default_targets=(
     # armv7-r big endian
     armebv7r-none-eabi
     # armv8-r
-    armv8r-none-eabi # custom target
+    armv8r-none-eabihf
     # armv8-r big endian
-    armebv8r-none-eabi # custom target
+    armebv8r-none-eabihf # custom target
     # armv6-m
     thumbv6m-none-eabi
     # armv7-m
