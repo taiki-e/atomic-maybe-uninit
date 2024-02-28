@@ -13,7 +13,6 @@ cbnz
 ccmp
 cdsg
 cinc
-cirruslabs
 clrex
 cmpd
 cmpw

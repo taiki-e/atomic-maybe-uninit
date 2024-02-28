@@ -62,7 +62,11 @@ jobs:
           - rust: nightly
             flags: -C panic=abort -Z panic_abort_tests
           - rust: nightly
-            os: macos-latest
+            # target: x86_64-apple-darwin
+            os: macos-13
+          - rust: nightly
+            target: aarch64-apple-darwin
+            os: macos-14
           - rust: '1.59'
             target: aarch64-unknown-linux-gnu
           - rust: stable
@@ -213,13 +217,13 @@ jobs:
           target: ${{ matrix.target }}
         if: matrix.target != ''
       - run: echo "RUSTFLAGS=${RUSTFLAGS} --cfg qemu" >>"${GITHUB_ENV}"
-        if: matrix.target != '' && !startsWith(matrix.target, 'i686') && !startsWith(matrix.target, 'x86_64')
+        if: matrix.target != '' && !startsWith(matrix.target, 'i686') && !startsWith(matrix.target, 'x86_64') && !startsWith(matrix.os, 'macos')
       - run: |
           echo "RUSTFLAGS=${RUSTFLAGS} ${{ matrix.flags }}" >>"${GITHUB_ENV}"
           echo "RUSTDOCFLAGS=${RUSTDOCFLAGS} ${{ matrix.flags }}" >>"${GITHUB_ENV}"
         if: matrix.flags != ''
       - run: echo "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
-        if: matrix.target != ''
+        if: matrix.target != '' && !contains(matrix.target, '-darwin')
       # TODO: LLVM bug: Undefined temporary symbol error when building std.
       - run: echo "RELEASE=--release" >>"${GITHUB_ENV}"
         if: startsWith(matrix.target, 'mips-') || startsWith(matrix.target, 'mipsel-')
@@ -245,13 +249,15 @@ jobs:
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
-        if: startsWith(matrix.target, 'aarch64')
+        # macOS is skipped because it is +rcpc,+lse,+lse2 by default
+        if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
       # aarch64 +rcpc,+lse,+lse2
       - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc,+lse,+lse2
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc,+lse,+lse2
-        if: startsWith(matrix.target, 'aarch64')
+        # macOS is skipped because it is +rcpc,+lse,+lse2 by default
+        if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
       # arm v8 little endian
       - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
