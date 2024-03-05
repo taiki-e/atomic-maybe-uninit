@@ -12,12 +12,8 @@ use core::{
 };
 
 macro_rules! static_assert {
-    ($cond:expr $(, $($msg:tt)*)?) => {
-        const _: () = {
-            if !$cond {
-                panic!($($msg)*)
-            }
-        };
+    ($($tt:tt)*) => {
+        const _: () = assert!($($tt)*);
     };
 }
 
