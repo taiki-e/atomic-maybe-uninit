@@ -187,6 +187,7 @@ rustc_minor_version="${rustc_minor_version%%.*}"
 llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -Vv | (grep 'LLVM version: ' || true) | (sed 's/LLVM version: //' || true))
 llvm_version="${llvm_version%%.*}"
 base_args=(${pre_args[@]+"${pre_args[@]}"} hack build)
+target_dir=$(pwd)/target
 nightly=''
 if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]]; then
     nightly=1
@@ -253,8 +254,9 @@ build() {
             case "${target}" in
                 *-apple-*) ;;
                 *)
-                    RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
-                        x_cargo "${args[@]}" --target-dir target/cmpxchg16b "$@"
+                    CARGO_TARGET_DIR="${target_dir}/cmpxchg16b" \
+                        RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
+                        x_cargo "${args[@]}" "$@"
                     ;;
             esac
             ;;
@@ -263,39 +265,48 @@ build() {
             case "${target}" in
                 *-darwin) ;;
                 *)
-                    RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
-                        x_cargo "${args[@]}" --target-dir target/lse "$@"
+                    CARGO_TARGET_DIR="${target_dir}/lse" \
+                        RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
+                        x_cargo "${args[@]}" "$@"
                     # FEAT_LSE2 doesn't imply FEAT_LSE.
-                    RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2" \
-                        x_cargo "${args[@]}" --target-dir target/lse2 "$@"
-                    RUSTFLAGS="${target_rustflags} -C target-feature=+rcpc" \
-                        x_cargo "${args[@]}" --target-dir target/rcpc "$@"
+                    CARGO_TARGET_DIR="${target_dir}/lse2" \
+                        RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2" \
+                        x_cargo "${args[@]}" "$@"
+                    CARGO_TARGET_DIR="${target_dir}/rcpc" \
+                        RUSTFLAGS="${target_rustflags} -C target-feature=+rcpc" \
+                        x_cargo "${args[@]}" "$@"
                     ;;
             esac
             # Support for FEAT_LRCPC3 and FEAT_LSE128 requires LLVM 16+.
             if [[ "${llvm_version}" -ge 16 ]]; then
-                RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2,+rcpc3" \
-                    x_cargo "${args[@]}" --target-dir target/rcpc3 "$@"
+                CARGO_TARGET_DIR="${target_dir}/rcpc3" \
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2,+rcpc3" \
+                    x_cargo "${args[@]}" "$@"
                 # FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2.
-                RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128" \
-                    x_cargo "${args[@]}" --target-dir target/lse128 "$@"
-                RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128,+rcpc3" \
-                    x_cargo "${args[@]}" --target-dir target/lse128-rcpc3 "$@"
+                CARGO_TARGET_DIR="${target_dir}/lse128" \
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128" \
+                    x_cargo "${args[@]}" "$@"
+                CARGO_TARGET_DIR="${target_dir}/lse128-rcpc3" \
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128,+rcpc3" \
+                    x_cargo "${args[@]}" "$@"
             fi
             ;;
         powerpc64-*)
             # powerpc64le- (little-endian) is skipped because it is pwr8 by default
-            RUSTFLAGS="${target_rustflags} -C target-cpu=pwr8" \
-                x_cargo "${args[@]}" --target-dir target/pwr8 "$@"
+            CARGO_TARGET_DIR="${target_dir}/pwr8" \
+                RUSTFLAGS="${target_rustflags} -C target-cpu=pwr8" \
+                x_cargo "${args[@]}" "$@"
             ;;
         powerpc64le-*)
             # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
-            RUSTFLAGS="${target_rustflags} -C target-cpu=pwr7" \
-                x_cargo "${args[@]}" --target-dir target/pwr7 "$@"
+            CARGO_TARGET_DIR="${target_dir}/pwr7" \
+                RUSTFLAGS="${target_rustflags} -C target-cpu=pwr7" \
+                x_cargo "${args[@]}" "$@"
             ;;
         s390x*)
-            RUSTFLAGS="${target_rustflags} -C target-cpu=z196" \
-                x_cargo "${args[@]}" --target-dir target/z196 "$@"
+            CARGO_TARGET_DIR="${target_dir}/z196" \
+                RUSTFLAGS="${target_rustflags} -C target-cpu=z196" \
+                x_cargo "${args[@]}" "$@"
             ;;
     esac
 }
