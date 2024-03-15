@@ -133,7 +133,7 @@ impl<T: Primitive> From<T> for AtomicMaybeUninit<T> {
 }
 
 impl<T: Primitive> fmt::Debug for AtomicMaybeUninit<T> {
-    #[allow(clippy::missing_inline_in_public_items)] // fmt is not hot path
+    #[inline] // fmt is not hot path, but #[inline] on fmt seems to still be useful: https://github.com/rust-lang/rust/pull/117727
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(core::any::type_name::<Self>())
     }
