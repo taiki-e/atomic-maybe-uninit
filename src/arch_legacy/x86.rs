@@ -58,7 +58,19 @@ macro_rules! if_sse2 {
 }
 
 macro_rules! atomic {
-    ($int_type:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt) => {
+    (
+        $int_type:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
+        $tmp_new_reg:tt
+    ) => {
+        #[cfg(target_arch = "x86")]
+        atomic!($int_type, $val_reg, $val_modifier, $ptr_size, $cmpxchg_cmp_reg, "ecx", $tmp_new_reg);
+        #[cfg(target_arch = "x86_64")]
+        atomic!($int_type, $val_reg, $val_modifier, $ptr_size, $cmpxchg_cmp_reg, "rcx", $tmp_new_reg);
+    };
+    (
+        $int_type:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
+        $rcx:tt, $tmp_new_reg:tt
+    ) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -181,57 +193,56 @@ macro_rules! atomic {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg
                 unsafe {
-                    let r: u8;
+                    let mut r: crate::utils::RegSize;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // load from old/new to $cmpxchg_cmp_reg/tmp_new
+                        // load from old/new to $cmpxchg_cmp_reg/$tmp_new_reg
                         concat!("mov ", $cmpxchg_cmp_reg, ", ", $ptr_size, " ptr [{old", ptr_modifier!(), "}]"),
-                        concat!("mov {tmp_new", $val_modifier, "}, ", $ptr_size, " ptr [{new", ptr_modifier!(), "}]"),
+                        concat!("mov ", $tmp_new_reg, ", ", $ptr_size, " ptr [{new", ptr_modifier!(), "}]"),
                         // (atomic) CAS
                         // - Compare $cmpxchg_cmp_reg with dst.
-                        // - If equal, ZF is set and tmp_new is loaded into dst.
+                        // - If equal, ZF is set and $tmp_new_reg is loaded into dst.
                         // - Else, clear ZF and load dst into $cmpxchg_cmp_reg.
-                        concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp_new", $val_modifier, "}"),
-                        // load ZF to r
-                        "sete {r}",
+                        concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], ", $tmp_new_reg),
+                        // load ZF to cl
+                        "sete cl",
                         // store $cmpxchg_cmp_reg to out
-                        concat!("mov ", $ptr_size, " ptr [{out", ptr_modifier!(), "}], ", $cmpxchg_cmp_reg, ""),
+                        concat!("mov ", $ptr_size, " ptr [{out", ptr_modifier!(), "}], ", $cmpxchg_cmp_reg),
                         dst = in(reg) dst,
                         old = in(reg) old,
                         new = in(reg) new,
                         out = in(reg) out_ptr,
-                        tmp_new = out($val_reg) _,
-                        r = out(reg_byte) r,
+                        out($rcx) r,
                         out($cmpxchg_cmp_reg) _,
                         // Do not use `preserves_flags` because CMPXCHG modifies the ZF flag.
                         options(nostack),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
-                    (out, r != 0)
+                    debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);
+                    (out, r as u8 != 0)
                 }
             }
         }
     };
 }
 
-atomic!(i8, reg_byte, "", "byte", "al");
-atomic!(u8, reg_byte, "", "byte", "al");
-atomic!(i16, reg, ":x", "word", "ax");
-atomic!(u16, reg, ":x", "word", "ax");
-atomic!(i32, reg, ":e", "dword", "eax");
-atomic!(u32, reg, ":e", "dword", "eax");
+atomic!(i8, reg_byte, "", "byte", "al", "cl");
+atomic!(u8, reg_byte, "", "byte", "al", "cl");
+atomic!(i16, reg, ":x", "word", "ax", "cx");
+atomic!(u16, reg, ":x", "word", "ax", "cx");
+atomic!(i32, reg, ":e", "dword", "eax", "ecx");
+atomic!(u32, reg, ":e", "dword", "eax", "ecx");
 #[cfg(target_arch = "x86_64")]
-atomic!(i64, reg, "", "qword", "rax");
+atomic!(i64, reg, "", "qword", "rax", "rcx");
 #[cfg(target_arch = "x86_64")]
-atomic!(u64, reg, "", "qword", "rax");
+atomic!(u64, reg, "", "qword", "rax", "rcx");
 #[cfg(target_pointer_width = "32")]
-atomic!(isize, reg, ":e", "dword", "eax");
+atomic!(isize, reg, ":e", "dword", "eax", "ecx");
 #[cfg(target_pointer_width = "32")]
-atomic!(usize, reg, ":e", "dword", "eax");
+atomic!(usize, reg, ":e", "dword", "eax", "ecx");
 #[cfg(target_pointer_width = "64")]
-atomic!(isize, reg, "", "qword", "rax");
+atomic!(isize, reg, "", "qword", "rax", "rcx");
 #[cfg(target_pointer_width = "64")]
-atomic!(usize, reg, "", "qword", "rax");
+atomic!(usize, reg, "", "qword", "rax", "rcx");
 
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE) instead of CMPXCHG8B.
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
