@@ -204,6 +204,7 @@ case "${cmd}" in
         ;;
     valgrind)
         export "CARGO_TARGET_${target_upper}_RUNNER"="valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --track-origins=yes --fair-sched=yes"
+        # TODO: always pass randomize-layout
         export RUSTFLAGS="${RUSTFLAGS:-} --cfg valgrind"
         export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} --cfg valgrind"
         # doctest on Valgrind is very slow
@@ -217,22 +218,11 @@ esac
 
 run() {
     if [[ ${#release[@]} -eq 0 ]]; then
-        if [[ "${RUSTFLAGS:-}" =~ -Z( )?sanitizer= ]]; then
-            # doctest with debug build on Sanitizer is slow
-            x_cargo test ${build_std[@]+"${build_std[@]}"} --tests "$@"
-        else
-            x_cargo test ${build_std[@]+"${build_std[@]}"} ${tests[@]+"${tests[@]}"} "$@"
-        fi
+        x_cargo test ${build_std[@]+"${build_std[@]}"} ${tests[@]+"${tests[@]}"} "$@"
     fi
 
     # release mode + doctests is slow on some platforms (probably related to the fact that they compile binaries for each example)
-    if [[ "${RUSTFLAGS:-}" =~ -Z( )?sanitizer=memory ]]; then
-        # Workaround https://github.com/google/sanitizers/issues/558
-        CARGO_PROFILE_RELEASE_OPT_LEVEL=0 \
-            x_cargo test ${build_std[@]+"${build_std[@]}"} --release --tests "$@"
-    else
-        x_cargo test ${build_std[@]+"${build_std[@]}"} --release --tests "$@"
-    fi
+    x_cargo test ${build_std[@]+"${build_std[@]}"} --release --tests "$@"
 
     if [[ -n "${cranelift}" ]]; then
         return # LTO is not supported
@@ -250,42 +240,38 @@ run() {
             ;;
     esac
 
-    case "${target}" in
-        # TODO: haw to pass build-std-features to cargo-careful?
-        hexagon-unknown-linux-musl) ;;
-        *)
-            # cargo-careful only supports nightly. rustc-build-sysroot doesn't work on old nightly (at least on nightly-2022-08-12 - 1.65.0-nightly).
-            if [[ "${rustc_minor_version}" -ge 66 ]] && [[ -n "${nightly}" ]] && type -P cargo-careful &>/dev/null && [[ "${cargo}" == "cargo" ]]; then
-                # Since nightly-2022-12-23, -Z build-std + -Z randomize-layout + release mode on Windows
-                # sometimes causes segfault in build script or proc-macro.
-                if [[ "${target}" == *"-windows"* ]]; then
-                    randomize_layout=''
+    # cargo-careful only supports nightly. rustc-build-sysroot doesn't work on old nightly (at least on nightly-2022-08-12 - 1.65.0-nightly).
+    if [[ "${rustc_minor_version}" -ge 66 ]] && [[ -n "${nightly}" ]] && type -P cargo-careful &>/dev/null && [[ "${cargo}" == "cargo" ]]; then
+        # Since nightly-2022-12-23, -Z build-std + -Z randomize-layout + release mode on Windows
+        # sometimes causes segfault in build script or proc-macro.
+        if [[ "${target}" == *"-windows"* ]]; then
+            randomize_layout=''
+        fi
+        flags="${randomize_layout}"
+        case "${target}" in
+            *-linux-musl*) flags+=" -C target-feature=-crt-static" ;;
+        esac
+        case "${target}" in
+            # cannot find rsbegin.o/rsend.o when building std
+            *-windows-gnu*) ;;
+            # TODO: haw to pass build-std-features to cargo-careful?
+            hexagon-unknown-linux-musl) ;;
+            *)
+                if [[ ${#build_std[@]} -gt 0 ]]; then
+                    CARGO_TARGET_DIR="${target_dir}/careful" \
+                        RUSTFLAGS="${RUSTFLAGS:-}${flags}" \
+                        RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${flags}" \
+                        x_cargo careful test -Z doctest-xcompile ${release[@]+"${release[@]}"} ${tests[@]+"${tests[@]}"} "$@"
+                else
+                    # -Z doctest-xcompile is already passed
+                    CARGO_TARGET_DIR="${target_dir}/careful" \
+                        RUSTFLAGS="${RUSTFLAGS:-}${flags}" \
+                        RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${flags}" \
+                        x_cargo careful test ${release[@]+"${release[@]}"} ${tests[@]+"${tests[@]}"} "$@"
                 fi
-                flags="${randomize_layout}"
-                case "${target}" in
-                    *-linux-musl*) flags+=" -C target-feature=-crt-static" ;;
-                esac
-                case "${target}" in
-                    # cannot find rsbegin.o/rsend.o when building std
-                    *-windows-gnu*) ;;
-                    *)
-                        if [[ ${#build_std[@]} -gt 0 ]]; then
-                            CARGO_TARGET_DIR="${target_dir}/careful" \
-                                RUSTFLAGS="${RUSTFLAGS:-}${flags}" \
-                                RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${flags}" \
-                                x_cargo careful test -Z doctest-xcompile ${release[@]+"${release[@]}"} ${tests[@]+"${tests[@]}"} "$@"
-                        else
-                            # -Z doctest-xcompile is already passed
-                            CARGO_TARGET_DIR="${target_dir}/careful" \
-                                RUSTFLAGS="${RUSTFLAGS:-}${flags}" \
-                                RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${flags}" \
-                                x_cargo careful test ${release[@]+"${release[@]}"} ${tests[@]+"${tests[@]}"} "$@"
-                        fi
-                        ;;
-                esac
-            fi
-            ;;
-    esac
+                ;;
+        esac
+    fi
 }
 
 run ${cargo_options[@]+"${cargo_options[@]}"} "${args[@]}" ${rest_cargo_options[@]+"${rest_cargo_options[@]}"}
