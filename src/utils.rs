@@ -214,7 +214,7 @@ pub(crate) struct Pair<T: Copy> {
 type MinWord = u32;
 // Helper for implementing sub-word atomic operations using word-sized LL/SC loop or CAS loop.
 //
-// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/lib/CodeGen/AtomicExpandPass.cpp#L699
+// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/lib/CodeGen/AtomicExpandPass.cpp#L691
 // (aligned_ptr, shift, mask)
 #[allow(dead_code)]
 #[inline]

@@ -12,8 +12,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - s390x https://godbolt.org/z/YT64jvvrK
-// - s390x (z196) https://godbolt.org/z/Yj1dzsWsM
+// - s390x https://godbolt.org/z/5hcfK57fo
+// - s390x (z196) https://godbolt.org/z/GW98K9hnW
 
 #[path = "cfgs/s390x.rs"]
 mod cfgs;
@@ -284,7 +284,8 @@ atomic!(u64, "g");
 atomic!(isize, "g");
 atomic!(usize, "g");
 
-// https://github.com/llvm/llvm-project/commit/a11f63a952664f700f076fd754476a2b9eb158cc
+// s390x has 128-bit atomic load/store/CAS instructions and other operations are emulated by CAS loop.
+// See https://github.com/taiki-e/portable-atomic/blob/HEAD/src/imp/atomic128/README.md for details.
 macro_rules! atomic128 {
     ($int_type:ident) => {
         impl AtomicLoad for $int_type {

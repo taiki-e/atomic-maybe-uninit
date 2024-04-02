@@ -9,11 +9,11 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - powerpc https://godbolt.org/z/c5eMd3cnf
-// - powerpc64 https://godbolt.org/z/98M1r8ePv
-// - powerpc64 (pwr8) https://godbolt.org/z/ojsz5PYW7
-// - powerpc64le https://godbolt.org/z/Geoj3q9fr
-// - powerpc64le (pwr7) https://godbolt.org/z/q8KTcYGcG
+// - powerpc https://godbolt.org/z/ob733EPEP
+// - powerpc64 https://godbolt.org/z/Tjn9aEaad
+// - powerpc64 (pwr8) https://godbolt.org/z/KGcbY7hM3
+// - powerpc64le https://godbolt.org/z/MqEKGvo5v
+// - powerpc64le (pwr7) https://godbolt.org/z/e668jnrvj
 
 #[path = "cfgs/powerpc.rs"]
 mod cfgs;
@@ -475,9 +475,8 @@ atomic!(isize, "d", "d", "d");
 #[cfg(target_pointer_width = "64")]
 atomic!(usize, "d", "d", "d");
 
-// https://github.com/llvm/llvm-project/commit/549e118e93c666914a1045fde38a2cac33e1e445
-// https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/test/CodeGen/PowerPC/atomics-i128-ldst.ll
-// https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/test/CodeGen/PowerPC/atomics-i128.ll
+// powerpc64 on pwr8+ support 128-bit atomics (load/store/LL/SC):
+// See https://github.com/taiki-e/portable-atomic/blob/HEAD/src/imp/atomic128/README.md for details.
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",

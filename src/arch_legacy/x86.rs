@@ -236,7 +236,7 @@ atomic!(isize, reg, "", "qword", "rax", "rcx");
 atomic!(usize, reg, "", "qword", "rax", "rcx");
 
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE) instead of CMPXCHG8B.
-// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
+// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 macro_rules! atomic64 {

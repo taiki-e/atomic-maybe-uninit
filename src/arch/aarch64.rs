@@ -14,15 +14,15 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - aarch64 https://godbolt.org/z/15q1MjaGf
-// - aarch64 msvc https://godbolt.org/z/eo4eGEvGc
-// - aarch64 (+lse) https://godbolt.org/z/rr6ajW8Yc
-// - aarch64 msvc (+lse) https://godbolt.org/z/1PbxEKvvf
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/qceqjsr5T
-// - aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/fjsqPMz95
-// - aarch64 (+rcpc) https://godbolt.org/z/aE8evs6eq
-// - aarch64 (+lse2,+lse128) https://godbolt.org/z/e6fEMazxa
-// - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/Yvo7Ydqrr
+// - aarch64 https://godbolt.org/z/476TdcWMs
+// - aarch64 msvc https://godbolt.org/z/avbn6fGM4
+// - aarch64 (+lse) https://godbolt.org/z/jerE6rT99
+// - aarch64 msvc (+lse) https://godbolt.org/z/7358oeWTq
+// - aarch64 (+lse,+lse2) https://godbolt.org/z/KbKbfnxc1
+// - aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/fv6Gv7qfe
+// - aarch64 (+rcpc) https://godbolt.org/z/4dxvTPMhz
+// - aarch64 (+lse2,+lse128) https://godbolt.org/z/E5zEchThK
+// - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/xhKbsfT7E
 
 #[path = "cfgs/aarch64.rs"]
 mod cfgs;

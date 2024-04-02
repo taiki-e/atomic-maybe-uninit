@@ -9,8 +9,8 @@
 //   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences?lang=en
 //
 // Generated asm:
-// - armv5te https://godbolt.org/z/5GqKbYEfP
-// - armv4t https://godbolt.org/z/e94Tc1EPx
+// - armv5te https://godbolt.org/z/aTT1b54ez
+// - armv4t https://godbolt.org/z/67j5r3e3n
 
 #[path = "cfgs/arm_linux.rs"]
 mod cfgs;

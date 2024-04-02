@@ -12,8 +12,8 @@
 // - portable-atomic https://github.com/taiki-e/portable-atomic
 //
 // Generated asm:
-// - riscv64gc https://godbolt.org/z/edobnTb41
-// - riscv32imac https://godbolt.org/z/Ebxe8585j
+// - riscv64gc https://godbolt.org/z/6fc46Ec8e
+// - riscv32imac https://godbolt.org/z/P6r6PM7sf
 
 #[path = "cfgs/riscv.rs"]
 mod cfgs;

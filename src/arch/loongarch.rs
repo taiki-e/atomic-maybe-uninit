@@ -3,7 +3,7 @@
 // LoongArch
 //
 // Generated asm:
-// - loongarch64 https://godbolt.org/z/1G1sTq3ed
+// - loongarch64 https://godbolt.org/z/r98136r1b
 
 #[path = "cfgs/loongarch.rs"]
 mod cfgs;

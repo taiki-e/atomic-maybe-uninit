@@ -13,9 +13,9 @@
 //   https://developer.arm.com/documentation/ddi0553/latest
 //
 // Generated asm:
-// - armv8-a https://godbolt.org/z/Krvc45rc4
-// - armv8-m baseline https://godbolt.org/z/szv4vsT35
-// - armv8-m mainline https://godbolt.org/z/bbMrzhWdh
+// - armv8-a https://godbolt.org/z/TvnKGjfKn
+// - armv8-m baseline https://godbolt.org/z/Y9enGTP4Y
+// - armv8-m mainline https://godbolt.org/z/PqzfvcE73
 
 #[path = "cfgs/armv8.rs"]
 mod cfgs;

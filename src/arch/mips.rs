@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 // MIPS32 and MIPS64
-//
-// Generated asm:
-// - mips https://godbolt.org/z/hbK74Y17c
-// - mipsel https://godbolt.org/z/aoazd4rjY
-// - mips64 https://godbolt.org/z/18ees8xqx
-// - mips64el https://godbolt.org/z/rrcP1o19q
 
 #[path = "cfgs/mips.rs"]
 mod cfgs;
