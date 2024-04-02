@@ -208,7 +208,7 @@ macro_rules! atomic {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
                 }
@@ -254,7 +254,7 @@ macro_rules! atomic {
                         };
                     }
                     atomic_rmw!(cmpxchg_weak, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
                 }
@@ -452,7 +452,7 @@ macro_rules! atomic64 {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type, r == 0)
                 }
@@ -506,7 +506,7 @@ macro_rules! atomic64 {
                         };
                     }
                     atomic_rmw!(cmpxchg_weak, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type, r == 0)
                 }

@@ -200,7 +200,7 @@ macro_rules! atomic {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
             }
@@ -328,7 +328,7 @@ macro_rules! atomic_sub_word {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
             }

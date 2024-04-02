@@ -77,7 +77,7 @@ Feel free to submit an issue if your target is not supported yet.
     clippy::std_instead_of_alloc,
     clippy::std_instead_of_core,
 )]
-#![allow(clippy::unreadable_literal)]
+#![allow(clippy::inline_always, clippy::unreadable_literal)]
 #![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
 
 #[cfg(test)]

@@ -452,7 +452,7 @@ macro_rules! atomic {
                         (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
                         _ => unreachable!(),
                     }
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
                 }
@@ -589,7 +589,7 @@ macro_rules! atomic {
                         (AcqRel | SeqCst, _) => cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!()),
                         _ => unreachable!(),
                     }
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
                 }
@@ -947,7 +947,7 @@ macro_rules! atomic64 {
                         (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
                         _ => unreachable!(),
                     }
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
                 }
@@ -1114,7 +1114,7 @@ macro_rules! atomic64 {
                         (AcqRel | SeqCst, _) => cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!()),
                         _ => unreachable!(),
                     }
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
                 }

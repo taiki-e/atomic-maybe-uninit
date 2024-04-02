@@ -254,7 +254,7 @@ macro_rules! atomic {
                         // Do not use `preserves_flags` because CMP and __kuser_cmpxchg modify the condition flags.
                         options(nostack),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
                 }
@@ -387,7 +387,7 @@ macro_rules! atomic_sub_word {
                         // Do not use `preserves_flags` because CMP and __kuser_cmpxchg modify the condition flags.
                         options(nostack),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
                 }
@@ -578,7 +578,7 @@ macro_rules! atomic64 {
                         // Do not use `preserves_flags` because CMP, ORRS, and __kuser_cmpxchg64 modify the condition flags.
                         options(nostack),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
                 }

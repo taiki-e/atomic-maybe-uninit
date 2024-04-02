@@ -33,6 +33,21 @@ macro_rules! const_fn {
     };
 }
 
+#[allow(dead_code)]
+// Stable version of https://doc.rust-lang.org/nightly/std/hint/fn.assert_unchecked.html.
+#[inline(always)]
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) unsafe fn assert_unchecked(cond: bool) {
+    if !cond {
+        if cfg!(debug_assertions) {
+            unreachable!()
+        } else {
+            // SAFETY: the caller promised `cond` is true.
+            unsafe { core::hint::unreachable_unchecked() }
+        }
+    }
+}
+
 // https://github.com/rust-lang/rust/blob/1.70.0/library/core/src/sync/atomic.rs#L3155
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]

@@ -156,7 +156,7 @@ macro_rules! atomic {
                         r = out(reg) r,
                         options(nostack, preserves_flags),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
             }
@@ -309,7 +309,7 @@ macro_rules! atomic_sub_word {
                         out("$t1") _,
                         options(nostack, preserves_flags),
                     );
-                    debug_assert!(r == 0 || r == 1, "r={}", r);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
             }
