@@ -44,8 +44,8 @@ macro_rules! atomic_load {
                     }
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
-                        // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!("dbar 0"),
+                        Ordering::Acquire => atomic_load!("dbar 20"),
+                        Ordering::SeqCst => atomic_load!("dbar 16"),
                         _ => unreachable!(),
                     }
                 }
@@ -105,6 +105,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    // AMO is always SeqCst.
                     asm!(
                         // (atomic) swap (AMO)
                         // - load value from dst and store it to out
@@ -126,7 +127,7 @@ macro_rules! atomic {
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
                 _success: Ordering,
-                _failure: Ordering,
+                failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let mut out: MaybeUninit<Self>;
@@ -134,28 +135,39 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: crate::utils::RegSize;
-                    asm!(
-                        // (atomic) CAS (LL/SC loop)
-                        "2:",
-                            concat!("ll.", $asm_suffix, " {out}, {dst}, 0"),
-                            "bne {out}, {old}, 3f", // compare and jump if compare failed
-                            "dbar 0",
-                            "move {r}, {new}",
-                            concat!("sc.", $asm_suffix, " {r}, {dst}, 0"),
-                            "beqz {r}, 2b", // continue loop if store failed
-                            "b 4f",
-                        "3:",
-                            "dbar 1792",
-                        "4:",
-                        "xor {r}, {out}, {old}",
-                        "sltui {r}, {r}, 1",
-                        dst = in(reg) ptr_reg!(dst),
-                        old = in(reg) old,
-                        new = in(reg) new,
-                        out = out(reg) out,
-                        r = out(reg) r,
-                        options(nostack, preserves_flags),
-                    );
+                    macro_rules! cmpxchg {
+                        ($failure_fence:tt) => {
+                            asm!(
+                                // (atomic) CAS (LL/SC loop)
+                                "2:",
+                                    concat!("ll.", $asm_suffix, " {out}, {dst}, 0"),
+                                    "bne {out}, {old}, 3f", // compare and jump if compare failed
+                                    "move {r}, {new}",
+                                    concat!("sc.", $asm_suffix, " {r}, {dst}, 0"),
+                                    "beqz {r}, 2b", // continue loop if store failed
+                                    "b 4f",
+                                "3:",
+                                    $failure_fence,
+                                "4:",
+                                "xor {r}, {out}, {old}",
+                                "sltui {r}, {r}, 1",
+                                dst = in(reg) ptr_reg!(dst),
+                                old = in(reg) old,
+                                new = in(reg) new,
+                                out = out(reg) out,
+                                r = out(reg) r,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    // LL/SC is always SeqCst, and fence is needed for branch that doesn't call sc.
+                    match failure {
+                        Ordering::Relaxed => cmpxchg!("dbar 1792"),
+                        Ordering::Acquire => cmpxchg!("dbar 20"),
+                        // TODO: LLVM uses dbar 20 (Acquire) here, but should it not be dbar 16 (SeqCst)?
+                        Ordering::SeqCst => cmpxchg!("dbar 16"),
+                        _ => unreachable!(),
+                    }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
@@ -193,8 +205,8 @@ macro_rules! atomic_sub_word {
                     }
                     match order {
                         Ordering::Relaxed => atomic_store!("", ""),
-                        Ordering::Release => atomic_store!("", "dbar 0"),
-                        Ordering::SeqCst => atomic_store!("dbar 0", "dbar 0"),
+                        Ordering::Release => atomic_store!("", "dbar 18"),
+                        Ordering::SeqCst => atomic_store!("dbar 16", "dbar 16"),
                         _ => unreachable!(),
                     }
                 }
@@ -205,7 +217,7 @@ macro_rules! atomic_sub_word {
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
-                order: Ordering,
+                _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
@@ -216,38 +228,29 @@ macro_rules! atomic_sub_word {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
-                    macro_rules! atomic_swap {
-                        ($fence:tt) => {
-                            asm!(
-                                "sll.w {mask}, {mask}, {shift}",
-                                "addi.w {mask}, {mask}, 0",
-                                "sll.w {val}, {val}, {shift}",
-                                "addi.w {val}, {val}, 0",
-                                // (atomic) swap (LL/SC loop)
-                                "2:",
-                                    $fence,
-                                    "ll.w {out}, {dst}, 0",
-                                    "addi.w {tmp}, {val}, 0",
-                                    "xor {tmp}, {out}, {tmp}",
-                                    "and {tmp}, {tmp}, {mask}",
-                                    "xor {tmp}, {out}, {tmp}",
-                                    "sc.w {tmp}, {dst}, 0",
-                                    "beqz {tmp}, 2b",
-                                "srl.w {out}, {out}, {shift}",
-                                dst = in(reg) ptr_reg!(dst),
-                                val = inout(reg) crate::utils::zero_extend(val) => _,
-                                out = out(reg) out,
-                                shift = in(reg) shift,
-                                mask = inout(reg) mask => _,
-                                tmp = out(reg) _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!(""),
-                        _ => atomic_swap!("dbar 0"),
-                    }
+                    asm!(
+                        "sll.w {mask}, {mask}, {shift}",
+                        "addi.w {mask}, {mask}, 0",
+                        "sll.w {val}, {val}, {shift}",
+                        "addi.w {val}, {val}, 0",
+                        // (atomic) swap (LL/SC loop)
+                        "2:",
+                            "ll.w {out}, {dst}, 0",
+                            "addi.w {tmp}, {val}, 0",
+                            "xor {tmp}, {out}, {tmp}",
+                            "and {tmp}, {tmp}, {mask}",
+                            "xor {tmp}, {out}, {tmp}",
+                            "sc.w {tmp}, {dst}, 0",
+                            "beqz {tmp}, 2b",
+                        "srl.w {out}, {out}, {shift}",
+                        dst = in(reg) ptr_reg!(dst),
+                        val = inout(reg) crate::utils::zero_extend(val) => _,
+                        out = out(reg) out,
+                        shift = in(reg) shift,
+                        mask = inout(reg) mask => _,
+                        tmp = out(reg) _,
+                        options(nostack, preserves_flags),
+                    );
                 }
                 out
             }
@@ -259,7 +262,7 @@ macro_rules! atomic_sub_word {
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
                 _success: Ordering,
-                _failure: Ordering,
+                failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
@@ -271,44 +274,55 @@ macro_rules! atomic_sub_word {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
-                    asm!(
-                        "sll.w {new}, {new}, {shift}",
-                        "addi.w {new}, {new}, 0",
-                        "sll.w {old}, {old}, {shift}",
-                        "addi.w $a7, {old}, 0",
-                        "sll.w {mask}, {mask}, {shift}",
-                        "addi.w $a6, {mask}, 0",
-                        // (atomic) CAS (LL/SC loop)
-                        "2:",
-                            "ll.w $t0, {dst}, 0",
-                            "and $t1, $t0, $a6",
-                            "bne $t1, $a7, 3f",
-                            "dbar 0",
-                            "andn $t1, $t0, $a6",
-                            "or $t1, $t1, {new}",
-                            "sc.w $t1, {dst}, 0",
-                            "beqz $t1, 2b",
-                            "b 4f",
-                        "3:",
-                            "dbar 1792",
-                        "4:",
-                        "srl.w $a6, $t0, {shift}",
-                        "and {r}, $t0, {mask}",
-                        "addi.w {r}, {r}, 0",
-                        "xor {r}, {old}, {r}",
-                        "sltui {r}, {r}, 1",
-                        dst = in(reg) ptr_reg!(dst),
-                        old = inout(reg) crate::utils::zero_extend(old) => _,
-                        new = inout(reg) crate::utils::zero_extend(new) => _,
-                        shift = in(reg) shift,
-                        mask = inout(reg) mask => _,
-                        r = lateout(reg) r,
-                        out("$a6") out,
-                        out("$a7") _,
-                        out("$t0") _,
-                        out("$t1") _,
-                        options(nostack, preserves_flags),
-                    );
+                    macro_rules! cmpxchg {
+                        ($failure_fence:tt) => {
+                            asm!(
+                                "sll.w {new}, {new}, {shift}",
+                                "addi.w {new}, {new}, 0",
+                                "sll.w {old}, {old}, {shift}",
+                                "addi.w $a7, {old}, 0",
+                                "sll.w {mask}, {mask}, {shift}",
+                                "addi.w $a6, {mask}, 0",
+                                // (atomic) CAS (LL/SC loop)
+                                "2:",
+                                    "ll.w $t0, {dst}, 0",
+                                    "and $t1, $t0, $a6",
+                                    "bne $t1, $a7, 3f",
+                                    "andn $t1, $t0, $a6",
+                                    "or $t1, $t1, {new}",
+                                    "sc.w $t1, {dst}, 0",
+                                    "beqz $t1, 2b",
+                                    "b 4f",
+                                "3:",
+                                    $failure_fence,
+                                "4:",
+                                "srl.w $a6, $t0, {shift}",
+                                "and {r}, $t0, {mask}",
+                                "addi.w {r}, {r}, 0",
+                                "xor {r}, {old}, {r}",
+                                "sltui {r}, {r}, 1",
+                                dst = in(reg) ptr_reg!(dst),
+                                old = inout(reg) crate::utils::zero_extend(old) => _,
+                                new = inout(reg) crate::utils::zero_extend(new) => _,
+                                shift = in(reg) shift,
+                                mask = inout(reg) mask => _,
+                                r = lateout(reg) r,
+                                out("$a6") out,
+                                out("$a7") _,
+                                out("$t0") _,
+                                out("$t1") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    // LL/SC is always SeqCst, and fence is needed for branch that doesn't call sc.
+                    match failure {
+                        Ordering::Relaxed => cmpxchg!("dbar 1792"),
+                        Ordering::Acquire => cmpxchg!("dbar 20"),
+                        // TODO: LLVM uses dbar 20 (Acquire) here, but should it not be dbar 16 (SeqCst)?
+                        Ordering::SeqCst => cmpxchg!("dbar 16"),
+                        _ => unreachable!(),
+                    }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
