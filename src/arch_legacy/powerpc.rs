@@ -71,6 +71,19 @@ macro_rules! p128l {
     };
 }
 
+#[cfg(target_arch = "powerpc")]
+macro_rules! cmp {
+    () => {
+        "cmpw"
+    };
+}
+#[cfg(target_arch = "powerpc64")]
+macro_rules! cmp {
+    () => {
+        "cmpd"
+    };
+}
+
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
         match $order {
@@ -105,23 +118,6 @@ macro_rules! atomic_load_store {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! atomic_load {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                // (atomic) load from src to tmp
-                                $release,
-                                concat!("l", $l_suffix, " {tmp}, 0({src})"),
-                                $acquire,
-                                // store tmp to out
-                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
-                                src = in(reg_nonzero) ptr_reg!(src),
-                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
-                                tmp = lateout(reg) _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    #[cfg(target_arch = "powerpc64")]
                     macro_rules! atomic_load_acquire {
                         ($release:tt) => {
                             asm!(
@@ -130,7 +126,7 @@ macro_rules! atomic_load_store {
                                 concat!("l", $l_suffix, " {tmp}, 0({src})"),
                                 // Lightweight acquire sync
                                 // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
-                                "cmpd %cr7, {tmp}, {tmp}",
+                                concat!(cmp!(), " %cr7, {tmp}, {tmp}"),
                                 "bne- %cr7, 2f",
                                 "2:",
                                 "isync",
@@ -145,15 +141,20 @@ macro_rules! atomic_load_store {
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_load!("", ""),
-                        #[cfg(target_arch = "powerpc64")]
+                        Ordering::Relaxed => {
+                            asm!(
+                                // (atomic) load from src to tmp
+                                concat!("l", $l_suffix, " {tmp}, 0({src})"),
+                                // store tmp to out
+                                concat!("st", $asm_suffix, " {tmp}, 0({out})"),
+                                src = in(reg_nonzero) ptr_reg!(src),
+                                out = inout(reg_nonzero) ptr_reg!(out_ptr) => _,
+                                tmp = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            );
+                        }
                         Ordering::Acquire => atomic_load_acquire!(""),
-                        #[cfg(target_arch = "powerpc64")]
                         Ordering::SeqCst => atomic_load_acquire!("sync"),
-                        #[cfg(target_arch = "powerpc")]
-                        Ordering::Acquire => atomic_load!("lwsync", ""),
-                        #[cfg(target_arch = "powerpc")]
-                        Ordering::SeqCst => atomic_load!("lwsync", "sync"),
                         _ => unreachable!(),
                     }
                 }
