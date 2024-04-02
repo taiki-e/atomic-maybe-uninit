@@ -567,13 +567,13 @@ macro_rules! atomic64 {
                         ($asm:ident, $acquire:expr) => {
                             $asm!(
                                 // (atomic) load from src to tmp pair
-                                "ldrexd r2, r3, [{src}]",
+                                "ldrexd r0, r1, [{src}]",
                                 clrex!(),
                                 $acquire, // acquire fence
                                 src = in(reg) src,
                                 // prev pair - must be even-numbered and not R14
-                                out("r2") prev_lo,
-                                out("r3") prev_hi,
+                                lateout("r0") prev_lo,
+                                lateout("r1") prev_hi,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -657,7 +657,7 @@ macro_rules! atomic64 {
                                 $release, // release fence
                                 "2:",
                                     // load from dst to prev pair
-                                    "ldrexd r4, r5, [{dst}]",
+                                    "ldrexd r0, r1, [{dst}]",
                                     // try to store val pair to dst
                                     "strexd {r}, r2, r3, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
@@ -670,8 +670,8 @@ macro_rules! atomic64 {
                                 inout("r2") val.pair.lo => _,
                                 inout("r3") val.pair.hi => _,
                                 // prev pair - must be even-numbered and not R14
-                                out("r4") prev_lo,
-                                out("r5") prev_hi,
+                                out("r0") prev_lo,
+                                out("r1") prev_hi,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
                                 options(nostack),
                             )
@@ -713,12 +713,12 @@ macro_rules! atomic64 {
                             $asm!(
                                 // (atomic) CAS (LL/SC loop)
                                 "2:",
-                                    "ldrexd r4, r5, [{dst}]",
-                                    "eor {tmp}, r5, {old_hi}",
-                                    "eor {r}, r4, {old_lo}",
+                                    "ldrexd r2, r3, [{dst}]",
+                                    "eor {tmp}, r3, {old_hi}",
+                                    "eor {r}, r2, {old_lo}",
                                     "orrs {r}, {r}, {tmp}",
                                     "bne 3f", // jump if compare failed
-                                    "strexd {r}, r8, r9, [{dst}]",
+                                    "strexd {r}, r4, r5, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, #0",
                                     "bne 2b", // continue loop if store failed
@@ -736,11 +736,11 @@ macro_rules! atomic64 {
                                 r = out(reg) r,
                                 tmp = out(reg) _,
                                 // prev pair - must be even-numbered and not R14
-                                out("r4") prev_lo,
-                                out("r5") prev_hi,
+                                out("r2") prev_lo,
+                                out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r8") new.pair.lo => _,
-                                inout("r9") new.pair.hi => _,
+                                inout("r4") new.pair.lo => _,
+                                inout("r5") new.pair.hi => _,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
@@ -750,20 +750,20 @@ macro_rules! atomic64 {
                         ($acquire_failure:expr) => {
                             asm_use_dmb!(
                                 // (atomic) CAS (LL/SC loop)
-                                "ldrexd r4, r5, [{dst}]",
-                                "eor {tmp}, r5, {old_hi}",
-                                "eor {r}, r4, {old_lo}",
+                                "ldrexd r2, r3, [{dst}]",
+                                "eor {tmp}, r3, {old_hi}",
+                                "eor {r}, r2, {old_lo}",
                                 "orrs {r}, {r}, {tmp}",
                                 "bne 3f", // jump if compare failed
                                 dmb!(), // release
                                 "2:",
-                                    "strexd {r}, r8, r9, [{dst}]",
+                                    "strexd {r}, r4, r5, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, #0",
                                     "beq 4f", // jump if store succeed
-                                    "ldrexd r4, r5, [{dst}]",
-                                    "eor {tmp}, r5, {old_hi}",
-                                    "eor {r}, r4, {old_lo}",
+                                    "ldrexd r2, r3, [{dst}]",
+                                    "eor {tmp}, r3, {old_hi}",
+                                    "eor {r}, r2, {old_lo}",
                                     "orrs {r}, {r}, {tmp}",
                                     "beq 2b", // continue loop if compare succeed
                                 "3:",
@@ -778,11 +778,11 @@ macro_rules! atomic64 {
                                 r = out(reg) r,
                                 tmp = out(reg) _,
                                 // prev pair - must be even-numbered and not R14
-                                out("r4") prev_lo,
-                                out("r5") prev_hi,
+                                out("r2") prev_lo,
+                                out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r8") new.pair.lo => _,
-                                inout("r9") new.pair.hi => _,
+                                inout("r4") new.pair.lo => _,
+                                inout("r5") new.pair.hi => _,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
@@ -792,20 +792,20 @@ macro_rules! atomic64 {
                         ($acquire_failure:expr) => {
                             asm_use_dmb!(
                                 // (atomic) CAS (LL/SC loop)
-                                "ldrexd r4, r5, [{dst}]",
-                                "eor {tmp}, r5, {old_hi}",
-                                "eor {r}, r4, {old_lo}",
+                                "ldrexd r2, r3, [{dst}]",
+                                "eor {tmp}, r3, {old_hi}",
+                                "eor {r}, r2, {old_lo}",
                                 "orrs {r}, {r}, {tmp}",
                                 "bne 3f", // jump if compare failed
                                 dmb!(), // release
                                 "2:",
-                                    "strexd {r}, r8, r9, [{dst}]",
+                                    "strexd {r}, r4, r5, [{dst}]",
                                     // 0 if the store was successful, 1 if no store was performed
                                     "cmp {r}, #0",
                                     "beq 4f", // jump if store succeed
-                                    "ldrexd r4, r5, [{dst}]",
-                                    "eor {tmp}, r5, {old_hi}",
-                                    "eor {r}, r4, {old_lo}",
+                                    "ldrexd r2, r3, [{dst}]",
+                                    "eor {tmp}, r3, {old_hi}",
+                                    "eor {r}, r2, {old_lo}",
                                     "orrs {r}, {r}, {tmp}",
                                     "beq 2b", // continue loop if compare succeed
                                 "3:",
@@ -823,11 +823,11 @@ macro_rules! atomic64 {
                                 r = out(reg) r,
                                 tmp = out(reg) _,
                                 // prev pair - must be even-numbered and not R14
-                                out("r4") prev_lo,
-                                out("r5") prev_hi,
+                                out("r2") prev_lo,
+                                out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r8") new.pair.lo => _,
-                                inout("r9") new.pair.hi => _,
+                                inout("r4") new.pair.lo => _,
+                                inout("r5") new.pair.hi => _,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
@@ -870,13 +870,13 @@ macro_rules! atomic64 {
                     macro_rules! cmpxchg_weak {
                         ($asm:ident, $acquire:expr, $release:expr) => {
                             $asm!(
-                                "ldrexd r4, r5, [{dst}]",
-                                "eor {tmp}, r5, {old_hi}",
-                                "eor {r}, r4, {old_lo}",
+                                "ldrexd r2, r3, [{dst}]",
+                                "eor {tmp}, r3, {old_hi}",
+                                "eor {r}, r2, {old_lo}",
                                 "orrs {r}, {r}, {tmp}",
                                 "bne 3f", // jump if compare failed
                                 $release,
-                                "strexd {r}, r8, r9, [{dst}]",
+                                "strexd {r}, r4, r5, [{dst}]",
                                 "b 4f",
                                 "3:",
                                     // compare failed, set r to 1 and clear exclusive
@@ -890,11 +890,11 @@ macro_rules! atomic64 {
                                 r = out(reg) r,
                                 tmp = out(reg) _,
                                 // prev pair - must be even-numbered and not R14
-                                out("r4") prev_lo,
-                                out("r5") prev_hi,
+                                out("r2") prev_lo,
+                                out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r8") new.pair.lo => _,
-                                inout("r9") new.pair.hi => _,
+                                inout("r4") new.pair.lo => _,
+                                inout("r5") new.pair.hi => _,
                                 // Do not use `preserves_flags` because ORRS modifies the condition flags.
                                 options(nostack),
                             )
@@ -903,13 +903,13 @@ macro_rules! atomic64 {
                     macro_rules! cmpxchg_weak_fail_load_relaxed {
                         ($release:expr) => {
                             asm_use_dmb!(
-                                "ldrexd r4, r5, [{dst}]",
-                                "eor {tmp}, r5, {old_hi}",
-                                "eor {r}, r4, {old_lo}",
+                                "ldrexd r2, r3, [{dst}]",
+                                "eor {tmp}, r3, {old_hi}",
+                                "eor {r}, r2, {old_lo}",
                                 "orrs {r}, {r}, {tmp}",
                                 "bne 3f", // jump if compare failed
                                 $release,
-                                "strexd {r}, r8, r9, [{dst}]",
+                                "strexd {r}, r4, r5, [{dst}]",
                                 // 0 if the store was successful, 1 if no store was performed
                                 "cmp {r}, #0",
                                 "beq 4f", // jump if store succeed
@@ -928,11 +928,11 @@ macro_rules! atomic64 {
                                 r = out(reg) r,
                                 tmp = out(reg) _,
                                 // prev pair - must be even-numbered and not R14
-                                out("r4") prev_lo,
-                                out("r5") prev_hi,
+                                out("r2") prev_lo,
+                                out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r8") new.pair.lo => _,
-                                inout("r9") new.pair.hi => _,
+                                inout("r4") new.pair.lo => _,
+                                inout("r5") new.pair.hi => _,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
@@ -941,13 +941,13 @@ macro_rules! atomic64 {
                     macro_rules! cmpxchg_weak_success_load_relaxed {
                         ($release:expr) => {
                             asm_use_dmb!(
-                                "ldrexd r4, r5, [{dst}]",
-                                "eor {tmp}, r5, {old_hi}",
-                                "eor {r}, r4, {old_lo}",
+                                "ldrexd r2, r3, [{dst}]",
+                                "eor {tmp}, r3, {old_hi}",
+                                "eor {r}, r2, {old_lo}",
                                 "orrs {r}, {r}, {tmp}",
                                 "bne 3f", // jump if compare failed
                                 $release,
-                                "strexd {r}, r8, r9, [{dst}]",
+                                "strexd {r}, r4, r5, [{dst}]",
                                 // 0 if the store was successful, 1 if no store was performed
                                 "cmp {r}, #0",
                                 "beq 5f", // jump if store succeed
@@ -965,11 +965,11 @@ macro_rules! atomic64 {
                                 r = out(reg) r,
                                 tmp = out(reg) _,
                                 // prev pair - must be even-numbered and not R14
-                                out("r4") prev_lo,
-                                out("r5") prev_hi,
+                                out("r2") prev_lo,
+                                out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r8") new.pair.lo => _,
-                                inout("r9") new.pair.hi => _,
+                                inout("r4") new.pair.lo => _,
+                                inout("r5") new.pair.hi => _,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
