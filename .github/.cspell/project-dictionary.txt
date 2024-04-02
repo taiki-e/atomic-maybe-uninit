@@ -20,6 +20,8 @@ cmpxchg
 cset
 dbar
 DWCAS
+fild
+fistp
 IMAFD
 inequal
 ishld

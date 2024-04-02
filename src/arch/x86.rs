@@ -193,7 +193,7 @@ atomic!(isize, reg, "", "qword", "rax", "rcx");
 #[cfg(target_pointer_width = "64")]
 atomic!(usize, reg, "", "qword", "rax", "rcx");
 
-// For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE) instead of CMPXCHG8B.
+// For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE)/FILD&FISTP(x87) instead of CMPXCHG8B.
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc2/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
@@ -246,6 +246,38 @@ macro_rules! atomic64 {
                     core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
                 }
                 #[cfg(not(target_feature = "sse"))]
+                // It seems core assumes x87 target_feature is always available?
+                // https://github.com/rust-lang/rust/blob/6a6cd6517dac28f9c3f0476e4ba436a2010e40d9/library/core/src/num/dec2flt/fpu.rs#L6
+                #[cfg(target_feature = "x87")]
+                // SAFETY: the caller must uphold the safety contract.
+                //
+                // Refs:
+                // - https://www.felixcloutier.com/x86/fild
+                // - https://www.felixcloutier.com/x86/fist:fistp
+                unsafe {
+                    let mut out = MaybeUninit::<Self>::uninit();
+                    // atomic load is always SeqCst.
+                    asm!(
+                        // (atomic) load from src to out (via load to FPU)
+                        "fild qword ptr [{src}]",
+                        "fistp qword ptr [{out}]",
+                        src = in(reg) src,
+                        out = in(reg) out.as_mut_ptr(),
+                        out("st(0)") _,
+                        out("st(1)") _,
+                        out("st(2)") _,
+                        out("st(3)") _,
+                        out("st(4)") _,
+                        out("st(5)") _,
+                        out("st(6)") _,
+                        out("st(7)") _,
+                        // Do not use `preserves_flags` because FILD and FISTP modify C1 in x87 FPU status word.
+                        options(nostack),
+                    );
+                    out
+                }
+                #[cfg(not(target_feature = "sse"))]
+                #[cfg(not(target_feature = "x87"))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
@@ -314,6 +346,61 @@ macro_rules! atomic64 {
                     }
                 }
                 #[cfg(not(target_feature = "sse"))]
+                // It seems core assumes x87 target_feature is always available?
+                // https://github.com/rust-lang/rust/blob/6a6cd6517dac28f9c3f0476e4ba436a2010e40d9/library/core/src/num/dec2flt/fpu.rs#L6
+                #[cfg(target_feature = "x87")]
+                // SAFETY: the caller must uphold the safety contract.
+                //
+                // Refs:
+                // - https://www.felixcloutier.com/x86/fild
+                // - https://www.felixcloutier.com/x86/fist:fistp
+                unsafe {
+                    match order {
+                        // Relaxed and Release stores are equivalent.
+                        Ordering::Relaxed | Ordering::Release => {
+                            asm!(
+                                "fild qword ptr [{val}]",
+                                // (atomic) store to dst
+                                "fistp qword ptr [{dst}]",
+                                val = in(reg) val.as_ptr(),
+                                dst = in(reg) dst,
+                                out("st(0)") _,
+                                out("st(1)") _,
+                                out("st(2)") _,
+                                out("st(3)") _,
+                                out("st(4)") _,
+                                out("st(5)") _,
+                                out("st(6)") _,
+                                out("st(7)") _,
+                                // Do not use `preserves_flags` because FILD and FISTP modify condition code flags in x87 FPU status word.
+                                options(nostack),
+                            );
+                        }
+                        Ordering::SeqCst => {
+                            asm!(
+                                "fild qword ptr [{val}]",
+                                // (atomic) store to dst
+                                "fistp qword ptr [{dst}]",
+                                "lock or dword ptr [esp], 0", // equivalent to mfence, but doesn't require SSE2
+                                val = in(reg) val.as_ptr(),
+                                dst = in(reg) dst,
+                                out("st(0)") _,
+                                out("st(1)") _,
+                                out("st(2)") _,
+                                out("st(3)") _,
+                                out("st(4)") _,
+                                out("st(5)") _,
+                                out("st(6)") _,
+                                out("st(7)") _,
+                                // Do not use `preserves_flags` because OR modifies the OF, CF, SF, ZF, and PF flags, FILD and FISTP modify condition code flags in x87 FPU status word.
+                                options(nostack),
+                            );
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                #[cfg(not(target_feature = "sse"))]
+                #[cfg(not(target_feature = "x87"))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
