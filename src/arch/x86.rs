@@ -475,8 +475,7 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        // rbx is reserved by LLVM
-                        "mov {rbx_tmp}, rbx",
+                        "mov {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
                         "xor rbx, rbx", // zeroed rbx
                         // (atomic) load by cmpxchg(0, 0)
                         concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
@@ -519,8 +518,7 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic store is always SeqCst.
                     asm!(
-                        // rbx is reserved by LLVM
-                        "xchg {rbx_tmp}, rbx",
+                        "xchg {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
@@ -570,8 +568,7 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
-                        // rbx is reserved by LLVM
-                        "xchg {rbx_tmp}, rbx",
+                        "xchg {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
@@ -626,8 +623,7 @@ macro_rules! atomic128 {
                     let mut r: u64;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // rbx is reserved by LLVM
-                        "xchg {rbx_tmp}, rbx",
+                        "xchg {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
                         // (atomic) CAS
                         concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
                         "sete cl",

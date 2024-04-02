@@ -316,8 +316,7 @@ macro_rules! atomic64 {
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        // esi is reserved by LLVM
-                        "xchg {esi_tmp}, esi",
+                        "xchg {esi_tmp}, esi", // save esi which is reserved by LLVM
                         // (atomic) load by cmpxchg(0, 0)
                         "lock cmpxchg8b qword ptr [edi]",
                         // store current value to out
@@ -442,8 +441,7 @@ macro_rules! atomic64 {
                 unsafe {
                     // atomic store is always SeqCst.
                     asm!(
-                        // esi is reserved by LLVM
-                        "xchg {esi_tmp}, esi",
+                        "xchg {esi_tmp}, esi", // save esi which is reserved by LLVM
                         "mov ebx, dword ptr [eax]",
                         "mov ecx, dword ptr [eax + 4]",
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
@@ -496,8 +494,7 @@ macro_rules! atomic64 {
                     let mut r: u32;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // esi is reserved by LLVM
-                        "xchg {esi_tmp}, esi",
+                        "xchg {esi_tmp}, esi", // save esi which is reserved by LLVM
                         "mov eax, dword ptr [edx]",
                         "mov edx, dword ptr [edx + 4]",
                         "mov ebx, dword ptr [ecx]",
@@ -568,8 +565,7 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        // rbx is reserved by LLVM
-                        "mov {rbx_tmp}, rbx",
+                        "mov {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
                         "xor rbx, rbx", // zeroed rbx
                         // (atomic) load by cmpxchg(0, 0)
                         concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
@@ -616,8 +612,7 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic store is always SeqCst.
                     asm!(
-                        // rbx is reserved by LLVM
-                        "mov {rbx_tmp}, rbx",
+                        "mov {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
                         concat!("mov rbx, qword ptr [", $rsi, "]"),
                         concat!("mov rcx, qword ptr [", $rsi, " + 8]"),
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
@@ -671,8 +666,7 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
-                        // rbx is reserved by LLVM
-                        "mov {rbx_tmp}, rbx",
+                        "mov {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
                         concat!("mov rbx, qword ptr [", $rsi, "]"),
                         concat!("mov rcx, qword ptr [", $rsi, " + 8]"),
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
@@ -735,8 +729,7 @@ macro_rules! atomic128 {
                     let mut r: u64;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // rbx is reserved by LLVM
-                        "mov {rbx_tmp}, rbx",
+                        "mov {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
                         concat!("mov rax, qword ptr [", $rsi, "]"),
                         concat!("mov rsi, qword ptr [", $rsi, " + 8]"),
                         concat!("mov rbx, qword ptr [", $rdx, "]"),
