@@ -49,15 +49,6 @@ macro_rules! atomic {
         $int_type:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
         $new_reg:tt
     ) => {
-        #[cfg(target_arch = "x86")]
-        atomic!($int_type, $val_reg, $val_modifier, $ptr_size, $cmpxchg_cmp_reg, "ecx", $new_reg);
-        #[cfg(target_arch = "x86_64")]
-        atomic!($int_type, $val_reg, $val_modifier, $ptr_size, $cmpxchg_cmp_reg, "rcx", $new_reg);
-    };
-    (
-        $int_type:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
-        $rcx:tt, $new_reg:tt
-    ) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -158,7 +149,7 @@ macro_rules! atomic {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg
                 unsafe {
-                    let r: crate::utils::RegSize;
+                    let r: u8;
                     // compare_exchange is always SeqCst.
                     asm!(
                         // (atomic) CAS
@@ -170,13 +161,13 @@ macro_rules! atomic {
                         "sete cl",
                         dst = in(reg) dst,
                         in($new_reg) new,
-                        lateout($rcx) r,
+                        lateout("cl") r,
                         inout($cmpxchg_cmp_reg) old => out,
                         // Do not use `preserves_flags` because CMPXCHG modifies the ZF, CF, PF, AF, SF, and OF flags.
                         options(nostack),
                     );
-                    debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);
-                    (out, r as u8 != 0)
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+                    (out, r != 0)
                 }
             }
         }
@@ -216,40 +207,42 @@ macro_rules! atomic64 {
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
 
+                #[cfg(target_feature = "sse2")]
+                // SAFETY: the caller must uphold the safety contract.
+                // cfg guarantees that the CPU supports SSE.
+                //
+                // Refs:
+                // - https://www.felixcloutier.com/x86/movq (SSE2)
+                // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
+                unsafe {
+                    let out: MaybeUninit<core::arch::x86::__m128i>;
+                    // atomic load is always SeqCst.
+                    asm!(
+                        // (atomic) load from src to out
+                        "movq {out}, qword ptr [{src}]",
+                        src = in(reg) src,
+                        out = out(xmm_reg) out,
+                        options(nostack, preserves_flags),
+                    );
+                    core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
+                }
+                #[cfg(not(target_feature = "sse2"))]
                 #[cfg(target_feature = "sse")]
                 // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
+                //
+                // Refs:
+                // - https://www.felixcloutier.com/x86/movlps (SSE)
                 unsafe {
-                    let mut out: MaybeUninit<core::arch::x86::__m128>;
-                    #[cfg(target_feature = "sse2")]
-                    {
-                        // atomic load is always SeqCst.
-                        asm!(
-                            // Refs:
-                            // - https://www.felixcloutier.com/x86/movq (SSE2)
-                            // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
-                            // (atomic) load from src to out
-                            "movq {out}, qword ptr [{src}]",
-                            src = in(reg) src,
-                            out = out(xmm_reg) out,
-                            options(nostack, preserves_flags),
-                        );
-                    }
-                    #[cfg(not(target_feature = "sse2"))]
-                    {
-                        // atomic load is always SeqCst.
-                        asm!(
-                            // Refs:
-                            // - https://www.felixcloutier.com/x86/xorps (SSE)
-                            // - https://www.felixcloutier.com/x86/movlps (SSE)
-                            "xorps {out}, {out}",
-                            // (atomic) load from src to out
-                            "movlps {out}, qword ptr [{src}]",
-                            src = in(reg) src,
-                            out = out(xmm_reg) out,
-                            options(nostack, preserves_flags),
-                        );
-                    }
+                    let mut out = MaybeUninit::<core::arch::x86::__m128>::zeroed();
+                    // atomic load is always SeqCst.
+                    asm!(
+                        // (atomic) load from src to out
+                        "movlps {out}, qword ptr [{src}]",
+                        src = in(reg) src,
+                        out = inout(xmm_reg) out,
+                        options(nostack, preserves_flags),
+                    );
                     core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
                 }
                 #[cfg(not(target_feature = "sse"))]
@@ -409,24 +402,25 @@ macro_rules! atomic64 {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    let r: u32;
+                    let r: u8;
                     // compare_exchange is always SeqCst.
                     asm!(
                         // (atomic) CAS
                         "lock cmpxchg8b qword ptr [edi]",
                         "sete cl",
                         in("ebx") new.pair.lo,
-                        inout("ecx") new.pair.hi => r,
+                        in("ecx") new.pair.hi,
                         inout("eax") old.pair.lo => prev_lo,
                         inout("edx") old.pair.hi => prev_hi,
                         in("edi") dst,
+                        lateout("cl") r,
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
-                    debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (
                         MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
-                        r as u8 != 0
+                        r != 0
                     )
                 }
             }
@@ -620,7 +614,7 @@ macro_rules! atomic128 {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    let mut r: u64;
+                    let r: u8;
                     // compare_exchange is always SeqCst.
                     asm!(
                         "xchg {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
@@ -629,17 +623,18 @@ macro_rules! atomic128 {
                         "sete cl",
                         "mov rbx, {rbx_tmp}", // restore rbx
                         rbx_tmp = inout(reg) new.pair.lo => _,
-                        inout("rcx") new.pair.hi => r,
+                        in("rcx") new.pair.hi,
                         inout("rax") old.pair.lo => prev_lo,
                         inout("rdx") old.pair.hi => prev_hi,
                         in($rdi) dst,
+                        lateout("cl") r,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
-                    debug_assert!(r as u8 == 0 || r as u8 == 1, "r={}", r as u8);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (
                         MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
-                        r as u8 != 0
+                        r != 0
                     )
                 }
             }
