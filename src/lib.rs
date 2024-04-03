@@ -32,7 +32,7 @@ Currently, x86, x86_64, ARM, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, Power
 | powerpc64 (pwr8+) \[4] \[6]      | i128,u128                                           | ✓          | ✓        |
 | s390x \[4]                       | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | msp430 \[4]                      | isize,usize,i8,u8,i16,u16                           | ✓          |          |
-| avr \[4] (experimental)          | isize,usize,i8,u8,i16,u16                           | ✓          |          |
+| avr \[4] (experimental)          | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
 | hexagon \[4] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 
 \[1] ARM's atomic RMW operations are not available on v6-m (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc.<br>

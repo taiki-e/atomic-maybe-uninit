@@ -42,10 +42,22 @@ macro_rules! cfg_has_atomic_128 {
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
+#[macro_export]
+macro_rules! cfg_has_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
+#[macro_export]
+macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[cfg(atomic_maybe_uninit_no_asm_maybe_uninit)]
 #[macro_export]
 macro_rules! cfg_has_atomic_cas {
     ($($tt:tt)*) => {};
 }
+#[cfg(atomic_maybe_uninit_no_asm_maybe_uninit)]
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };

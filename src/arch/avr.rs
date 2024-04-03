@@ -11,7 +11,9 @@ mod cfgs;
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-use crate::raw::{AtomicLoad, AtomicStore};
+#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
+use crate::raw::AtomicCompareExchange;
+use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
 // See portable-atomic's interrupt module for more.
 #[inline]
@@ -42,8 +44,35 @@ unsafe fn restore(sreg: u8) {
     }
 }
 
+#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
+#[inline]
+fn xor8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> u8 {
+    let out;
+    // SAFETY: calling eor is safe.
+    unsafe {
+        // Do not use `preserves_flags` because EOR modifies Z, N, V, and S bits in the status register (SREG).
+        asm!("eor {a}, {b}", a = inout(reg) a => out, b = in(reg) b, options(pure, nomem, nostack));
+    }
+    out
+}
+// TODO: use Z bits in SREG instead of == 0?
+#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
+#[inline]
+fn cmp8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> bool {
+    xor8(a, b) == 0
+}
+#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
+#[inline]
+fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
+    // SAFETY: same layout.
+    let [a1, a2] = unsafe { core::mem::transmute(a) };
+    // SAFETY: same layout.
+    let [b1, b2] = unsafe { core::mem::transmute(b) };
+    xor8(a1, b1) | xor8(a2, b2) == 0
+}
+
 macro_rules! atomic {
-    ($int_type:ident) => {
+    ($int_type:ident, $cmp:ident) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -74,12 +103,54 @@ macro_rules! atomic {
                 }
             }
         }
+        impl AtomicSwap for $int_type {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    let s = disable();
+                    let out = dst.read();
+                    dst.write(val);
+                    restore(s);
+                    out
+                }
+            }
+        }
+        #[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
+        impl AtomicCompareExchange for $int_type {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                _success: Ordering,
+                _failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    let s = disable();
+                    let out = dst.read();
+                    // transmute from MaybeUninit<{i,u}{8,16,size}> to MaybeUninit<u{8,16}>
+                    #[allow(clippy::useless_transmute)] // only useless when Self is u{8,16}
+                    let r = $cmp(core::mem::transmute(old), core::mem::transmute(out));
+                    if r {
+                        dst.write(new);
+                    }
+                    restore(s);
+                    (out, r)
+                }
+            }
+        }
     };
 }
 
-atomic!(i8);
-atomic!(u8);
-atomic!(i16);
-atomic!(u16);
-atomic!(isize);
-atomic!(usize);
+atomic!(i8, cmp8);
+atomic!(u8, cmp8);
+atomic!(i16, cmp16);
+atomic!(u16, cmp16);
+atomic!(isize, cmp16);
+atomic!(usize, cmp16);
