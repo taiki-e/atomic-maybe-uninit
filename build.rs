@@ -83,7 +83,11 @@ fn main() {
     }
 
     let is_macos = target_os == "macos";
-    let is_apple = is_macos || target_os == "ios" || target_os == "tvos" || target_os == "watchos";
+    let is_apple = is_macos
+        || target_os == "ios"
+        || target_os == "tvos"
+        || target_os == "watchos"
+        || target_os == "visionos";
     match target_arch {
         "x86_64" => {
             // x86_64 Apple targets always support CMPXCHG16B:
