@@ -258,6 +258,17 @@ build() {
                     ;;
             esac
             ;;
+        i686*)
+            CARGO_TARGET_DIR="${target_dir}/sse" \
+                RUSTFLAGS="${target_rustflags} -C target-feature=-sse2" \
+                x_cargo "${args[@]}" "$@"
+            ;;
+        i586*)
+            # i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work.
+            CARGO_TARGET_DIR="${target_dir}/x87" \
+                RUSTFLAGS="${target_rustflags} --cfg target_feature=\"x87\"" \
+                x_cargo "${args[@]}" "$@"
+            ;;
         aarch64* | arm64*)
             # macOS is skipped because it is +lse,+lse2,+rcpc by default
             case "${target}" in

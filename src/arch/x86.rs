@@ -224,6 +224,7 @@ macro_rules! atomic64 {
                         out = out(xmm_reg) out,
                         options(nostack, preserves_flags),
                     );
+                    #[allow(clippy::missing_transmute_annotations)] // false positive: out is already type annotated
                     core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
                 }
                 #[cfg(not(target_feature = "sse2"))]
@@ -243,6 +244,7 @@ macro_rules! atomic64 {
                         out = inout(xmm_reg) out,
                         options(nostack, preserves_flags),
                     );
+                    #[allow(clippy::missing_transmute_annotations)] // false positive: out is already type annotated
                     core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
                 }
                 #[cfg(not(target_feature = "sse"))]
