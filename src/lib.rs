@@ -97,7 +97,12 @@ pub mod raw;
 
 #[cfg(doc)]
 use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
-use core::{cell::UnsafeCell, fmt, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    cell::UnsafeCell,
+    fmt,
+    mem::{ManuallyDrop, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Primitive};
 
@@ -151,7 +156,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         const_if: #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))];
         /// Creates a new atomic value from a potentially uninitialized value.
         ///
-        /// This is `const fn` on Rust 1.61+. See also `const_new` function.
+        /// This is `const fn` on Rust 1.61+. See also `const_new` function, which is always `const fn`.
         ///
         /// # Examples
         ///
@@ -222,22 +227,36 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         self.v.get_mut()
     }
 
-    /// Consumes the atomic and returns the contained value.
-    ///
-    /// This is safe because passing `self` by value guarantees that no other threads are
-    /// concurrently accessing the atomic data.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use atomic_maybe_uninit::AtomicMaybeUninit;
-    ///
-    /// let v = AtomicMaybeUninit::from(5_i32);
-    /// unsafe { assert_eq!(v.into_inner().assume_init(), 5) }
-    /// ```
-    #[inline]
-    pub fn into_inner(self) -> MaybeUninit<T> {
-        self.v.into_inner()
+    const_fn! {
+        const_if: #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))];
+        /// Consumes the atomic and returns the contained value.
+        ///
+        /// This is safe because passing `self` by value guarantees that no other threads are
+        /// concurrently accessing the atomic data.
+        ///
+        /// This is `const fn` on Rust 1.61+.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// use atomic_maybe_uninit::AtomicMaybeUninit;
+        ///
+        /// let v = AtomicMaybeUninit::from(5_i32);
+        /// unsafe { assert_eq!(v.into_inner().assume_init(), 5) }
+        /// ```
+        #[inline]
+        pub const fn into_inner(self) -> MaybeUninit<T> {
+            // HACK: This is equivalent to transmute_copy by value, but available in const fn.
+            // (UnsafeCell::into_inner is unstable.)
+            #[repr(C)]
+            union ConstHack<T, U: Copy> {
+                t: ManuallyDrop<T>,
+                u: U,
+            }
+            // SAFETY: ConstHack is #[repr(C)] union, and AtomicMaybeUninit<T> and MaybeUninit<T> have the
+            // same size and in-memory representations, so they can be safely transmuted.
+            unsafe { ConstHack::<Self, MaybeUninit<T>> { t: ManuallyDrop::new(self) }.u }
+        }
     }
 
     /// Loads a value from the atomic value.
