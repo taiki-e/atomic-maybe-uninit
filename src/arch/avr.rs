@@ -65,14 +65,14 @@ fn cmp8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> bool {
 #[inline]
 fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
     // SAFETY: same layout.
-    let [a1, a2] = unsafe { core::mem::transmute(a) };
+    let [a1, a2] = unsafe { core::mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(a) };
     // SAFETY: same layout.
-    let [b1, b2] = unsafe { core::mem::transmute(b) };
+    let [b1, b2] = unsafe { core::mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(b) };
     xor8(a1, b1) | xor8(a2, b2) == 0
 }
 
 macro_rules! atomic {
-    ($int_type:ident, $cmp:ident) => {
+    ($int_type:ident, $cmp:ident, $cmp_ty:ident) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -136,7 +136,10 @@ macro_rules! atomic {
                     let out = dst.read();
                     // transmute from MaybeUninit<{i,u}{8,16,size}> to MaybeUninit<u{8,16}>
                     #[allow(clippy::useless_transmute)] // only useless when Self is u{8,16}
-                    let r = $cmp(core::mem::transmute(old), core::mem::transmute(out));
+                    let r = $cmp(
+                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$cmp_ty>>(old),
+                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$cmp_ty>>(out),
+                    );
                     if r {
                         dst.write(new);
                     }
@@ -148,9 +151,9 @@ macro_rules! atomic {
     };
 }
 
-atomic!(i8, cmp8);
-atomic!(u8, cmp8);
-atomic!(i16, cmp16);
-atomic!(u16, cmp16);
-atomic!(isize, cmp16);
-atomic!(usize, cmp16);
+atomic!(i8, cmp8, u8);
+atomic!(u8, cmp8, u8);
+atomic!(i16, cmp16, u16);
+atomic!(u16, cmp16, u16);
+atomic!(isize, cmp16, u16);
+atomic!(usize, cmp16, u16);
