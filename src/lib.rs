@@ -246,8 +246,8 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         /// ```
         #[inline]
         pub const fn into_inner(self) -> MaybeUninit<T> {
-            // HACK: This is equivalent to transmute_copy by value, but available in const fn.
-            // (UnsafeCell::into_inner is unstable.)
+            // HACK: This is equivalent to transmute_copy by value, but available in const fn even on older rustc.
+            // (const UnsafeCell::into_inner is unstable and const transmute_copy requires Rust 1.74)
             #[repr(C)]
             union ConstHack<T, U: Copy> {
                 t: ManuallyDrop<T>,
