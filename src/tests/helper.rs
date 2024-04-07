@@ -33,6 +33,11 @@ macro_rules! test_common {
                 }
                 #[test]
                 fn accessor() {
+                    #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
+                    const _: MaybeUninit<$int_type> = {
+                        let a = AtomicMaybeUninit::new(MaybeUninit::new(10));
+                        a.into_inner()
+                    };
                     #[allow(clippy::ptr_as_ptr)]
                     unsafe {
                         let mut a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(10));
@@ -138,11 +143,6 @@ macro_rules! __test_atomic {
             #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
             static _VAR: AtomicMaybeUninit<$int_type> =
                 AtomicMaybeUninit::new(MaybeUninit::new(10));
-            #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
-            static _VAL: MaybeUninit<$int_type> = {
-                let a = AtomicMaybeUninit::new(MaybeUninit::new(10));
-                a.into_inner()
-            };
             let var = AtomicMaybeUninit::<$int_type>::const_new(MaybeUninit::new(10));
             unsafe {
                 assert_eq!(
