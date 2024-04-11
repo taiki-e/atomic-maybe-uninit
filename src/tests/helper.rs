@@ -963,7 +963,7 @@ macro_rules! __stress_test_acquire_release {
             s.spawn(|_| {
                 for i in 0..n {
                     b.store(i, Ordering::Relaxed);
-                    a.$write(MaybeUninit::new(i as _), Ordering::$store_order);
+                    a.$write(MaybeUninit::new(i as $int_type), Ordering::$store_order);
                 }
             });
             loop {
