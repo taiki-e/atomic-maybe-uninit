@@ -27,6 +27,7 @@
     target_arch = "loongarch64",
     all(
         any(
+            target_arch = "arm64ec",
             target_arch = "avr",
             target_arch = "hexagon",
             target_arch = "mips",
@@ -44,7 +45,10 @@
 #[path = "cfgs/unsupported.rs"]
 mod unsupported;
 
-#[cfg(target_arch = "aarch64")]
+#[cfg(any(
+    target_arch = "aarch64",
+    all(target_arch = "arm64ec", atomic_maybe_uninit_unstable_asm_experimental_arch),
+))]
 mod aarch64;
 #[cfg(target_arch = "arm")]
 #[cfg(all(

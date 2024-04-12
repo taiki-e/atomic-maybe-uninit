@@ -170,6 +170,7 @@ zero_extend!(i32, u32, i64, u64, isize, usize);
 #[allow(dead_code)]
 #[cfg(any(
     target_arch = "aarch64",
+    target_arch = "arm64ec",
     target_arch = "powerpc64",
     target_arch = "s390x",
     target_arch = "x86_64",
@@ -203,11 +204,21 @@ pub(crate) union MaybeUninit64 {
 #[repr(C)]
 pub(crate) struct Pair<T: Copy> {
     // little endian order
-    #[cfg(any(target_endian = "little", target_arch = "aarch64", target_arch = "arm"))]
+    #[cfg(any(
+        target_endian = "little",
+        target_arch = "aarch64",
+        target_arch = "arm64ec",
+        target_arch = "arm",
+    ))]
     pub(crate) lo: MaybeUninit<T>,
     pub(crate) hi: MaybeUninit<T>,
     // big endian order
-    #[cfg(not(any(target_endian = "little", target_arch = "aarch64", target_arch = "arm")))]
+    #[cfg(not(any(
+        target_endian = "little",
+        target_arch = "aarch64",
+        target_arch = "arm64ec",
+        target_arch = "arm",
+    )))]
     pub(crate) lo: MaybeUninit<T>,
 }
 

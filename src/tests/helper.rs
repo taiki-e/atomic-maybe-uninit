@@ -152,7 +152,7 @@ macro_rules! __test_atomic {
                 #[allow(clippy::ptr_as_ptr)]
                 if core::mem::size_of::<$int_type>() <= core::mem::size_of::<usize>()
                     || cfg!(all(
-                        target_arch = "aarch64",
+                        any(target_arch = "aarch64", target_arch = "arm64ec"),
                         any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"),
                     ))
                     || cfg!(all(

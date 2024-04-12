@@ -120,6 +120,10 @@ default_targets=(
     # rustc --print target-list | grep -E '^msp430'
     msp430-none-elf
 
+    # arm64ec
+    # rustc --print target-list | grep -E '^arm64ec'
+    arm64ec-pc-windows-msvc
+
     # avr
     # rustc --print target-list | grep -E '^avr'
     avr-unknown-gnu-atmega2560 # custom target

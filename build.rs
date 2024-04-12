@@ -62,8 +62,8 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_loongarch64_asm");
             }
         }
-        "avr" | "hexagon" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430" | "powerpc"
-        | "powerpc64" => {
+        "arm64ec" | "avr" | "hexagon" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430"
+        | "powerpc" | "powerpc64" => {
             if version.nightly && is_allowed_feature("asm_experimental_arch") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
@@ -103,7 +103,7 @@ fn main() {
             // cmpxchg16b_target_feature stabilized in Rust 1.69.
             target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, Stable(69));
         }
-        "aarch64" => {
+        "aarch64" | "arm64ec" => {
             // AArch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is ARMv8.5-A:
             // https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/include/llvm/TargetParser/AArch64TargetParser.h#L728
             let mut has_lse = is_macos;
