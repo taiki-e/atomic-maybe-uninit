@@ -19,6 +19,9 @@ fn main() {
     let version = match rustc_version() {
         Some(version) => version,
         None => {
+            if env::var_os("ATOMIC_MAYBE_UNINIT_DENY_WARNINGS").unwrap_or_default() == "1" {
+                panic!("unable to determine rustc version")
+            }
             println!(
                 "cargo:warning={}: unable to determine rustc version; assuming latest stable rustc (1.{})",
                 env!("CARGO_PKG_NAME"),
@@ -184,10 +187,12 @@ fn main() {
                 "v4t" | "v5te" => {}
                 _ => {
                     known = false;
+                    if env::var_os("ATOMIC_MAYBE_UNINIT_DENY_WARNINGS").unwrap_or_default() == "1" {
+                        panic!("unrecognized arm subarch: {target}")
+                    }
                     println!(
-                        "cargo:warning={}: unrecognized arm subarch: {}",
-                        env!("CARGO_PKG_NAME"),
-                        target
+                        "cargo:warning={}: unrecognized arm subarch: {target}",
+                        env!("CARGO_PKG_NAME")
                     );
                 }
             }

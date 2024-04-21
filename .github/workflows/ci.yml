@@ -23,6 +23,7 @@ env:
   RUSTDOCFLAGS: -D warnings
   RUSTFLAGS: -D warnings
   RUSTUP_MAX_RETRIES: 10
+  ATOMIC_MAYBE_UNINIT_DENY_WARNINGS: 1
 
 defaults:
   run:

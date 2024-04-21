@@ -210,6 +210,7 @@ if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]
         base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy -Z check-cfg)
     fi
 fi
+export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
 
 build() {
     local target="$1"
