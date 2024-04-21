@@ -210,8 +210,8 @@ macro_rules! atomic_sub_word {
                         dst = in(reg) ptr_reg!(dst),
                         val = in(reg) val,
                         out = lateout(reg) out,
-                        shift = in(reg) shift as u32,
-                        shift_c = in(reg) complement(shift as u32),
+                        shift = in(reg) shift,
+                        shift_c = in(reg) complement(shift),
                         tmp = out(reg) _,
                         out("r0") _, // prev
                         // Do not use `preserves_flags` because CS modifies the condition code.
@@ -258,8 +258,8 @@ macro_rules! atomic_sub_word {
                         prev = out(reg) _,
                         old = in(reg) crate::utils::zero_extend(old),
                         new = inout(reg) new => _,
-                        shift = in(reg) shift as u32,
-                        shift_c = in(reg) complement(shift as u32),
+                        shift = in(reg) shift,
+                        shift_c = in(reg) complement(shift),
                         tmp = out(reg) _,
                         r = lateout(reg) r,
                         out("r0") out,

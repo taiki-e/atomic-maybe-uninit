@@ -230,8 +230,8 @@ macro_rules! atomic_sub_word {
                         concat!("st", $asm_suffix, " %r0, 0({out})"),
                         dst = in(reg) ptr_reg!(dst),
                         out = in(reg) ptr_reg!(out_ptr),
-                        shift = in(reg) shift as u32,
-                        shift_c = in(reg) complement(shift as u32),
+                        shift = in(reg) shift,
+                        shift_c = in(reg) complement(shift),
                         out("r0") _, // val => out val
                         inout("r3") ptr_reg!(val) => _, // val ptr => prev
                         out("r14") _, // tmp
@@ -283,8 +283,8 @@ macro_rules! atomic_sub_word {
                         concat!("st", $asm_suffix, " %r13, 0({out})"),
                         dst = in(reg) ptr_reg!(dst),
                         out = in(reg) ptr_reg!(out_ptr),
-                        shift = in(reg) shift as u32,
-                        shift_c = in(reg) complement(shift as u32),
+                        shift = in(reg) shift,
+                        shift_c = in(reg) complement(shift),
                         out("r0") r, // old val => r
                         out("r1") _, // new val
                         inout("r3") ptr_reg!(old) => _, // old ptr => tmp

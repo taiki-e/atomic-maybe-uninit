@@ -253,13 +253,17 @@ pub(crate) struct Pair<T: Copy> {
 }
 
 type MinWord = u32;
+#[cfg(target_arch = "s390x")]
+type ShiftTy = u32;
+#[cfg(not(target_arch = "s390x"))]
+type ShiftTy = RegSize;
 // Helper for implementing sub-word atomic operations using word-sized LL/SC loop or CAS loop.
 //
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/lib/CodeGen/AtomicExpandPass.cpp#L691
 // (aligned_ptr, shift, mask)
 #[allow(dead_code)]
 #[inline]
-pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RegSize, RegSize) {
+pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, ShiftTy, RegSize) {
     const SHIFT_MASK: bool = !cfg!(any(
         target_arch = "riscv32",
         target_arch = "riscv64",
@@ -283,7 +287,7 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RegS
     if SHIFT_MASK {
         mask <<= shift;
     }
-    (aligned_ptr, shift as RegSize, mask)
+    (aligned_ptr, shift as ShiftTy, mask)
 }
 
 /// Emulate strict provenance.
