@@ -135,13 +135,6 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
     }
 }
 
-/// Zero-extends the given `MaybeUninit<T>` to `MaybeUninit<u32>` if it is smaller than 32-bit,
-/// otherwise, return the given value as-is.
-#[allow(dead_code)]
-#[inline]
-pub(crate) fn zero_extend<T: ZeroExtend>(v: MaybeUninit<T>) -> T::Out {
-    T::zero_extend(v)
-}
 /// Zero-extends the given 32-bit pointer to `MaybeUninit<u64>`.
 /// This is used for 64-bit architecture's 32-bit ABI (e.g., AArch64 ILP32 ABI).
 /// See ptr_reg! macro in src/gen/utils.rs for details.
@@ -157,8 +150,11 @@ pub(crate) fn zero_extend64_ptr(v: *mut ()) -> MaybeUninit<u64> {
         })
     }
 }
+#[allow(dead_code)]
 pub(crate) trait ZeroExtend: Copy {
     type Out: Copy;
+    /// Zero-extends the given `MaybeUninit<Self>` to `MaybeUninit<u32>` if it is smaller than 32-bit,
+    /// otherwise, return the given value as-is.
     fn zero_extend(v: MaybeUninit<Self>) -> Self::Out;
 }
 #[repr(C)]
@@ -254,16 +250,16 @@ pub(crate) struct Pair<T: Copy> {
 
 type MinWord = u32;
 #[cfg(target_arch = "s390x")]
-type ShiftTy = u32;
+type RetInt = u32;
 #[cfg(not(target_arch = "s390x"))]
-type ShiftTy = RegSize;
+type RetInt = RegSize;
 // Helper for implementing sub-word atomic operations using word-sized LL/SC loop or CAS loop.
 //
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/lib/CodeGen/AtomicExpandPass.cpp#L691
 // (aligned_ptr, shift, mask)
 #[allow(dead_code)]
 #[inline]
-pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, ShiftTy, RegSize) {
+pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetInt, RetInt) {
     const SHIFT_MASK: bool = !cfg!(any(
         target_arch = "riscv32",
         target_arch = "riscv64",
@@ -283,11 +279,11 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, Shif
     } else {
         (ptr_lsb ^ (mem::size_of::<MinWord>() - mem::size_of::<T>())).wrapping_mul(8)
     };
-    let mut mask: RegSize = (1 << (mem::size_of::<T>() * 8)) - 1; // !(0 as T) as RegSize
+    let mut mask: RetInt = (1 << (mem::size_of::<T>() * 8)) - 1; // !(0 as T) as RetInt
     if SHIFT_MASK {
         mask <<= shift;
     }
-    (aligned_ptr, shift as ShiftTy, mask)
+    (aligned_ptr, shift as RetInt, mask)
 }
 
 /// Emulate strict provenance.

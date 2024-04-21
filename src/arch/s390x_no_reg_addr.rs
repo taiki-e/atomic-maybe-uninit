@@ -256,7 +256,7 @@ macro_rules! atomic_sub_word {
                         "ipm {r}",
                         dst = in(reg) ptr_reg!(dst),
                         prev = out(reg) _,
-                        old = in(reg) crate::utils::zero_extend(old),
+                        old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
                         new = inout(reg) new => _,
                         shift = in(reg) shift,
                         shift_c = in(reg) complement(shift),
