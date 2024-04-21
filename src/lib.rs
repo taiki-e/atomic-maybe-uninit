@@ -98,12 +98,7 @@ pub mod raw;
 
 #[cfg(doc)]
 use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
-use core::{
-    cell::UnsafeCell,
-    fmt,
-    mem::{ManuallyDrop, MaybeUninit},
-    sync::atomic::Ordering,
-};
+use core::{cell::UnsafeCell, fmt, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Primitive};
 
@@ -247,16 +242,10 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         /// ```
         #[inline]
         pub const fn into_inner(self) -> MaybeUninit<T> {
-            // HACK: This is equivalent to transmute_copy by value, but available in const fn even on older rustc.
-            // (const UnsafeCell::into_inner is unstable and const transmute_copy requires Rust 1.74)
-            #[repr(C)]
-            union ConstHack<T, U: Copy> {
-                t: ManuallyDrop<T>,
-                u: U,
-            }
-            // SAFETY: ConstHack is #[repr(C)] union, and AtomicMaybeUninit<T> and MaybeUninit<T> have the
-            // same size and in-memory representations, so they can be safely transmuted.
-            unsafe { ConstHack::<Self, MaybeUninit<T>> { t: ManuallyDrop::new(self) }.u }
+            // SAFETY: AtomicMaybeUninit<T> and MaybeUninit<T> have the same size
+            // and in-memory representations, so they can be safely transmuted.
+            // (Equivalent to UnsafeCell::into_inner which is unstable in const context.)
+            unsafe { utils::transmute_copy_by_val::<Self, MaybeUninit<T>>(self) }
         }
     }
 

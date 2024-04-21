@@ -7,7 +7,7 @@ pub(crate) use gen::RegSize;
 mod gen;
 
 use core::{
-    mem::{self, MaybeUninit},
+    mem::{self, ManuallyDrop, MaybeUninit},
     sync::atomic::Ordering,
 };
 
@@ -31,6 +31,36 @@ macro_rules! const_fn {
         $(#[$($attr)*])*
         $vis fn $($rest)*
     };
+}
+
+// HACK: This is equivalent to transmute_copy by value, but available in const
+// context even on older rustc (const transmute_copy requires Rust 1.74), and
+// can work around "cannot borrow here, since the borrowed element may contain
+// interior mutability" error occurs when using transmute_copy with generic type
+// in const context (because this is a by-value transmutation that doesn't
+// create a reference to the source value).
+/// # Safety
+///
+/// This function has the same safety requirements as [`core::mem::transmute_copy`].
+///
+/// Since this is a by-value transmutation, it copies the bits from the source value
+/// into the destination value, then forgets the original, as with the [`core::mem::transmute`].
+#[inline]
+#[must_use]
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) const unsafe fn transmute_copy_by_val<Src, Dst>(src: Src) -> Dst {
+    #[repr(C)]
+    union ConstHack<Src, Dst> {
+        src: ManuallyDrop<Src>,
+        dst: ManuallyDrop<Dst>,
+    }
+    assert!(
+        mem::size_of::<Src>() >= mem::size_of::<Dst>(), // assertion copied from transmute_copy
+        "cannot transmute_copy if Dst is larger than Src"
+    );
+    // SAFETY: ConstHack is #[repr(C)] union, and the caller must guarantee that
+    // transmuting Src to Dst is safe.
+    ManuallyDrop::into_inner(unsafe { ConstHack::<Src, Dst> { src: ManuallyDrop::new(src) }.dst })
 }
 
 #[allow(dead_code)]
