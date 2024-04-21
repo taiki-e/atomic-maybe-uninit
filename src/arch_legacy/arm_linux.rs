@@ -609,7 +609,7 @@ mod tests {
     #[test]
     fn kuser_helper_version() {
         let version = super::kuser_helper_version();
-        assert!(version >= 5, "{:?}", version);
+        assert!(version >= 5, "{version:?}");
     }
 
     // TODO: set has_atomic_64 to true
