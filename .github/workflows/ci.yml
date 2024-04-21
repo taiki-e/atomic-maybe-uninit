@@ -409,7 +409,7 @@ jobs:
     steps:
       - uses: taiki-e/checkout-action@v1
       - name: Install Rust
-        run: rustup toolchain add nightly --no-self-update --component rustfmt && rustup default nightly
+        run: rustup toolchain add nightly --no-self-update && rustup default nightly
       - run: tools/target_spec.sh
       - id: diff
         run: tools/ci/gen.sh
