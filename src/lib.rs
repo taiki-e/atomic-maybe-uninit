@@ -278,7 +278,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         // SAFETY: any data races are prevented by atomic intrinsics, the raw
         // pointer passed in is valid because we got it from a reference,
         // and we've checked the order is valid. Alignment is upheld because
-        // `PrimitivePriv` is a private trait that ensures sufficient alignment
+        // `PrimitivePriv`'s safety requirement ensures sufficient alignment
         // of `T::Align`, and we got our `_align` field.
         unsafe { T::atomic_load(self.v.get(), order) }
     }
@@ -313,7 +313,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         // SAFETY: any data races are prevented by atomic intrinsics, the raw
         // pointer passed in is valid because we got it from a reference,
         // and we've checked the order is valid. Alignment is upheld because
-        // `PrimitivePriv` is a private trait that ensures sufficient alignment
+        // `PrimitivePriv`'s safety requirement ensures sufficient alignment
         // of `T::Align`, and we got our `_align` field.
         unsafe { T::atomic_store(self.v.get(), val, order) }
     }
@@ -345,6 +345,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     {
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
+        // Alignment is upheld because `PrimitivePriv`'s safety requirement
+        // ensures sufficient alignment of `T::Align`, and we got our `_align`
+        // field.
         unsafe { T::atomic_swap(self.v.get(), val, order) }
     }
 
@@ -515,7 +518,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         utils::assert_compare_exchange_ordering(success, failure);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
-        // Alignment is upheld because `PrimitivePriv` is a private trait that
+        // Alignment is upheld because `PrimitivePriv`'s safety requirement
         // ensures sufficient alignment of `T::Align`, and we got our `_align`
         // field.
         let (out, ok) =
@@ -596,7 +599,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         utils::assert_compare_exchange_ordering(success, failure);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
-        // Alignment is upheld because `PrimitivePriv` is a private trait that
+        // Alignment is upheld because `PrimitivePriv`'s safety requirement
         // ensures sufficient alignment of `T::Align`, and we got our `_align`
         // field.
         let (out, ok) = unsafe {
@@ -706,7 +709,12 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
 macro_rules! int {
     ($ty:ident, $align:ident) => {
         impl crate::raw::Primitive for $ty {}
-        impl crate::private::PrimitivePriv for $ty {
+        static_assert!(
+            core::mem::size_of::<AtomicMaybeUninit<$ty>>() == core::mem::size_of::<$ty>()
+                && core::mem::align_of::<AtomicMaybeUninit<$ty>>() == core::mem::size_of::<$ty>()
+        );
+        // SAFETY: the static assertion above ensures safety requirement.
+        unsafe impl crate::private::PrimitivePriv for $ty {
             type Align = crate::private::$align;
         }
         impl AtomicMaybeUninit<$ty> {
@@ -718,12 +726,6 @@ macro_rules! int {
                 Self { v: UnsafeCell::new(v), _align: [] }
             }
         }
-        static_assert!(
-            core::mem::size_of::<AtomicMaybeUninit<$ty>>() == core::mem::size_of::<$ty>()
-        );
-        static_assert!(
-            core::mem::align_of::<AtomicMaybeUninit<$ty>>() == core::mem::size_of::<$ty>()
-        );
     };
 }
 int!(i8, Align1);
@@ -753,10 +755,15 @@ mod private {
 
     use core::panic::{RefUnwindSafe, UnwindSafe};
 
+    /// This trait is private and cannot be implemented for types outside of `atomic-maybe-uninit`.
+    ///
+    /// # Safety
+    ///
+    /// The implementer must guarantee that `align_of::<Self::Align>() == size_of::<Self>()`.
     // Auto traits is needed to better docs.
-    //
-    // Crucially, all implementations guarantee that `align_of::<Self::Align>() == size_of::<Self>()`.
-    pub trait PrimitivePriv: Copy + Send + Sync + Unpin + UnwindSafe + RefUnwindSafe {
+    pub unsafe trait PrimitivePriv:
+        Copy + Send + Sync + Unpin + UnwindSafe + RefUnwindSafe
+    {
         // See _align field of AtomicMaybeUninit.
         type Align: Send + Sync + Unpin + UnwindSafe + RefUnwindSafe;
     }
