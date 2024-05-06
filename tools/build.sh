@@ -132,26 +132,6 @@ default_targets=(
     # rustc --print target-list | grep -E '^hexagon'
     hexagon-unknown-linux-musl
 )
-# List of known custom cfgs, excluding those that may be set from build script.
-known_cfgs=(
-    # arm: Use cp15_barrier instead of __kuser_memory_barrier on ARMv6 Linux/Android.
-    # ARMv6 binaries compiled with this cfg may cause problems when run on ARMv7+ chips:
-    # https://github.com/rust-lang/rust/issues/60605
-    atomic_maybe_uninit_use_cp15_barrier
-    # x86: Assume CPU does not have CMPXCHG8B instruction.
-    # This is a cfg for compatibility with 80486/80386, but
-    # note that LLVM does not support those CPUs well:
-    # https://reviews.llvm.org/D18802
-    # This cannot be supported by automatic detection in the build script,
-    # since rustc does not have a target feature to indicate this, and targets
-    # beginning with i386- may actually be i686 (e.g., i386-apple-ios)
-    # https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/apple_base.rs#L68
-    atomic_maybe_uninit_no_cmpxchg8b
-    # x86: Assume CPU does not have CMPXCHG instruction.
-    # This is a cfg for compatibility with 80386.
-    # See atomic_maybe_uninit_no_cmpxchg8b for details.
-    atomic_maybe_uninit_no_cmpxchg
-)
 
 x() {
     local cmd="$1"
@@ -194,20 +174,10 @@ nightly=''
 if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]]; then
     nightly=1
     rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
-    # The latest syntax of cargo -Z check-cfg requires 1.75.0-nightly.
-    # rustc --check-cfg has been stabilized in 1.79.
-    # We only check this on the recent nightly to avoid old clippy bugs.
-    # shellcheck disable=SC2207
-    if [[ "${rustc_minor_version}" -ge 79 ]]; then
-        build_scripts=(build.rs)
-        check_cfg='--check-cfg=cfg(target_pointer_width,values("128")) --check-cfg=cfg(target_arch,values("xtensa")) --check-cfg=cfg(target_feature,values("x87","lse2","lse128","rcpc3","v8m","partword-atomics","quadword-atomics","fast-serialization"))'
-        known_cfgs+=($(grep -E 'cargo:rustc-cfg=' "${build_scripts[@]}" | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u))
-        # TODO: handle multi-line target_feature_if
-        known_target_feature_values+=($(grep -E 'target_feature_if\("' "${build_scripts[@]}" | sed -E 's/^.*target_feature_if\(//; s/",.*$/"/' | LC_ALL=C sort -u))
-        check_cfg+=" --check-cfg=cfg(atomic_maybe_uninit_target_feature,values($(IFS=',' && echo "${known_target_feature_values[*]}")))"
-        check_cfg+=" --check-cfg=cfg($(IFS=',' && echo "${known_cfgs[*]}"))"
+    # We only run clippy on the recent nightly to avoid old clippy bugs.
+    if [[ "${rustc_minor_version}" -ge 80 ]]; then
         rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
-        base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy -Z check-cfg)
+        base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy)
     fi
 fi
 export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1

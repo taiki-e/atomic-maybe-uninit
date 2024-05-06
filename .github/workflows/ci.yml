@@ -47,8 +47,6 @@ jobs:
       event_name: ${{ github.event_name }}
   tidy:
     uses: taiki-e/github-actions/.github/workflows/tidy.yml@main
-    with:
-      check-cfg: false # covered by ./tools/build.sh
 
   test:
     needs: tidy

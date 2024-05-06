@@ -31,6 +31,46 @@ fn main() {
         }
     };
 
+    if version.minor >= 80 {
+        println!(r#"cargo:rustc-check-cfg=cfg(target_pointer_width,values("128"))"#);
+        println!(
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("x87","lse2","lse128","rcpc3","v8m","partword-atomics","quadword-atomics","fast-serialization"))"#
+        );
+
+        // Known custom cfgs, excluding those that may be set by build script.
+        // Not public API.
+        println!("cargo:rustc-check-cfg=cfg(qemu,valgrind)");
+        // Public APIs, considered unstable unless documented in readme.
+        // arm: Use cp15_barrier instead of __kuser_memory_barrier on ARMv6 Linux/Android.
+        // ARMv6 binaries compiled with this cfg may cause problems when run on ARMv7+ chips:
+        // https://github.com/rust-lang/rust/issues/60605
+        println!("cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_use_cp15_barrier)");
+        // x86: Assume CPU does not have CMPXCHG8B instruction.
+        // This is a cfg for compatibility with 80486/80386, but
+        // note that LLVM does not support those CPUs well:
+        // https://reviews.llvm.org/D18802
+        // This cannot be supported by automatic detection in the build script,
+        // since rustc does not have a target feature to indicate this, and targets
+        // beginning with i386- may actually be i686 (e.g., i386-apple-ios)
+        // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/apple_base.rs#L68
+        println!("cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_cmpxchg8b)");
+        // x86: Assume CPU does not have CMPXCHG instruction.
+        // This is a cfg for compatibility with 80386.
+        // See atomic_maybe_uninit_no_cmpxchg8b for details.
+        println!("cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_cmpxchg)");
+
+        // Custom cfgs set by build script. Not public API.
+        // grep -E 'cargo:rustc-cfg=' build.rs | grep -v '=//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ','
+        println!(
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_loongarch64_asm,atomic_maybe_uninit_s390x_no_reg_addr,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+        );
+        // TODO: handle multi-line target_feature_fallback
+        // grep -E 'target_feature_fallback\("' build.rs | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ','
+        println!(
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","cmpxchg16b","fast-serialization","lse","lse128","lse2","mclass","partword-atomics","quadword-atomics","rcpc","rcpc3","v5te","v6","v7","v8","v8m"))"#
+        );
+    }
+
     // https://github.com/rust-lang/rust/pull/123745 (includes https://github.com/rust-lang/cargo/pull/13560) merged in Rust 1.79 (nightly-2024-04-11).
     if !version.probe(79, 2024, 4, 10) {
         // HACK: If --target is specified, rustflags is not applied to the build
