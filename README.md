@@ -46,7 +46,7 @@ Currently, x86, x86_64, ARM, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, Power
 \[2] ARMv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[3] Requires Rust 1.72+.<br>
 \[4] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
-\[5] Requires cmpxchg16b target feature (enabled by default on Apple targets).<br>
+\[5] Requires cmpxchg16b target feature (enabled by default on Apple and Windows (except Windows 7) targets).<br>
 \[6] Requires target-cpu pwr8+ (powerpc64le is pwr8 by default).<br>
 
 Feel free to submit an issue if your target is not supported yet.
