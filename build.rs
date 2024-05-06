@@ -2,10 +2,7 @@
 
 // The rustc-cfg emitted by the build script are *not* public API.
 
-#![allow(
-    clippy::match_same_arms, // https://github.com/rust-lang/rust-clippy/issues/12044
-    clippy::needless_pass_by_value,
-)]
+#![allow(clippy::match_same_arms)] // https://github.com/rust-lang/rust-clippy/issues/12044
 
 use std::{env, str};
 
@@ -52,7 +49,7 @@ fn main() {
         // This cannot be supported by automatic detection in the build script,
         // since rustc does not have a target feature to indicate this, and targets
         // beginning with i386- may actually be i686 (e.g., i386-apple-ios)
-        // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/apple_base.rs#L68
+        // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/spec/base/apple/mod.rs#L72
         println!("cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_cmpxchg8b)");
         // x86: Assume CPU does not have CMPXCHG instruction.
         // This is a cfg for compatibility with 80386.
@@ -135,16 +132,20 @@ fn main() {
         || target_os == "visionos";
     match target_arch {
         "x86_64" => {
-            // x86_64 Apple targets always support CMPXCHG16B:
-            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L8
-            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/apple_base.rs#L69-L70
-            // Script to get targets that support cmpxchg16b by default:
-            // $ (for target in $(rustc --print target-list); do [[ "${target}" == "x86_64"* ]] && rustc --print cfg --target "${target}" | grep -q cmpxchg16b && echo "${target}"; done)
-            let has_cmpxchg16b = is_apple;
-            // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/KM3jz616j
-            // However, it is unlikely that rustc will support that name, so we ignore it.
             // cmpxchg16b_target_feature stabilized in Rust 1.69.
-            target_feature_if("cmpxchg16b", has_cmpxchg16b, &version, Stable(69));
+            if needs_target_feature_fallback(&version, Some(69)) {
+                // x86_64 Apple targets always support CMPXCHG16B:
+                // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L8
+                // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/apple_base.rs#L69-L70
+                // (Since Rust 1.78, Windows (except Windows 7) targets also enable CMPXCHG16B, but
+                // this branch is only used on pre-1.69 that cmpxchg16b_target_feature is unstable.)
+                // Script to get targets that support cmpxchg16b by default:
+                // $ (for target in $(rustc --print target-list); do [[ "${target}" == "x86_64"* ]] && rustc --print cfg --target "${target}" | grep -q cmpxchg16b && echo "${target}"; done)
+                let has_cmpxchg16b = is_apple;
+                // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/KM3jz616j
+                // However, it is unlikely that rustc will support that name, so we ignore it.
+                target_feature_fallback("cmpxchg16b", has_cmpxchg16b);
+            }
         }
         "aarch64" | "arm64ec" => {
             // AArch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is ARMv8.5-A:
@@ -152,17 +153,19 @@ fn main() {
             let mut has_lse = is_macos;
             let mut has_rcpc = is_macos;
             // FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2. FEAT_LRCPC3 implies FEAT_LRCPC.
-            // As of rustc 1.70, target_feature "lse2"/"lse128"/"rcpc3" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs#L58
-            target_feature_if("lse2", is_macos, &version, Unavailable);
+            // As of rustc 1.78, target_feature "lse2"/"lse128"/"rcpc3" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/target_features.rs#L87
+            target_feature_fallback("lse2", is_macos);
             // LLVM supports FEAT_LRCPC3 and FEAT_LSE128 on LLVM 16+:
             // https://github.com/llvm/llvm-project/commit/a6aaa969f7caec58a994142f8d855861cf3a1463
             // https://github.com/llvm/llvm-project/commit/7fea6f2e0e606e5339c3359568f680eaf64aa306
-            has_lse |= target_feature_if("lse128", false, &version, Unavailable);
-            has_rcpc |= target_feature_if("rcpc3", false, &version, Unavailable);
+            has_lse |= target_feature_fallback("lse128", false);
+            has_rcpc |= target_feature_fallback("rcpc3", false);
             // aarch64_target_feature stabilized in Rust 1.61.
-            target_feature_if("lse", has_lse, &version, Stable(61));
-            target_feature_if("rcpc", has_rcpc, &version, Stable(61));
+            if needs_target_feature_fallback(&version, Some(61)) {
+                target_feature_fallback("lse", has_lse);
+                target_feature_fallback("rcpc", has_rcpc);
+            }
         }
         "arm" => {
             // #[cfg(target_feature = "v7")] and others don't work on stable.
@@ -174,11 +177,12 @@ fn main() {
             subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
             subarch = subarch.split_once('.').unwrap_or((subarch, "")).0; // ignore .base/.main suffix
             let mut known = true;
-            // As of rustc nightly-2023-11-21, there are the following "vN*" patterns:
+            // As of rustc nightly-2024-05-04, there are the following "vN*" patterns:
             // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
             // ""
             // "64_32"
             // "64e"
+            // "64ec"
             // "v4t"
             // "v5te"
             // "v6"
@@ -193,13 +197,15 @@ fn main() {
             // "v7r"
             // "v7s"
             // "v8m"
+            // "v8r"
             //
             // - v7, v7a, v7neon, v7s, and v7k are aclass
             // - v6m, v7em, v7m, and v8m are mclass
-            // - v7r is rclass
+            // - v7r and v8r are rclass
             // - 64_32 and 64e are aarch64
+            // - 64ec is arm64ec
             //
-            // Other targets don't have *class target feature.
+            // Legacy arm architectures (pre-v7 except v6m) don't have *class target feature.
             // For example:
             // $ rustc +nightly --print cfg --target arm-unknown-linux-gnueabi | grep target_feature
             // target_feature="llvm14-builtins-abi"
@@ -210,21 +216,20 @@ fn main() {
             // Note that there is a CPU that ARMv8-A but 32-bit only (Cortex-A32).
             //
             // See also https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/lib/Target/ARM/ARMSubtarget.h#L98.
-            let mut is_mclass = false;
+            let mut mclass = false;
             match subarch {
-                "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8a" | "v9a" => {} // aclass
-                "v6m" | "v7em" | "v7m" | "v8m" => is_mclass = true,
-                "v7r" | "v8r" => {} // rclass
+                "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8" | "v8a" | "v9" | "v9a" => {} // aclass
+                "v7r" | "v8r" | "v9r" => {} // rclass
+                "v6m" | "v7em" | "v7m" | "v8m" => mclass = true,
                 // arm-linux-androideabi is v5te
-                // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/arm_linux_androideabi.rs#L11-L12
+                // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L18
                 _ if target == "arm-linux-androideabi" => subarch = "v5te",
                 // armeb-unknown-linux-gnueabi is v8 & aclass
-                // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_target/src/spec/armeb_unknown_linux_gnueabi.rs#L12
+                // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L18
                 _ if target == "armeb-unknown-linux-gnueabi" => subarch = "v8",
-                // v6 targets other than v6m don't have *class target feature.
-                "" | "v6" | "v6k" => subarch = "v6",
-                // Other targets don't have *class target feature.
-                "v4t" | "v5te" => {}
+                // Legacy arm architectures (pre-v7 except v6m) don't have *class target feature.
+                "" => subarch = "v6",
+                "v4t" | "v5te" | "v6" | "v6k" => {}
                 _ => {
                     known = false;
                     if env::var_os("ATOMIC_MAYBE_UNINIT_DENY_WARNINGS").unwrap_or_default() == "1" {
@@ -236,7 +241,6 @@ fn main() {
                     );
                 }
             }
-            target_feature_if("mclass", is_mclass, &version, Nightly);
             let mut v5te = known && subarch.starts_with("v5te");
             let mut v6 = known && subarch.starts_with("v6");
             let mut v7 = known && subarch.starts_with("v7");
@@ -256,26 +260,33 @@ fn main() {
             } else {
                 (false, false)
             };
-            v7 |= target_feature_if("v8", v8, &version, Nightly);
-            v6 |= target_feature_if("v8m", v8m, &version, Unavailable);
-            v6 |= target_feature_if("v7", v7, &version, Nightly);
-            v5te |= target_feature_if("v6", v6, &version, Nightly);
-            target_feature_if("v5te", v5te, &version, Nightly);
+            // As of rustc 1.78, target_feature "v8m" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/target_features.rs#L54
+            v6 |= target_feature_fallback("v8m", v8m);
+            if needs_target_feature_fallback(&version, None) {
+                v7 |= target_feature_fallback("v8", v8);
+                v6 |= target_feature_fallback("v7", v7);
+                v5te |= target_feature_fallback("v6", v6);
+                target_feature_fallback("v5te", v5te);
+                target_feature_fallback("mclass", mclass);
+            }
         }
         _ if target_arch.starts_with("riscv") => {
-            // riscv64gc-unknown-linux-gnu
-            //        ^^
-            let mut subarch = target.strip_prefix(target_arch).unwrap();
-            subarch = subarch.split_once('-').unwrap().0;
-            // riscv64-linux-android is riscv64gc
-            // https://github.com/rust-lang/rust/blob/706a4d9a4eb6794f5516f5a67660952c2247e928/compiler/rustc_target/src/spec/riscv64_linux_android.rs#L12
-            if target == "riscv64-linux-android" {
-                subarch = "gc";
-            }
-            // G = IMAFD
-            let has_a = subarch.contains('a') || subarch.contains('g');
             // Ratified RISC-V target features stabilized in Rust 1.75. https://github.com/rust-lang/rust/pull/116485
-            target_feature_if("a", has_a, &version, Stable(75));
+            if needs_target_feature_fallback(&version, Some(75)) {
+                // riscv64gc-unknown-linux-gnu
+                //        ^^
+                let mut subarch = target.strip_prefix(target_arch).unwrap();
+                subarch = subarch.split_once('-').unwrap().0;
+                // riscv64-linux-android is riscv64gc
+                // https://github.com/rust-lang/rust/blob/1.74.0/compiler/rustc_target/src/spec/riscv64_linux_android.rs#L12
+                if target == "riscv64-linux-android" {
+                    subarch = "gc";
+                }
+                // G = IMAFD
+                let a = subarch.contains('a') || subarch.contains('g');
+                target_feature_fallback("a", a);
+            }
         }
         "powerpc64" => {
             let target_endian =
@@ -296,12 +307,12 @@ fn main() {
                     has_pwr8_features = cpu == "ppc64le" || cpu == "future";
                 }
             }
-            // Note: As of rustc 1.70, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs#L226
+            // As of rustc 1.78, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/target_features.rs#L255
             // l[bh]arx and st[bh]cx.
-            target_feature_if("partword-atomics", has_pwr8_features, &version, Unavailable);
+            target_feature_fallback("partword-atomics", has_pwr8_features);
             // lqarx and stqcx.
-            target_feature_if("quadword-atomics", has_pwr8_features, &version, Unavailable);
+            target_feature_fallback("quadword-atomics", has_pwr8_features);
         }
         "s390x" => {
             // https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/lib/Target/SystemZ/SystemZFeatures.td
@@ -314,46 +325,34 @@ fn main() {
                     _ => {}
                 }
             }
-            // Note: As of rustc 1.70, target_feature "fast-serialization" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.70.0/compiler/rustc_codegen_ssa/src/target_features.rs
+            // As of rustc 1.78, target_feature "fast-serialization" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/target_features.rs
             // bcr 14,0
-            target_feature_if("fast-serialization", arch9_features, &version, Unavailable);
+            target_feature_fallback("fast-serialization", arch9_features);
         }
         _ => {}
     }
 }
 
-enum Availability {
-    Stable(u32),
-    Nightly,
-    Unavailable,
-}
-use Availability::{Nightly, Stable, Unavailable};
-
-fn target_feature_if(
-    name: &str,
-    mut has_target_feature: bool,
-    version: &Version,
-    availability: Availability,
-) -> bool {
-    // HACK: Currently, it seems that the only way to handle unstable target
-    // features on the stable is to parse the `-C target-feature` in RUSTFLAGS.
-    //
-    // - #[cfg(target_feature = "unstable_target_feature")] doesn't work on stable.
-    // - CARGO_CFG_TARGET_FEATURE excludes unstable target features on stable.
-    //
-    // As mentioned in the [RFC2045], unstable target features are also passed to LLVM
-    // (e.g., https://godbolt.org/z/4rr7rMcfG), so this hack works properly on stable.
-    //
-    // [RFC2045]: https://rust-lang.github.io/rfcs/2045-target-feature.html#backend-compilation-options
-    match availability {
-        // In these cases, cfg(target_feature = "...") would work, so skip emitting our own target_feature cfg.
-        Availability::Stable(stabilized) if version.nightly || version.minor >= stabilized => {
-            return false
-        }
-        Availability::Nightly if version.nightly => return false,
-        _ => {}
+// HACK: Currently, it seems that the only way to handle unstable target
+// features on the stable is to parse the `-C target-feature` in RUSTFLAGS.
+//
+// - #[cfg(target_feature = "unstable_target_feature")] doesn't work on stable.
+// - CARGO_CFG_TARGET_FEATURE excludes unstable target features on stable.
+//
+// As mentioned in the [RFC2045], unstable target features are also passed to LLVM
+// (e.g., https://godbolt.org/z/4rr7rMcfG), so this hack works properly on stable.
+//
+// [RFC2045]: https://rust-lang.github.io/rfcs/2045-target-feature.html#backend-compilation-options
+fn needs_target_feature_fallback(version: &Version, stable: Option<u32>) -> bool {
+    match stable {
+        // In these cases, cfg(target_feature = "...") would work, so skip emitting our own fallback target_feature cfg.
+        _ if version.nightly => false,
+        Some(stabilized) if version.minor >= stabilized => false,
+        _ => true,
     }
+}
+fn target_feature_fallback(name: &str, mut has_target_feature: bool) -> bool {
     if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
         for mut flag in rustflags.to_string_lossy().split('\x1f') {
             flag = flag.strip_prefix("-C").unwrap_or(flag);
@@ -390,6 +389,11 @@ fn target_cpu() -> Option<String> {
 }
 
 fn is_allowed_feature(name: &str) -> bool {
+    // https://github.com/dtolnay/thiserror/pull/248
+    if env::var_os("RUSTC_STAGE").is_some() {
+        return false;
+    }
+
     // allowed by default
     let mut allowed = true;
     if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
