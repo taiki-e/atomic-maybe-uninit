@@ -197,9 +197,12 @@ build() {
         local target_flags=(--target "${target}")
     fi
     args+=("${target_flags[@]}")
+    local cfgs
     if grep <<<"${rustup_target_list}" -Eq "^${target}$"; then
+        cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg "${target_flags[@]}")
         rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
     elif [[ -n "${nightly}" ]]; then
+        cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg "${target_flags[@]}")
         # Only build core because our library code doesn't depend on std.
         args+=(-Z build-std="core")
     else
@@ -224,15 +227,12 @@ build() {
         x_cargo "${args[@]}" "$@"
     case "${target}" in
         x86_64*)
-            # Apple targets are skipped because they are +cmpxchg16b by default
-            case "${target}" in
-                *-apple-*) ;;
-                *)
-                    CARGO_TARGET_DIR="${target_dir}/cmpxchg16b" \
-                        RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
-                        x_cargo "${args[@]}" "$@"
-                    ;;
-            esac
+            # Apple and Windows (except Windows 7, since Rust 1.78) targets are +cmpxchg16b by default
+            if ! grep <<<"${cfgs}" -q 'target_feature="cmpxchg16b"'; then
+                CARGO_TARGET_DIR="${target_dir}/cmpxchg16b" \
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
+                    x_cargo "${args[@]}" "$@"
+            fi
             ;;
         i686*)
             CARGO_TARGET_DIR="${target_dir}/sse" \
@@ -246,19 +246,23 @@ build() {
                 x_cargo "${args[@]}" "$@"
             ;;
         aarch64* | arm64*)
-            # macOS is skipped because it is +lse,+lse2,+rcpc by default
+            # macOS is +lse,+lse2,+rcpc by default
+            if ! grep <<<"${cfgs}" -q 'target_feature="lse"'; then
+                CARGO_TARGET_DIR="${target_dir}/lse" \
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
+                    x_cargo "${args[@]}" "$@"
+            fi
+            if ! grep <<<"${cfgs}" -q 'target_feature="rcpc"'; then
+                CARGO_TARGET_DIR="${target_dir}/rcpc" \
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+rcpc" \
+                    x_cargo "${args[@]}" "$@"
+            fi
             case "${target}" in
                 *-darwin) ;;
                 *)
-                    CARGO_TARGET_DIR="${target_dir}/lse" \
-                        RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
-                        x_cargo "${args[@]}" "$@"
                     # FEAT_LSE2 doesn't imply FEAT_LSE.
                     CARGO_TARGET_DIR="${target_dir}/lse2" \
                         RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2" \
-                        x_cargo "${args[@]}" "$@"
-                    CARGO_TARGET_DIR="${target_dir}/rcpc" \
-                        RUSTFLAGS="${target_rustflags} -C target-feature=+rcpc" \
                         x_cargo "${args[@]}" "$@"
                     ;;
             esac
