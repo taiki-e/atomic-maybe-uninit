@@ -60,7 +60,6 @@ orrs
 partword
 pshufd
 quadword
-qword
 rcpc
 risbg
 rsbegin
