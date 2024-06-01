@@ -64,7 +64,6 @@ rcpc
 risbg
 rsbegin
 rsend
-sched
 seqz
 sete
 shufps
