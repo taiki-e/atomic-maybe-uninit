@@ -20,7 +20,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Improve loongarch64 support. ([358360c](https://github.com/taiki-e/atomic-maybe-uninit/commit/358360c2d6b89cdd3315eae6ec6a3b0c6d3abff4))
 
-- Make in rustc version detection robust for custom toolchain.
+- Make rustc version detection robust for custom toolchains. ([c034611](https://github.com/taiki-e/atomic-maybe-uninit/commit/c0346119bf7e9e07cf9887c1acf10413c529f266))
 
 - Respect `RUSTC_WRAPPER` in rustc version detection.
 
@@ -29,7 +29,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - Various optimizations
   - Optimize x86_32 64-bit load/store when SSE is not available. ([75ca334](https://github.com/taiki-e/atomic-maybe-uninit/commit/75ca334dac1d0974a2e61dbb4c3d89cb0cf6cf22))
   - Optimize PowerPC32 Acquire/SeqCst load. ([f5ce83b](https://github.com/taiki-e/atomic-maybe-uninit/commit/f5ce83be02e1f123a8e549200786d0efb299d29d))
-  - Optimize x86 inline assembly. ([adaf3a9](https://github.com/taiki-e/atomic-maybe-uninit/commit/adaf3a99a74f63faea7bc7bf407925a0ec8b9c49), [3ba37e9](https://github.com/taiki-e/atomic-maybe-uninit/commit/3ba37e95b084f6a4dd9e08c7b4f08d23e1cf47f6))
+  - Optimize x86 inline assembly. ([adaf3a9](https://github.com/taiki-e/atomic-maybe-uninit/commit/adaf3a99a74f63faea7bc7bf407925a0ec8b9c49), [3ba37e9](https://github.com/taiki-e/atomic-maybe-uninit/commit/3ba37e95b084f6a4dd9e08c7b4f08d23e1cf47f6), [fcc0bf8](https://github.com/taiki-e/atomic-maybe-uninit/commit/fcc0bf8c0ff677b608900c139a50d9b34da8d476))
   - Optimize s390x inline assembly. ([9ee7f57](https://github.com/taiki-e/atomic-maybe-uninit/commit/9ee7f57101e68aaadb5f2ef9be095517692e8e2a))
 
 ## [0.3.1] - 2023-10-14
