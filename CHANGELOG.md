@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.2] - 2024-07-10
+
 - Support Arm64EC (experimental). ([4d94b3c](https://github.com/taiki-e/atomic-maybe-uninit/commit/4d94b3c0fe4c51f061abb33196821c0e32fa3f21))
 
 - Support swap/CAS on AVR (experimental). ([71b9a5f](https://github.com/taiki-e/atomic-maybe-uninit/commit/71b9a5fa905f59c0c285c78157ed2165bf974fa5))
@@ -232,7 +234,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.22...v0.3.0
 [0.2.22]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.21...v0.2.22
