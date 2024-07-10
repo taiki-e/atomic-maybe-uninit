@@ -10,6 +10,26 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support Arm64EC (experimental). ([4d94b3c](https://github.com/taiki-e/atomic-maybe-uninit/commit/4d94b3c0fe4c51f061abb33196821c0e32fa3f21))
+
+- Support swap/CAS on AVR (experimental). ([71b9a5f](https://github.com/taiki-e/atomic-maybe-uninit/commit/71b9a5fa905f59c0c285c78157ed2165bf974fa5))
+
+- Make `into_inner` `const fn` on Rust 1.61+. (align to the [std atomic change in Rust 1.79](https://github.com/rust-lang/rust/pull/123522)) ([9c253dc](https://github.com/taiki-e/atomic-maybe-uninit/commit/9c253dcc6590f27f7d896400d07ac862fae5e712))
+
+- Improve loongarch64 support. ([358360c](https://github.com/taiki-e/atomic-maybe-uninit/commit/358360c2d6b89cdd3315eae6ec6a3b0c6d3abff4))
+
+- Make in rustc version detection robust for custom toolchain.
+
+- Respect `RUSTC_WRAPPER` in rustc version detection.
+
+- Our build script is now less likely to be [re-run unnecessarily](https://github.com/taiki-e/portable-atomic/issues/151) in versions where the cargo bug fix is available (cargo 1.79+). ([91ec716](https://github.com/taiki-e/atomic-maybe-uninit/commit/91ec716ee76d68c08c217f06be3865a99588afb6))
+
+- Various optimizations
+  - Optimize x86_32 64-bit load/store when SSE is not available. ([75ca334](https://github.com/taiki-e/atomic-maybe-uninit/commit/75ca334dac1d0974a2e61dbb4c3d89cb0cf6cf22))
+  - Optimize PowerPC32 Acquire/SeqCst load. ([f5ce83b](https://github.com/taiki-e/atomic-maybe-uninit/commit/f5ce83be02e1f123a8e549200786d0efb299d29d))
+  - Optimize x86 inline assembly. ([adaf3a9](https://github.com/taiki-e/atomic-maybe-uninit/commit/adaf3a99a74f63faea7bc7bf407925a0ec8b9c49), [3ba37e9](https://github.com/taiki-e/atomic-maybe-uninit/commit/3ba37e95b084f6a4dd9e08c7b4f08d23e1cf47f6))
+  - Optimize s390x inline assembly. ([9ee7f57](https://github.com/taiki-e/atomic-maybe-uninit/commit/9ee7f57101e68aaadb5f2ef9be095517692e8e2a))
+
 ## [0.3.1] - 2023-10-14
 
 - Add `as_ptr` and `from_ptr`.
