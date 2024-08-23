@@ -51,15 +51,15 @@ non_ascii_idents = "warn"
 rust_2018_idioms = "warn"
 single_use_lifetimes = "warn"
 unexpected_cfgs = { level = "warn", check-cfg = [
-    "cfg(target_pointer_width,values(\"128\"))",
+    'cfg(target_pointer_width,values("128"))',
     # Known custom cfgs, excluding those that may be set by build script.
     # Not public API.
-    "cfg(qemu,valgrind)",
+    'cfg(qemu,valgrind)',
     # Public APIs, considered unstable unless documented in readme.
     # arm: Use cp15_barrier instead of __kuser_memory_barrier on ARMv6 Linux/Android.
     # ARMv6 binaries compiled with this cfg may cause problems when run on ARMv7+ chips:
     # https://github.com/rust-lang/rust/issues/60605
-    "cfg(atomic_maybe_uninit_use_cp15_barrier)",
+    'cfg(atomic_maybe_uninit_use_cp15_barrier)',
     # x86: Assume CPU does not have CMPXCHG8B instruction.
     # This is a cfg for compatibility with 80486/80386, but
     # note that LLVM does not support those CPUs well:
@@ -68,11 +68,11 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # since rustc does not have a target feature to indicate this, and targets
     # beginning with i386- may actually be i686 (e.g., i386-apple-ios)
     # https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/spec/base/apple/mod.rs#L72
-    "cfg(atomic_maybe_uninit_no_cmpxchg8b)",
+    'cfg(atomic_maybe_uninit_no_cmpxchg8b)',
     # x86: Assume CPU does not have CMPXCHG instruction.
     # This is a cfg for compatibility with 80386.
     # See atomic_maybe_uninit_no_cmpxchg8b for details.
-    "cfg(atomic_maybe_uninit_no_cmpxchg)",
+    'cfg(atomic_maybe_uninit_no_cmpxchg)',
 ] }
 unreachable_pub = "warn"
 # unsafe_op_in_unsafe_fn = "warn" # Set at crate-level instead since https://github.com/rust-lang/rust/pull/100081 is not available on MSRV
@@ -89,6 +89,7 @@ undocumented_unsafe_blocks = "warn"
 # Suppress buggy or noisy clippy lints
 bool_assert_comparison = { level = "allow", priority = 1 }
 borrow_as_ptr = { level = "allow", priority = 1 } # https://github.com/rust-lang/rust-clippy/issues/8286
+cast_lossless = { level = "allow", priority = 1 } # https://godbolt.org/z/Pv6vbGG6E
 declare_interior_mutable_const = { level = "allow", priority = 1 } # https://github.com/rust-lang/rust-clippy/issues/7665
 doc_markdown = { level = "allow", priority = 1 }
 float_cmp = { level = "allow", priority = 1 } # https://github.com/rust-lang/rust-clippy/issues/7725
@@ -98,6 +99,7 @@ manual_assert = { level = "allow", priority = 1 }
 manual_range_contains = { level = "allow", priority = 1 } # https://github.com/rust-lang/rust-clippy/issues/6455#issuecomment-1225966395
 missing_errors_doc = { level = "allow", priority = 1 }
 module_name_repetitions = { level = "allow", priority = 1 } # buggy: https://github.com/rust-lang/rust-clippy/issues?q=is%3Aissue+is%3Aopen+module_name_repetitions
+naive_bytecount = { level = "allow", priority = 1 }
 nonminimal_bool = { level = "allow", priority = 1 } # buggy: https://github.com/rust-lang/rust-clippy/issues?q=is%3Aissue+is%3Aopen+nonminimal_bool
 range_plus_one = { level = "allow", priority = 1 } # buggy: https://github.com/rust-lang/rust-clippy/issues?q=is%3Aissue+is%3Aopen+range_plus_one
 similar_names = { level = "allow", priority = 1 }
@@ -108,3 +110,4 @@ struct_field_names = { level = "allow", priority = 1 }
 too_many_arguments = { level = "allow", priority = 1 }
 too_many_lines = { level = "allow", priority = 1 }
 type_complexity = { level = "allow", priority = 1 }
+unreadable_literal = { level = "allow", priority = 1 }
