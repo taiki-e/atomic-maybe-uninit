@@ -65,6 +65,7 @@ pub(crate) const unsafe fn transmute_copy_by_val<Src, Dst>(src: Src) -> Dst {
 
 #[allow(dead_code)]
 // Stable version of https://doc.rust-lang.org/nightly/std/hint/fn.assert_unchecked.html.
+// TODO: use real core::hint::assert_unchecked on 1.81+ https://github.com/rust-lang/rust/pull/123588
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) unsafe fn assert_unchecked(cond: bool) {
