@@ -240,9 +240,8 @@ build() {
                 x_cargo "${args[@]}" "$@"
             ;;
         i586*)
-            # i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work.
-            CARGO_TARGET_DIR="${target_dir}/x87" \
-                RUSTFLAGS="${target_rustflags} --cfg target_feature=\"x87\"" \
+            CARGO_TARGET_DIR="${target_dir}/no-x87" \
+                RUSTFLAGS="${target_rustflags} -C target-feature=-x87" \
                 x_cargo "${args[@]}" "$@"
             ;;
         aarch64* | arm64*)

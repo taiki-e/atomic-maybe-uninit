@@ -248,9 +248,7 @@ macro_rules! atomic64 {
                     core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
                 }
                 #[cfg(not(target_feature = "sse"))]
-                // It seems core assumes x87 target_feature is always available?
-                // https://github.com/rust-lang/rust/blob/1.80.0/library/core/src/num/dec2flt/fpu.rs#L6
-                #[cfg(target_feature = "x87")]
+                #[cfg(any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs:
@@ -279,7 +277,7 @@ macro_rules! atomic64 {
                     out
                 }
                 #[cfg(not(target_feature = "sse"))]
-                #[cfg(not(target_feature = "x87"))]
+                #[cfg(not(any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87")))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
@@ -348,9 +346,7 @@ macro_rules! atomic64 {
                     }
                 }
                 #[cfg(not(target_feature = "sse"))]
-                // It seems core assumes x87 target_feature is always available?
-                // https://github.com/rust-lang/rust/blob/1.80.0/library/core/src/num/dec2flt/fpu.rs#L6
-                #[cfg(target_feature = "x87")]
+                #[cfg(any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs:
@@ -402,7 +398,7 @@ macro_rules! atomic64 {
                     }
                 }
                 #[cfg(not(target_feature = "sse"))]
-                #[cfg(not(target_feature = "x87"))]
+                #[cfg(not(any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87")))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b

@@ -252,12 +252,11 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
         if: startsWith(matrix.target, 'i686')
-      # x86 x87
+      # x86 -x87
       - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
         env:
-          # i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work.
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg target_feature="x87"
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg target_feature="x87"
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+soft-float,-x87,-mmx
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+soft-float,-x87,-mmx
         if: startsWith(matrix.target, 'i586')
       # aarch64 +lse
       - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE

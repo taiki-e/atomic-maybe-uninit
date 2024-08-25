@@ -41,7 +41,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -E 'target_feature_fallback\("' build.rs | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ','
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","cmpxchg16b","fast-serialization","lse","lse128","lse2","mclass","partword-atomics","quadword-atomics","rcpc","rcpc3","v5te","v6","v7","v8","v8m"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","cmpxchg16b","fast-serialization","lse","lse128","lse2","mclass","partword-atomics","quadword-atomics","rcpc","rcpc3","v5te","v6","v7","v8","v8m","x87"))"#
         );
     }
 
@@ -108,6 +108,15 @@ fn main() {
         || target_os == "watchos"
         || target_os == "visionos";
     match target_arch {
+        "x86" => {
+            // i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work.
+            // And core assumes x87 is always available.
+            // https://github.com/rust-lang/rust/blob/1.80.0/library/core/src/num/dec2flt/fpu.rs#L6
+            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/i686_unknown_uefi.rs#L24
+            // However, custom bare metal targets tend to disable x87 and do not use floats.
+            let has_x87 = target_os != "none";
+            target_feature_fallback("x87", has_x87);
+        }
         "x86_64" => {
             // cmpxchg16b_target_feature stabilized in Rust 1.69.
             if needs_target_feature_fallback(&version, Some(69)) {
