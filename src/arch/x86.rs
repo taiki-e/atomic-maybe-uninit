@@ -249,7 +249,7 @@ macro_rules! atomic64 {
                 }
                 #[cfg(not(target_feature = "sse"))]
                 // It seems core assumes x87 target_feature is always available?
-                // https://github.com/rust-lang/rust/blob/6a6cd6517dac28f9c3f0476e4ba436a2010e40d9/library/core/src/num/dec2flt/fpu.rs#L6
+                // https://github.com/rust-lang/rust/blob/1.80.0/library/core/src/num/dec2flt/fpu.rs#L6
                 #[cfg(target_feature = "x87")]
                 // SAFETY: the caller must uphold the safety contract.
                 //
@@ -349,7 +349,7 @@ macro_rules! atomic64 {
                 }
                 #[cfg(not(target_feature = "sse"))]
                 // It seems core assumes x87 target_feature is always available?
-                // https://github.com/rust-lang/rust/blob/6a6cd6517dac28f9c3f0476e4ba436a2010e40d9/library/core/src/num/dec2flt/fpu.rs#L6
+                // https://github.com/rust-lang/rust/blob/1.80.0/library/core/src/num/dec2flt/fpu.rs#L6
                 #[cfg(target_feature = "x87")]
                 // SAFETY: the caller must uphold the safety contract.
                 //

@@ -67,7 +67,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # This cannot be supported by automatic detection in the build script,
     # since rustc does not have a target feature to indicate this, and targets
     # beginning with i386- may actually be i686 (e.g., i386-apple-ios)
-    # https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/spec/base/apple/mod.rs#L72
+    # https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/base/apple/mod.rs#L63
     'cfg(atomic_maybe_uninit_no_cmpxchg8b)',
     # x86: Assume CPU does not have CMPXCHG instruction.
     # This is a cfg for compatibility with 80386.

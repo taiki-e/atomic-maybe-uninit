@@ -130,8 +130,8 @@ fn main() {
             let mut has_lse = is_macos;
             let mut has_rcpc = is_macos;
             // FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2. FEAT_LRCPC3 implies FEAT_LRCPC.
-            // As of rustc 1.78, target_feature "lse2"/"lse128"/"rcpc3" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/target_features.rs#L87
+            // As of rustc 1.80, target_feature "lse2"/"lse128"/"rcpc3" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs#L87
             target_feature_fallback("lse2", is_macos);
             // LLVM supports FEAT_LRCPC3 and FEAT_LSE128 on LLVM 16+:
             // https://github.com/llvm/llvm-project/commit/a6aaa969f7caec58a994142f8d855861cf3a1463
@@ -199,10 +199,10 @@ fn main() {
                 "v7r" | "v8r" | "v9r" => {} // rclass
                 "v6m" | "v7em" | "v7m" | "v8m" => mclass = true,
                 // arm-linux-androideabi is v5te
-                // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L18
+                // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L18
                 _ if target == "arm-linux-androideabi" => subarch = "v5te",
                 // armeb-unknown-linux-gnueabi is v8 & aclass
-                // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L18
+                // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L18
                 _ if target == "armeb-unknown-linux-gnueabi" => subarch = "v8",
                 // Legacy arm architectures (pre-v7 except v6m) don't have *class target feature.
                 "" => subarch = "v6",
@@ -237,8 +237,8 @@ fn main() {
             } else {
                 (false, false)
             };
-            // As of rustc 1.78, target_feature "v8m" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/target_features.rs#L54
+            // As of rustc 1.80, target_feature "v8m" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs#L54
             v6 |= target_feature_fallback("v8m", v8m);
             if needs_target_feature_fallback(&version, None) {
                 v7 |= target_feature_fallback("v8", v8);
@@ -284,8 +284,8 @@ fn main() {
                     has_pwr8_features = cpu == "ppc64le" || cpu == "future";
                 }
             }
-            // As of rustc 1.78, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/target_features.rs#L255
+            // As of rustc 1.80, target_feature "partword-atomics"/"quadword-atomics" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs#L253
             // l[bh]arx and st[bh]cx.
             target_feature_fallback("partword-atomics", has_pwr8_features);
             // lqarx and stqcx.
@@ -302,8 +302,8 @@ fn main() {
                     _ => {}
                 }
             }
-            // As of rustc 1.78, target_feature "fast-serialization" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.78.0/compiler/rustc_target/src/target_features.rs
+            // As of rustc 1.80, target_feature "fast-serialization" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs
             // bcr 14,0
             target_feature_fallback("fast-serialization", arch9_features);
         }
