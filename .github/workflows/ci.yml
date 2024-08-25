@@ -376,6 +376,8 @@ jobs:
           sudo mv "opensbi-${OPENSBI_VERSION}-rv-bin/share/opensbi/ilp32/generic/firmware/fw_dynamic.bin" /usr/share/qemu/opensbi-riscv32-generic-fw_dynamic.bin
           sudo mv "opensbi-${OPENSBI_VERSION}-rv-bin/share/opensbi/ilp32/generic/firmware/fw_dynamic.elf" /usr/share/qemu/opensbi-riscv32-generic-fw_dynamic.elf
           rm -rf "opensbi-${OPENSBI_VERSION}-rv-bin"
+      - run: rm tests/avr/rust-toolchain.toml
+        if: startsWith(matrix.rust, 'nightly-')
       - run: tools/no-std.sh
 
   valgrind:
