@@ -18,12 +18,12 @@ aarch64_linux_test_task:
   arm_container:
     image: rust
   setup_script:
-    - set -ex
+    - set -CeEuxo pipefail
     - lscpu
     - rustup toolchain add nightly-2024-07-31 --no-self-update && rustup default nightly-2024-07-31
     # - apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
   test_script:
-    - set -ex
+    - set -CeEuxo pipefail
     - ./tools/test.sh -vv
     # We test doctest only once with the default build conditions because doctest is slow. Both api-test
     # and src/tests have extended copies of doctest, so this will not reduce test coverage.
@@ -31,7 +31,7 @@ aarch64_linux_test_task:
     # Neoverse N1 is ARMv8.2-A but supports ARMv8.3-A LDAPR instructions.
     # Neoverse N1 is ARMv8.2-A and doesn't support FEAT_LSE2.
     # FEAT_LSE2 is tested on AArch64 macOS VM.
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse,+rcpc" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse,+rcpc" ./tools/test.sh -vv --tests
+    - RUSTFLAGS="${RUSTFLAGS} -C target-feature=+lse,+rcpc" RUSTDOCFLAGS="${RUSTDOCFLAGS} -C target-feature=+lse,+rcpc" ./tools/test.sh -vv --tests
 
 aarch64_linux_valgrind_task:
   name: valgrind ($TARGET)
@@ -40,12 +40,12 @@ aarch64_linux_valgrind_task:
   arm_container:
     image: rust
   setup_script:
-    - set -ex
+    - set -CeEuxo pipefail
     - rustup toolchain add nightly --no-self-update && rustup default nightly
     - apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends valgrind # moreutils
   test_script:
-    - set -ex
+    - set -CeEuxo pipefail
     - ./tools/test.sh valgrind -vv
     # +lse
     # As of Valgrind 3.19, Valgrind supports atomic instructions of ARMv8.0 and ARMv8.1 (FEAT_LSE).
-    - RUSTFLAGS="$RUSTFLAGS -C target-feature=+lse" RUSTDOCFLAGS="$RUSTDOCFLAGS -C target-feature=+lse" ./tools/test.sh valgrind -vv
+    - RUSTFLAGS="${RUSTFLAGS} -C target-feature=+lse" RUSTDOCFLAGS="${RUSTDOCFLAGS} -C target-feature=+lse" ./tools/test.sh valgrind -vv

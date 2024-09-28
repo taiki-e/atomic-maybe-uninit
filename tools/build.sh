@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-set -eEuo pipefail
+set -CeEuo pipefail
 IFS=$'\n\t'
-cd "$(dirname "$0")"/..
-
-# shellcheck disable=SC2154
-trap 's=$?; echo >&2 "$0: error on line "${LINENO}": ${BASH_COMMAND}"; exit ${s}' ERR
-trap -- 'echo >&2 "$0: trapped SIGINT"; exit 1' SIGINT
+trap -- 's=$?; printf >&2 "%s\n" "${0##*/}:${LINENO}: \`${BASH_COMMAND}\` exit with ${s}"; exit ${s}' ERR
+trap -- 'printf >&2 "%s\n" "${0##*/}: trapped SIGINT"; exit 1' SIGINT
+cd -- "$(dirname -- "$0")"/..
 
 # USAGE:
 #    ./tools/build.sh [+toolchain] [target]...
@@ -30,49 +28,53 @@ default_targets=(
     # aarch64
     # rustc --print target-list | grep -E '^(aarch64|arm64)'
     aarch64-unknown-linux-gnu
-    # aarch64 big endian
+    # big endian
     aarch64_be-unknown-linux-gnu
-    # aarch64 ILP32 ABI
+    # ILP32 ABI
     aarch64-unknown-linux-gnu_ilp32
-    # aarch64 ILP32 ABI big endian
+    # ILP32 ABI big endian
     aarch64_be-unknown-linux-gnu_ilp32
-    # aarch64 with FEAT_LSE & FEAT_LSE2 & FEAT_LRCPC
+    # FEAT_LSE & FEAT_LSE2 & FEAT_LRCPC
     aarch64-apple-darwin
+
+    # arm64ec
+    # rustc --print target-list | grep -E '^arm64ec'
+    arm64ec-pc-windows-msvc
 
     # arm
     # rustc --print target-list | grep -E '^(arm|thumb)'
-    # armv4t
+    # v4T
     armv4t-unknown-linux-gnueabi
-    # armv5te
+    # v5TE
     armv5te-unknown-linux-gnueabi
-    # armv6
+    # v6
     arm-unknown-linux-gnueabi
     arm-unknown-linux-gnueabihf
-    # armv7-a
+    # v7-A
     armv7-unknown-linux-gnueabi
     armv7-unknown-linux-gnueabihf
     thumbv7neon-unknown-linux-gnueabihf
-    # armv7-a big endian
+    # v7-A big endian
     armebv7-unknown-linux-gnueabi # custom target
-    # armv8-a
+    # v8-A
     armv8a-none-eabi # custom target
-    # armv8-a big endian
+    # v8-A big endian
     armeb-unknown-linux-gnueabi
-    # armv7-r
+    # v7-R
     armv7r-none-eabi
-    # armv7-r big endian
+    # v7-R big endian
     armebv7r-none-eabi
-    # armv8-r
+    # v8-R
     armv8r-none-eabihf
-    # armv8-r big endian
+    # v8-R big endian
     armebv8r-none-eabihf # custom target
-    # armv6-m
+    # v6-M
     thumbv6m-none-eabi
-    # armv7-m
+    # v7-M
     thumbv7em-none-eabi
     thumbv7em-none-eabihf
     thumbv7m-none-eabi
-    # armv8-m
+    # v8-M
     thumbv8m.base-none-eabi
     thumbv8m.main-none-eabi
     thumbv8m.main-none-eabihf
@@ -120,10 +122,6 @@ default_targets=(
     # rustc --print target-list | grep -E '^msp430'
     msp430-none-elf
 
-    # arm64ec
-    # rustc --print target-list | grep -E '^arm64ec'
-    arm64ec-pc-windows-msvc
-
     # avr
     # rustc --print target-list | grep -E '^avr'
     avr-unknown-gnu-atmega2560 # custom target
@@ -134,20 +132,27 @@ default_targets=(
 )
 
 x() {
-    local cmd="$1"
-    shift
     (
         set -x
-        "${cmd}" "$@"
+        "$@"
     )
 }
 x_cargo() {
     if [[ -n "${RUSTFLAGS:-}" ]]; then
-        echo "+ RUSTFLAGS='${RUSTFLAGS}' \\"
+        printf '%s\n' "+ RUSTFLAGS='${RUSTFLAGS}' \\"
     fi
-    RUSTFLAGS="${RUSTFLAGS:-} ${check_cfg:-}" \
-        x cargo "$@"
-    echo
+    x cargo "$@"
+    printf '\n'
+}
+retry() {
+    for i in {1..10}; do
+        if "$@"; then
+            return 0
+        else
+            sleep "${i}"
+        fi
+    done
+    "$@"
 }
 
 pre_args=()
@@ -163,20 +168,20 @@ fi
 
 rustup_target_list=$(rustup ${pre_args[@]+"${pre_args[@]}"} target list | cut -d' ' -f1)
 rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
-rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep '^release:' | cut -d' ' -f2)
+rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^release:' | cut -d' ' -f2)
 rustc_minor_version="${rustc_version#*.}"
 rustc_minor_version="${rustc_minor_version%%.*}"
-llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | (grep '^LLVM version:' || true) | cut -d' ' -f3)
+llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | { grep -E '^LLVM version:' || true; } | cut -d' ' -f3)
 llvm_version="${llvm_version%%.*}"
 base_args=(${pre_args[@]+"${pre_args[@]}"} hack build)
 target_dir=$(pwd)/target
 nightly=''
-if [[ "${rustc_version}" == *"nightly"* ]] || [[ "${rustc_version}" == *"dev"* ]]; then
+if [[ "${rustc_version}" =~ nightly|dev ]]; then
     nightly=1
-    rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
+    retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
     # We only run clippy on the recent nightly to avoid old clippy bugs.
     if [[ "${rustc_minor_version}" -ge 80 ]]; then
-        rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
+        retry rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
         base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy)
     fi
 fi
@@ -186,10 +191,10 @@ build() {
     local target="$1"
     shift
     local args=("${base_args[@]}")
-    local target_rustflags="${RUSTFLAGS:-} ${check_cfg:-}"
-    if ! grep <<<"${rustc_target_list}" -Eq "^${target}$" || [[ -f "target-specs/${target}.json" ]]; then
+    local target_rustflags="${RUSTFLAGS:-}"
+    if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
         if [[ ! -f "target-specs/${target}.json" ]]; then
-            echo "target '${target}' not available on ${rustc_version} (skipped all checks)"
+            printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped all checks)"
             return 0
         fi
         local target_flags=(--target "$(pwd)/target-specs/${target}.json")
@@ -198,15 +203,15 @@ build() {
     fi
     args+=("${target_flags[@]}")
     local cfgs
-    if grep <<<"${rustup_target_list}" -Eq "^${target}$"; then
+    if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
         cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg "${target_flags[@]}")
-        rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
+        retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
     elif [[ -n "${nightly}" ]]; then
         cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg "${target_flags[@]}")
         # Only build core because our library code doesn't depend on std.
         args+=(-Z build-std="core")
     else
-        echo "target '${target}' requires nightly compiler (skipped all checks)"
+        printf '%s\n' "target '${target}' requires nightly compiler (skipped all checks)"
         return 0
     fi
     if [[ "${target}" == "avr"* ]]; then
@@ -228,7 +233,7 @@ build() {
     case "${target}" in
         x86_64*)
             # Apple and Windows (except Windows 7, since Rust 1.78) targets are +cmpxchg16b by default
-            if ! grep <<<"${cfgs}" -q 'target_feature="cmpxchg16b"'; then
+            if ! grep -Eq '^target_feature="cmpxchg16b"' <<<"${cfgs}"; then
                 CARGO_TARGET_DIR="${target_dir}/cmpxchg16b" \
                     RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
                     x_cargo "${args[@]}" "$@"
@@ -246,12 +251,12 @@ build() {
             ;;
         aarch64* | arm64*)
             # macOS is +lse,+lse2,+rcpc by default
-            if ! grep <<<"${cfgs}" -q 'target_feature="lse"'; then
+            if ! grep -Eq '^target_feature="lse"' <<<"${cfgs}"; then
                 CARGO_TARGET_DIR="${target_dir}/lse" \
                     RUSTFLAGS="${target_rustflags} -C target-feature=+lse" \
                     x_cargo "${args[@]}" "$@"
             fi
-            if ! grep <<<"${cfgs}" -q 'target_feature="rcpc"'; then
+            if ! grep -Eq '^target_feature="rcpc"' <<<"${cfgs}"; then
                 CARGO_TARGET_DIR="${target_dir}/rcpc" \
                     RUSTFLAGS="${target_rustflags} -C target-feature=+rcpc" \
                     x_cargo "${args[@]}" "$@"
