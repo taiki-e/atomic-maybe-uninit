@@ -4,6 +4,7 @@ updates:
     directories:
       - /
       # crates with [workspace] table are not recognized by the above 'directory: /'
+      - /tests/avr
       - /tests/no-std-qemu
     schedule:
       interval: daily
