@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.3] - 2024-10-14
+
 - Make `get_mut` `const fn` on Rust 1.83+. ([484a32f](https://github.com/taiki-e/atomic-maybe-uninit/commit/484a32f8cc2a45315b6868e6984036814f9850b5))
 
 - Work around LLVM pre-20 bug ([#25](https://github.com/taiki-e/atomic-maybe-uninit/issues/25))
@@ -252,7 +254,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.2.22...v0.3.0
