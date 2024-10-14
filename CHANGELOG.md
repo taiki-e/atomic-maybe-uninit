@@ -4,11 +4,29 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org).
 
+Releases may yanked if there is a security bug, a soundness bug, or a regression.
+
 <!--
 Note: In this file, do not use the hard wrap in the middle of a sentence for compatibility with GitHub comment style markdown rendering.
 -->
 
 ## [Unreleased]
+
+- Make `get_mut` `const fn` on Rust 1.83+. ([484a32f](https://github.com/taiki-e/atomic-maybe-uninit/commit/484a32f8cc2a45315b6868e6984036814f9850b5))
+
+- Work around LLVM pre-20 bug ([#25](https://github.com/taiki-e/atomic-maybe-uninit/issues/25))
+
+- Support RMW on RISC-V without A-extension when Zaamo extension enabled. ([34d37b9](https://github.com/taiki-e/atomic-maybe-uninit/commit/34d37b936f242457da3c2bb3c6c6f8861082f6eb))
+
+- Optimize RISC-V {8,16}-bit atomic swap when Zabha is enabled. ([34d37b9](https://github.com/taiki-e/atomic-maybe-uninit/commit/34d37b936f242457da3c2bb3c6c6f8861082f6eb))
+
+- Strengthen RISC-V SeqCst store to improve compatibility with code that uses atomic instruction mapping that differs from LLVM and GCC. ([836d3fe](https://github.com/taiki-e/atomic-maybe-uninit/commit/836d3fe2a364da6e2137f991a2fb6153225ecd36))
+
+- Optimize x86_32 64-bit load/store when SSE is not available. ([c6f914b](https://github.com/taiki-e/atomic-maybe-uninit/commit/c6f914b105bfb9d5b35c5c90e0c26c4a704a1f15))
+
+- Improve compile-time detection of AArch64 FEAT_LSE2/FEAT_LRCPC3/FEAT_LSE128. ([959477b](https://github.com/taiki-e/atomic-maybe-uninit/commit/959477b043bc44917e8c2197c4c60bb3adbac4dd))
+
+- Improve compile-time detection of powerpc64 partword-atomics/quadword-atomics. ([e1a1596](https://github.com/taiki-e/atomic-maybe-uninit/commit/e1a1596ff1359e2888a04db32e6af8f8b4d5ef8e))
 
 ## [0.3.2] - 2024-07-10
 
