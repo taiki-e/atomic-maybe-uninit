@@ -201,26 +201,33 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         unsafe { &*ptr.cast::<Self>() }
     }
 
-    /// Returns a mutable reference to the underlying value.
-    ///
-    /// This is safe because the mutable reference guarantees that no other threads are
-    /// concurrently accessing the atomic data.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::mem::MaybeUninit;
-    ///
-    /// use atomic_maybe_uninit::AtomicMaybeUninit;
-    ///
-    /// let mut v = AtomicMaybeUninit::from(5_i32);
-    /// unsafe { assert_eq!((*v.get_mut()).assume_init(), 5) }
-    /// *v.get_mut() = MaybeUninit::new(10);
-    /// unsafe { assert_eq!((*v.get_mut()).assume_init(), 10) }
-    /// ```
-    #[inline]
-    pub fn get_mut(&mut self) -> &mut MaybeUninit<T> {
-        self.v.get_mut()
+    const_fn! {
+        const_if: #[cfg(not(atomic_maybe_uninit_no_const_mut_refs))];
+        /// Returns a mutable reference to the underlying value.
+        ///
+        /// This is safe because the mutable reference guarantees that no other threads are
+        /// concurrently accessing the atomic data.
+        ///
+        /// This is `const fn` on Rust 1.83+.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// use std::mem::MaybeUninit;
+        ///
+        /// use atomic_maybe_uninit::AtomicMaybeUninit;
+        ///
+        /// let mut v = AtomicMaybeUninit::from(5_i32);
+        /// unsafe { assert_eq!((*v.get_mut()).assume_init(), 5) }
+        /// *v.get_mut() = MaybeUninit::new(10);
+        /// unsafe { assert_eq!((*v.get_mut()).assume_init(), 10) }
+        /// ```
+        #[inline]
+        pub const fn get_mut(&mut self) -> &mut MaybeUninit<T> {
+            // SAFETY: the mutable reference guarantees unique ownership.
+            // (core::cell::UnsafeCell::get_mut requires newer nightly)
+            unsafe { &mut *self.as_ptr() }
+        }
     }
 
     const_fn! {
