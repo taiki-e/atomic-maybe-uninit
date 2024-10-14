@@ -67,7 +67,7 @@ jobs:
             os: macos-13 # x86_64
           - rust: nightly
             target: aarch64-apple-darwin
-            os: macos-14 # AArch64
+            os: macos-latest # AArch64
           - rust: '1.59'
             target: aarch64-unknown-linux-gnu
           - rust: stable
@@ -245,46 +245,46 @@ jobs:
       # macOS is skipped because it is +cmpxchg16b by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
         if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos')
       # x86 -sse2
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
         if: startsWith(matrix.target, 'i686')
       # x86 -x87
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+soft-float,-x87,-mmx
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+soft-float,-x87,-mmx
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+soft-float,-x87,-mmx
         if: startsWith(matrix.target, 'i586')
       # aarch64 +lse
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
         # macOS is skipped because it is +rcpc,+lse,+lse2 by default
         if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
       # aarch64 +rcpc,+lse,+lse2
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc,+lse,+lse2
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc,+lse,+lse2
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc,+lse,+lse2
         # macOS is skipped because it is +rcpc,+lse,+lse2 by default
         if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
       # arm v8 little endian
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
         if: matrix.target == 'armv7-unknown-linux-gnueabi'
       # arm v6 with legacy cp15_barrier
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
         if: matrix.target == 'arm-unknown-linux-gnueabi'
       # arm v7 big endian
       # armeb-unknown-linux-gnueabi is v8 by default, use custom target instead
@@ -303,29 +303,28 @@ jobs:
       # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
         if: startsWith(matrix.target, 'powerpc64le-')
       # powerpc64 pwr8
       # powerpc64le- (little-endian) is skipped because it is pwr8 by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
         if: startsWith(matrix.target, 'powerpc64-')
       # riscv +zabha
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+zabha
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+zabha
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+zabha
           QEMU_CPU: max
         if: startsWith(matrix.target, 'riscv')
       # s390x z196 (arch9)
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          # TODO: disable high-word LLVM target-feature to avoid LLVM codegen bug.
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=z196 -C target-feature=-high-word
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196 -C target-feature=-high-word
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=z196
         if: startsWith(matrix.target, 's390x')
 
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
@@ -370,7 +369,18 @@ jobs:
     steps:
       - uses: taiki-e/checkout-action@v1
       - run: |
-          sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+          retry() {
+            for i in {1..10}; do
+              if "$@"; then
+                return 0
+              else
+                sleep "${i}"
+              fi
+            done
+            "$@"
+          }
+          retry sudo apt-get -o Acquire::Retries=10 -qq update
+          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
             avr-libc \
             gcc-avr \
             qemu-system-arm \
@@ -378,7 +388,7 @@ jobs:
             simavr
           # APT's qemu package doesn't provide firmware for riscv32: https://packages.ubuntu.com/en/jammy/all/qemu-system-data/filelist
           OPENSBI_VERSION=1.5.1 # https://github.com/riscv-software-src/opensbi/releases
-          curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused "https://github.com/riscv-software-src/opensbi/releases/download/v${OPENSBI_VERSION}/opensbi-${OPENSBI_VERSION}-rv-bin.tar.xz" \
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused "https://github.com/riscv-software-src/opensbi/releases/download/v${OPENSBI_VERSION}/opensbi-${OPENSBI_VERSION}-rv-bin.tar.xz" \
             | tar xJf -
           sudo mv -- "opensbi-${OPENSBI_VERSION}-rv-bin/share/opensbi/ilp32/generic/firmware/fw_dynamic.bin" /usr/share/qemu/opensbi-riscv32-generic-fw_dynamic.bin
           sudo mv -- "opensbi-${OPENSBI_VERSION}-rv-bin/share/opensbi/ilp32/generic/firmware/fw_dynamic.elf" /usr/share/qemu/opensbi-riscv32-generic-fw_dynamic.elf
