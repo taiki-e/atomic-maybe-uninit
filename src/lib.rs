@@ -32,7 +32,7 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, Power
 | powerpc64 (pwr8+) \[4] \[6]      | i128,u128                                           | ✓          | ✓        |
 | s390x \[4]                       | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | msp430 \[4]                      | isize,usize,i8,u8,i16,u16                           | ✓          |          |
-| arm64ec \[4] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| arm64ec \[4]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | avr \[4] (experimental)          | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
 | hexagon \[4] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 
