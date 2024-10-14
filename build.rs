@@ -102,12 +102,6 @@ fn main() {
         _ => {}
     }
 
-    let is_macos = target_os == "macos";
-    let is_apple = is_macos
-        || target_os == "ios"
-        || target_os == "tvos"
-        || target_os == "watchos"
-        || target_os == "visionos";
     match target_arch {
         "x86" => {
             // i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work.
@@ -128,6 +122,7 @@ fn main() {
                 // this branch is only used on pre-1.69 that cmpxchg16b_target_feature is unstable.)
                 // Script to get builtin targets that support CMPXCHG16B by default:
                 // $ (for target in $(rustc --print target-list | grep -E '^x86_64'); do rustc --print cfg --target "${target}" | grep -Fq '"cmpxchg16b"' && printf '%s\n' "${target}"; done)
+                let is_apple = env::var("CARGO_CFG_TARGET_VENDOR").unwrap_or_default() == "apple";
                 let has_cmpxchg16b = is_apple;
                 // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/KM3jz616j
                 // However, it is unlikely that rustc will support that name, so we ignore it.
