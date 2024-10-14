@@ -36,7 +36,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_loongarch64_asm,atomic_maybe_uninit_s390x_no_reg_addr,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_loongarch64_asm,atomic_maybe_uninit_s390x_no_reg_addr,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,portable_atomic_pre_llvm_20)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -76,6 +76,10 @@ fn main() {
     // const_mut_refs/const_refs_to_cell stabilized in Rust 1.83 (nightly-2024-09-16): https://github.com/rust-lang/rust/pull/129195
     if !version.probe(83, 2024, 9, 15) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_mut_refs");
+    }
+
+    if version.llvm < 20 {
+        println!("cargo:rustc-cfg=portable_atomic_pre_llvm_20");
     }
 
     match target_arch {
