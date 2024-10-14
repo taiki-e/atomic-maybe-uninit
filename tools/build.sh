@@ -296,6 +296,17 @@ build() {
                 RUSTFLAGS="${target_rustflags} -C target-cpu=pwr7" \
                 x_cargo "${args[@]}" "$@"
             ;;
+        riscv*)
+            # Support for Zaamo/Zabha extension requires LLVM 19+.
+            if [[ "${llvm_version}" -ge 19 ]]; then
+                CARGO_TARGET_DIR="${target_dir}/zaamo" \
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo" \
+                    x_cargo "${args[@]}" "$@"
+                CARGO_TARGET_DIR="${target_dir}/zabha" \
+                    RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha" \
+                    x_cargo "${args[@]}" "$@"
+            fi
+            ;;
         s390x*)
             CARGO_TARGET_DIR="${target_dir}/z196" \
                 RUSTFLAGS="${target_rustflags} -C target-cpu=z196" \

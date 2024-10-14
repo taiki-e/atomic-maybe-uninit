@@ -313,6 +313,13 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8
         if: startsWith(matrix.target, 'powerpc64-')
+      # riscv +zabha
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+zabha
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+zabha
+          QEMU_CPU: max
+        if: startsWith(matrix.target, 'riscv')
       # s390x z196 (arch9)
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:

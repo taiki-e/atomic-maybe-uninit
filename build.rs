@@ -41,7 +41,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","cmpxchg16b","fast-serialization","lse","lse128","lse2","mclass","partword-atomics","quadword-atomics","rcpc","rcpc3","v5te","v6","v7","v8","v8m","x87"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","cmpxchg16b","fast-serialization","lse","lse128","lse2","mclass","partword-atomics","quadword-atomics","rcpc","rcpc3","v5te","v6","v7","v8","v8m","x87","zaamo","zabha"))"#
         );
     }
 
@@ -261,13 +261,31 @@ fn main() {
                 target_feature_fallback("mclass", mclass);
             }
         }
-        _ if target_arch.starts_with("riscv") => {
+        "riscv32" | "riscv64" => {
+            // zabha and zacas imply zaamo in GCC and Rust, but do not in LLVM (but enabling them
+            // without zaamo or a is not allowed, so we can assume zaamo is available when zabha is enabled).
+            // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/TargetParser/RISCVISAInfo.cpp#L772-L778
+            // https://github.com/gcc-mirror/gcc/blob/08693e29ec186fd7941d0b73d4d466388971fe2f/gcc/config/riscv/arch-canonicalize#L45-L46
+            // https://github.com/rust-lang/rust/pull/130877
+            let mut has_zaamo = false;
+            // target_feature "zaamo"/"zabha" is unstable and available on rustc side since nightly-2024-10-02: https://github.com/rust-lang/rust/pull/130877
+            if (!version.probe(83, 2024, 10, 1) || needs_target_feature_fallback(&version, None))
+                && version.llvm >= 19
+            {
+                // amo*.{b,h}
+                // available since LLVM 19 https://github.com/llvm/llvm-project/commit/89f87c387627150d342722b79c78cea2311cddf7 / https://github.com/llvm/llvm-project/commit/6b7444964a8d028989beee554a1f5c61d16a1cac
+                has_zaamo |= target_feature_fallback("zabha", false);
+                // amo*.{w,d}
+                // available since LLVM 19 https://github.com/llvm/llvm-project/commit/1a14c446dd800b1d79fed1735c48e392d06e495d / https://github.com/llvm/llvm-project/commit/8be079cdddfd628d356d9ddb5ab397ea95fb1030
+                target_feature_fallback("zaamo", has_zaamo);
+            }
             // Ratified RISC-V target features stabilized in Rust 1.75. https://github.com/rust-lang/rust/pull/116485
             if needs_target_feature_fallback(&version, Some(75)) {
                 // riscv64gc-unknown-linux-gnu
                 //        ^^
                 let mut subarch = target.strip_prefix(target_arch).unwrap();
                 subarch = subarch.split_once('-').unwrap().0;
+                subarch = subarch.split_once(['z', 'Z']).unwrap_or((subarch, "")).0;
                 // riscv64-linux-android is riscv64gc
                 // https://github.com/rust-lang/rust/blob/1.74.0/compiler/rustc_target/src/spec/riscv64_linux_android.rs#L12
                 // riscv32-wrs-vxworks and riscv64-wrs-vxworks are also riscv*gc,
@@ -429,16 +447,24 @@ mod version {
         pub(crate) minor: u32,
         pub(crate) nightly: bool,
         commit_date: Date,
+        pub(crate) llvm: u32,
     }
 
     impl Version {
         // The known latest stable version. If we unable to determine
         // the rustc version, we assume this is the current version.
         // It is no problem if this is older than the actual latest stable.
-        pub(crate) const LATEST: Self = Self::stable(81);
+        // LLVM version is assumed to be the minimum external LLVM version:
+        // https://github.com/rust-lang/rust/blob/1.81.0/src/bootstrap/src/core/build_steps/llvm.rs#L588
+        pub(crate) const LATEST: Self = Self::stable(81, 17);
 
-        const fn stable(minor: u32) -> Self {
-            Self { minor, nightly: false, commit_date: Date::UNKNOWN }
+        pub(crate) const fn stable(rustc_minor: u32, llvm_major: u32) -> Self {
+            Self {
+                minor: rustc_minor,
+                nightly: false,
+                commit_date: Date::UNKNOWN,
+                llvm: llvm_major,
+            }
         }
 
         pub(crate) fn probe(&self, minor: u32, year: u16, month: u8, day: u8) -> bool {
@@ -467,6 +493,20 @@ mod version {
             let _patch = digits.next().unwrap_or("0").parse::<u32>().ok()?;
             let nightly = channel == "nightly" || channel == "dev";
 
+            // Note that rustc 1.49-1.50 (and 1.13 or older) don't print LLVM version.
+            let llvm_major = (|| {
+                let version = verbose_version
+                    .lines()
+                    .find(|line| line.starts_with("LLVM version: "))
+                    .map(|line| &line["LLVM version: ".len()..])?;
+                let mut digits = version.splitn(3, '.');
+                let major = digits.next()?.parse::<u32>().ok()?;
+                let _minor = digits.next()?.parse::<u32>().ok()?;
+                let _patch = digits.next().unwrap_or("0").parse::<u32>().ok()?;
+                Some(major)
+            })()
+            .unwrap_or(0);
+
             // we don't refer commit date on stable/beta.
             if nightly {
                 let commit_date = (|| {
@@ -483,9 +523,14 @@ mod version {
                     }
                     Some(Date::new(year, month, day))
                 })();
-                Some(Self { minor, nightly, commit_date: commit_date.unwrap_or(Date::UNKNOWN) })
+                Some(Self {
+                    minor,
+                    nightly,
+                    commit_date: commit_date.unwrap_or(Date::UNKNOWN),
+                    llvm: llvm_major,
+                })
             } else {
-                Some(Self::stable(minor))
+                Some(Self::stable(minor, llvm_major))
             }
         }
     }

@@ -8,14 +8,20 @@ Refs:
   https://github.com/riscv/riscv-isa-manual/tree/riscv-isa-release-8b9dc50-2024-08-30
   "A" Extension for Atomic Instructions
   https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/a-st-ext.adoc
+  "Zabha" Extension for Byte and Halfword Atomic Memory Operations
+  https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zabha.adoc
 - RISC-V Atomics ABI Specification
   https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/draft-20240829-13bfa9f54634cb60d86b9b333e109f077805b4b3/riscv-atomic.adoc
 - portable-atomic https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- riscv64gc https://godbolt.org/z/6fc46Ec8e
-- riscv32imac https://godbolt.org/z/P6r6PM7sf
+- riscv64gc https://godbolt.org/z/aT7xr3fWf
+- riscv64gc (+zabha) https://godbolt.org/z/s9x6Ehab4
+- riscv32imac https://godbolt.org/z/MxbqKPab8
+- riscv32imac (+zabha) https://godbolt.org/z/qzEGTWd9c
 */
+
+// TODO: Zacas/Zalrsc extension
 
 #[path = "cfgs/riscv.rs"]
 mod cfgs;
@@ -27,7 +33,14 @@ use core::{
 };
 
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-use crate::raw::{AtomicCompareExchange, AtomicSwap};
+use crate::raw::AtomicCompareExchange;
+#[cfg(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zaamo",
+    atomic_maybe_uninit_target_feature = "zaamo",
+))]
+use crate::raw::AtomicSwap;
 use crate::raw::{AtomicLoad, AtomicStore};
 
 #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
@@ -45,7 +58,12 @@ macro_rules! w {
     };
 }
 
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+#[cfg(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zaamo",
+    atomic_maybe_uninit_target_feature = "zaamo",
+))]
 macro_rules! atomic_rmw_amo {
     ($op:ident, $order:ident) => {
         match $order {
@@ -146,10 +164,14 @@ macro_rules! atomic_load_store {
     };
 }
 
-macro_rules! atomic {
+macro_rules! atomic_swap {
     ($int_type:ident, $asm_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix);
-        #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+        #[cfg(any(
+            target_feature = "a",
+            atomic_maybe_uninit_target_feature = "a",
+            target_feature = "zaamo",
+            atomic_maybe_uninit_target_feature = "zaamo",
+        ))]
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -181,6 +203,13 @@ macro_rules! atomic {
                 out
             }
         }
+    };
+}
+
+macro_rules! atomic {
+    ($int_type:ident, $asm_suffix:tt) => {
+        atomic_load_store!($int_type, $asm_suffix);
+        atomic_swap!($int_type, $asm_suffix);
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
@@ -232,6 +261,9 @@ macro_rules! atomic {
 macro_rules! atomic_sub_word {
     ($int_type:ident, $asm_suffix:tt) => {
         atomic_load_store!($int_type, $asm_suffix);
+        #[cfg(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"))]
+        atomic_swap!($int_type, $asm_suffix);
+        #[cfg(not(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha")))]
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
         impl AtomicSwap for $int_type {
             #[inline]
