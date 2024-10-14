@@ -77,6 +77,8 @@ Feel free to submit an issue if your target is not supported yet.
     clippy::missing_inline_in_public_items,
     clippy::std_instead_of_alloc,
     clippy::std_instead_of_core,
+    // Code outside of cfg(test) shouldn't use float.
+    clippy::float_arithmetic,
 )]
 #![allow(clippy::inline_always)]
 #![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
