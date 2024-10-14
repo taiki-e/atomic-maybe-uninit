@@ -16,9 +16,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Make `get_mut` `const fn` on Rust 1.83+. ([484a32f](https://github.com/taiki-e/atomic-maybe-uninit/commit/484a32f8cc2a45315b6868e6984036814f9850b5))
 
-- Work around LLVM pre-20 bug ([#25](https://github.com/taiki-e/atomic-maybe-uninit/issues/25))
+- Work around [LLVM pre-20 bug](https://github.com/rust-lang/rust/issues/129585). ([#25](https://github.com/taiki-e/atomic-maybe-uninit/issues/25))
 
-- Support RMW on RISC-V without A-extension when Zaamo extension enabled. ([34d37b9](https://github.com/taiki-e/atomic-maybe-uninit/commit/34d37b936f242457da3c2bb3c6c6f8861082f6eb))
+- Support atomic swap on RISC-V without A-extension when Zaamo extension enabled. ([34d37b9](https://github.com/taiki-e/atomic-maybe-uninit/commit/34d37b936f242457da3c2bb3c6c6f8861082f6eb))
 
 - Optimize RISC-V {8,16}-bit atomic swap when Zabha is enabled. ([34d37b9](https://github.com/taiki-e/atomic-maybe-uninit/commit/34d37b936f242457da3c2bb3c6c6f8861082f6eb))
 
