@@ -32,12 +32,12 @@ use crate::{
 };
 
 // Extracts and checks condition code.
-#[inline]
+#[inline(always)]
 fn extract_cc(r: i64) -> bool {
     r.wrapping_add(-268435456) & (1 << 31) != 0
 }
 
-#[inline]
+#[inline(always)]
 fn complement(v: u32) -> u32 {
     (v ^ !0).wrapping_add(1)
 }

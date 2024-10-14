@@ -18,7 +18,7 @@ use crate::raw::AtomicCompareExchange;
 use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
 // See portable-atomic's interrupt module for more.
-#[inline]
+#[inline(always)]
 fn disable() -> u8 {
     let sreg: u8;
     // SAFETY: reading the status register (SREG) and disabling interrupts are safe.
@@ -34,7 +34,7 @@ fn disable() -> u8 {
     }
     sreg
 }
-#[inline]
+#[inline(always)]
 unsafe fn restore(sreg: u8) {
     // SAFETY: the caller must guarantee that the state was retrieved by the previous `disable`,
     unsafe {
@@ -47,7 +47,7 @@ unsafe fn restore(sreg: u8) {
 }
 
 #[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
-#[inline]
+#[inline(always)]
 fn xor8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> u8 {
     let out;
     // SAFETY: calling eor is safe.
@@ -59,12 +59,12 @@ fn xor8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> u8 {
 }
 // TODO: use Z bits in SREG instead of == 0?
 #[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
-#[inline]
+#[inline(always)]
 fn cmp8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> bool {
     xor8(a, b) == 0
 }
 #[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
-#[inline]
+#[inline(always)]
 fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
     // SAFETY: same layout.
     let [a1, a2] = unsafe { core::mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(a) };

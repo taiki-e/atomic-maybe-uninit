@@ -170,7 +170,7 @@ macro_rules! zero_extend {
     ($($ty:ident),* => $out:ident) => {$(
         impl ZeroExtend for $ty {
             type Out = MaybeUninit<$out>;
-            #[inline]
+            #[inline(always)]
             fn zero_extend(v: MaybeUninit<Self>) -> Self::Out {
                 const LEN: usize
                     = (mem::size_of::<$out>() - mem::size_of::<$ty>()) / mem::size_of::<$ty>();
@@ -184,7 +184,7 @@ macro_rules! zero_extend {
     ($($ty:ident),*) => {$(
         impl ZeroExtend for $ty {
             type Out = MaybeUninit<Self>;
-            #[inline]
+            #[inline(always)]
             fn zero_extend(v: MaybeUninit<Self>) -> Self::Out {
                 v
             }
