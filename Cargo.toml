@@ -57,8 +57,8 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # Not public API.
     'cfg(qemu,valgrind)',
     # Public APIs, considered unstable unless documented in readme.
-    # arm: Use cp15_barrier instead of __kuser_memory_barrier on ARMv6 Linux/Android.
-    # ARMv6 binaries compiled with this cfg may cause problems when run on ARMv7+ chips:
+    # arm: Use cp15_barrier instead of __kuser_memory_barrier on Armv6 Linux/Android.
+    # Armv6 binaries compiled with this cfg may cause problems when run on Armv7+ chips:
     # https://github.com/rust-lang/rust/issues/60605
     'cfg(atomic_maybe_uninit_use_cp15_barrier)',
     # x86: Assume CPU does not have CMPXCHG8B instruction.

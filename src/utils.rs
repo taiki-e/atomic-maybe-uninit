@@ -256,7 +256,7 @@ type RetInt = u32;
 type RetInt = RegSize;
 // Helper for implementing sub-word atomic operations using word-sized LL/SC loop or CAS loop.
 //
-// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/lib/CodeGen/AtomicExpandPass.cpp#L691
+// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L737
 // (aligned_ptr, shift, mask)
 #[allow(dead_code)]
 #[inline]

@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// s390x
-//
-// Refs:
-// - z/Architecture Principles of Operation https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf
-// - z/Architecture Reference Summary https://www.ibm.com/support/pages/zarchitecture-reference-summary
-// - portable-atomic https://github.com/taiki-e/portable-atomic
-//
-// Generated asm:
-// - s390x https://godbolt.org/z/3jvj9aeTq
-// - s390x (z196) https://godbolt.org/z/5Ge3M7Y5e
+/*
+s390x
+
+Refs:
+- z/Architecture Principles of Operation https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf
+- z/Architecture Reference Summary https://www.ibm.com/support/pages/zarchitecture-reference-summary
+- portable-atomic https://github.com/taiki-e/portable-atomic
+
+Generated asm:
+- s390x https://godbolt.org/z/3jvj9aeTq
+- s390x (z196) https://godbolt.org/z/5Ge3M7Y5e
+*/
 
 #[path = "cfgs/s390x.rs"]
 mod cfgs;

@@ -1,18 +1,28 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// ARMv6 and ARMv7
-//
-// Refs:
-// - ARM Architecture Reference Manual ARMv7-A and ARMv7-R edition
-//   https://developer.arm.com/documentation/ddi0406/cb
-// - ARMv6 Differences
-//   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv6-Differences?lang=en
-//
-// Generated asm:
-// - armv7-a https://godbolt.org/z/P93x9TjWs
-// - armv7-m https://godbolt.org/z/WozEfbMbx
-// - armv6 https://godbolt.org/z/T5M337jYK
-// - armv6-m https://godbolt.org/z/q88qPah4W
+/*
+Armv6 and Armv7
+
+Refs:
+- ARM Architecture Reference Manual ARMv7-A and ARMv7-R edition
+  https://developer.arm.com/documentation/ddi0406/cb
+- ARMv6 Differences
+  https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv6-Differences
+- ARM11 MPCore Processor Technical Reference Manual
+  https://developer.arm.com/documentation/ddi0360/f
+- ARMv7-M Architecture Reference Manual
+  https://developer.arm.com/documentation/ddi0403/latest (PDF)
+- Armv6-M Architecture Reference Manual
+  https://developer.arm.com/documentation/ddi0419/latest (PDF)
+- Instruction Set Assembly Guide for Armv7 and earlier Arm architectures Reference Guide
+  https://developer.arm.com/documentation/100076/0200
+
+Generated asm:
+- armv7-a https://godbolt.org/z/P93x9TjWs
+- armv7-m https://godbolt.org/z/WozEfbMbx
+- armv6 https://godbolt.org/z/T5M337jYK
+- armv6-m https://godbolt.org/z/q88qPah4W
+*/
 
 #[path = "../arch/cfgs/arm.rs"]
 mod cfgs;
@@ -43,11 +53,11 @@ macro_rules! dmb {
         "dmb sy"
     };
 }
-// ARMv6 does not support `dmb`, so use use special instruction equivalent to a DMB.
+// Armv6 does not support `dmb`, so use use special instruction equivalent to a DMB.
 //
 // Refs:
 // - https://reviews.llvm.org/D5386
-// - https://developer.arm.com/documentation/ddi0360/e/control-coprocessor-cp15/register-descriptions/c7--cache-operations-register?lang=en
+// - https://developer.arm.com/documentation/ddi0360/f/control-coprocessor-cp15/register-descriptions/c7--cache-operations-register
 #[cfg(not(all(
     any(target_os = "linux", target_os = "android"),
     not(atomic_maybe_uninit_use_cp15_barrier),
@@ -60,7 +70,7 @@ macro_rules! dmb {
     };
 }
 // We prefer __kuser_memory_barrier over cp15_barrier because cp15_barrier is
-// trapped and emulated by default on Linux/Android with ARMv8+ (or ARMv7+?).
+// trapped and emulated by default on Linux/Android with Armv8+ (or Armv7+?).
 // https://github.com/rust-lang/rust/issues/60605
 #[cfg(all(
     any(target_os = "linux", target_os = "android"),
@@ -153,7 +163,7 @@ macro_rules! asm_use_dmb {
         core::arch::asm!(
             $($asm)*
             // __kuser_memory_barrier (see also arm_linux.rs)
-            // https://www.kernel.org/doc/Documentation/arm/kernel_user_helpers.txt
+            // https://github.com/torvalds/linux/blob/v6.11/Documentation/arch/arm/kernel_user_helpers.rst
             inout("r0") 0xFFFF0FA0_usize => _,
             out("lr") _,
             options($($options)*),

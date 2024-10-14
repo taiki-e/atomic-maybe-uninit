@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// AVR
-//
-// Refs:
-// - AVR Instruction Set Manual https://ww1.microchip.com/downloads/en/DeviceDoc/AVR-InstructionSet-Manual-DS40002198.pdf
-// - portable-atomic https://github.com/taiki-e/portable-atomic
+/*
+AVR
+
+Refs:
+- AVR Instruction Set Manual https://ww1.microchip.com/downloads/en/DeviceDoc/AVR-InstructionSet-Manual-DS40002198.pdf
+- portable-atomic https://github.com/taiki-e/portable-atomic
+*/
 
 #[path = "cfgs/avr.rs"]
 mod cfgs;

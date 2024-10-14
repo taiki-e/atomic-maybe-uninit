@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Pre-v6 ARM Linux/Android
-//
-// Refs:
-// - https://www.kernel.org/doc/Documentation/arm/kernel_user_helpers.txt
-// - https://github.com/rust-lang/compiler-builtins/blob/0.1.88/src/arm_linux.rs
-// - ARMv4 and ARMv5 Differences
-//   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences?lang=en
-//
-// Generated asm:
-// - armv5te https://godbolt.org/z/r61s7cnG8
-// - armv4t https://godbolt.org/z/xrxfKx1rc
+/*
+Pre-v6 Arm Linux/Android
+
+Refs:
+- https://github.com/torvalds/linux/blob/v6.11/Documentation/arch/arm/kernel_user_helpers.rst
+- https://github.com/rust-lang/compiler-builtins/blob/compiler_builtins-v0.1.124/src/arm_linux.rs
+- ARMv4 and ARMv5 Differences
+  https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences
+
+Generated asm:
+- armv5te https://godbolt.org/z/r61s7cnG8
+- armv4t https://godbolt.org/z/xrxfKx1rc
+*/
 
 #[path = "../arch/cfgs/arm_linux.rs"]
 mod cfgs;
@@ -23,7 +25,7 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
-// https://www.kernel.org/doc/Documentation/arm/kernel_user_helpers.txt
+// https://github.com/torvalds/linux/blob/v6.11/Documentation/arch/arm/kernel_user_helpers.rst
 const KUSER_HELPER_VERSION: usize = 0xFFFF0FFC;
 // __kuser_helper_version >= 2 (kernel version 2.6.12+)
 const KUSER_CMPXCHG: usize = 0xFFFF0FC0;
@@ -598,7 +600,7 @@ fn assert_has_kuser_cmpxchg64() {
     if kuser_helper_version() < 5 {
         #[cold]
         fn p() -> ! {
-            panic!("64-bit atomics on pre-v6 ARM requires Linux kernel version 3.1+")
+            panic!("64-bit atomics on pre-v6 Arm requires Linux kernel version 3.1+")
         }
         p()
     }

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Hexagon
-//
-// Refs:
-// - Hexagon V5x Programmer's Reference Manual
-//   https://developer.qualcomm.com/download/hexagon/hexagon-v5x-programmers-reference-manual.pdf?referrer=node/6116
+/*
+Hexagon
+
+Refs:
+- Hexagon V5x Programmer's Reference Manual
+  https://developer.qualcomm.com/download/hexagon/hexagon-v5x-programmers-reference-manual.pdf?referrer=node/6116
+*/
 
 #[path = "../arch/cfgs/hexagon.rs"]
 mod cfgs;

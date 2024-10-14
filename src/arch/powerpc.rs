@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// PowerPC and PowerPC64
-//
-// Refs:
-// - Power ISA https://openpowerfoundation.org/specifications/isa
-// - AIX Assembler language reference https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
-// - http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
-// - portable-atomic https://github.com/taiki-e/portable-atomic
-//
-// Generated asm:
-// - powerpc https://godbolt.org/z/ob733EPEP
-// - powerpc64 https://godbolt.org/z/Tjn9aEaad
-// - powerpc64 (pwr8) https://godbolt.org/z/KGcbY7hM3
-// - powerpc64le https://godbolt.org/z/MqEKGvo5v
-// - powerpc64le (pwr7) https://godbolt.org/z/e668jnrvj
+/*
+PowerPC and PowerPC64
+
+Refs:
+- Power ISA https://openpowerfoundation.org/specifications/isa
+- AIX Assembler language reference https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
+- http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
+- portable-atomic https://github.com/taiki-e/portable-atomic
+
+Generated asm:
+- powerpc https://godbolt.org/z/ob733EPEP
+- powerpc64 https://godbolt.org/z/Tjn9aEaad
+- powerpc64 (pwr8) https://godbolt.org/z/KGcbY7hM3
+- powerpc64le https://godbolt.org/z/MqEKGvo5v
+- powerpc64le (pwr7) https://godbolt.org/z/e668jnrvj
+*/
 
 #[path = "cfgs/powerpc.rs"]
 mod cfgs;

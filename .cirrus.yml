@@ -28,8 +28,8 @@ aarch64_linux_test_task:
     # We test doctest only once with the default build conditions because doctest is slow. Both api-test
     # and src/tests have extended copies of doctest, so this will not reduce test coverage.
     # +lse,+rcpc
-    # Neoverse N1 is ARMv8.2-A but supports ARMv8.3-A LDAPR instructions.
-    # Neoverse N1 is ARMv8.2-A and doesn't support FEAT_LSE2.
+    # Neoverse N1 is Armv8.2 but supports Armv8.3 LDAPR instructions.
+    # Neoverse N1 is Armv8.2 and doesn't support FEAT_LSE2.
     # FEAT_LSE2 is tested on AArch64 macOS VM.
     - RUSTFLAGS="${RUSTFLAGS} -C target-feature=+lse,+rcpc" RUSTDOCFLAGS="${RUSTDOCFLAGS} -C target-feature=+lse,+rcpc" ./tools/test.sh -vv --tests
 
@@ -47,5 +47,5 @@ aarch64_linux_valgrind_task:
     - set -CeEuxo pipefail
     - ./tools/test.sh valgrind -vv
     # +lse
-    # As of Valgrind 3.19, Valgrind supports atomic instructions of ARMv8.0 and ARMv8.1 (FEAT_LSE).
+    # As of Valgrind 3.19, Valgrind supports atomic instructions of Armv8.0 and Armv8.1 (FEAT_LSE).
     - RUSTFLAGS="${RUSTFLAGS} -C target-feature=+lse" RUSTDOCFLAGS="${RUSTDOCFLAGS} -C target-feature=+lse" ./tools/test.sh valgrind -vv

@@ -1,21 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// ARMv8 AArch32
-//
-// LLVM doesn't generate CLREX for ARMv8-M Baseline, but it actually supports CLREX.
-// https://developer.arm.com/documentation/dui1095/a/The-Cortex-M23-Instruction-Set/Memory-access-instructions?lang=en
-// https://community.arm.com/cfs-file/__key/telligent-evolution-components-attachments/01-2057-00-00-00-01-28-35/Cortex_2D00_M-for-Beginners-_2D00_-2017_5F00_EN_5F00_v2.pdf
-//
-// Refs:
-// - Arm Architecture Reference Manual for A-profile architecture
-//   https://developer.arm.com/documentation/ddi0487/latest
-// - Armv8-M Architecture Reference Manual
-//   https://developer.arm.com/documentation/ddi0553/latest
-//
-// Generated asm:
-// - armv8-a https://godbolt.org/z/TvnKGjfKn
-// - armv8-m baseline https://godbolt.org/z/Y9enGTP4Y
-// - armv8-m mainline https://godbolt.org/z/PqzfvcE73
+/*
+Armv8 AArch32
+
+LLVM doesn't generate CLREX for Armv8-M Baseline, but it actually supports CLREX.
+https://developer.arm.com/documentation/dui1095/a/The-Cortex-M23-Instruction-Set/Memory-access-instructions
+https://community.arm.com/cfs-file/__key/telligent-evolution-components-attachments/01-2057-00-00-00-01-28-35/Cortex_2D00_M-for-Beginners-_2D00_-2017_5F00_EN_5F00_v2.pdf
+
+Refs:
+- Arm A-profile A32/T32 Instruction Set Architecture
+  https://developer.arm.com/documentation/ddi0597/latest
+- Arm Architecture Reference Manual for A-profile architecture
+  https://developer.arm.com/documentation/ddi0487/latest (PDF)
+- ARM Architecture Reference Manual Supplement - ARMv8, for the ARMv8-R AArch32 architecture profile
+  https://developer.arm.com/documentation/ddi0568/latest (PDF)
+- Armv8-M Architecture Reference Manual
+  https://developer.arm.com/documentation/ddi0553/latest (PDF)
+- Arm Cortex-M33 Devices Generic User Guide
+  https://developer.arm.com/documentation/100235/0100
+- Arm Cortex-M23 Devices Generic User Guide
+  https://developer.arm.com/documentation/dui1095/a
+
+Generated asm:
+- armv8-a https://godbolt.org/z/TvnKGjfKn
+- armv8-m baseline https://godbolt.org/z/Y9enGTP4Y
+- armv8-m mainline https://godbolt.org/z/PqzfvcE73
+*/
 
 #[path = "cfgs/armv8.rs"]
 mod cfgs;
@@ -44,7 +54,7 @@ macro_rules! atomic_rmw {
 }
 
 // Adds S suffix if needed. We prefer instruction without S suffix,
-// but ARMv8-M Baseline doesn't support thumb2 instructions.
+// but Armv8-M Baseline doesn't support thumb2 instructions.
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! s {
     ($op:tt, $operand:tt) => {

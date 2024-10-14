@@ -1,28 +1,30 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// AArch64
-//
-// Refs:
-// - ARM Compiler armasm User Guide
-//   https://developer.arm.com/documentation/dui0801/latest
-// - Arm A-profile A64 Instruction Set Architecture
-//   https://developer.arm.com/documentation/ddi0602/latest
-// - Arm Architecture Reference Manual for A-profile architecture
-//   https://developer.arm.com/documentation/ddi0487/latest
-// - Arm Architecture Reference Manual Supplement - Armv8, for Armv8-R AArch64 architecture profile
-//   https://developer.arm.com/documentation/ddi0600/latest
-// - portable-atomic https://github.com/taiki-e/portable-atomic
-//
-// Generated asm:
-// - aarch64 https://godbolt.org/z/476TdcWMs
-// - aarch64 msvc https://godbolt.org/z/avbn6fGM4
-// - aarch64 (+lse) https://godbolt.org/z/jerE6rT99
-// - aarch64 msvc (+lse) https://godbolt.org/z/7358oeWTq
-// - aarch64 (+lse,+lse2) https://godbolt.org/z/KbKbfnxc1
-// - aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/fv6Gv7qfe
-// - aarch64 (+rcpc) https://godbolt.org/z/4dxvTPMhz
-// - aarch64 (+lse2,+lse128) https://godbolt.org/z/E5zEchThK
-// - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/xhKbsfT7E
+/*
+AArch64
+
+Refs:
+- Arm A-profile A64 Instruction Set Architecture
+  https://developer.arm.com/documentation/ddi0602/2024-06
+- Arm Compiler armasm User Guide
+  https://developer.arm.com/documentation/dui0801/latest
+- Arm Architecture Reference Manual for A-profile architecture
+  https://developer.arm.com/documentation/ddi0487/latest (PDF)
+- Arm Architecture Reference Manual Supplement - Armv8, for Armv8-R AArch64 architecture profile
+  https://developer.arm.com/documentation/ddi0600/latest (PDF)
+- portable-atomic https://github.com/taiki-e/portable-atomic
+
+Generated asm:
+- aarch64 https://godbolt.org/z/476TdcWMs
+- aarch64 msvc https://godbolt.org/z/avbn6fGM4
+- aarch64 (+lse) https://godbolt.org/z/jerE6rT99
+- aarch64 msvc (+lse) https://godbolt.org/z/7358oeWTq
+- aarch64 (+lse,+lse2) https://godbolt.org/z/KbKbfnxc1
+- aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/fv6Gv7qfe
+- aarch64 (+rcpc) https://godbolt.org/z/4dxvTPMhz
+- aarch64 (+lse2,+lse128) https://godbolt.org/z/E5zEchThK
+- aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/xhKbsfT7E
+*/
 
 #[path = "cfgs/aarch64.rs"]
 mod cfgs;
@@ -160,7 +162,10 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 // (atomic) swap
-                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/SWPA--SWPAL--SWP--SWPL--SWPAL--SWP--SWPL
+                                // Refs:
+                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/SWP--SWPA--SWPAL--SWPL--Swap-word-or-doubleword-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/SWPB--SWPAB--SWPALB--SWPLB--Swap-byte-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/SWPH--SWPAH--SWPALH--SWPLH--Swap-halfword-in-memory-
                                 concat!("swp", $acquire, $release, $asm_suffix, " {val", $val_modifier, "}, {out", $val_modifier, "}, [{dst}]"),
                                 $fence,
                                 dst = in(reg) ptr_reg!(dst),
@@ -220,7 +225,10 @@ macro_rules! atomic {
                                 // so copy the `old`'s value for later comparison.
                                 concat!("mov {out", $val_modifier, "}, {old", $val_modifier, "}"),
                                 // (atomic) CAS
-                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASA--CASAL--CAS--CASL--CASAL--CAS--CASL
+                                // Refs:
+                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASB--CASAB--CASALB--CASLB--Compare-and-swap-byte-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASH--CASAH--CASALH--CASLH--Compare-and-swap-halfword-in-memory-
                                 concat!("cas", $acquire, $release, $asm_suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"),
                                 $fence,
                                 concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_extend),
@@ -344,10 +352,10 @@ atomic!(usize, "", "", "");
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //
 // - LDXP/STXP loop (DW LL/SC)
-// - CASP (DWCAS) added as FEAT_LSE (mandatory from ARMv8.1-A)
-// - LDP/STP (DW load/store) if FEAT_LSE2 (optional from ARMv8.2-A, mandatory from ARMv8.4-A) is available
-// - LDIAPP/STILP (DW acquire-load/release-store) added as FEAT_LRCPC3 (optional from ARMv8.9-A/ARMv9.4-A) (if FEAT_LSE2 is also available)
-// - LDCLRP/LDSETP/SWPP (DW RMW) added as FEAT_LSE128 (optional from ARMv9.4-A)
+// - CASP (DWCAS) added as Armv8.1 FEAT_LSE (optional from Armv8.0, mandatory from Armv8.1)
+// - LDP/STP (DW load/store) if Armv8.4 FEAT_LSE2 (optional from Armv8.2, mandatory from Armv8.4) is available
+// - LDIAPP/STILP (DW acquire-load/release-store) added as Armv8.9 FEAT_LRCPC3 (optional from Armv8.2) (if FEAT_LSE2 is also available)
+// - LDCLRP/LDSETP/SWPP (DW RMW) added as Armv9.4 FEAT_LSE128 (optional from Armv9.3)
 //
 // If FEAT_LSE is available at compile-time, we use CASP for load/CAS. Otherwise, use LDXP/STXP loop.
 // If FEAT_LSE2 is available at compile-time, we use LDP/STP for load/store.
@@ -357,12 +365,10 @@ atomic!(usize, "", "", "");
 // Note: FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2.
 //
 // Refs:
-// - LDP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/LDP
-// - LDXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/LDXP
-// - LDAXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/LDAXP
-// - STP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STP
-// - STXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STXP
-// - STLXP: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/STLXP
+// - LDXP: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/LDXP--Load-exclusive-pair-of-registers-
+// - LDAXP: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/LDAXP--Load-acquire-exclusive-pair-of-registers-
+// - STXP: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/STXP--Store-exclusive-pair-of-registers-
+// - STLXP: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/STLXP--Store-release-exclusive-pair-of-registers-
 //
 // Note: Load-Exclusive pair (by itself) does not guarantee atomicity; to complete an atomic
 // operation (even load/store), a corresponding Store-Exclusive pair must succeed.
@@ -384,6 +390,10 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must guarantee that `dst` is valid for reads,
                 // 16-byte aligned, that there are no concurrent non-atomic operations.
                 // the above cfg guarantee that the CPU supports FEAT_LSE2.
+                //
+                // Refs:
+                // - LDP https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/LDP--Load-pair-of-registers-
+                // - LDIAPP https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
                 unsafe {
                     macro_rules! atomic_load_relaxed {
                         ($acquire:tt) => {
@@ -443,7 +453,7 @@ macro_rules! atomic128 {
                             asm!(
                                 // (atomic) load (CAS)
                                 // Refs:
-                                // - https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
+                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
                                 // - https://github.com/taiki-e/portable-atomic/pull/20
                                 concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"),
                                 src = in(reg) ptr_reg!(src),
@@ -498,6 +508,10 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must guarantee that `dst` is valid for writes,
                 // 16-byte aligned, that there are no concurrent non-atomic operations.
                 // the above cfg guarantee that the CPU supports FEAT_LSE2.
+                //
+                // Refs:
+                // - STP: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/STP--Store-pair-of-registers-
+                // - STILP: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
                 unsafe {
                     macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
@@ -666,7 +680,7 @@ macro_rules! atomic128 {
                                 "mov x8, {old_lo}",
                                 "mov x9, {old_hi}",
                                 // (atomic) CAS
-                                // Refs: https://developer.arm.com/documentation/dui0801/g/A64-Data-Transfer-Instructions/CASPA--CASPAL--CASP--CASPL--CASPAL--CASP--CASPL
+                                // Refs: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
                                 concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"),
                                 $fence,
                                 // compare old pair and prev pair

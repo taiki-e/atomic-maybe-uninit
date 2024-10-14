@@ -4,16 +4,18 @@
 //
 // The implementation is based on the code just before we started using reg_addr register class.
 
-// s390x
-//
-// Refs:
-// - z/Architecture Principles of Operation https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf
-// - z/Architecture Reference Summary https://www.ibm.com/support/pages/zarchitecture-reference-summary
-// - portable-atomic https://github.com/taiki-e/portable-atomic
-//
-// Generated asm:
-// - s390x https://godbolt.org/z/5hcfK57fo
-// - s390x (z196) https://godbolt.org/z/GW98K9hnW
+/*
+s390x
+
+Refs:
+- z/Architecture Principles of Operation https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf
+- z/Architecture Reference Summary https://www.ibm.com/support/pages/zarchitecture-reference-summary
+- portable-atomic https://github.com/taiki-e/portable-atomic
+
+Generated asm:
+- s390x https://godbolt.org/z/5hcfK57fo
+- s390x (z196) https://godbolt.org/z/GW98K9hnW
+*/
 
 #[path = "cfgs/s390x.rs"]
 mod cfgs;

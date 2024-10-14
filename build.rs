@@ -34,12 +34,12 @@ fn main() {
         );
 
         // Custom cfgs set by build script. Not public API.
-        // grep -E 'cargo:rustc-cfg=' build.rs | grep -v '=//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ','
+        // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
             "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_loongarch64_asm,atomic_maybe_uninit_s390x_no_reg_addr,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
-        // grep -E 'target_feature_fallback\("' build.rs | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ','
+        // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
             r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","cmpxchg16b","fast-serialization","lse","lse128","lse2","mclass","partword-atomics","quadword-atomics","rcpc","rcpc3","v5te","v6","v7","v8","v8m","x87"))"#
         );
@@ -61,9 +61,10 @@ fn main() {
         println!("cargo:rerun-if-env-changed=CARGO_TARGET_{target_upper}_RUSTFLAGS");
     }
 
-    // Note that this is `no_`*, not `has_*`. This allows treating as the latest
+    // Note that cfgs are `no_`*, not `has_*`. This allows treating as the latest
     // stable rustc is used when the build script doesn't run. This is useful
     // for non-cargo build systems that don't run the build script.
+
     // const_fn_trait_bound stabilized in Rust 1.61 (nightly-2022-03-08): https://github.com/rust-lang/rust/pull/93827
     if !version.probe(61, 2022, 3, 7) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_fn_trait_bound");
@@ -125,8 +126,8 @@ fn main() {
                 // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/apple_base.rs#L69-L70
                 // (Since Rust 1.78, Windows (except Windows 7) targets also enable CMPXCHG16B, but
                 // this branch is only used on pre-1.69 that cmpxchg16b_target_feature is unstable.)
-                // Script to get targets that support cmpxchg16b by default:
-                // $ (for target in $(rustc --print target-list); do [[ "${target}" == "x86_64"* ]] && rustc --print cfg --target "${target}" | grep -q cmpxchg16b && echo "${target}"; done)
+                // Script to get builtin targets that support CMPXCHG16B by default:
+                // $ (for target in $(rustc --print target-list | grep -E '^x86_64'); do rustc --print cfg --target "${target}" | grep -Fq '"cmpxchg16b"' && printf '%s\n' "${target}"; done)
                 let has_cmpxchg16b = is_apple;
                 // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/KM3jz616j
                 // However, it is unlikely that rustc will support that name, so we ignore it.
@@ -191,17 +192,14 @@ fn main() {
             // - 64_32 and 64e are aarch64
             // - 64ec is arm64ec
             //
-            // Legacy arm architectures (pre-v7 except v6m) don't have *class target feature.
+            // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
             // For example:
-            // $ rustc +nightly --print cfg --target arm-unknown-linux-gnueabi | grep target_feature
-            // target_feature="llvm14-builtins-abi"
+            // $ rustc +nightly --print cfg --target arm-unknown-linux-gnueabi | grep -F target_feature
             // target_feature="v5te"
             // target_feature="v6"
             //
             // In addition to above known sub-architectures, we also recognize armv{8,9}-{a,r}.
-            // Note that there is a CPU that ARMv8-A but 32-bit only (Cortex-A32).
-            //
-            // See also https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/lib/Target/ARM/ARMSubtarget.h#L98.
+            // Note that there is a CPU that Armv8-A but 32-bit only (Cortex-A32).
             let mut mclass = false;
             match subarch {
                 "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8" | "v8a" | "v9" | "v9a" => {} // aclass
@@ -213,16 +211,16 @@ fn main() {
                 // armeb-unknown-linux-gnueabi is v8 & aclass
                 // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L18
                 _ if target == "armeb-unknown-linux-gnueabi" => subarch = "v8",
-                // Legacy arm architectures (pre-v7 except v6m) don't have *class target feature.
+                // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
                 "" => subarch = "v6",
                 "v4t" | "v5te" | "v6" | "v6k" => {}
                 _ => {
                     known = false;
                     if env::var_os("ATOMIC_MAYBE_UNINIT_DENY_WARNINGS").is_some() {
-                        panic!("unrecognized arm subarch: {target}")
+                        panic!("unrecognized Arm subarch: {target}")
                     }
                     println!(
-                        "cargo:warning={}: unrecognized arm subarch: {target}",
+                        "cargo:warning={}: unrecognized Arm subarch: {target}",
                         env!("CARGO_PKG_NAME")
                     );
                 }
@@ -231,13 +229,13 @@ fn main() {
             let mut v6 = known && subarch.starts_with("v6");
             let mut v7 = known && subarch.starts_with("v7");
             let (v8, v8m) = if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
-                // ARMv8-M is not considered as v8 by LLVM.
+                // Armv8-M is not considered as v8 by LLVM.
                 // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
                 if subarch.contains('m') {
-                    // ARMv8-M Mainline is a superset of ARMv7-M.
-                    // ARMv8-M Baseline is a superset of ARMv6-M.
+                    // Armv8-M Mainline is a superset of Armv7-M.
+                    // Armv8-M Baseline is a superset of Armv6-M.
                     // That said, LLVM handles thumbv8m.main without v8m like v6m, not v7m: https://godbolt.org/z/Ph96v9zae
-                    // TODO: ARMv9-M has not yet been released,
+                    // TODO: Armv9-M has not yet been released,
                     // so it is not clear how it will be handled here.
                     (false, true)
                 } else {
@@ -266,6 +264,9 @@ fn main() {
                 subarch = subarch.split_once('-').unwrap().0;
                 // riscv64-linux-android is riscv64gc
                 // https://github.com/rust-lang/rust/blob/1.74.0/compiler/rustc_target/src/spec/riscv64_linux_android.rs#L12
+                // riscv32-wrs-vxworks and riscv64-wrs-vxworks are also riscv*gc,
+                // but only available on Rust 1.83+ where "a" target_feature is stable.
+                // https://github.com/rust-lang/rust/pull/130549
                 if target == "riscv64-linux-android" {
                     subarch = "gc";
                 }
@@ -301,10 +302,12 @@ fn main() {
             target_feature_fallback("quadword-atomics", has_pwr8_features);
         }
         "s390x" => {
-            // https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/lib/Target/SystemZ/SystemZFeatures.td
-            let mut arch9_features = false;
+            // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/SystemZ/SystemZFeatures.td
+            let mut arch9_features = false; // z196+
             if let Some(cpu) = target_cpu() {
-                // https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/lib/Target/SystemZ/SystemZProcessors.td
+                // LLVM and GCC recognize the same names:
+                // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/SystemZ/SystemZProcessors.td
+                // https://github.com/gcc-mirror/gcc/blob/releases/gcc-14.2.0/gcc/config/s390/s390.opt#L58-L125
                 match &*cpu {
                     "arch9" | "z196" | "arch10" | "zEC12" | "arch11" | "z13" | "arch12" | "z14"
                     | "arch13" | "z15" | "arch14" | "z16" => arch9_features = true,
@@ -406,7 +409,7 @@ mod version {
         cmd.args(rustc);
         // Use verbose version output because the packagers add extra strings to the normal version output.
         // Do not use long flags (--version --verbose) because clippy-deriver doesn't handle them properly.
-        // -vV is also matched with that cargo internally uses: https://github.com/rust-lang/cargo/blob/14b46ecc62aa671d7477beba237ad9c6a209cf5d/src/cargo/util/rustc.rs#L65
+        // -vV is also matched with that cargo internally uses: https://github.com/rust-lang/cargo/blob/0.80.0/src/cargo/util/rustc.rs#L65
         let output = cmd.arg("-vV").output().ok()?;
         let verbose_version = str::from_utf8(&output.stdout).ok()?;
         Version::parse(verbose_version)

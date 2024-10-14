@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// x86 and x86_64
-//
-// Refs:
-// - x86 and amd64 instruction reference https://www.felixcloutier.com/x86
-// - portable-atomic https://github.com/taiki-e/portable-atomic
-//
-// Generated asm:
-// - x86_64 https://godbolt.org/z/ed98r9cGP
-// - x86_64 (+cmpxchg16b) https://godbolt.org/z/96Ee4sWKM
-// - x86 (i686) https://godbolt.org/z/qMxPofe6a
-// - x86 (i686,-sse2) https://godbolt.org/z/j9Thn9hcb
-// - x86 (i586) https://godbolt.org/z/4YMYbYYvG
-// - x86 (i586,-x87) https://godbolt.org/z/anYW4df6K
+/*
+x86 and x86_64
+
+Refs:
+- x86 and amd64 instruction reference https://www.felixcloutier.com/x86
+- portable-atomic https://github.com/taiki-e/portable-atomic
+
+Generated asm:
+- x86_64 https://godbolt.org/z/ed98r9cGP
+- x86_64 (+cmpxchg16b) https://godbolt.org/z/96Ee4sWKM
+- x86 (i686) https://godbolt.org/z/qMxPofe6a
+- x86 (i686,-sse2) https://godbolt.org/z/j9Thn9hcb
+- x86 (i586) https://godbolt.org/z/4YMYbYYvG
+- x86 (i586,-x87) https://godbolt.org/z/anYW4df6K
+*/
 
 #[path = "cfgs/x86.rs"]
 mod cfgs;
@@ -194,7 +196,7 @@ atomic!(isize, reg, "", "qword", "rax", "rcx");
 atomic!(usize, reg, "", "qword", "rax", "rcx");
 
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE)/FILD&FISTP(x87) instead of CMPXCHG8B.
-// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
+// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 macro_rules! atomic64 {

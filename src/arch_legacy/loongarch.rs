@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// LoongArch
-//
-// Generated asm:
-// - loongarch64 https://godbolt.org/z/vTxfajT14
+/*
+LoongArch
+
+Generated asm:
+- loongarch64 https://godbolt.org/z/vTxfajT14
+*/
 
 #[path = "../arch/cfgs/loongarch.rs"]
 mod cfgs;

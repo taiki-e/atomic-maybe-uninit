@@ -62,7 +62,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.20] - 2023-08-02
 
-- Support pre-v6 ARM Linux/Android (e.g., armv5te-unknown-linux-gnueabi, arm-linux-androideabi, etc.).
+- Support pre-v6 Arm Linux/Android (e.g., armv5te-unknown-linux-gnueabi, arm-linux-androideabi, etc.).
 
 - Support Hexagon (experimental).
 
@@ -76,7 +76,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Fix build error on MIPS32r6 and MIPS64r6 (both tier 3) since [nightly-2023-07-19's target_arch change](https://github.com/rust-lang/rust/pull/112374).
 
-- Fix build error on big endian ARMv8 AArch32 (tier 3).
+- Fix build error on big endian Armv8 AArch32 (tier 3).
 
 - Acknowledge all x86_64 Apple targets support 128-bit atomics.
 
@@ -102,7 +102,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 **Note:** This release has been yanked due to a bug fixed in 0.2.17.
 
-- Support 64-bit atomics on ARMv7-R and ARMv8-R.
+- Support 64-bit atomics on Armv7-R and Armv8-R.
 
 - Fix bug in AArch64 16-bit compare_exchange_weak.
 
@@ -116,7 +116,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 **Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
-- Improve support for ARMv8 AArch32.
+- Improve support for Armv8 AArch32.
 
 - Optimize inline assemblies on x86.
 
@@ -146,13 +146,13 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 **Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
-- Optimize inline assemblies on x86, ARM, AArch64, and RISC-V.
+- Optimize inline assemblies on x86, Arm, AArch64, and RISC-V.
 
 ## [0.2.10] - 2022-07-16
 
 **Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
-- Support ARMv6.
+- Support Armv6.
 
 ## [0.2.9] - 2022-06-30
 
@@ -196,7 +196,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 **Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
-- Support ARMv6-M.
+- Support Armv6-M.
 
 - Optimize AArch64 128-bit atomic load/store when the `lse2` target feature is enabled at compile-time.
 
@@ -214,7 +214,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.2.2] - 2022-03-16
 
-- Support ARMv7-A, ARMv7-R, ARMv7-M, and ARMv8-M.
+- Support Armv7-A, Armv7-R, Armv7-M, and Armv8-M.
 
 ## [0.2.1] - 2022-03-14
 
