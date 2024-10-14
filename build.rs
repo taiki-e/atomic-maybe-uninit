@@ -30,7 +30,7 @@ fn main() {
 
     if version.minor >= 80 {
         println!(
-            r#"cargo:rustc-check-cfg=cfg(target_feature,values("x87","lse2","lse128","rcpc3","v8m","partword-atomics","quadword-atomics","fast-serialization"))"#
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("x87","v8m","partword-atomics","quadword-atomics","fast-serialization"))"#
         );
 
         // Custom cfgs set by build script. Not public API.
@@ -135,23 +135,30 @@ fn main() {
             }
         }
         "aarch64" | "arm64ec" => {
-            // AArch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because it is ARMv8.5-A:
-            // https://github.com/llvm/llvm-project/blob/llvmorg-18.1.2/llvm/include/llvm/TargetParser/AArch64TargetParser.h#L728
-            let mut has_lse = is_macos;
-            let mut has_rcpc = is_macos;
-            // FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2. FEAT_LRCPC3 implies FEAT_LRCPC.
-            // As of rustc 1.80, target_feature "lse2"/"lse128"/"rcpc3" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs#L87
-            target_feature_fallback("lse2", is_macos);
-            // LLVM supports FEAT_LRCPC3 and FEAT_LSE128 on LLVM 16+:
-            // https://github.com/llvm/llvm-project/commit/a6aaa969f7caec58a994142f8d855861cf3a1463
-            // https://github.com/llvm/llvm-project/commit/7fea6f2e0e606e5339c3359568f680eaf64aa306
-            has_lse |= target_feature_fallback("lse128", false);
-            has_rcpc |= target_feature_fallback("rcpc3", false);
-            // aarch64_target_feature stabilized in Rust 1.61.
-            if needs_target_feature_fallback(&version, Some(61)) {
-                target_feature_fallback("lse", has_lse);
-                target_feature_fallback("rcpc", has_rcpc);
+            // target_feature "lse2"/"lse128"/"rcpc3" is unstable and available on rustc side since nightly-2024-08-30: https://github.com/rust-lang/rust/pull/128192
+            if !version.probe(82, 2024, 8, 29) || needs_target_feature_fallback(&version, None) {
+                // FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2. FEAT_LRCPC3 implies FEAT_LRCPC.
+                // AArch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because M1 is Armv8.4 with all features of Armv8.5 except FEAT_BTI:
+                // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/AArch64/AArch64Processors.td#L1203
+                // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/AArch64/AArch64Processors.td#L865
+                // Script to get builtin targets that support FEAT_LSE/FEAT_LSE2/FEAT_LRCPC by default:
+                // $ (for target in $(rustc --print target-list | grep -E '^aarch64|^arm64'); do rustc --print cfg --target "${target}" | grep -Fq '"lse"' && printf '%s\n' "${target}"; done)
+                // $ (for target in $(rustc --print target-list | grep -E '^aarch64|^arm64'); do rustc --print cfg --target "${target}" | grep -Fq '"lse2"' && printf '%s\n' "${target}"; done)
+                // $ (for target in $(rustc --print target-list | grep -E '^aarch64|^arm64'); do rustc --print cfg --target "${target}" | grep -Fq '"rcpc"' && printf '%s\n' "${target}"; done)
+                let is_macos = target_os == "macos";
+                let mut has_lse = is_macos;
+                let mut has_rcpc = is_macos;
+                target_feature_fallback("lse2", is_macos);
+                // LLVM supports FEAT_LRCPC3 and FEAT_LSE128 on LLVM 16+:
+                // https://github.com/llvm/llvm-project/commit/a6aaa969f7caec58a994142f8d855861cf3a1463
+                // https://github.com/llvm/llvm-project/commit/7fea6f2e0e606e5339c3359568f680eaf64aa306
+                has_lse |= target_feature_fallback("lse128", false);
+                has_rcpc |= target_feature_fallback("rcpc3", false);
+                // aarch64_target_feature stabilized in Rust 1.61.
+                if needs_target_feature_fallback(&version, Some(61)) {
+                    target_feature_fallback("lse", has_lse);
+                    target_feature_fallback("rcpc", has_rcpc);
+                }
             }
         }
         "arm" => {
