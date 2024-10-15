@@ -41,6 +41,7 @@ macro_rules! test_common {
                     #[cfg(not(atomic_maybe_uninit_no_const_mut_refs))]
                     const GET_MUT: AtomicMaybeUninit<$int_type> = {
                         let mut a = AtomicMaybeUninit::new(MaybeUninit::uninit());
+                        let _ = unsafe { AtomicMaybeUninit::from_ptr(a.as_ptr()) };
                         *a.get_mut() = MaybeUninit::new(5);
                         a
                     };

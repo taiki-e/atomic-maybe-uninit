@@ -176,31 +176,36 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     }
 
     // TODO: update docs based on https://github.com/rust-lang/rust/pull/116762
-    /// Creates a new reference to an atomic value from a pointer.
-    ///
-    /// # Safety
-    ///
-    /// * `ptr` must be aligned to `align_of::<AtomicMaybeUninit<T>>()` (note that on some platforms this
-    ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
-    /// * `ptr` must be [valid] for both reads and writes for the whole lifetime `'a`.
-    /// * Non-atomic accesses to the value behind `ptr` must have a happens-before
-    ///   relationship with atomic accesses via the returned value (or vice-versa).
-    ///   * In other words, time periods where the value is accessed atomically may not
-    ///     overlap with periods where the value is accessed non-atomically.
-    ///   * This requirement is trivially satisfied if `ptr` is never used non-atomically
-    ///     for the duration of lifetime `'a`. Most use cases should be able to follow
-    ///     this guideline.
-    ///   * This requirement is also trivially satisfied if all accesses (atomic or not) are
-    ///     done from the same thread.
-    /// * This method must not be used to create overlapping or mixed-size atomic
-    ///   accesses, as these are not supported by the memory model.
-    ///
-    /// [valid]: core::ptr#safety
-    #[inline]
-    #[must_use]
-    pub unsafe fn from_ptr<'a>(ptr: *mut MaybeUninit<T>) -> &'a Self {
-        // SAFETY: guaranteed by the caller
-        unsafe { &*ptr.cast::<Self>() }
+    const_fn! {
+        const_if: #[cfg(not(atomic_maybe_uninit_no_const_mut_refs))];
+        /// Creates a new reference to an atomic value from a pointer.
+        ///
+        /// This is `const fn` on Rust 1.83+.
+        ///
+        /// # Safety
+        ///
+        /// * `ptr` must be aligned to `align_of::<AtomicMaybeUninit<T>>()` (note that on some platforms this
+        ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
+        /// * `ptr` must be [valid] for both reads and writes for the whole lifetime `'a`.
+        /// * Non-atomic accesses to the value behind `ptr` must have a happens-before
+        ///   relationship with atomic accesses via the returned value (or vice-versa).
+        ///   * In other words, time periods where the value is accessed atomically may not
+        ///     overlap with periods where the value is accessed non-atomically.
+        ///   * This requirement is trivially satisfied if `ptr` is never used non-atomically
+        ///     for the duration of lifetime `'a`. Most use cases should be able to follow
+        ///     this guideline.
+        ///   * This requirement is also trivially satisfied if all accesses (atomic or not) are
+        ///     done from the same thread.
+        /// * This method must not be used to create overlapping or mixed-size atomic
+        ///   accesses, as these are not supported by the memory model.
+        ///
+        /// [valid]: core::ptr#safety
+        #[inline]
+        #[must_use]
+        pub const unsafe fn from_ptr<'a>(ptr: *mut MaybeUninit<T>) -> &'a Self {
+            // SAFETY: guaranteed by the caller
+            unsafe { &*ptr.cast::<Self>() }
+        }
     }
 
     const_fn! {
