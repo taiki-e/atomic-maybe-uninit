@@ -40,6 +40,9 @@ default_targets=(
 
     # avr
     avr-unknown-gnu-atmega2560 # custom target
+
+    # msp430
+    msp430-none-elf
 )
 
 x() {
@@ -84,6 +87,7 @@ fi
 rustup_target_list=$(rustup ${pre_args[@]+"${pre_args[@]}"} target list | cut -d' ' -f1)
 rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^release:' | cut -d' ' -f2)
+commit_date=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^commit-date:' | cut -d' ' -f2)
 target_dir=$(pwd)/target
 nightly=''
 if [[ "${rustc_version}" =~ nightly|dev ]]; then
@@ -96,6 +100,9 @@ export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
 run() {
     local target="$1"
     shift
+    target_lower="${target//-/_}"
+    target_lower="${target_lower//./_}"
+    target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
     local args=(${pre_args[@]+"${pre_args[@]}"})
     local target_rustflags="${RUSTFLAGS:-}"
     if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
@@ -113,6 +120,12 @@ run() {
             avr*)
                 if ! type -P simavr >/dev/null; then
                     printf '%s\n' "no-std test for ${target} requires simavr (switched to build-only)"
+                    subcmd=build
+                fi
+                ;;
+            msp430*)
+                if ! type -P mspdebug >/dev/null; then
+                    printf '%s\n' "no-std test for ${target} requires mspdebug (switched to build-only)"
                     subcmd=build
                 fi
                 ;;
@@ -137,6 +150,25 @@ run() {
             ;;
         avr*)
             test_dir=tests/avr
+            ;;
+        msp430*)
+            case "${commit_date}" in
+                2023-08-22)
+                    # multiple definition of `__muldi3'
+                    printf '%s\n' "target '${target}' in broken on this version (skipped)"
+                    return 0
+                    ;;
+            esac
+            test_dir=tests/msp430
+            runner="$(pwd)/tools/mspdebug-test-runner.sh"
+            export "CARGO_TARGET_${target_upper}_RUNNER"="${runner}"
+            # Refs: https://github.com/rust-embedded/msp430-quickstart/blob/535cd3c810ec6096a1dd0546ea290ed94aa6fd01/.cargo/config
+            linker=link.x
+            target_rustflags+=" -C link-arg=-T${linker}"
+            target_rustflags+=" -C link-arg=-nostartfiles"
+            target_rustflags+=" -C link-arg=-mcpu=msp430"
+            target_rustflags+=" -C link-arg=-lmul_f5"
+            target_rustflags+=" -C link-arg=-lgcc"
             ;;
         *) bail "unrecognized target '${target}'" ;;
     esac
