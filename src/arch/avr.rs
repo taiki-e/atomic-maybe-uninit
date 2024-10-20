@@ -112,14 +112,15 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let s = disable();
-                    let out = dst.read();
-                    dst.write(val);
-                    restore(s);
-                    out
-                }
+                let s = disable();
+                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+                // On single-core systems, disabling interrupts is enough to prevent data race.
+                let out = unsafe { dst.read() };
+                // SAFETY: see dst.read()
+                unsafe { dst.write(val) }
+                // SAFETY: the state was retrieved by the previous `disable`.
+                unsafe { restore(s) }
+                out
             }
         }
         #[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
@@ -132,22 +133,26 @@ macro_rules! atomic {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let s = disable();
-                    let out = dst.read();
-                    // transmute from MaybeUninit<{i,u}{8,16,size}> to MaybeUninit<u{8,16}>
-                    #[allow(clippy::useless_transmute)] // only useless when Self is u{8,16}
-                    let r = $cmp(
+                let s = disable();
+                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+                // On single-core systems, disabling interrupts is enough to prevent data race.
+                let out = unsafe { dst.read() };
+                // transmute from MaybeUninit<{i,u}{8,16,size}> to MaybeUninit<u{8,16}>
+                #[allow(clippy::useless_transmute)] // only useless when Self is u{8,16}
+                // SAFETY: Self and $cmp_ty has the same layout
+                let r = unsafe {
+                    $cmp(
                         core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$cmp_ty>>(old),
                         core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$cmp_ty>>(out),
-                    );
-                    if r {
-                        dst.write(new);
-                    }
-                    restore(s);
-                    (out, r)
+                    )
+                };
+                if r {
+                    // SAFETY: see dst.read()
+                    unsafe { dst.write(new) }
                 }
+                // SAFETY: the state was retrieved by the previous `disable`.
+                unsafe { restore(s) }
+                (out, r)
             }
         }
     };

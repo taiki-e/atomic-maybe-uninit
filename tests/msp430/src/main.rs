@@ -38,7 +38,6 @@ macro_rules! __test_atomic {
                 }
             }
         }
-        cfg_has_atomic_cas! {
         swap();
         fn swap() {
             unsafe {
@@ -53,6 +52,7 @@ macro_rules! __test_atomic {
                 }
             }
         }
+        cfg_has_atomic_cas! {
         compare_exchange();
         fn compare_exchange() {
             unsafe {
@@ -191,10 +191,10 @@ fn load_orderings() -> [Ordering; 3] {
 fn store_orderings() -> [Ordering; 3] {
     [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst]
 }
-cfg_has_atomic_cas! {
 fn swap_orderings() -> [Ordering; 5] {
     [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst]
 }
+cfg_has_atomic_cas! {
 fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
     [
         (Ordering::Relaxed, Ordering::Relaxed),
