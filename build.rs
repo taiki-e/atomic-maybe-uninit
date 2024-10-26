@@ -554,4 +554,4 @@ mod version {
         }
     }
 }
-use version::{rustc_version, Version};
+use self::version::{rustc_version, Version};

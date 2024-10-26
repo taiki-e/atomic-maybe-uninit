@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #[allow(unused_imports)]
-pub(crate) use gen::RegSize;
+pub(crate) use self::gen::RegSize;
 #[macro_use]
 #[path = "gen/utils.rs"]
 mod gen;

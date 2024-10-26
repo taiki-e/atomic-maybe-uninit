@@ -90,5 +90,5 @@ mod imp {
     }
     pub(crate) type RegSize = usize;
 }
-pub(crate) use imp::RegSize;
+pub(crate) use self::imp::RegSize;
 EOF
