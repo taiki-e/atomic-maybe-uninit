@@ -371,6 +371,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@v1
+      - uses: taiki-e/github-actions/install-rust@main
+        with:
+          toolchain: ${{ matrix.rust }}
       - run: |
           retry() {
             for i in {1..10}; do
@@ -382,15 +385,20 @@ jobs:
             done
             "$@"
           }
+          apt_packages=(
+            qemu-system-arm
+            qemu-system-misc
+          )
+          if [[ "${{ matrix.rust }}" == "nightly"* ]]; then
+            apt_packages+=(
+              avr-libc
+              gcc-avr
+              mspdebug
+              simavr
+            )
+          fi
           retry sudo apt-get -o Acquire::Retries=10 -qq update
-          # TODO: only install AVR/MSP430-specific packages for nightly toolchains
-          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
-            avr-libc \
-            gcc-avr \
-            mspdebug \
-            qemu-system-arm \
-            qemu-system-misc \
-            simavr
+          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends "${apt_packages[@]}"
           # APT's qemu package doesn't provide firmware for riscv32: https://packages.ubuntu.com/en/jammy/all/qemu-system-data/filelist
           OPENSBI_VERSION=1.5.1 # https://github.com/riscv-software-src/opensbi/releases
           retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused "https://github.com/riscv-software-src/opensbi/releases/download/v${OPENSBI_VERSION}/opensbi-${OPENSBI_VERSION}-rv-bin.tar.xz" \
@@ -398,13 +406,12 @@ jobs:
           sudo mv -- "opensbi-${OPENSBI_VERSION}-rv-bin/share/opensbi/ilp32/generic/firmware/fw_dynamic.bin" /usr/share/qemu/opensbi-riscv32-generic-fw_dynamic.bin
           sudo mv -- "opensbi-${OPENSBI_VERSION}-rv-bin/share/opensbi/ilp32/generic/firmware/fw_dynamic.elf" /usr/share/qemu/opensbi-riscv32-generic-fw_dynamic.elf
           rm -rf -- "opensbi-${OPENSBI_VERSION}-rv-bin"
-          mkdir -p -- "${HOME}"/msp430-gcc
-          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-LlCjWuAbzH/9.3.1.2/msp430-gcc-9.3.1.11_linux64.tar.bz2 \
-            | tar xjf - --strip-components 1 -C "${HOME}"/msp430-gcc
-          printf '%s\n' "${HOME}"/msp430-gcc/bin >>"${GITHUB_PATH}"
-      - uses: taiki-e/github-actions/install-rust@main
-        with:
-          toolchain: ${{ matrix.rust }}
+          if [[ "${{ matrix.rust }}" == "nightly"* ]]; then
+            mkdir -p -- "${HOME}"/msp430-gcc
+            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-LlCjWuAbzH/9.3.1.2/msp430-gcc-9.3.1.11_linux64.tar.bz2 \
+              | tar xjf - --strip-components 1 -C "${HOME}"/msp430-gcc
+            printf '%s\n' "${HOME}"/msp430-gcc/bin >>"${GITHUB_PATH}"
+          fi
       - run: rm -- tests/avr/rust-toolchain.toml
         if: startsWith(matrix.rust, 'nightly-')
       - run: tools/no-std.sh
