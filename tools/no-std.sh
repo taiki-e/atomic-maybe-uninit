@@ -74,7 +74,13 @@ bail() {
 }
 
 pre_args=()
+is_custom_toolchain=''
 if [[ "${1:-}" == "+"* ]]; then
+    if [[ "$1" == "+esp" ]]; then
+        # shellcheck disable=SC1091
+        . "${HOME}/export-esp.sh"
+        is_custom_toolchain=1
+    fi
     pre_args+=("$1")
     shift
 fi
@@ -84,7 +90,10 @@ else
     targets=("${default_targets[@]}")
 fi
 
-rustup_target_list=$(rustup ${pre_args[@]+"${pre_args[@]}"} target list | cut -d' ' -f1)
+rustup_target_list=''
+if [[ -z "${is_custom_toolchain}" ]]; then
+    rustup_target_list=$(rustup ${pre_args[@]+"${pre_args[@]}"} target list | cut -d' ' -f1)
+fi
 rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^release:' | cut -d' ' -f2)
 commit_date=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^commit-date:' | cut -d' ' -f2)
@@ -92,7 +101,9 @@ target_dir=$(pwd)/target
 nightly=''
 if [[ "${rustc_version}" =~ nightly|dev ]]; then
     nightly=1
-    retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
+    if [[ -z "${is_custom_toolchain}" ]]; then
+        retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
+    fi
 fi
 export QEMU_AUDIO_DRV=none
 export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
@@ -131,6 +142,15 @@ run() {
                 ;;
         esac
     fi
+    case "${target}" in
+        xtensa*)
+            # TODO: run test with simulator on CI
+            if ! type -P wokwi-server >/dev/null; then
+                printf '%s\n' "no-std test for ${target} requires wokwi-server (switched to build-only)"
+                subcmd=build
+            fi
+            ;;
+    esac
     args+=("${subcmd}" "${target_flags[@]}")
     if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
         retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
@@ -169,6 +189,11 @@ run() {
             target_rustflags+=" -C link-arg=-mcpu=msp430"
             target_rustflags+=" -C link-arg=-lmul_f5"
             target_rustflags+=" -C link-arg=-lgcc"
+            ;;
+        xtensa*)
+            test_dir=tests/xtensa
+            linker=linkall.x
+            target_rustflags+=" -C link-arg=-Wl,-T${linker} -C link-arg=-nostartfiles"
             ;;
         *) bail "unrecognized target '${target}'" ;;
     esac

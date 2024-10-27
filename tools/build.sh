@@ -156,7 +156,11 @@ retry() {
 }
 
 pre_args=()
+is_custom_toolchain=''
 if [[ "${1:-}" == "+"* ]]; then
+    if [[ "$1" == "+esp" ]]; then
+        is_custom_toolchain=1
+    fi
     pre_args+=("$1")
     shift
 fi
@@ -166,7 +170,10 @@ else
     targets=("${default_targets[@]}")
 fi
 
-rustup_target_list=$(rustup ${pre_args[@]+"${pre_args[@]}"} target list | cut -d' ' -f1)
+rustup_target_list=''
+if [[ -z "${is_custom_toolchain}" ]]; then
+    rustup_target_list=$(rustup ${pre_args[@]+"${pre_args[@]}"} target list | cut -d' ' -f1)
+fi
 rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^release:' | cut -d' ' -f2)
 rustc_minor_version="${rustc_version#*.}"
@@ -179,7 +186,9 @@ nightly=''
 base_rustflags="${RUSTFLAGS:-}"
 if [[ "${rustc_version}" =~ nightly|dev ]]; then
     nightly=1
-    retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
+    if [[ -z "${is_custom_toolchain}" ]]; then
+        retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
+    fi
     # We only run clippy on the recent nightly to avoid old clippy bugs.
     if [[ "${rustc_minor_version}" -ge 84 ]]; then
         retry rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
