@@ -38,6 +38,7 @@
             target_arch = "powerpc",
             target_arch = "powerpc64",
             target_arch = "s390x",
+            target_arch = "xtensa",
         ),
         atomic_maybe_uninit_unstable_asm_experimental_arch,
     ),
@@ -105,3 +106,6 @@ mod riscv;
 mod s390x;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86;
+#[cfg(target_arch = "xtensa")]
+#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+mod xtensa;

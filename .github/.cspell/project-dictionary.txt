@@ -20,6 +20,7 @@ cmpxchg
 cset
 dbar
 DWCAS
+espup
 fild
 fistp
 Halfword
@@ -41,6 +42,7 @@ ldsetp
 ldxp
 lgcc
 libunwind
+linkall
 lmul
 lqarx
 lrcpc
@@ -94,12 +96,14 @@ stwcx
 stxp
 subarch
 swpp
+uart
 usart
 uwrite
 uwriteln
 uxtb
 uxth
 virt
+wokwi
 xchg
 xmmword
 xorps
