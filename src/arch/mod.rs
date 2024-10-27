@@ -30,6 +30,7 @@
             target_arch = "arm64ec",
             target_arch = "avr",
             target_arch = "hexagon",
+            target_arch = "m68k",
             target_arch = "mips",
             target_arch = "mips32r6",
             target_arch = "mips64",
@@ -84,6 +85,9 @@ mod avr;
 mod hexagon;
 #[cfg(target_arch = "loongarch64")]
 mod loongarch;
+#[cfg(target_arch = "m68k")]
+#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+mod m68k;
 #[cfg(any(
     target_arch = "mips",
     target_arch = "mips32r6",

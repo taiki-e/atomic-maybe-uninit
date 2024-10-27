@@ -88,8 +88,8 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_loongarch64_asm");
             }
         }
-        "arm64ec" | "avr" | "hexagon" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430"
-        | "powerpc" | "powerpc64" | "xtensa" => {
+        "arm64ec" | "avr" | "hexagon" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6"
+        | "msp430" | "powerpc" | "powerpc64" | "xtensa" => {
             if version.nightly && is_allowed_feature("asm_experimental_arch") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
