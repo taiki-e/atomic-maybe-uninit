@@ -30,7 +30,7 @@ fn main() {
 
     if version.minor >= 80 {
         println!(
-            r#"cargo:rustc-check-cfg=cfg(target_feature,values("x87","v8m","fast-serialization"))"#
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("x87","v8m","fast-serialization","isa-68020"))"#
         );
 
         // Custom cfgs set by build script. Not public API.
@@ -41,7 +41,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","cmpxchg16b","fast-serialization","lse","lse128","lse2","mclass","partword-atomics","quadword-atomics","rcpc","rcpc3","v5te","v6","v7","v8","v8m","x87","zaamo","zabha"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","cmpxchg16b","fast-serialization","isa-68020","lse","lse128","lse2","mclass","partword-atomics","quadword-atomics","rcpc","rcpc3","v5te","v6","v7","v8","v8m","x87","zaamo","zabha"))"#
         );
     }
 
@@ -350,6 +350,30 @@ fn main() {
             // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs
             // bcr 14,0
             target_feature_fallback("fast-serialization", arch9_features);
+        }
+        "m68k" => {
+            // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/M68k/M68k.td
+            // Linux requires M68020+.
+            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L6
+            let mut isa_68020 = target_os == "linux";
+            if let Some(cpu) = target_cpu() {
+                match &*cpu {
+                    "M68020" | "M68030" | "M68040" | "M68060" => isa_68020 = true,
+                    "M68000" | "M68010" => isa_68020 = false,
+                    _ => {
+                        if env::var_os("ATOMIC_MAYBE_UNINIT_DENY_WARNINGS").is_some() {
+                            panic!("unrecognized m68k CPU: {target}")
+                        }
+                        println!(
+                            "cargo:warning={}: unrecognized m68k CPU: {target}",
+                            env!("CARGO_PKG_NAME")
+                        );
+                    }
+                }
+            }
+            // As of rustc 1.80, target_feature "isa-68020" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs
+            target_feature_fallback("isa-68020", isa_68020);
         }
         _ => {}
     }
