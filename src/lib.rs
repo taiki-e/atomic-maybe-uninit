@@ -36,9 +36,9 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, Power
 | avr \[4] (experimental)          | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
 | hexagon \[4] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | m68k \[4] (experimental)         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| xtensa \[4] (experimental)       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          |          |
+| xtensa \[4] (experimental)       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 
-\[1] Arm's atomic RMW operations are not available on v6-m (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires M68020+ (Linux is M68020+ by default).<br>
+\[1] Arm's atomic RMW operations are not available on v6-m (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires M68020+ (Linux is M68020+ by default). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[3] Requires Rust 1.72+.<br>
 \[4] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>

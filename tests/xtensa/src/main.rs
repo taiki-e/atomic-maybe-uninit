@@ -161,6 +161,12 @@ fn main() -> ! {
         };
     }
 
+    cfg_has_atomic_cas! {
+        println!("target_has_cas: true");
+    }
+    cfg_no_atomic_cas! {
+        println!("target_has_cas: false");
+    }
     test_atomic!(isize);
     test_atomic!(usize);
     test_atomic!(i8);
