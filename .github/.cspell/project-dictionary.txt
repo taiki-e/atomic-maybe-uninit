@@ -23,6 +23,7 @@ DWCAS
 espup
 fild
 fistp
+getex
 Halfword
 IMAFD
 inequal
@@ -56,6 +57,7 @@ mfcr
 mfence
 mgba
 movd
+movi
 movlps
 movq
 movsd
@@ -74,6 +76,7 @@ rcpc
 risbg
 rsbegin
 rsend
+scompare
 seqz
 sete
 shufps
