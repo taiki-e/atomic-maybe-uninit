@@ -173,7 +173,7 @@ run() {
             ;;
         msp430*)
             case "${commit_date}" in
-                2023-08-22)
+                2023-08-23)
                     # multiple definition of `__muldi3'
                     printf '%s\n' "target '${target}' in broken on this version (skipped)"
                     return 0

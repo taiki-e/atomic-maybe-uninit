@@ -59,7 +59,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - rust: '1.59'
+          - rust: '1.59' # LLVM 13
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
           - rust: stable
           - rust: beta
           - rust: nightly
@@ -70,10 +71,21 @@ jobs:
           - rust: nightly
             # target: x86_64-apple-darwin
             os: macos-13 # x86_64
+          - rust: '1.59' # LLVM 13
+            target: aarch64-apple-darwin
+            os: macos-latest # AArch64
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
+            target: aarch64-apple-darwin
+            os: macos-latest # AArch64
+          - rust: stable
+            target: aarch64-apple-darwin
+            os: macos-latest # AArch64
           - rust: nightly
             target: aarch64-apple-darwin
             os: macos-latest # AArch64
-          - rust: '1.59'
+          - rust: '1.59' # LLVM 13
+            target: aarch64-unknown-linux-gnu
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: aarch64-unknown-linux-gnu
           - rust: stable
             target: aarch64-unknown-linux-gnu
@@ -82,109 +94,129 @@ jobs:
           - rust: nightly
             target: aarch64-unknown-linux-gnu
             flags: -Z codegen-backend=cranelift
-          - rust: nightly
-            target: aarch64_be-unknown-linux-gnu
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use stable asm on this target)
             target: aarch64_be-unknown-linux-gnu
-          - rust: '1.59'
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
+            target: aarch64_be-unknown-linux-gnu
+          - rust: nightly
+            target: aarch64_be-unknown-linux-gnu
+          - rust: '1.59' # LLVM 13
+            target: armv5te-unknown-linux-gnueabi
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv5te-unknown-linux-gnueabi
           - rust: stable
             target: armv5te-unknown-linux-gnueabi
           - rust: nightly
             target: armv5te-unknown-linux-gnueabi
-          - rust: '1.59'
+          - rust: '1.59' # LLVM 13
+            target: arm-unknown-linux-gnueabi
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: arm-unknown-linux-gnueabi
           - rust: stable
             target: arm-unknown-linux-gnueabi
           - rust: nightly
             target: arm-unknown-linux-gnueabi
-          - rust: '1.59'
+          - rust: '1.59' # LLVM 13
+            target: armv7-unknown-linux-gnueabi
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv7-unknown-linux-gnueabi
           - rust: stable
             target: armv7-unknown-linux-gnueabi
           - rust: nightly
             target: armv7-unknown-linux-gnueabi
-          - rust: '1.59'
+          - rust: '1.59' # LLVM 13
+            target: armv7-unknown-linux-gnueabihf
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv7-unknown-linux-gnueabihf
           - rust: stable
             target: armv7-unknown-linux-gnueabihf
           - rust: nightly
             target: armv7-unknown-linux-gnueabihf
-          - rust: nightly
-            target: armeb-unknown-linux-gnueabi
           - rust: nightly-2022-09-16 # Rust 1.65, LLVM 15 (version that this target was added)
             target: armeb-unknown-linux-gnueabi
-          - rust: '1.59'
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
+            target: armeb-unknown-linux-gnueabi
+          - rust: nightly
+            target: armeb-unknown-linux-gnueabi
+          - rust: '1.59' # LLVM 13
+            target: i586-unknown-linux-gnu
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: i586-unknown-linux-gnu
           - rust: stable
             target: i586-unknown-linux-gnu
           - rust: nightly
             target: i586-unknown-linux-gnu
-          - rust: '1.59'
+          - rust: '1.59' # LLVM 13
+            target: i686-unknown-linux-gnu
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: i686-unknown-linux-gnu
           - rust: stable
             target: i686-unknown-linux-gnu
           - rust: nightly
             target: i686-unknown-linux-gnu
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
+            target: hexagon-unknown-linux-musl
           - rust: nightly
             target: hexagon-unknown-linux-musl
-          - rust: nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
-            target: hexagon-unknown-linux-musl
-          - rust: '1.72' # inline asm for loongarch has been stabilized in Rust 1.72
+          - rust: '1.72' # LLVM 16, inline asm for loongarch has been stabilized in Rust 1.72
+            target: loongarch64-unknown-linux-gnu
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: loongarch64-unknown-linux-gnu
           - rust: stable
             target: loongarch64-unknown-linux-gnu
           - rust: nightly
             target: loongarch64-unknown-linux-gnu
-          - rust: nightly
-            target: mips-unknown-linux-gnu
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: mips-unknown-linux-gnu
           - rust: nightly
+            target: mips-unknown-linux-gnu
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: mipsel-unknown-linux-gnu
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+          - rust: nightly
             target: mipsel-unknown-linux-gnu
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
+            target: mips64-unknown-linux-gnuabi64
           - rust: nightly
             target: mips64-unknown-linux-gnuabi64
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
-            target: mips64-unknown-linux-gnuabi64
-          - rust: nightly
-            target: mips64el-unknown-linux-gnuabi64
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: mips64el-unknown-linux-gnuabi64
           - rust: nightly
+            target: mips64el-unknown-linux-gnuabi64
+          - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
             target: mipsisa32r6-unknown-linux-gnu
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+          - rust: nightly
             target: mipsisa32r6-unknown-linux-gnu
+          - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
+            target: mipsisa32r6el-unknown-linux-gnu
           - rust: nightly
             target: mipsisa32r6el-unknown-linux-gnu
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
-            target: mipsisa32r6el-unknown-linux-gnu
-          - rust: nightly
-            target: mipsisa64r6-unknown-linux-gnuabi64
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+          - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
             target: mipsisa64r6-unknown-linux-gnuabi64
           - rust: nightly
+            target: mipsisa64r6-unknown-linux-gnuabi64
+          - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
             target: mipsisa64r6el-unknown-linux-gnuabi64
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+          - rust: nightly
             target: mipsisa64r6el-unknown-linux-gnuabi64
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
+            target: powerpc-unknown-linux-gnu
           - rust: nightly
             target: powerpc-unknown-linux-gnu
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
-            target: powerpc-unknown-linux-gnu
-          - rust: nightly
-            target: powerpc64-unknown-linux-gnu
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: powerpc64-unknown-linux-gnu
           - rust: nightly
-            target: powerpc64le-unknown-linux-gnu
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use asm_experimental_arch on this target)
+            target: powerpc64-unknown-linux-gnu
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: powerpc64le-unknown-linux-gnu
           - rust: nightly
+            target: powerpc64le-unknown-linux-gnu
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: riscv32gc-unknown-linux-gnu
-          - rust: nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
+          - rust: nightly
             target: riscv32gc-unknown-linux-gnu
-          - rust: '1.59'
+          - rust: '1.59' # LLVM 13
+            target: riscv64gc-unknown-linux-gnu
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: riscv64gc-unknown-linux-gnu
           - rust: stable
             target: riscv64gc-unknown-linux-gnu
@@ -194,13 +226,17 @@ jobs:
           # - rust: nightly
           #   target: riscv64gc-unknown-linux-gnu
           #   flags: -Z codegen-backend=cranelift
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
+            target: s390x-unknown-linux-gnu
+          - rust: nightly-2024-01-04 # Rust 1.77, LLVM 17 (last version that does not support reg_addr register class)
+            target: s390x-unknown-linux-gnu
+          - rust: nightly-2024-01-05 # Rust 1.77, LLVM 17 (oldest version that supports reg_addr register class)
+            target: s390x-unknown-linux-gnu
           - rust: nightly
             target: s390x-unknown-linux-gnu
-          - rust: nightly-2024-01-04 # Rust 1.77, LLVM 17 (newest version that does not support reg_addr register class)
-            target: s390x-unknown-linux-gnu
-          - rust: nightly-2023-05-09 # Rust 1.71, LLVM 16 (oldest version we can implement atomic RMWs on this target)
-            target: s390x-unknown-linux-gnu
-          - rust: '1.59'
+          - rust: '1.59' # LLVM 13
+            target: thumbv7neon-unknown-linux-gnueabihf
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: thumbv7neon-unknown-linux-gnueabihf
           - rust: stable
             target: thumbv7neon-unknown-linux-gnueabihf
@@ -363,9 +399,9 @@ jobs:
       fail-fast: false
       matrix:
         rust:
-          - '1.64'
+          - '1.64' # LLVM 14
           - stable
-          - nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
+          - nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
           - nightly
     runs-on: ubuntu-latest
     timeout-minutes: 60

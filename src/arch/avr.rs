@@ -13,9 +13,7 @@ mod cfgs;
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
-use crate::raw::AtomicCompareExchange;
-use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 // See portable-atomic's interrupt module for more.
 #[inline(always)]
@@ -46,7 +44,6 @@ unsafe fn restore(sreg: u8) {
     }
 }
 
-#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
 #[inline(always)]
 fn xor8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> u8 {
     let out;
@@ -58,12 +55,10 @@ fn xor8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> u8 {
     out
 }
 // TODO: use Z bits in SREG instead of == 0?
-#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
 #[inline(always)]
 fn cmp8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> bool {
     xor8(a, b) == 0
 }
-#[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
 #[inline(always)]
 fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
     // SAFETY: same layout.
@@ -123,7 +118,6 @@ macro_rules! atomic {
                 out
             }
         }
-        #[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
             unsafe fn atomic_compare_exchange(
