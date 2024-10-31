@@ -8,6 +8,11 @@ Refs:
   https://www.nxp.com/docs/en/reference-manual/M68000PRM.pdf
 - M68060 User’s Manual
   https://www.nxp.com/docs/en/data-sheet/MC68060UM.pdf
+
+Note that cas2 (double CAS) is not yet supported in LLVM.
+
+Generated asm:
+- m68k M68020 https://godbolt.org/z/7rhzK9d8n
 */
 
 #[path = "cfgs/m68k.rs"]
@@ -20,7 +25,7 @@ use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
 macro_rules! atomic {
-    ($int_type:ident, $asm_size:tt) => {
+    ($int_type:ident, $size:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -32,7 +37,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("move.", $asm_size, " ({src}), {out}"),
+                        concat!("move.", $size, " ({src}), {out}"), // atomic { out = *src }
                         src = in(reg_addr) ptr_reg!(src),
                         out = out(reg_data) out,
                         // Do not use `preserves_flags` because MOVE modifies N, Z, V, and C bits in the condition codes.
@@ -52,7 +57,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("move.", $asm_size, " {val}, ({dst})"),
+                        concat!("move.", $size, " {val}, ({dst})"), // atomic { *dst = val }
                         dst = in(reg_addr) ptr_reg!(dst),
                         val = in(reg_data) val,
                         // Do not use `preserves_flags` because MOVE modifies N, Z, V, and C bits in the condition codes.
@@ -73,10 +78,10 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("move.", $asm_size, " ({dst}), {out}"),           // out = *dst
-                        "2:",
-                            concat!("cas.", $asm_size, " {out}, {val}, ({dst})"), // atomic { if *dst == out { cc.z = 1; *dst = val } else { cc.z = 0; out = *dst } }
-                            "bne 2b",                                             // if cc.z == 0 { continue '2 }
+                        concat!("move.", $size, " ({dst}), {out}"),           // atomic { out = *dst }
+                        "2:", // 'retry:
+                            concat!("cas.", $size, " {out}, {val}, ({dst})"), // atomic { if *dst == out { cc.Z = 1; *dst = val } else { cc.Z = 0; out = *dst } }
+                            "bne 2b",                                         // if cc.Z == 0 { jump 'retry }
                         dst = in(reg_addr) ptr_reg!(dst),
                         val = in(reg_data) val,
                         out = out(reg_data) out,
@@ -102,8 +107,8 @@ macro_rules! atomic {
                 unsafe {
                     let r: u8;
                     asm!(
-                        concat!("cas.", $asm_size, " {out}, {new}, ({dst})"), // atomic { if *dst == out { cc.z = 1; *dst = new } else { cc.z = 0; out = *dst } }
-                        "seq {r}",                                            // r = cc.z
+                        concat!("cas.", $size, " {out}, {new}, ({dst})"), // atomic { if *dst == out { cc.Z = 1; *dst = new } else { cc.Z = 0; out = *dst } }
+                        "seq {r}",                                        // r = cc.Z
                         dst = in(reg_addr) ptr_reg!(dst),
                         new = in(reg_data) new,
                         out = inout(reg_data) old => out,

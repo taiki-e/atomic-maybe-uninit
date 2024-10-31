@@ -3,18 +3,34 @@
 /*
 PowerPC and PowerPC64
 
+This architecture provides the following atomic instructions:
+
+- Load/Store Instructions (relaxed load/store)
+  - All aligned {8,16,32}-bit and 64-bit (for PowerPC64) single load/store instructions
+    other than Move Assist instruction are atomic.
+  - ISA 2.07 or later: 128-bit for PowerPC64 (lq, stq, lqarx, stqcx.)
+  (Section 1.4 "Single-Copy Atomicity" of Power ISA 3.1C Book II)
+- Load And Reserve and Store Conditional Instructions (aka LL/SC)
+  - PowerPC Architecture prior to v2.00, or later: 32-bit, 64-bit (for PowerPC64)
+  - ISA 2.06 or later: {8,16}-bit for PowerPC64
+  - ISA 2.07 or later: 128-bit for PowerPC64
+  (Section 4.6.2 "Load And Reserve and Store Conditional Instructions" of Power ISA 3.1C Book II)
+- Atomic Memory Operation (AMO) Instructions (RMW)
+  - ISA 3.0 or later: {32,64}-bit swap,fetch_{add,and,or,xor,max,min},add,max,min for PowerPC64
+  (Section 4.5 "Atomic Memory Operations" of Power ISA 3.1C Book II)
+
 Refs:
 - Power ISA https://openpowerfoundation.org/specifications/isa
 - AIX Assembler language reference https://www.ibm.com/docs/en/aix/7.3?topic=aix-assembler-language-reference
-- http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
+- Example POWER Implementation for C/C++ Memory Model http://www.rdrop.com/users/paulmck/scalability/paper/N2745r.2010.02.19a.html
 - portable-atomic https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- powerpc https://godbolt.org/z/ob733EPEP
-- powerpc64 https://godbolt.org/z/Tjn9aEaad
-- powerpc64 (pwr8) https://godbolt.org/z/KGcbY7hM3
-- powerpc64le https://godbolt.org/z/MqEKGvo5v
-- powerpc64le (pwr7) https://godbolt.org/z/e668jnrvj
+- powerpc https://godbolt.org/z/1MTdM6qKj
+- powerpc64 https://godbolt.org/z/E7453fxnn
+- powerpc64 (pwr8) https://godbolt.org/z/ccW95s1Ex
+- powerpc64le https://godbolt.org/z/dv1E9qac6
+- powerpc64le (pwr7) https://godbolt.org/z/d6cnYrMq5
 */
 
 #[path = "cfgs/powerpc.rs"]
@@ -68,7 +84,7 @@ fn extract_cr0(r: crate::utils::RegSize) -> bool {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($int_type:ident, $l_suffix:tt, $asm_suffix:tt) => {
+    ($int_type:ident, $l_suffix:tt, $suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -84,8 +100,7 @@ macro_rules! atomic_load_store {
                         ($release:tt) => {
                             asm!(
                                 $release,
-                                // (atomic) load from src to out
-                                concat!("l", $l_suffix, " {out}, 0({src})"),
+                                concat!("l", $l_suffix, " {out}, 0({src})"), // atomic { out = *src }
                                 // Lightweight acquire sync
                                 // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
                                 concat!(cmp!(), " %cr7, {out}, {out}"),
@@ -102,8 +117,7 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                // (atomic) load from src to out
-                                concat!("l", $l_suffix, " {out}, 0({src})"),
+                                concat!("l", $l_suffix, " {out}, 0({src})"), // atomic { out = *src }
                                 src = in(reg_nonzero) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -131,9 +145,8 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_store {
                         ($release:tt) => {
                             asm!(
-                                // (atomic) store val to dst
-                                $release,
-                                concat!("st", $asm_suffix, " {val}, 0({dst})"),
+                                $release,                                   // fence
+                                concat!("st", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -154,8 +167,8 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident, $l_suffix:tt, $asm_suffix:tt, $cmp_suffix:tt) => {
-        atomic_load_store!($int_type, $l_suffix, $asm_suffix);
+    ($int_type:ident, $l_suffix:tt, $suffix:tt, $cmp_suffix:tt) => {
+        atomic_load_store!($int_type, $l_suffix, $suffix);
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -171,15 +184,12 @@ macro_rules! atomic {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) swap (LL/SC loop)
-                                $release,
-                                "2:",
-                                    // load from dst to out
-                                    concat!("l", $asm_suffix, "arx {out}, 0, {dst}"),
-                                    // try to store val to dst
-                                    concat!("st", $asm_suffix, "cx. {val}, 0, {dst}"),
-                                    "bne %cr0, 2b",
-                                $acquire,
+                                $release,                                          // fence
+                                "2:", // 'retry:
+                                    concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($int_type)); out = *dst }
+                                    concat!("st", $suffix, "cx. {val}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($int_type)) { *dst = val; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne %cr0, 2b",                                // if cr0.EQ == 0 { jump 'retry }
+                                $acquire,                                          // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = out(reg) out,
@@ -212,18 +222,16 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) CAS (LL/SC loop)
-                                $release,
-                                "2:",
-                                    concat!("l", $asm_suffix, "arx {out}, 0, {dst}"),
-                                    concat!("cmp", $cmp_suffix, " {old}, {out}"),
-                                    "bne %cr0, 3f", // jump if compare failed
-                                    concat!("st", $asm_suffix, "cx. {new}, 0, {dst}"),
-                                    "bne %cr0, 2b", // continue loop if store failed
-                                "3:",
-                                // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
-                                "mfcr {r}",
-                                $acquire,
+                                $release,                                          // fence
+                                "2:", // 'retry:
+                                    concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($int_type)); out = *dst }
+                                    concat!("cmp", $cmp_suffix, " {old}, {out}"),  // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                    "bne %cr0, 3f",                                // if cr0.EQ == 0 { jump 'cmp-fail }
+                                    concat!("st", $suffix, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($int_type)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne %cr0, 2b",                                // if cr0.EQ == 0 { jump 'retry }
+                                "3:", // 'cmp-fail:
+                                "mfcr {r}",                                        // r = zero_extend(cr)
+                                $acquire,                                          // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
                                 new = in(reg) new,
@@ -235,6 +243,7 @@ macro_rules! atomic {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
+                    // if compare failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (out, extract_cr0(r))
                 }
             }
@@ -256,16 +265,14 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) CAS (LL/SC)
-                                $release,
-                                concat!("l", $asm_suffix, "arx {out}, 0, {dst}"),
-                                concat!("cmp", $cmp_suffix, " {old}, {out}"),
-                                "bne %cr0, 3f", // jump if compare failed
-                                concat!("st", $asm_suffix, "cx. {new}, 0, {dst}"),
-                                "3:",
-                                // if compare or stqcx failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
-                                "mfcr {r}",
-                                $acquire,
+                                $release,                                      // fence
+                                concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($int_type)); out = *dst }
+                                concat!("cmp", $cmp_suffix, " {old}, {out}"),  // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                "bne %cr0, 3f",                                // if cr0.EQ == 0 { jump 'cmp-fail }
+                                concat!("st", $suffix, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($int_type)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                "3:", // 'cmp-fail:
+                                "mfcr {r}",                                    // r = zero_extend(cr)
+                                $acquire,                                      // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
                                 new = in(reg) new,
@@ -277,6 +284,7 @@ macro_rules! atomic {
                         };
                     }
                     atomic_rmw!(cmpxchg_weak, order);
+                    // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (out, extract_cr0(r))
                 }
             }
@@ -293,8 +301,8 @@ macro_rules! atomic {
 )))]
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $l_suffix:tt, $asm_suffix:tt) => {
-        atomic_load_store!($int_type, $l_suffix, $asm_suffix);
+    ($int_type:ident, $l_suffix:tt, $suffix:tt) => {
+        atomic_load_store!($int_type, $l_suffix, $suffix);
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -314,18 +322,16 @@ macro_rules! atomic_sub_word {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                "slw {val}, {val}, {shift}",
-                                "and {val}, {val}, {mask}",
-                                // (atomic) swap (LL/SC loop)
-                                $release,
-                                "2:",
-                                    "lwarx {out}, 0, {dst}",
-                                    "andc {tmp}, {out}, {mask}",
-                                    "or {tmp}, {val}, {tmp}",
-                                    "stwcx. {tmp}, 0, {dst}",
-                                    "bne %cr0, 2b",
-                                "srw {out}, {out}, {shift}",
-                                $acquire,
+                                "slw {val}, {val}, {shift}",     // val <<= shift
+                                $release,                        // fence
+                                "2:", // 'retry:
+                                    "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = *dst }
+                                    "andc {tmp}, {out}, {mask}", // tmp = out & !mask
+                                    "or {tmp}, {val}, {tmp}",    // tmp |= val
+                                    "stwcx. {tmp}, 0, {dst}",    // atomic { if RESERVE == (dst, 4) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne %cr0, 2b",              // if cr0.EQ == 0 { jump 'retry }
+                                "srw {out}, {out}, {shift}",     // out >>= shift
+                                $acquire,                        // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
                                 out = out(reg) out,
@@ -365,40 +371,36 @@ macro_rules! atomic_sub_word {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                "slw {old}, {old}, {shift}",
-                                "slw {new}, {new}, {shift}",
-                                "and {old}, {old}, {mask}",
-                                "and {new}, {new}, {mask}",
-                                // (atomic) CAS (LL/SC loop)
-                                $release,
-                                "2:",
-                                    "lwarx {tmp}, 0, {dst}",
-                                    "and {out}, {tmp}, {mask}",
-                                    "cmpw {out}, {old}",
-                                    "bne %cr0, 3f",
-                                    "andc {tmp}, {tmp}, {mask}",
-                                    "or {tmp}, {tmp}, {new}",
-                                    "stwcx. {tmp}, 0, {dst}",
-                                    "bne %cr0, 2b",
-                                "3:",
-                                "srw {out}, {out}, {shift}",
-                                // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
-                                "mfcr {r}",
-                                $acquire,
+                                "slw {old}, {old}, {shift}",     // old <<= shift
+                                "slw {new}, {new}, {shift}",     // new <<= shift
+                                $release,                        // fence
+                                "2:", // 'retry:
+                                    "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = *dst }
+                                    "and {tmp}, {out}, {mask}",  // tmp = out & mask
+                                    "cmpw {tmp}, {old}",         // if tmp == old { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                    "bne %cr0, 3f",              // if cr0.EQ == 0 { jump 'cmp-fail }
+                                    "andc {tmp}, {out}, {mask}", // tmp = out & !mask
+                                    "or {tmp}, {tmp}, {new}",    // tmp |= new
+                                    "stwcx. {tmp}, 0, {dst}",    // atomic { if RESERVE == (dst, size_of($int_type)) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne %cr0, 2b",              // if cr0.EQ == 0 { jump 'retry }
+                                "3:", // 'cmp-fail:
+                                "srw {out}, {out}, {shift}",     // out >>= shift
+                                "mfcr {tmp}",                    // r = zero_extend(cr)
+                                $acquire,                        // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
                                 new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = in(reg) mask,
-                                r = lateout(reg) r,
-                                tmp = out(reg) _,
+                                tmp = out(reg) r,
                                 out("cr0") _,
                                 options(nostack, preserves_flags),
                             )
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
+                    // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
                     (out, extract_cr0(r))
                 }
             }
@@ -500,9 +502,8 @@ macro_rules! atomic128 {
                     macro_rules! atomic_load_acquire {
                         ($release:tt) => {
                             asm!(
-                                // (atomic) load from src to out pair
                                 $release,
-                                "lq %r4, 0({src})",
+                                "lq %r4, 0({src})", // atomic { r4:r5 = *src }
                                 // Lightweight acquire sync
                                 // Refs: https://github.com/boostorg/atomic/blob/boost-1.79.0/include/boost/atomic/detail/core_arch_ops_gcc_ppc.hpp#L47-L62
                                 "cmpd %cr7, %r4, %r4",
@@ -522,8 +523,7 @@ macro_rules! atomic128 {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                // (atomic) load from src to out pair
-                                "lq %r4, 0({src})",
+                                "lq %r4, 0({src})", // atomic { r4:r5 = *src }
                                 src = in(reg_nonzero) ptr_reg!(src),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
@@ -555,9 +555,8 @@ macro_rules! atomic128 {
                     macro_rules! atomic_store {
                         ($release:tt) => {
                             asm!(
-                                // (atomic) store val pair to dst
-                                $release,
-                                "stq %r4, 0({dst})",
+                                $release,            // fence
+                                "stq %r4, 0({dst})", // atomic { *dst = r4:r5 }
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
@@ -592,15 +591,12 @@ macro_rules! atomic128 {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) swap (LL/SC loop)
-                                $release,
-                                "2:",
-                                    // load from dst to out pair
-                                    "lqarx %r6, 0, {dst}",
-                                    // try to store val pair to dst
-                                    "stqcx. %r8, 0, {dst}",
-                                    "bne %cr0, 2b",
-                                $acquire,
+                                $release,                   // fence
+                                "2:", // 'retry:
+                                    "lqarx %r6, 0, {dst}",  // atomic { RESERVE = (dst, 16); r6:r7 = *dst }
+                                    "stqcx. %r8, 0, {dst}", // atomic { if RESERVE == (dst, 16) { *dst = r8:r9; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne %cr0, 2b",         // if cr0.EQ == 0 { jump 'retry }
+                                $acquire,                   // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
@@ -639,20 +635,18 @@ macro_rules! atomic128 {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) CAS (LL/SC loop)
-                                $release,
-                                "2:",
-                                    "lqarx %r8, 0, {dst}",
-                                    "xor {tmp_lo}, %r9, {old_lo}",
-                                    "xor {tmp_hi}, %r8, {old_hi}",
-                                    "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",
-                                    "bne %cr0, 3f", // jump if compare failed
-                                    "stqcx. %r6, 0, {dst}",
-                                    "bne %cr0, 2b", // continue loop if store failed
-                                "3:",
-                                // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
-                                "mfcr {tmp_lo}",
-                                $acquire,
+                                $release,                               // fence
+                                "2:", // 'retry:
+                                    "lqarx %r8, 0, {dst}",              // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                                    "xor {tmp_lo}, %r9, {old_lo}",      // tmp_lo = r9 ^ old_lo
+                                    "xor {tmp_hi}, %r8, {old_hi}",      // tmp_hi = r8 ^ old_hi
+                                    "or. {tmp_lo}, {tmp_lo}, {tmp_hi}", // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                    "bne %cr0, 3f",                     // if cr0.EQ == 0 { jump 'cmp-fail }
+                                    "stqcx. %r6, 0, {dst}",             // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne %cr0, 2b",                     // if cr0.EQ == 0 { jump 'retry }
+                                "3:", // 'cmp-fail:
+                                "mfcr {tmp_lo}",                        // tmp_lo = zero_extend(cr)
+                                $acquire,                               // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old_hi = in(reg) old.pair.hi,
                                 old_lo = in(reg) old.pair.lo,
@@ -670,6 +664,7 @@ macro_rules! atomic128 {
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
+                    // if compare failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (
                         MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
                         extract_cr0(r)
@@ -696,18 +691,16 @@ macro_rules! atomic128 {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) CAS (LL/SC)
-                                $release,
-                                "lqarx %r8, 0, {dst}",
-                                "xor {tmp_lo}, %r9, {old_lo}",
-                                "xor {tmp_hi}, %r8, {old_hi}",
-                                "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",
-                                "bne %cr0, 3f", // jump if compare failed
-                                "stqcx. %r6, 0, {dst}",
-                                "3:",
-                                // if compare or stqcx failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
-                                "mfcr {tmp_lo}",
-                                $acquire,
+                                $release,                           // fence
+                                "lqarx %r8, 0, {dst}",              // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                                "xor {tmp_lo}, %r9, {old_lo}",      // tmp_lo = r9 ^ old_lo
+                                "xor {tmp_hi}, %r8, {old_hi}",      // tmp_hi = r8 ^ old_hi
+                                "or. {tmp_lo}, {tmp_lo}, {tmp_hi}", // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                "bne %cr0, 3f",                     // if cr0.EQ == 0 { jump 'cmp-fail }
+                                "stqcx. %r6, 0, {dst}",             // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                "3:", // 'cmp-fail:
+                                "mfcr {tmp_lo}",                    // tmp_lo = zero_extend(cr)
+                                $acquire,                           // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old_hi = in(reg) old.pair.hi,
                                 old_lo = in(reg) old.pair.lo,
@@ -725,6 +718,7 @@ macro_rules! atomic128 {
                         };
                     }
                     atomic_rmw!(cmpxchg_weak, order);
+                    // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (
                         MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
                         extract_cr0(r)

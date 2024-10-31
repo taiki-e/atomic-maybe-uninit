@@ -2,7 +2,6 @@ addi
 amoswap
 amswap
 andc
-andi
 andn
 aqrl
 armasm
@@ -24,7 +23,6 @@ espup
 fild
 fistp
 getex
-Halfword
 IMAFD
 inequal
 ishld
@@ -84,7 +82,6 @@ signedness
 simavr
 simio
 sllv
-sltiu
 sltui
 sreg
 srlv
@@ -113,4 +110,5 @@ xorps
 zaamo
 zabha
 zacas
+zalasr
 zalrsc

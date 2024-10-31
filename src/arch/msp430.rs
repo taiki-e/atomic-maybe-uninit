@@ -6,6 +6,9 @@ MSP430
 Refs:
 - MSP430x5xx and MSP430x6xx Family User's Guide https://www.ti.com/lit/ug/slau208q/slau208q.pdf
 - portable-atomic https://github.com/taiki-e/portable-atomic
+
+Generated asm:
+- msp430 https://godbolt.org/z/zzncaW6Y5
 */
 
 #[path = "cfgs/msp430.rs"]
@@ -50,7 +53,7 @@ unsafe fn restore(sr: u16) {
 }
 
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt) => {
+    ($int_type:ident, $suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -61,10 +64,8 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load from src to out
-                        concat!("mov", $asm_suffix, " @{src}, {out}"),
+                        concat!("mov", $suffix, " @{src}, {out}"), // atomic { out = *src }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -82,10 +83,8 @@ macro_rules! atomic {
             ) {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    // atomic store is always SeqCst.
                     asm!(
-                        // (atomic) store val to dst
-                        concat!("mov", $asm_suffix, " {val}, 0({dst})"),
+                        concat!("mov", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         options(nostack, preserves_flags),
@@ -128,7 +127,7 @@ macro_rules! atomic {
                 let r = unsafe {
                     let r: $int_type;
                     asm!(
-                        concat!("xor", $asm_suffix, " {b}, {a}"),
+                        concat!("xor", $suffix, " {b}, {a}"),
                         a = inout(reg) old => r,
                         b = in(reg) out,
                         // Do not use `preserves_flags` because XOR modifies the V, N, Z, and C bits of the status register.

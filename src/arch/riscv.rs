@@ -3,25 +3,47 @@
 /*
 RISC-V
 
+This architecture provides the following atomic instructions:
+
+- Load/Store Instructions (relaxed load/store)
+  - All aligned {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) load/store instructions are atomic.
+    Currently, there is no guaranteed 128-bit atomic load/store even on RV128.
+    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/rvwmo.adoc#memory-model-primitives
+- Load-Acquire and Store-Release Instructions (acquire/seqcst load and release/seqcst store)
+  - (experimental) Zalasr extension: {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64)
+    https://github.com/riscv/riscv-zalasr
+- Load-Reserved/Store-Conditional (LR/SC) Instructions (aka LL/SC)
+  - Zalrsc extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64)
+    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/a-st-ext.adoc#zalrsc-extension-for-load-reservedstore-conditional-instructions
+- Atomic Memory Operation (AMO) Instructions (RMW)
+  - Zaamo extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64) swap,fetch_{add,and,or,xor,max.min}
+    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/a-st-ext.adoc#zaamo-extension-for-atomic-memory-operations
+  - Zabha extension: {8,16}-bit swap,fetch_{add,and,or,xor,max.min}
+    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zabha.adoc
+- Atomic Compare-and-Swap (CAS) Instructions
+  - Zacas extension: {32,64}-bit (for RV32 & RV64) and 128-bit (for RV64)
+    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zacas.adoc
+  - Zacas and Zabha extensions: {8,16}-bit
+    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zabha.adoc
+
+Note: "A" extension comprises instructions provided by "Zalrsc" and "Zaamo" extensions,
+"Zabha" and "Zacas" depends upon "Zaamo" extension.
+
 Refs:
 - RISC-V Instruction Set Manual
-  https://github.com/riscv/riscv-isa-manual/tree/riscv-isa-release-8b9dc50-2024-08-30
-  "A" Extension for Atomic Instructions
-  https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/a-st-ext.adoc
-  "Zabha" Extension for Byte and Halfword Atomic Memory Operations
-  https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zabha.adoc
+  https://github.com/riscv/riscv-isa-manual
 - RISC-V Atomics ABI Specification
   https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/draft-20240829-13bfa9f54634cb60d86b9b333e109f077805b4b3/riscv-atomic.adoc
 - portable-atomic https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- riscv64gc https://godbolt.org/z/aT7xr3fWf
-- riscv64gc (+zabha) https://godbolt.org/z/s9x6Ehab4
-- riscv32imac https://godbolt.org/z/MxbqKPab8
-- riscv32imac (+zabha) https://godbolt.org/z/qzEGTWd9c
+- riscv64gc https://godbolt.org/z/4bzozeK8d
+- riscv64gc (+zabha) https://godbolt.org/z/KEdoMn6re
+- riscv32imac https://godbolt.org/z/9nT3qh33v
+- riscv32imac (+zabha) https://godbolt.org/z/d1Tr7W3E3
 */
 
-// TODO: Zacas/Zalrsc extension
+// TODO: Zacas extension, and Zalrsc extension without A extension
 
 #[path = "cfgs/riscv.rs"]
 mod cfgs;
@@ -92,7 +114,7 @@ macro_rules! atomic_rmw_lr_sc {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($int_type:ident, $asm_suffix:tt) => {
+    ($int_type:ident, $suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -107,10 +129,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) load from src to out
-                                $release,
-                                concat!("l", $asm_suffix, " {out}, 0({src})"),
-                                $acquire,
+                                $release,                                  // fence
+                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = *src }
+                                $acquire,                                  // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -141,10 +162,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) store val to dst
-                                $release,
-                                concat!("s", $asm_suffix, " {val}, 0({dst})"),
-                                $acquire,
+                                $release,                                  // fence
+                                concat!("s", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
+                                $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -164,8 +184,9 @@ macro_rules! atomic_load_store {
     };
 }
 
+#[rustfmt::skip]
 macro_rules! atomic_swap {
-    ($int_type:ident, $asm_suffix:tt) => {
+    ($int_type:ident, $suffix:tt) => {
         #[cfg(any(
             target_feature = "a",
             atomic_maybe_uninit_target_feature = "a",
@@ -187,10 +208,7 @@ macro_rules! atomic_swap {
                     macro_rules! swap {
                         ($order:tt) => {
                             asm!(
-                                // (atomic) swap (AMO)
-                                // - load value from dst and store it to out
-                                // - store value of val to dst
-                                concat!("amoswap.", $asm_suffix, $order, " {out}, {val}, 0({dst})"),
+                                concat!("amoswap.", $suffix, $order, " {out}, {val}, 0({dst})"), // atomic { _x = *dst; *dst = val; out = _x }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = lateout(reg) out,
@@ -206,10 +224,11 @@ macro_rules! atomic_swap {
     };
 }
 
+#[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix);
-        atomic_swap!($int_type, $asm_suffix);
+    ($int_type:ident, $suffix:tt) => {
+        atomic_load_store!($int_type, $suffix);
+        atomic_swap!($int_type, $suffix);
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
         impl AtomicCompareExchange for $int_type {
             #[inline]
@@ -230,15 +249,14 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) CAS (LR/SC loop)
-                                "2:",
-                                    concat!("lr.", $asm_suffix, $acquire, " {out}, 0({dst})"),
-                                    "bne {out}, {old}, 3f", // compare and jump if compare failed
-                                    concat!("sc.", $asm_suffix, $release, " {r}, {new}, 0({dst})"),
-                                    "bnez {r}, 2b", // continue loop if store failed
-                                "3:",
-                                "xor {r}, {out}, {old}",
-                                "seqz {r}, {r}",
+                                "2:", // 'retry:
+                                    concat!("lr.", $suffix, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
+                                    "bne {out}, {old}, 3f",                                     // if out != old { jump 'cmp-fail }
+                                    concat!("sc.", $suffix, $release, " {r}, {new}, 0({dst})"), // atomic { if RS == dst { *dst = new; r = 0 } else { r = nonzero }; RS = None }
+                                    "bnez {r}, 2b",                                             // if r != 0 { jump 'retry }
+                                "3:", // 'cmp-fail:
+                                "xor {r}, {out}, {old}",                                        // r = out ^ old
+                                "seqz {r}, {r}",                                                // if r == 0 { r = 1 } else { r = 0 }
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
@@ -259,10 +277,10 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $asm_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix);
+    ($int_type:ident, $suffix:tt) => {
+        atomic_load_store!($int_type, $suffix);
         #[cfg(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"))]
-        atomic_swap!($int_type, $asm_suffix);
+        atomic_swap!($int_type, $suffix);
         #[cfg(not(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha")))]
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
         impl AtomicSwap for $int_type {
@@ -284,18 +302,16 @@ macro_rules! atomic_sub_word {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                concat!("sll", w!(), " {mask}, {mask}, {shift}"),
-                                concat!("sll", w!(), " {val}, {val}, {shift}"),
-                                // (atomic) swap (LR/SC loop)
-                                "2:",
-                                    concat!("lr.w", $acquire, " {out}, 0({dst})"),
-                                    "mv {tmp}, {val}",
-                                    "xor {tmp}, {tmp}, {out}",
-                                    "and {tmp}, {tmp}, {mask}",
-                                    "xor {tmp}, {tmp}, {out}",
-                                    concat!("sc.w", $release, " {tmp}, {tmp}, 0({dst})"),
-                                    "bnez {tmp}, 2b",
-                                concat!("srl", w!(), " {out}, {out}, {shift}"),
+                                concat!("sll", w!(), " {mask}, {mask}, {shift}"),         // mask <<= shift & 31
+                                concat!("sll", w!(), " {val}, {val}, {shift}"),           // val <<= shift & 31
+                                "2:", // 'retry:
+                                    concat!("lr.w", $acquire, " {out}, 0({dst})"),        // atomic { out = *dst; RS = dst }
+                                    "xor {tmp}, {val}, {out}",                            // tmp = val ^ out
+                                    "and {tmp}, {tmp}, {mask}",                           // tmp &= mask
+                                    "xor {tmp}, {tmp}, {out}",                            // tmp ^= out
+                                    concat!("sc.w", $release, " {tmp}, {tmp}, 0({dst})"), // atomic { if RS == dst { *dst = tmp; tmp = 0 } else { tmp = nonzero }; RS = None }
+                                    "bnez {tmp}, 2b",                                     // if tmp != 0 { jump 'retry }
+                                concat!("srl", w!(), " {out}, {out}, {shift}"),           // out >>= shift & 31
                                 dst = in(reg) ptr_reg!(dst),
                                 val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
                                 out = out(reg) out,
@@ -335,32 +351,30 @@ macro_rules! atomic_sub_word {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                concat!("sll", w!(), " {mask}, {mask}, {shift}"),
-                                concat!("sll", w!(), " {old}, {old}, {shift}"),
-                                concat!("sll", w!(), " {new}, {new}, {shift}"),
-                                // (atomic) CAS (LR/SC loop)
-                                "2:",
-                                    concat!("lr.w", $acquire, " {tmp}, 0({dst})"),
-                                    "and {out}, {tmp}, {mask}",
-                                    "bne {out}, {old}, 3f",
-                                    "xor {out}, {tmp}, {new}",
-                                    "and {out}, {out}, {mask}",
-                                    "xor {out}, {out}, {tmp}",
-                                    concat!("sc.w", $release, " {out}, {out}, 0({dst})"),
-                                    "bnez {out}, 2b",
-                                "3:",
-                                concat!("srl", w!(), " {out}, {tmp}, {shift}"),
-                                "and {tmp}, {tmp}, {mask}",
-                                "xor {r}, {old}, {tmp}",
-                                "seqz {r}, {r}",
+                                concat!("sll", w!(), " {mask}, {mask}, {shift}"),         // mask <<= shift & 31
+                                concat!("sll", w!(), " {old}, {old}, {shift}"),           // old <<= shift & 31
+                                concat!("sll", w!(), " {new}, {new}, {shift}"),           // new <<= shift & 31
+                                "2:", // 'retry:
+                                    concat!("lr.w", $acquire, " {tmp}, 0({dst})"),        // atomic { tmp = *dst; RS = dst }
+                                    "and {out}, {tmp}, {mask}",                           // out = tmp & mask
+                                    "bne {out}, {old}, 3f",                               // if out != old { jump 'cmp-fail }
+                                    "xor {out}, {tmp}, {new}",                            // out = tmp ^ new
+                                    "and {out}, {out}, {mask}",                           // out &= mask
+                                    "xor {out}, {out}, {tmp}",                            // out ^= tmp
+                                    concat!("sc.w", $release, " {out}, {out}, 0({dst})"), // atomic { if RS == dst { *dst = out; out = 0 } else { out = nonzero }; RS = None }
+                                    "bnez {out}, 2b",                                     // if out != 0 { jump 'retry }
+                                "3:", // 'cmp-fail:
+                                concat!("srl", w!(), " {out}, {tmp}, {shift}"),           // out = tmp >> shift & 31
+                                "and {tmp}, {tmp}, {mask}",                               // tmp &= mask
+                                "xor {tmp}, {old}, {tmp}",                                // tmp ^= old
+                                "seqz {tmp}, {tmp}",                                      // if tmp == 0 { tmp = 1 } else { tmp = 0 }
                                 dst = in(reg) ptr_reg!(dst),
                                 old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
                                 new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,
-                                r = lateout(reg) r,
-                                tmp = out(reg) _,
+                                tmp = out(reg) r,
                                 options(nostack, preserves_flags),
                             )
                         };

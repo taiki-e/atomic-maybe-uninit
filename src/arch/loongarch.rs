@@ -3,8 +3,11 @@
 /*
 LoongArch
 
+Refs:
+- https://github.com/torvalds/linux/blob/v6.11/Documentation/arch/loongarch/introduction.rst#references
+
 Generated asm:
-- loongarch64 https://godbolt.org/z/r98136r1b
+- loongarch64 https://godbolt.org/z/36649a5c8
 */
 
 #[path = "cfgs/loongarch.rs"]
@@ -20,7 +23,7 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 #[rustfmt::skip]
 macro_rules! atomic_load {
-    ($int_type:ident, $asm_suffix:tt) => {
+    ($int_type:ident, $suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -35,9 +38,8 @@ macro_rules! atomic_load {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                // (atomic) load from src to out
-                                concat!("ld.", $asm_suffix, " {out}, {src}, 0"),
-                                $acquire,
+                                concat!("ld.", $suffix, " {out}, {src}, 0"), // atomic { out = *src }
+                                $acquire,                                    // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -58,8 +60,8 @@ macro_rules! atomic_load {
 }
 
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt) => {
-        atomic_load!($int_type, $asm_suffix);
+    ($int_type:ident, $suffix:tt) => {
+        atomic_load!($int_type, $suffix);
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
@@ -74,8 +76,7 @@ macro_rules! atomic {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                // (atomic) store val to dst
-                                concat!("st.", $asm_suffix, " {val}, {dst}, 0"),
+                                concat!("st.", $suffix, " {val}, {dst}, 0"), // atomic { *dst = val }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -83,8 +84,7 @@ macro_rules! atomic {
                         }
                         Ordering::Release | Ordering::SeqCst => {
                             asm!(
-                                // (atomic) store val to dst
-                                concat!("amswap_db.", $asm_suffix, " $zero, {val}, {dst}"),
+                                concat!("amswap_db.", $suffix, " $zero, {val}, {dst}"), // atomic { _x = *dst; *dst = val; _ = _x }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -109,10 +109,7 @@ macro_rules! atomic {
                 unsafe {
                     // AMO is always SeqCst.
                     asm!(
-                        // (atomic) swap (AMO)
-                        // - load value from dst and store it to out
-                        // - store value of val to dst
-                        concat!("amswap_db.", $asm_suffix, " {out}, {val}, {dst}"),
+                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = _x }
                         dst = in(reg) ptr_reg!(dst),
                         val = in(reg) val,
                         out = out(reg) out,
@@ -140,24 +137,22 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($failure_fence:tt) => {
                             asm!(
-                                // (atomic) CAS (LL/SC loop)
-                                "2:",
-                                    concat!("ll.", $asm_suffix, " {out}, {dst}, 0"),
-                                    "bne {out}, {old}, 3f", // compare and jump if compare failed
-                                    "move {r}, {new}",
-                                    concat!("sc.", $asm_suffix, " {r}, {dst}, 0"),
-                                    "beqz {r}, 2b", // continue loop if store failed
-                                    "b 4f",
-                                "3:",
-                                    $failure_fence,
-                                "4:",
-                                "xor {r}, {out}, {old}",
-                                "sltui {r}, {r}, 1",
+                                "2:", // 'retry:
+                                    concat!("ll.", $suffix, " {out}, {dst}, 0"), // atomic { out = *dst; LL = dst }
+                                    "bne {out}, {old}, 3f",                      // if out != old { jump 'cmp-fail }
+                                    "move {tmp}, {new}",                         // tmp = new
+                                    concat!("sc.", $suffix, " {tmp}, {dst}, 0"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                                    "beqz {tmp}, 2b",                            // if tmp == 0 { jump 'retry }
+                                    "b 4f",                                      // jump 'success
+                                "3:", // 'cmp-fail:
+                                    $failure_fence,                              // fence
+                                    "move {tmp}, $zero",                         // tmp = 0
+                                "4:", // 'success:
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
                                 out = out(reg) out,
-                                r = out(reg) r,
+                                tmp = out(reg) r,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -179,8 +174,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $asm_suffix:tt) => {
-        atomic_load!($int_type, $asm_suffix);
+    ($int_type:ident, $suffix:tt) => {
+        atomic_load!($int_type, $suffix);
         impl AtomicStore for $int_type {
             #[inline]
             unsafe fn atomic_store(
@@ -195,10 +190,9 @@ macro_rules! atomic_sub_word {
                     macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) store val to dst
-                                $release,
-                                concat!("st.", $asm_suffix, " {val}, {dst}, 0"),
-                                $acquire,
+                                $release,                                    // fence
+                                concat!("st.", $suffix, " {val}, {dst}, 0"), // atomic { *dst = val }
+                                $acquire,                                    // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -228,23 +222,17 @@ macro_rules! atomic_sub_word {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
-                    // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
                     asm!(
-                        "sll.w {mask}, {mask}, {shift}",
-                        "addi.w {mask}, {mask}, 0",
-                        "sll.w {val}, {val}, {shift}",
-                        "addi.w {val}, {val}, 0",
-                        // (atomic) swap (LL/SC loop)
-                        "2:",
-                            "ll.w {out}, {dst}, 0",
-                            "addi.w {tmp}, {val}, 0",
-                            "xor {tmp}, {out}, {tmp}",
-                            "and {tmp}, {tmp}, {mask}",
-                            "xor {tmp}, {out}, {tmp}",
-                            "sc.w {tmp}, {dst}, 0",
-                            "beqz {tmp}, 2b",
-                        "srl.w {out}, {out}, {shift}",
+                        "sll.w {mask}, {mask}, {shift}", // mask <<= shift & 31
+                        "sll.w {val}, {val}, {shift}",   // val <<= shift & 31
+                        "2:", // 'retry:
+                            "ll.w {out}, {dst}, 0",      // atomic { out = *dst; LL = dst }
+                            "andn {tmp}, {out}, {mask}", // tmp = out & !mask
+                            "or {tmp}, {tmp}, {val}",    // tmp |= val
+                            "sc.w {tmp}, {dst}, 0",      // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                            "beqz {tmp}, 2b",            // if tmp == 0 { jump 'retry }
+                        "srl.w {out}, {out}, {shift}",   // out >>= shift & 31
                         dst = in(reg) ptr_reg!(dst),
                         val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
                         out = out(reg) out,
@@ -274,45 +262,34 @@ macro_rules! atomic_sub_word {
                 unsafe {
                     let mut r: crate::utils::RegSize;
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
-                    // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg {
                         ($failure_fence:tt) => {
                             asm!(
-                                "sll.w {new}, {new}, {shift}",
-                                "addi.w {new}, {new}, 0",
-                                "sll.w {old}, {old}, {shift}",
-                                "addi.w $a7, {old}, 0",
-                                "sll.w {mask}, {mask}, {shift}",
-                                "addi.w $a6, {mask}, 0",
-                                // (atomic) CAS (LL/SC loop)
-                                "2:",
-                                    "ll.w $t0, {dst}, 0",
-                                    "and $t1, $t0, $a6",
-                                    "bne $t1, $a7, 3f",
-                                    "andn $t1, $t0, $a6",
-                                    "or $t1, $t1, {new}",
-                                    "sc.w $t1, {dst}, 0",
-                                    "beqz $t1, 2b",
-                                    "b 4f",
-                                "3:",
-                                    $failure_fence,
-                                "4:",
-                                "srl.w $a6, $t0, {shift}",
-                                "and {r}, $t0, {mask}",
-                                "addi.w {r}, {r}, 0",
-                                "xor {r}, {old}, {r}",
-                                "sltui {r}, {r}, 1",
+                                "sll.w {mask}, {mask}, {shift}", // mask <<= shift & 31
+                                "sll.w {old}, {old}, {shift}",   // old <<= shift & 31
+                                "sll.w {new}, {new}, {shift}",   // new <<= shift & 31
+                                "2:", // 'retry:
+                                    "ll.w {out}, {dst}, 0",      // atomic { tmp = *dst; LL = dst }
+                                    "and {tmp}, {out}, {mask}",  // tmp = out & mask
+                                    "bne {tmp}, {old}, 3f",      // if tmp != old { jump 'cmp-fail }
+                                    "andn {tmp}, {out}, {mask}", // tmp = out & !mask
+                                    "or {tmp}, {tmp}, {new}",    // tmp |= new
+                                    "sc.w {tmp}, {dst}, 0",      // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                                    "beqz {tmp}, 2b",            // if tmp == 0 { jump 'retry }
+                                    "b 4f",                      // jump 'success
+                                "3:", // 'cmp-fail:
+                                    $failure_fence,              // fence
+                                    "move {tmp}, $zero",         // tmp = 0
+                                "4:", // 'success:
+                                "srl.w {out}, {out}, {shift}",   // out >>= shift & 31
                                 dst = in(reg) ptr_reg!(dst),
                                 old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
                                 new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
+                                out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,
-                                r = lateout(reg) r,
-                                out("$a6") out,
-                                out("$a7") _,
-                                out("$t0") _,
-                                out("$t1") _,
+                                tmp = out(reg) r,
                                 options(nostack, preserves_flags),
                             )
                         };

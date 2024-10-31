@@ -6,6 +6,9 @@ AVR
 Refs:
 - AVR Instruction Set Manual https://ww1.microchip.com/downloads/en/DeviceDoc/AVR-InstructionSet-Manual-DS40002198.pdf
 - portable-atomic https://github.com/taiki-e/portable-atomic
+
+Generated asm:
+- avr https://godbolt.org/z/Yn6s3hcGf
 */
 
 #[path = "cfgs/avr.rs"]
@@ -76,13 +79,13 @@ macro_rules! atomic {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let s = disable();
-                    let out = src.read();
-                    restore(s);
-                    out
-                }
+                let s = disable();
+                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+                // On single-core systems, disabling interrupts is enough to prevent data race.
+                let out = unsafe { src.read() };
+                // SAFETY: the state was retrieved by the previous `disable`.
+                unsafe { restore(s) }
+                out
             }
         }
         impl AtomicStore for $int_type {
@@ -92,12 +95,12 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let s = disable();
-                    dst.write(val);
-                    restore(s);
-                }
+                let s = disable();
+                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+                // On single-core systems, disabling interrupts is enough to prevent data race.
+                unsafe { dst.write(val) }
+                // SAFETY: the state was retrieved by the previous `disable`.
+                unsafe { restore(s) }
             }
         }
         impl AtomicSwap for $int_type {

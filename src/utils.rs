@@ -159,7 +159,7 @@ pub(crate) trait ZeroExtend: Copy {
     fn zero_extend(v: MaybeUninit<Self>) -> Self::Out;
 }
 #[repr(C)]
-struct ZeroExtended<T, const N: usize> {
+struct ZeroExtended<T: Copy, const N: usize> {
     #[cfg(target_endian = "big")]
     pad: [T; N],
     v: MaybeUninit<T>,
@@ -194,18 +194,11 @@ macro_rules! zero_extend {
 zero_extend!(i8, u8, i16, u16 => u32);
 zero_extend!(i32, u32, i64, u64, isize, usize);
 
-#[allow(dead_code)]
-#[cfg(any(
-    target_arch = "aarch64",
-    target_arch = "arm64ec",
-    target_arch = "powerpc64",
-    target_arch = "s390x",
-    target_arch = "x86_64",
-))]
 /// A 128-bit value represented as a pair of 64-bit values.
 ///
 /// This type is `#[repr(C)]`, both fields have the same in-memory representation
 /// and are plain old data types, so access to the fields is always safe.
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub(crate) union MaybeUninit128 {
@@ -213,12 +206,11 @@ pub(crate) union MaybeUninit128 {
     pub(crate) i128: MaybeUninit<i128>,
     pub(crate) pair: Pair<u64>,
 }
-#[allow(dead_code)]
-#[cfg(any(target_arch = "arm", target_arch = "hexagon", target_arch = "x86"))]
 /// A 64-bit value represented as a pair of 32-bit values.
 ///
 /// This type is `#[repr(C)]`, both fields have the same in-memory representation
 /// and are plain old data types, so access to the fields is always safe.
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub(crate) union MaybeUninit64 {
@@ -261,11 +253,21 @@ type RetInt = RegSize;
 #[allow(dead_code)]
 #[inline]
 pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetInt, RetInt) {
+    // RISC-V, MIPS, LoongArch, Xtensa: shift amount of 32-bit shift instructions is 5 bits unsigned (0-31).
+    // PowerPC, C-SKY: shift amount of 32-bit shift instructions is 6 bits unsigned (0-63) and shift amount 32-63 means "clear".
+    // Arm: shift amount of 32-bit shift instructions is 8 bits unsigned (0-255).
+    // Hexagon: shift amount of 32-bit shift instructions is 7 bits signed (-64-63) and negative shift amount means "reverse the direction of the shift".
+    // (On s390x, we don't use the mask returned from this function.)
     const SHIFT_MASK: bool = !cfg!(any(
+        target_arch = "loongarch64",
+        target_arch = "mips",
+        target_arch = "mips32r6",
+        target_arch = "mips64",
+        target_arch = "mips64r6",
         target_arch = "riscv32",
         target_arch = "riscv64",
-        target_arch = "loongarch64",
         target_arch = "s390x",
+        target_arch = "xtensa",
     ));
     let ptr_mask = mem::size_of::<MinWord>() - 1;
     let aligned_ptr = strict::with_addr(ptr, ptr as usize & !ptr_mask).cast::<MinWord>();

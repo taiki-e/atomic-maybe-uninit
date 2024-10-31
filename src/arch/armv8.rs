@@ -22,9 +22,9 @@ Refs:
   https://developer.arm.com/documentation/dui1095/a
 
 Generated asm:
-- armv8-a https://godbolt.org/z/TvnKGjfKn
-- armv8-m baseline https://godbolt.org/z/Y9enGTP4Y
-- armv8-m mainline https://godbolt.org/z/PqzfvcE73
+- armv8-a https://godbolt.org/z/xoPv85sMo
+- armv8-m baseline https://godbolt.org/z/MrMdWfoEq
+- armv8-m mainline https://godbolt.org/z/5odW5YnxP
 */
 
 #[path = "cfgs/armv8.rs"]
@@ -68,8 +68,9 @@ macro_rules! s {
     };
 }
 
+#[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt) => {
+    ($int_type:ident, $suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -84,8 +85,7 @@ macro_rules! atomic {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                // (atomic) load from src to out
-                                concat!("ld", $acquire, $asm_suffix, " {out}, [{src}]"),
+                                concat!("ld", $acquire, $suffix, " {out}, [{src}]"), // atomic { out = *src }
                                 src = in(reg) src,
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -116,8 +116,7 @@ macro_rules! atomic {
                     macro_rules! atomic_store {
                         ($release:tt) => {
                             asm!(
-                                // (atomic) store val to dst
-                                concat!("st", $release, $asm_suffix, " {val}, [{dst}]"),
+                                concat!("st", $release, $suffix, " {val}, [{dst}]"), // atomic { *dst = val }
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -148,15 +147,11 @@ macro_rules! atomic {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) swap (LL/SC loop)
-                                "2:",
-                                    // load from dst to tmp
-                                    concat!("ld", $acquire, "ex", $asm_suffix, " {out}, [{dst}]"),
-                                    // try to store val to dst
-                                    concat!("st", $release, "ex", $asm_suffix, " {r}, {val}, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cmp {r}, #0",
-                                    "bne 2b",
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("st", $release, "ex", $suffix, " {r}, {val}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cmp {r}, #0",                                                  // if r == 0 { Z = 1 } else { Z = 0 }
+                                    "bne 2b",                                                       // if Z == 0 { jump 'retry }
                                 dst = in(reg) dst,
                                 val = inout(reg) val => _,
                                 out = out(reg) out,
@@ -190,23 +185,18 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) CAS (LL/SC loop)
-                                "2:",
-                                    // load from dst to out
-                                    concat!("ld", $acquire, "ex", $asm_suffix, " {out}, [{dst}]"),
-                                    "cmp {out}, {old}",
-                                    "bne 3f", // jump if compare failed
-                                    // try to store val to dst
-                                    concat!("st", $release, "ex", $asm_suffix, " {r}, {new}, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cmp {r}, #0",
-                                    "bne 2b", // continue loop if store failed
-                                    "b 4f",
-                                "3:",
-                                    // compare failed, mark r as failed and clear exclusive
-                                    "clrex",
-                                    s!("mov", "{r}, #1"),
-                                "4:",
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                    "cmp {out}, {old}",                                             // if out == old { Z = 1 } else { Z = 0 }
+                                    "bne 3f",                                                       // if Z == 0 { jump 'cmp-fail }
+                                    concat!("st", $release, "ex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cmp {r}, #0",                                                  // if r == 0 { Z = 1 } else { Z = 0 }
+                                    "bne 2b",                                                       // if Z == 0 { jump 'retry }
+                                    "b 4f",                                                         // jump 'success
+                                "3:", // 'cmp-fail:
+                                    "clrex",                                                        // EXCLUSIVE = None
+                                    s!("mov", "{r}, #1"),                                           // r = 1
+                                "4:", // 'success:
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
                                 new = inout(reg) new => _,
@@ -241,18 +231,15 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // load from dst to out
-                                concat!("ld", $acquire, "ex", $asm_suffix, " {out}, [{dst}]"),
-                                "cmp {out}, {old}",
-                                "bne 3f",
-                                // try to store new to dst
-                                concat!("st", $release, "ex", $asm_suffix, " {r}, {new}, [{dst}]"),
-                                "b 4f",
-                                "3:",
-                                    // compare failed, mark r as failed and clear exclusive
-                                    "clrex",
-                                    s!("mov", "{r}, #1"),
-                                "4:",
+                                concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                "cmp {out}, {old}",                                             // if out == old { Z = 1 } else { Z = 0 }
+                                "bne 3f",                                                       // if Z == 0 { jump 'cmp-fail }
+                                concat!("st", $release, "ex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                "b 4f",                                                         // jump 'success
+                                "3:", // 'cmp-fail:
+                                    "clrex",                                                    // EXCLUSIVE = None
+                                    s!("mov", "{r}, #1"),                                       // r = 1
+                                "4:", // 'success:
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
                                 new = inout(reg) new => _,
@@ -300,9 +287,8 @@ macro_rules! atomic64 {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                // (atomic) load from src to tmp pair
-                                concat!("ld", $acquire, "exd r0, r1, [{src}]"),
-                                "clrex",
+                                concat!("ld", $acquire, "exd r0, r1, [{src}]"), // atomic { r0:r1 = *src; EXCLUSIVE = src }
+                                "clrex",                                        // EXCLUSIVE = None
                                 src = in(reg) src,
                                 // prev pair - must be even-numbered and not R14
                                 lateout("r0") prev_lo,
@@ -337,15 +323,11 @@ macro_rules! atomic64 {
                     macro_rules! store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) store val pair to dst (LL/SC loop)
-                                "2:",
-                                    // load from dst to tmp pair
-                                    concat!("ld", $acquire, "exd r4, r5, [{dst}]"),
-                                    // try to store val pair to dst
-                                    concat!("st", $release, "exd r4, r2, r3, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cmp r4, #0",
-                                    "bne 2b",
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "exd r4, r5, [{dst}]"),     // atomic { r4:r5 = *dst; EXCLUSIVE = dst }
+                                    concat!("st", $release, "exd r4, r2, r3, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r4 = 0 } else { r4 = 1 }; EXCLUSIVE = None }
+                                    "cmp r4, #0",                                       // if r4 == 0 { Z = 1 } else { Z = 0 }
+                                    "bne 2b",                                           // if Z == 0 { jump 'retry }
                                 dst = in(reg) dst,
                                 // val pair - must be even-numbered and not R14
                                 inout("r2") val.pair.lo => _,
@@ -379,15 +361,11 @@ macro_rules! atomic64 {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) swap (LL/SC loop)
-                                "2:",
-                                    // load from dst to out pair
-                                    concat!("ld", $acquire, "exd r0, r1, [{dst}]"),
-                                    // try to store val pair to dst
-                                    concat!("st", $release, "exd {r}, r2, r3, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cmp {r}, #0",
-                                    "bne 2b",
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "exd r0, r1, [{dst}]"),      // atomic { r0:r1 = *dst; EXCLUSIVE = dst }
+                                    concat!("st", $release, "exd {r}, r2, r3, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cmp {r}, #0",                                       // if r == 0 { Z = 1 } else { Z = 0 }
+                                    "bne 2b",                                            // if Z == 0 { jump 'retry }
                                 dst = in(reg) dst,
                                 r = out(reg) _,
                                 // val pair - must be even-numbered and not R14
@@ -428,23 +406,20 @@ macro_rules! atomic64 {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) CAS (LL/SC loop)
-                                "2:",
-                                    concat!("ld", $acquire, "exd r2, r3, [{dst}]"),
-                                    "eor {tmp}, r3, {old_hi}",
-                                    "eor {r}, r2, {old_lo}",
-                                    "orrs {r}, {r}, {tmp}",
-                                    "bne 3f", // jump if compare failed
-                                    concat!("st", $release, "exd  {r}, r4, r5, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cmp {r}, #0",
-                                    "bne 2b", // continue loop if store failed
-                                    "b 4f",
-                                "3:",
-                                    // compare failed, mark r as failed and clear exclusive
-                                    "clrex",
-                                    s!("mov", "{r}, #1"),
-                                "4:",
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "exd r2, r3, [{dst}]"),       // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                                    "eor {tmp}, r3, {old_hi}",                            // tmp = r3 ^ old_hi
+                                    "eor {r}, r2, {old_lo}",                              // r = r2 ^ old_lo
+                                    "orrs {r}, {r}, {tmp}",                               // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
+                                    "bne 3f",                                             // if Z == 0 { jump 'cmp-fail }
+                                    concat!("st", $release, "exd  {r}, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cmp {r}, #0",                                        // if r == 0 { Z = 1 } else { Z = 0 }
+                                    "bne 2b",                                             // if Z == 0 { jump 'retry }
+                                    "b 4f",                                               // jump 'success
+                                "3:", // 'cmp-fail:
+                                    "clrex",                                              // EXCLUSIVE = None
+                                    s!("mov", "{r}, #1"),                                 // r = 1
+                                "4:", // 'success:
                                 dst = in(reg) dst,
                                 old_lo = in(reg) old.pair.lo,
                                 old_hi = in(reg) old.pair.hi,
@@ -487,18 +462,17 @@ macro_rules! atomic64 {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                concat!("ld", $acquire, "exd r2, r3, [{dst}]"),
-                                "eor {tmp}, r3, {old_hi}",
-                                "eor {r}, r2, {old_lo}",
-                                "orrs {r}, {r}, {tmp}",
-                                "bne 3f", // jump if compare failed
-                                concat!("st", $release, "exd  {r}, r4, r5, [{dst}]"),
-                                "b 4f",
-                                "3:",
-                                    // compare failed, mark r as failed and clear exclusive
-                                    "clrex",
-                                    s!("mov", "{r}, #1"),
-                                "4:",
+                                concat!("ld", $acquire, "exd r2, r3, [{dst}]"),       // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                                "eor {tmp}, r3, {old_hi}",                            // tmp = r3 ^ old_hi
+                                "eor {r}, r2, {old_lo}",                              // r = r2 ^ old_lo
+                                "orrs {r}, {r}, {tmp}",                               // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
+                                "bne 3f",                                             // if Z == 0 { jump 'cmp-fail }
+                                concat!("st", $release, "exd  {r}, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                "b 4f",                                               // jump 'success
+                                "3:", // 'cmp-fail:
+                                    "clrex",                                          // EXCLUSIVE = None
+                                    s!("mov", "{r}, #1"),                             // r = 1
+                                "4:", // 'success:
                                 dst = in(reg) dst,
                                 old_lo = in(reg) old.pair.lo,
                                 old_hi = in(reg) old.pair.hi,
