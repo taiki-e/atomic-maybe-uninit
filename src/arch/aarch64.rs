@@ -15,15 +15,15 @@ Refs:
 - portable-atomic https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- aarch64 https://godbolt.org/z/476TdcWMs
-- aarch64 msvc https://godbolt.org/z/avbn6fGM4
-- aarch64 (+lse) https://godbolt.org/z/jerE6rT99
-- aarch64 msvc (+lse) https://godbolt.org/z/7358oeWTq
-- aarch64 (+lse,+lse2) https://godbolt.org/z/KbKbfnxc1
-- aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/fv6Gv7qfe
-- aarch64 (+rcpc) https://godbolt.org/z/4dxvTPMhz
-- aarch64 (+lse2,+lse128) https://godbolt.org/z/E5zEchThK
-- aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/xhKbsfT7E
+- aarch64 https://godbolt.org/z/e8Wesj5WP
+- aarch64 msvc https://godbolt.org/z/jcTW8Eafo
+- aarch64 (+lse) https://godbolt.org/z/999aq8jGE
+- aarch64 msvc (+lse) https://godbolt.org/z/TodsEnfz6
+- aarch64 (+lse,+lse2) https://godbolt.org/z/r1M5GYWEj
+- aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/c9dnqxM45
+- aarch64 (+rcpc) https://godbolt.org/z/Ezc49YK6h
+- aarch64 (+lse2,+lse128) https://godbolt.org/z/GMdboxzjc
+- aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/9beasofnd
 */
 
 #[path = "cfgs/aarch64.rs"]
@@ -61,8 +61,9 @@ macro_rules! atomic_rmw {
     };
 }
 
+#[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt, $val_modifier:tt, $cmp_extend:tt) => {
+    ($int_type:ident, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -77,8 +78,7 @@ macro_rules! atomic {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                // (atomic) load from src to out
-                                concat!("ld", $acquire, "r", $asm_suffix, " {out", $val_modifier, "}, [{src}]"),
+                                concat!("ld", $acquire, "r", $suffix, " {out", $val_modifier, "}, [{src}]"), // atomic { out = *src }
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -87,17 +87,9 @@ macro_rules! atomic {
                     }
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
+                        // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC.
                         #[cfg(any(target_feature = "rcpc", atomic_maybe_uninit_target_feature = "rcpc"))]
-                        Ordering::Acquire => {
-                            // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC.
-                            asm!(
-                                // (atomic) load from src to out
-                                concat!("ldapr", $asm_suffix, " {out", $val_modifier, "}, [{src}]"),
-                                src = in(reg) ptr_reg!(src),
-                                out = lateout(reg) out,
-                                options(nostack, preserves_flags),
-                            );
-                        }
+                        Ordering::Acquire => atomic_load!("ap"),
                         #[cfg(not(any(target_feature = "rcpc", atomic_maybe_uninit_target_feature = "rcpc")))]
                         Ordering::Acquire => atomic_load!("a"),
                         Ordering::SeqCst => atomic_load!("a"),
@@ -121,9 +113,8 @@ macro_rules! atomic {
                     macro_rules! atomic_store {
                         ($release:tt, $fence:tt) => {
                             asm!(
-                                // (atomic) store val to dst
-                                concat!("st", $release, "r", $asm_suffix, " {val", $val_modifier, "}, [{dst}]"),
-                                $fence,
+                                concat!("st", $release, "r", $suffix, " {val", $val_modifier, "}, [{dst}]"), // atomic { *dst = val }
+                                $fence,                                                                      // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -160,14 +151,13 @@ macro_rules! atomic {
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
+                            // Refs:
+                            // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/SWP--SWPA--SWPAL--SWPL--Swap-word-or-doubleword-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/SWPB--SWPAB--SWPALB--SWPLB--Swap-byte-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/SWPH--SWPAH--SWPALH--SWPLH--Swap-halfword-in-memory-
                             asm!(
-                                // (atomic) swap
-                                // Refs:
-                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/SWP--SWPA--SWPAL--SWPL--Swap-word-or-doubleword-in-memory-
-                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/SWPB--SWPAB--SWPALB--SWPLB--Swap-byte-in-memory-
-                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/SWPH--SWPAH--SWPALH--SWPLH--Swap-halfword-in-memory-
-                                concat!("swp", $acquire, $release, $asm_suffix, " {val", $val_modifier, "}, {out", $val_modifier, "}, [{dst}]"),
-                                $fence,
+                                concat!("swp", $acquire, $release, $suffix, " {val", $val_modifier, "}, {out", $val_modifier, "}, [{dst}]"), // atomic { _x = *dst; *dst = val; out = _x }
+                                $fence,                                                                                                      // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = lateout(reg) out,
@@ -179,15 +169,11 @@ macro_rules! atomic {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
-                                // (atomic) swap (LL/SC loop)
-                                "2:",
-                                    // load from dst to out
-                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out", $val_modifier, "}, [{dst}]"),
-                                    // try to store val to dst
-                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {val", $val_modifier, "}, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b",
-                                $fence,
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("st", $release, "xr", $suffix, " {r:w}, {val", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cbnz {r:w}, 2b",                                                                    // if r != 0 { jump 'retry }
+                                $fence,                                                                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = out(reg) out,
@@ -220,19 +206,18 @@ macro_rules! atomic {
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
+                            // Refs:
+                            // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASB--CASAB--CASALB--CASLB--Compare-and-swap-byte-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASH--CASAH--CASALH--CASLH--Compare-and-swap-halfword-in-memory-
                             asm!(
                                 // cas writes the current value to the first register,
                                 // so copy the `old`'s value for later comparison.
-                                concat!("mov {out", $val_modifier, "}, {old", $val_modifier, "}"),
-                                // (atomic) CAS
-                                // Refs:
-                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-
-                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASB--CASAB--CASALB--CASLB--Compare-and-swap-byte-in-memory-
-                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASH--CASAH--CASALH--CASLH--Compare-and-swap-halfword-in-memory-
-                                concat!("cas", $acquire, $release, $asm_suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"),
-                                $fence,
-                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_extend),
-                                "cset {r:w}, eq",
+                                concat!("mov {out", $val_modifier, "}, {old", $val_modifier, "}"),                                           // out = old
+                                concat!("cas", $acquire, $release, $suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
+                                $fence,                                                                                                      // fence
+                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),                                 // if out == old { Z = 1 } else { Z = 0 }
+                                "cset {r:w}, eq",                                                                                            // r = Z
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
@@ -249,20 +234,18 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
-                                // (atomic) CAS (LL/SC loop)
-                                "2:",
-                                    concat!("ld", $acquire, "xr", $asm_suffix, " {out", $val_modifier, "}, [{dst}]"),
-                                    concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_extend),
-                                    "b.ne 3f", // jump if compare failed
-                                    concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b", // continue loop if store failed
-                                    $fence,
-                                    "b 4f",
-                                "3:",
-                                    "mov {r:w}, #1", // mark as failed
-                                    "clrex",
-                                "4:",
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),         // if out == old { Z = 1 } else { Z = 0 }
+                                    "b.ne 3f",                                                                           // if Z == 0 { jump 'cmp-fail }
+                                    concat!("st", $release, "xr", $suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cbnz {r:w}, 2b",                                                                    // if r != 0 { jump 'retry }
+                                    $fence,                                                                              // fence
+                                    "b 4f",                                                                              // jump 'success
+                                "3:", // 'cmp-fail:
+                                    "mov {r:w}, #1",                                                                     // r = 1
+                                    "clrex",                                                                             // EXCLUSIVE = None
+                                "4:", // 'success:
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
@@ -298,20 +281,18 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
-                                // (atomic) CAS
-                                concat!("ld", $acquire, "xr", $asm_suffix, " {out", $val_modifier, "}, [{dst}]"),
-                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_extend),
-                                "b.ne 3f",
-                                concat!("st", $release, "xr", $asm_suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"),
+                                concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = *dst; EXCLUSIVE = dst }
+                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),         // if out == old { Z = 1 } else { Z = 0 }
+                                "b.ne 3f",                                                                           // if Z == 0 { jump 'cmp-fail }
+                                concat!("st", $release, "xr", $suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                 // TODO: emit fence only when the above sc succeed?
-                                // // 0 if the store was successful, 1 if no store was performed
                                 // "cbnz {r:w}, 4f",
-                                $fence,
-                                "b 4f",
-                                "3:",
-                                    "mov {r:w}, #1",
-                                    "clrex",
-                                "4:",
+                                $fence,                                                                              // fence
+                                "b 4f",                                                                              // jump 'success
+                                "3:", // 'cmp-fail:
+                                    "mov {r:w}, #1",                                                                 // r = 1
+                                    "clrex",                                                                         // EXCLUSIVE = None
+                                "4:", // 'success:
                                 dst = inout(reg) ptr_reg!(dst) => _,
                                 old = in(reg) old,
                                 new = in(reg) new,
@@ -396,11 +377,10 @@ macro_rules! atomic128 {
                 // - LDIAPP https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
                 unsafe {
                     macro_rules! atomic_load_relaxed {
-                        ($acquire:tt) => {
+                        ($iap:tt, $dmb_ishld:tt) => {
                             asm!(
-                                // (atomic) load from src to tmp pair
-                                "ldp {prev_lo}, {prev_hi}, [{src}]",
-                                $acquire,
+                                concat!("ld", $iap, "p {prev_lo}, {prev_hi}, [{src}]"), // atomic { prev_lo:prev_hi = *src }
+                                $dmb_ishld,                                             // fence
                                 src = in(reg) ptr_reg!(src),
                                 prev_hi = lateout(reg) prev_hi,
                                 prev_lo = lateout(reg) prev_lo,
@@ -409,37 +389,44 @@ macro_rules! atomic128 {
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_load_relaxed!(""),
+                        // if FEAT_LRCPC3 && order != relaxed => ldiapp
+                        // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
                         #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
-                        Ordering::Acquire => {
-                            // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
-                            // Refs: https://developer.arm.com/documentation/ddi0602/2023-03/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-Pair-of-registers-
-                            asm!(
-                                // (atomic) load from src to tmp pair
-                                "ldiapp {prev_lo}, {prev_hi}, [{src}]",
-                                src = in(reg) ptr_reg!(src),
-                                prev_hi = lateout(reg) prev_hi,
-                                prev_lo = lateout(reg) prev_lo,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
-                        Ordering::Acquire => atomic_load_relaxed!("dmb ishld"),
+                        Ordering::Acquire => atomic_load_relaxed!("iap", ""),
+                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
                         Ordering::SeqCst => {
                             asm!(
                                 // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
                                 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
-                                "ldar {tmp}, [{src}]",
-                                // (atomic) load from src to tmp pair
-                                "ldp {prev_lo}, {prev_hi}, [{src}]",
-                                "dmb ishld",
+                                "ldar {tmp}, [{src}]",                  // atomic { tmp = *src }
+                                "ldiapp {prev_lo}, {prev_hi}, [{src}]", // atomic { prev_lo:prev_hi = *src }
                                 src = in(reg) ptr_reg!(src),
                                 prev_hi = lateout(reg) prev_hi,
                                 prev_lo = lateout(reg) prev_lo,
                                 tmp = out(reg) _,
                                 options(nostack, preserves_flags),
                             );
-                        },
+                        }
+
+                        // else => ldp
+                        Ordering::Relaxed => atomic_load_relaxed!("", ""),
+                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
+                        Ordering::Acquire => atomic_load_relaxed!("", "dmb ishld"),
+                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
+                        Ordering::SeqCst => {
+                            asm!(
+                                // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
+                                // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
+                                "ldar {tmp}, [{src}]",               // atomic { tmp = *src }
+                                "ldp {prev_lo}, {prev_hi}, [{src}]", // atomic { prev_lo:prev_hi = *src }
+                                "dmb ishld",                         // fence
+                                src = in(reg) ptr_reg!(src),
+                                prev_hi = lateout(reg) prev_hi,
+                                prev_lo = lateout(reg) prev_lo,
+                                tmp = out(reg) _,
+                                options(nostack, preserves_flags),
+                            );
+                        }
                         _ => unreachable!(),
                     }
                     MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
@@ -451,11 +438,8 @@ macro_rules! atomic128 {
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) load (CAS)
-                                // Refs:
-                                // - https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
-                                // - https://github.com/taiki-e/portable-atomic/pull/20
-                                concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"),
+                                // Refs: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
+                                concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"), // atomic { if *src == x2:x3 { *dst = x2:x3 } else { x2:x3 = *dst } }
                                 src = in(reg) ptr_reg!(src),
                                 // must be allocated to even/odd register pair
                                 inout("x2") 0_u64 => prev_lo,
@@ -468,14 +452,10 @@ macro_rules! atomic128 {
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) load from src to tmp pair
-                                "2:",
-                                    // load from src to prev pair
-                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{src}]"),
-                                    // store prev pair to src
-                                    concat!("st", $release, "xp {r:w}, {prev_lo}, {prev_hi}, [{src}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b",
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{src}]"),        // atomic { prev_lo:prev_hi = *src; EXCLUSIVE = src }
+                                    concat!("st", $release, "xp {r:w}, {prev_lo}, {prev_hi}, [{src}]"), // atomic { if EXCLUSIVE == src { *src = prev_lo:prev_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
                                 src = in(reg) ptr_reg!(src),
                                 prev_lo = out(reg) prev_lo,
                                 prev_hi = out(reg) prev_hi,
@@ -514,12 +494,11 @@ macro_rules! atomic128 {
                 // - STILP: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
                 unsafe {
                     macro_rules! atomic_store {
-                        ($acquire:tt, $release:tt) => {
+                        ($il:tt, $acquire:tt, $release:tt) => {
                             asm!(
-                                // (atomic) store val pair to dst
-                                $release,
-                                "stp {val_lo}, {val_hi}, [{dst}]",
-                                $acquire,
+                                $release,                                            // fence
+                                concat!("st", $il, "p {val_lo}, {val_hi}, [{dst}]"), // atomic { *dst = val_lo:val_hi }
+                                $acquire,                                            // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val_lo = in(reg) val.pair.lo,
                                 val_hi = in(reg) val.pair.hi,
@@ -533,9 +512,8 @@ macro_rules! atomic128 {
                     macro_rules! atomic_store_swpp {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
-                                // (atomic) swap
-                                concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"),
-                                $fence,
+                                concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"), // atomic { _x = *dst; *dst = val_lo:val_hi; val_lo:val_hi = _x }
+                                $fence,                                                              // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val_lo = inout(reg) val.pair.lo => _,
                                 val_hi = inout(reg) val.pair.hi => _,
@@ -544,30 +522,35 @@ macro_rules! atomic128 {
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_store!("", ""),
-                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
-                        Ordering::Release => {
-                            // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
-                            // Refs: https://developer.arm.com/documentation/ddi0602/2023-03/Base-Instructions/STILP--Store-Release-ordered-Pair-of-registers-
-                            asm!(
-                                // (atomic) store val pair to dst
-                                "stilp {val_lo}, {val_hi}, [{dst}]",
-                                dst = in(reg) ptr_reg!(dst),
-                                val_lo = in(reg) val.pair.lo,
-                                val_hi = in(reg) val.pair.hi,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
-                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
-                        Ordering::Release => atomic_rmw!(atomic_store_swpp, order),
-                        #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
-                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
-                        Ordering::Release => atomic_store!("", "dmb ish"),
+                        // if FEAT_LSE128 && order == seqcst => swpp
+                        // Prefer swpp if stp requires fences. https://reviews.llvm.org/D143506
+                        // SAFETY: cfg guarantee that the CPU supports FEAT_LSE128.
                         #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
                         Ordering::SeqCst => atomic_rmw!(atomic_store_swpp, order),
+
+                        // if FEAT_LRCPC3 && order != relaxed => stilp
+                        // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
+                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
+                        Ordering::Release => atomic_store!("il", "", ""),
+                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
                         #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
-                        Ordering::SeqCst => atomic_store!("dmb ish", "dmb ish"),
+                        Ordering::SeqCst => atomic_store!("il", "dmb ish", ""),
+
+                        // if FEAT_LSE128 && order != relaxed => swpp
+                        // Prefer swpp if stp requires fences. https://reviews.llvm.org/D143506
+                        // SAFETY: cfg guarantee that the CPU supports FEAT_LSE128.
+                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
+                        #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
+                        Ordering::Release => atomic_rmw!(atomic_store_swpp, order),
+
+                        // else => stp
+                        Ordering::Relaxed => atomic_store!("", "", ""),
+                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
+                        #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
+                        Ordering::Release => atomic_store!("", "", "dmb ish"),
+                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
+                        #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
+                        Ordering::SeqCst => atomic_store!("", "dmb ish", "dmb ish"),
                         _ => unreachable!(),
                     }
                 }
@@ -577,15 +560,11 @@ macro_rules! atomic128 {
                     macro_rules! store {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
-                                // (atomic) store val pair to dst (LL/SC loop)
-                                "2:",
-                                    // load from dst to xzr/tmp pair
-                                    concat!("ld", $acquire, "xp xzr, {tmp}, [{dst}]"),
-                                    // try to store val pair to dst
-                                    concat!("st", $release, "xp {tmp:w}, {val_lo}, {val_hi}, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {tmp:w}, 2b",
-                                $fence,
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "xp xzr, {tmp}, [{dst}]"),                  // atomic { xzr:tmp = *dst; EXCLUSIVE = dst }
+                                    concat!("st", $release, "xp {tmp:w}, {val_lo}, {val_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val_lo:val_hi; tmp = 0 } else { tmp = 1 }; EXCLUSIVE = None }
+                                    "cbnz {tmp:w}, 2b",                                                 // if tmp != 0 { jump 'retry }
+                                $fence,                                                                 // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val_lo = in(reg) val.pair.lo,
                                 val_hi = in(reg) val.pair.hi,
@@ -615,9 +594,8 @@ macro_rules! atomic128 {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
-                                // (atomic) swap
-                                concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"),
-                                $fence,
+                                concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"), // atomic { _x = *dst; *dst = val_lo:val_hi; val_lo:val_hi = _x }
+                                $fence,                                                              // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val_lo = inout(reg) val.pair.lo => prev_lo,
                                 val_hi = inout(reg) val.pair.hi => prev_hi,
@@ -629,15 +607,11 @@ macro_rules! atomic128 {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
-                                // (atomic) swap (LL/SC loop)
-                                "2:",
-                                    // load from dst to prev pair
-                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),
-                                    // try to store val pair to dst
-                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b",
-                                $fence,
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),      // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
+                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val_lo:val_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cbnz {r:w}, 2b",                                                 // if r != 0 { jump 'retry }
+                                $fence,                                                               // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val_lo = in(reg) val.pair.lo,
                                 val_hi = in(reg) val.pair.hi,
@@ -674,19 +648,17 @@ macro_rules! atomic128 {
                     #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
+                            // Refs: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
                             asm!(
                                 // casp writes the current value to the first register pair,
                                 // so copy the `old`'s value for later comparison.
-                                "mov x8, {old_lo}",
-                                "mov x9, {old_hi}",
-                                // (atomic) CAS
-                                // Refs: https://developer.arm.com/documentation/ddi0602/2024-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
-                                concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"),
-                                $fence,
-                                // compare old pair and prev pair
-                                "cmp x8, {old_lo}",
-                                "ccmp x9, {old_hi}, #0, eq",
-                                "cset {r:w}, eq",
+                                "mov x8, {old_lo}",                                              // x8 = old_lo
+                                "mov x9, {old_hi}",                                              // x9 = old_hi
+                                concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"), // atomic { if *src == x8:x9 { *dst = x4:x5 } else { x8:x9 = *dst } }
+                                $fence,                                                          // fence
+                                "cmp x8, {old_lo}",                                              // if x8 == old_lo { Z = 1 } else { Z = 0 }
+                                "ccmp x9, {old_hi}, #0, eq",                                     // if Z == 1 { if x9 == old_hi { Z = 1 } else { Z = 0 } } else { Z = 0 }
+                                "cset {r:w}, eq",                                                // r = Z
                                 dst = in(reg) ptr_reg!(dst),
                                 old_lo = in(reg) old.pair.lo,
                                 old_hi = in(reg) old.pair.hi,
@@ -713,24 +685,22 @@ macro_rules! atomic128 {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
-                                // (atomic) CAS (LL/SC loop)
-                                "2:",
-                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),
-                                    "cmp {prev_lo}, {old_lo}",
-                                    "cset {r:w}, ne",
-                                    "cmp {prev_hi}, {old_hi}",
-                                    "cinc {r:w}, {r:w}, ne",
-                                    "cbz {r:w}, 3f", // jump if compare succeed
-                                    concat!("st", $release, "xp {r:w}, {prev_lo}, {prev_hi}, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b", // continue loop if store failed
-                                    "mov {r:w}, #1", // mark as failed
-                                    "b 4f",
-                                "3:",
-                                    concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst}]"),
-                                    // 0 if the store was successful, 1 if no store was performed
-                                    "cbnz {r:w}, 2b", // continue loop if store failed
-                                "4:",
+                                "2:", // 'retry:
+                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),        // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
+                                    "cmp {prev_lo}, {old_lo}",                                          // if prev_lo == old_lo { Z = 1 } else { Z = 0 }
+                                    "cset {r:w}, ne",                                                   // r = !Z
+                                    "cmp {prev_hi}, {old_hi}",                                          // if prev_hi == old_hi { Z = 1 } else { Z = 0 }
+                                    "cinc {r:w}, {r:w}, ne",                                            // if Z == 0 { r += 1 }
+                                    "cbz {r:w}, 3f",                                                    // if r == 0 { jump 'success }
+                                    // write back to ensure atomicity
+                                    concat!("st", $release, "xp {r:w}, {prev_lo}, {prev_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = prev_lo:prev_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
+                                    "mov {r:w}, #1",                                                    // r = 1
+                                    "b 4f",                                                             // jump 'cmp-fail
+                                "3:", // 'success:
+                                    concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst}]"),   // atomic { if EXCLUSIVE == dst { *dst = new_lo:new_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
+                                "4:", // 'cmp-fail:
                                 $fence,
                                 dst = in(reg) ptr_reg!(dst),
                                 old_lo = in(reg) old.pair.lo,

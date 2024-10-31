@@ -8,12 +8,12 @@ Refs:
 - portable-atomic https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- x86_64 https://godbolt.org/z/ed98r9cGP
-- x86_64 (+cmpxchg16b) https://godbolt.org/z/96Ee4sWKM
-- x86 (i686) https://godbolt.org/z/qMxPofe6a
-- x86 (i686,-sse2) https://godbolt.org/z/j9Thn9hcb
-- x86 (i586) https://godbolt.org/z/4YMYbYYvG
-- x86 (i586,-x87) https://godbolt.org/z/anYW4df6K
+- x86_64 https://godbolt.org/z/xKzj4WcaE
+- x86_64 (+cmpxchg16b) https://godbolt.org/z/jzMoM9nhq
+- x86 (i686) https://godbolt.org/z/sM6MPjYWf
+- x86 (i686,-sse2) https://godbolt.org/z/MsrxfbcMG
+- x86 (i586) https://godbolt.org/z/KEo6P7YEo
+- x86 (i586,-x87) https://godbolt.org/z/P8cdjY7h1
 */
 
 #[path = "cfgs/x86.rs"]
@@ -64,8 +64,7 @@ macro_rules! atomic {
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load from src to out
-                        concat!("mov {out", $val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"),
+                        concat!("mov {out", $val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"), // atomic { out = *src }
                         src = in(reg) src,
                         out = lateout($val_reg) out,
                         options(nostack, preserves_flags),
@@ -89,8 +88,7 @@ macro_rules! atomic {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => {
                             asm!(
-                                // (atomic) store val to dst
-                                concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"),
+                                concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"), // atomic { *dst = val }
                                 dst = in(reg) dst,
                                 val = in($val_reg) val,
                                 options(nostack, preserves_flags),
@@ -98,8 +96,8 @@ macro_rules! atomic {
                         }
                         Ordering::SeqCst => {
                             asm!(
-                                // (atomic) store val to dst (SeqCst store is xchg, not mov)
-                                concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"),
+                                // SeqCst store is xchg, not mov
+                                concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"), // atomic { _x = *dst; *dst = val; val = _x }
                                 dst = in(reg) dst,
                                 val = inout($val_reg) val => _,
                                 options(nostack, preserves_flags),
@@ -124,8 +122,7 @@ macro_rules! atomic {
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
-                        // (atomic) swap val and dst
-                        concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"),
+                        concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"), // atomic { _x = *dst; *dst = val; val = _x }
                         dst = in(reg) dst,
                         val = inout($val_reg) val => out,
                         options(nostack, preserves_flags),
@@ -154,13 +151,8 @@ macro_rules! atomic {
                     let r: u8;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // (atomic) CAS
-                        // - Compare $cmpxchg_cmp_reg with dst.
-                        // - If equal, ZF is set and new is loaded into dst.
-                        // - Else, clear ZF and load dst into $cmpxchg_cmp_reg.
-                        concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], ", $new_reg),
-                        // load ZF to cl
-                        "sete cl",
+                        concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], ", $new_reg), // atomic { if *dst == $cmpxchg_cmp_reg { ZF = 1; *dst = $new_reg } else { ZF = 0; $cmpxchg_cmp_reg = *dst } }
+                        "sete cl",                                                                            // cl = ZF
                         dst = in(reg) dst,
                         in($new_reg) new,
                         lateout("cl") r,
@@ -220,8 +212,7 @@ macro_rules! atomic64 {
                     let out: MaybeUninit<core::arch::x86::__m128i>;
                     // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load from src to out
-                        "movq {out}, qword ptr [{src}]",
+                        "movq {out}, qword ptr [{src}]", // atomic { out[:] = *src }
                         src = in(reg) src,
                         out = out(xmm_reg) out,
                         options(nostack, preserves_flags),
@@ -240,8 +231,7 @@ macro_rules! atomic64 {
                     let mut out = MaybeUninit::<core::arch::x86::__m128>::zeroed();
                     // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load from src to out
-                        "movlps {out}, qword ptr [{src}]",
+                        "movlps {out}, qword ptr [{src}]", // atomic { out[:] = *src }
                         src = in(reg) src,
                         out = inout(xmm_reg) out,
                         options(nostack, preserves_flags),
@@ -260,9 +250,8 @@ macro_rules! atomic64 {
                     let mut out = MaybeUninit::<Self>::uninit();
                     // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load from src to out (via load to FPU)
-                        "fild qword ptr [{src}]",
-                        "fistp qword ptr [{out}]",
+                        "fild qword ptr [{src}]",  // atomic { st.push(*src) }
+                        "fistp qword ptr [{out}]", // *out = st.pop()
                         src = in(reg) src,
                         out = in(reg) out.as_mut_ptr(),
                         out("st(0)") _,
@@ -287,9 +276,8 @@ macro_rules! atomic64 {
                     let (prev_lo, prev_hi);
                     // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load by cmpxchg(0, 0)
-                        "lock cmpxchg8b qword ptr [edi]",
-                        // set old/new args of cmpxchg8b to 0
+                        "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
+                        // set old/new args of CMPXCHG8B to 0
                         in("ebx") 0_u32,
                         in("ecx") 0_u32,
                         inout("eax") 0_u32 => prev_lo,
@@ -326,8 +314,7 @@ macro_rules! atomic64 {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => {
                             asm!(
-                                // (atomic) store val to dst
-                                "movlps qword ptr [{dst}], {val}",
+                                "movlps qword ptr [{dst}], {val}", // atomic { *dst = val[:] }
                                 dst = in(reg) dst,
                                 val = in(xmm_reg) val,
                                 options(nostack, preserves_flags),
@@ -335,9 +322,9 @@ macro_rules! atomic64 {
                         }
                         Ordering::SeqCst => {
                             asm!(
-                                // (atomic) store val to dst
-                                "movlps qword ptr [{dst}], {val}",
-                                "lock or dword ptr [esp], 0", // equivalent to mfence, but doesn't require SSE2
+                                "movlps qword ptr [{dst}], {val}", // atomic { *dst = val[:] }
+                                // equivalent to mfence, but doesn't require SSE2
+                                "lock or dword ptr [esp], 0",      // fence
                                 dst = in(reg) dst,
                                 val = in(xmm_reg) val,
                                 // Do not use `preserves_flags` because OR modifies the OF, CF, SF, ZF, and PF flags.
@@ -359,9 +346,8 @@ macro_rules! atomic64 {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => {
                             asm!(
-                                "fild qword ptr [{val}]",
-                                // (atomic) store to dst
-                                "fistp qword ptr [{dst}]",
+                                "fild qword ptr [{val}]",  // st.push(*val)
+                                "fistp qword ptr [{dst}]", // atomic { *dst = st.pop() }
                                 val = in(reg) val.as_ptr(),
                                 dst = in(reg) dst,
                                 out("st(0)") _,
@@ -378,10 +364,10 @@ macro_rules! atomic64 {
                         }
                         Ordering::SeqCst => {
                             asm!(
-                                "fild qword ptr [{val}]",
-                                // (atomic) store to dst
-                                "fistp qword ptr [{dst}]",
-                                "lock or dword ptr [esp], 0", // equivalent to mfence, but doesn't require SSE2
+                                "fild qword ptr [{val}]",     // st.push(*val)
+                                "fistp qword ptr [{dst}]",    // atomic { *dst = st.pop() }
+                                // equivalent to mfence, but doesn't require SSE2
+                                "lock or dword ptr [esp], 0", // fence
                                 val = in(reg) val.as_ptr(),
                                 dst = in(reg) dst,
                                 out("st(0)") _,
@@ -406,7 +392,7 @@ macro_rules! atomic64 {
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     let val = MaybeUninit64 { $int_type: val };
-                    // atomic store is always SeqCst.
+                    // atomic store by CMPXCHG8B is always SeqCst.
                     let _ = order;
                     asm!(
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
@@ -414,12 +400,11 @@ macro_rules! atomic64 {
                         //
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
-                        "mov eax, dword ptr [edi]",
-                        "mov edx, dword ptr [edi + 4]",
-                        // (atomic) store (CAS loop)
-                        "2:",
-                            "lock cmpxchg8b qword ptr [edi]",
-                            "jne 2b",
+                        "mov eax, dword ptr [edi]",           // atomic { eax = *edi }
+                        "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.add(4) }
+                        "2:", // 'retry:
+                            "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
+                            "jne 2b",                         // if ZF == 0 { jump 'retry }
                         in("ebx") val.pair.lo,
                         in("ecx") val.pair.hi,
                         out("eax") _,
@@ -446,19 +431,18 @@ macro_rules! atomic64 {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    // atomic store is always SeqCst.
+                    // atomic swap is always SeqCst.
                     asm!(
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
-                        "mov eax, dword ptr [edi]",
-                        "mov edx, dword ptr [edi + 4]",
-                        // (atomic) swap (CAS loop)
-                        "2:",
-                            "lock cmpxchg8b qword ptr [edi]",
-                            "jne 2b",
+                        "mov eax, dword ptr [edi]",           // atomic { eax = *edi }
+                        "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.add(4) }
+                        "2:", // 'retry:
+                            "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
+                            "jne 2b",                         // if ZF == 0 { jump 'retry }
                         in("ebx") val.pair.lo,
                         in("ecx") val.pair.hi,
                         out("eax") prev_lo,
@@ -492,9 +476,8 @@ macro_rules! atomic64 {
                     let r: u8;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // (atomic) CAS
-                        "lock cmpxchg8b qword ptr [edi]",
-                        "sete cl",
+                        "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
+                        "sete cl",                        // cl = ZF
                         in("ebx") new.pair.lo,
                         in("ecx") new.pair.hi,
                         inout("eax") old.pair.lo => prev_lo,
@@ -545,23 +528,15 @@ macro_rules! atomic128 {
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
-                // If the value at `dst` (destination operand) and rdx:rax are equal, the
-                // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
-                // `dst` is loaded to rdx:rax.
-                //
-                // The ZF flag is set if the value at `dst` and rdx:rax are equal,
-                // otherwise it is cleared. Other flags are unaffected.
-                //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
                         "mov {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
-                        "xor rbx, rbx", // zeroed rbx
-                        // (atomic) load by cmpxchg(0, 0)
-                        concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
+                        "xor rbx, rbx",       // zeroed rbx
+                        concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                         "mov rbx, {rbx_tmp}", // restore rbx
-                        // set old/new args of cmpxchg16b to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
+                        // set old/new args of CMPXCHG16B to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
                         rbx_tmp = out(reg) _,
                         in("rcx") 0_u64,
                         inout("rax") 0_u64 => prev_lo,
@@ -588,13 +563,6 @@ macro_rules! atomic128 {
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
-                // If the value at `dst` (destination operand) and rdx:rax are equal, the
-                // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
-                // `dst` is loaded to rdx:rax.
-                //
-                // The ZF flag is set if the value at `dst` and rdx:rax are equal,
-                // otherwise it is cleared. Other flags are unaffected.
-                //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     // atomic store is always SeqCst.
@@ -605,12 +573,11 @@ macro_rules! atomic128 {
                         //
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
-                        concat!("mov rax, qword ptr [", $rdi, "]"),
-                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),
-                        // (atomic) store (CAS loop)
-                        "2:",
-                            concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
-                            "jne 2b",
+                        concat!("mov rax, qword ptr [", $rdi, "]"),              // atomic { rax = *$rdi }
+                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),          // atomic { rdx = *$rdi.add(8) }
+                        "2:", // 'retry:
+                            concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                            "jne 2b",                                            // if ZF == 0 { jump 'retry }
                         "mov rbx, {rbx_tmp}", // restore rbx
                         rbx_tmp = inout(reg) val.pair.lo => _,
                         in("rcx") val.pair.hi,
@@ -638,13 +605,6 @@ macro_rules! atomic128 {
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
-                // If the value at `dst` (destination operand) and rdx:rax are equal, the
-                // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
-                // `dst` is loaded to rdx:rax.
-                //
-                // The ZF flag is set if the value at `dst` and rdx:rax are equal,
-                // otherwise it is cleared. Other flags are unaffected.
-                //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     // atomic swap is always SeqCst.
@@ -655,12 +615,11 @@ macro_rules! atomic128 {
                         //
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
-                        concat!("mov rax, qword ptr [", $rdi, "]"),
-                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),
-                        // (atomic) swap (CAS loop)
-                        "2:",
-                            concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
-                            "jne 2b",
+                        concat!("mov rax, qword ptr [", $rdi, "]"),              // atomic { rax = *$rdi }
+                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),          // atomic { rdx = *$rdi.add(8) }
+                        "2:", // 'retry:
+                            concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                            "jne 2b",                                            // if ZF == 0 { jump 'retry }
                         "mov rbx, {rbx_tmp}", // restore rbx
                         rbx_tmp = inout(reg) val.pair.lo => _,
                         in("rcx") val.pair.hi,
@@ -692,22 +651,14 @@ macro_rules! atomic128 {
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
-                // If the value at `dst` (destination operand) and rdx:rax are equal, the
-                // 128-bit value in rcx:rbx is stored in the `dst`, otherwise the value at
-                // `dst` is loaded to rdx:rax.
-                //
-                // The ZF flag is set if the value at `dst` and rdx:rax are equal,
-                // otherwise it is cleared. Other flags are unaffected.
-                //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     let r: u8;
                     // compare_exchange is always SeqCst.
                     asm!(
                         "xchg {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
-                        // (atomic) CAS
-                        concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"),
-                        "sete cl",
+                        concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                        "sete cl",                                           // cl = ZF
                         "mov rbx, {rbx_tmp}", // restore rbx
                         rbx_tmp = inout(reg) new.pair.lo => _,
                         in("rcx") new.pair.hi,

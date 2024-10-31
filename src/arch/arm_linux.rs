@@ -10,8 +10,8 @@ Refs:
   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences
 
 Generated asm:
-- armv5te https://godbolt.org/z/aTT1b54ez
-- armv4t https://godbolt.org/z/67j5r3e3n
+- armv5te https://godbolt.org/z/jqMMv6c3K
+- armv4t https://godbolt.org/z/qMYe5qsTb
 */
 
 #[path = "cfgs/arm_linux.rs"]
@@ -58,7 +58,7 @@ macro_rules! blx {
 }
 
 macro_rules! atomic_load_store {
-    ($int_type:ident, $asm_suffix:tt) => {
+    ($int_type:ident, $suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -73,8 +73,7 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                // (atomic) load from src to out
-                                concat!("ldr", $asm_suffix, " {out}, [{src}]"),
+                                concat!("ldr", $suffix, " {out}, [{src}]"), // atomic { out = *src }
                                 src = in(reg) src,
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -84,9 +83,8 @@ macro_rules! atomic_load_store {
                         Ordering::Acquire | Ordering::SeqCst => {
                             debug_assert!(kuser_helper_version() >= 3);
                             asm!(
-                                // (atomic) load from src to out
-                                concat!("ldr", $asm_suffix, " {out}, [{src}]"),
-                                blx!("{kuser_memory_barrier}"), // acquire fence
+                                concat!("ldr", $suffix, " {out}, [{src}]"), // atomic { out = *src }
+                                blx!("{kuser_memory_barrier}"),             // fence
                                 src = in(reg) src,
                                 out = lateout(reg) out,
                                 kuser_memory_barrier = inout(reg) KUSER_MEMORY_BARRIER => _,
@@ -115,10 +113,9 @@ macro_rules! atomic_load_store {
                         ($acquire:expr) => {{
                             debug_assert!(kuser_helper_version() >= 3);
                             asm!(
-                                // (atomic) store val to dst
-                                blx!("{kuser_memory_barrier}"), // release fence
-                                concat!("str", $asm_suffix, " {val}, [{dst}]"),
-                                $acquire, // acquire fence
+                                blx!("{kuser_memory_barrier}"),             // fence
+                                concat!("str", $suffix, " {val}, [{dst}]"), // atomic { *dst = val }
+                                $acquire,                                   // fence
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 kuser_memory_barrier = in(reg) KUSER_MEMORY_BARRIER,
@@ -130,8 +127,7 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                // (atomic) store val to dst
-                                concat!("str", $asm_suffix, " {val}, [{dst}]"),
+                                concat!("str", $suffix, " {val}, [{dst}]"), // atomic { *dst = val }
                                 dst = in(reg) dst,
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -164,21 +160,21 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        "2:",
-                            "ldr r0, [r2]", // old_val
-                            "mov {out}, r0",
-                            blx!("{kuser_cmpxchg}"),
-                            "cmp r0, #0",
-                            "bne 2b",
+                        "2:", // 'retry:
+                            "ldr {out}, [r2]",       // atomic { out = *r2 }
+                            "mov r0, {out}",         // r0 = out
+                            blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                // if C == 0 { jump 'retry }
                         out = out(reg) out,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
-                        out("r0") _,
+                        out("r0") _, // old_val
                         in("r1") val, // new_val
                         in("r2") dst, // ptr
+                        // __kuser_cmpxchg clobbers r3, ip, and flags.
                         out("r3") _,
                         out("ip") _,
                         out("lr") _,
-                        // Do not use `preserves_flags` because CMP and __kuser_cmpxchg modify the condition flags.
+                        // Do not use `preserves_flags` because __kuser_cmpxchg modifies the condition flags.
                         options(nostack),
                     );
                 }
@@ -202,31 +198,30 @@ macro_rules! atomic {
                 unsafe {
                     let mut r: i32;
                     asm!(
-                        "2:",
-                            "ldr r0, [r2]", // old_val
-                            "mov {out}, r0",
-                            "cmp r0, {old}",
-                            "bne 3f",
-                            "mov r1, {new}", // new_val
-                            blx!("{kuser_cmpxchg}"),
-                            "cmp r0, #0",
-                            "bne 2b",
-                            "b 4f",
-                        "3:",
+                        "2:", // 'retry:
+                            "ldr {out}, [r2]",       // atomic { out = *r2 }
+                            "mov r0, {out}",         // r0 = out
+                            "cmp {out}, {old}",      // if out == old { Z = 1 } else { Z = 0 }
+                            "bne 3f",                // if Z == 0 { jump 'cmp-fail }
+                            "mov r1, {new}",         // r1 = new
+                            blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                // if C == 0 { jump 'retry }
+                            "b 4f",                  // jump 'success
+                        "3:", // 'cmp-fail:
                             // write back to synchronize
-                            "mov r1, r0", // new_val
-                            blx!("{kuser_cmpxchg}"),
-                            "cmp r0, #0",
-                            "bne 2b",
-                            "mov r0, #1",
-                        "4:",
+                            "mov r1, r0",            // r1 = r0
+                            blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                // if C == 0 { jump 'retry }
+                            "mov r0, #1",            // r0 = 1
+                        "4:", // 'success:
                         old = in(reg) old,
                         new = in(reg) new,
                         out = out(reg) out,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
-                        out("r0") r,
-                        out("r1") _,
+                        out("r0") r, // old_val
+                        out("r1") _, // new_val
                         in("r2") dst, // ptr
+                        // __kuser_cmpxchg clobbers r3, ip, and flags.
                         out("r3") _,
                         out("ip") _,
                         out("lr") _,
@@ -243,8 +238,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $asm_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix);
+    ($int_type:ident, $suffix:tt) => {
+        atomic_load_store!($int_type, $suffix);
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -259,33 +254,31 @@ macro_rules! atomic_sub_word {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // Implement sub-word atomic operations using word-sized CAS loop.
                     // See also create_sub_word_mask_values.
                     asm!(
-                        "lsl {val}, {val}, {shift}",
-                        "and {val}, {val}, {mask}",
-                        "2:",
-                            "ldr r0, [r2]", // old_val
-                            "mov {out}, r0",
-                            "and r1, r0, {inv_mask}",
-                            "orr r1, r1, {val}", // new_val
-                            blx!("{kuser_cmpxchg}"),
-                            "cmp r0, #0",
-                            "bne 2b",
-                        "lsr {out}, {out}, {shift}",
+                        "lsl {val}, {val}, {shift}",  // val <<= shift
+                        "2:", // 'retry:
+                            "ldr {out}, [r2]",        // atomic { out = *r2 }
+                            "mov r0, {out}",          // r0 = out
+                            "and r1, r0, {inv_mask}", // r1 = r0 & inv_mask
+                            "orr r1, r1, {val}",      // r1 |= val
+                            blx!("{kuser_cmpxchg}"),  // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                 // if C == 0 { jump 'retry }
+                        "lsr {out}, {out}, {shift}",  // out >>= shift
                         val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
-                        mask = in(reg) mask,
                         inv_mask = in(reg) !mask,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
-                        out("r0") _,
-                        out("r1") _,
+                        out("r0") _, // old_val
+                        out("r1") _, // new_val
                         in("r2") dst, // ptr
+                        // __kuser_cmpxchg clobbers r3, ip, and flags.
                         out("r3") _,
                         out("ip") _,
                         out("lr") _,
-                        // Do not use `preserves_flags` because CMP and __kuser_cmpxchg modify the condition flags.
+                        // Do not use `preserves_flags` because __kuser_cmpxchg modifies the condition flags.
                         options(nostack),
                     );
                 }
@@ -309,34 +302,30 @@ macro_rules! atomic_sub_word {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
-                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // Implement sub-word atomic operations using word-sized CAS loop.
                     // See also create_sub_word_mask_values.
                     asm!(
-                        "lsl {old}, {old}, {shift}",
-                        "lsl {new}, {new}, {shift}",
-                        "and {old}, {old}, {mask}",
-                        "and {new}, {new}, {mask}",
-                        "2:",
-                            "ldr r0, [r2]", // old_val
-                            "and {out}, r0, {mask}",
-                            "cmp {out}, {old}",
-                            "bne 3f",
-                            "mvn r1, {mask}",
-                            "and r1, r0, r1",
-                            "orr r1, r1, {new}", // new_val
-                            blx!("{kuser_cmpxchg}"),
-                            "cmp r0, #0",
-                            "bne 2b",
-                            "b 4f",
-                        "3:",
+                        "lsl {old}, {old}, {shift}",  // old <<= shift
+                        "lsl {new}, {new}, {shift}",  // new <<= shift
+                        "2:", // 'retry:
+                            "ldr r0, [r2]",          // atomic { r0 = *r2 }
+                            "and {out}, r0, {mask}", // out = r0 & mask
+                            "cmp {out}, {old}",      // if out == old { Z = 1 } else { Z = 0 }
+                            "bne 3f",                // if Z == 0 { jump 'cmp-fail }
+                            "mvn r1, {mask}",        // r1 = !mask
+                            "and r1, r0, r1",        // r1 &= r0
+                            "orr r1, r1, {new}",     // r1 |= new
+                            blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                // if C == 0 { jump 'retry }
+                            "b 4f",                  // jump 'success
+                        "3:", // 'cmp-fail:
                             // write back to synchronize
-                            "mov r1, r0", // new_val
-                            blx!("{kuser_cmpxchg}"),
-                            "cmp r0, #0",
-                            "bne 2b",
-                            "mov r0, #1",
-                        "4:",
-                        "lsr {out}, {out}, {shift}",
+                            "mov r1, r0",            // r1 = r0
+                            blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                // if C == 0 { jump 'retry }
+                            "mov r0, #1",            // r0 = 1
+                        "4:", // 'success:
+                        "lsr {out}, {out}, {shift}",  // out >>= shift
                         old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
                         new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
                         out = out(reg) out,
@@ -345,9 +334,10 @@ macro_rules! atomic_sub_word {
                         // We cannot create inv_mask here because there are no available registers
                         // inv_mask = in(reg) !mask,
                         kuser_cmpxchg = in(reg) KUSER_CMPXCHG,
-                        out("r0") r,
-                        out("r1") _,
+                        out("r0") r, // old_val
+                        out("r1") _, // new_val
                         in("r2") dst, // ptr
+                        // __kuser_cmpxchg clobbers r3, ip, and flags.
                         out("r3") _,
                         out("ip") _,
                         out("lr") _,
@@ -388,22 +378,22 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        "2:",
-                            "ldr r0, [r2]",
-                            "ldr r3, [r2, #4]",
-                            "str r0, [r1]",
-                            "str r3, [r1, #4]",
-                            "mov r0, r1", // old_val
-                            blx!("{kuser_cmpxchg64}"),
-                            "cmp r0, #0",
-                            "bne 2b",
+                        "2:", // 'retry:
+                            "ldr r0, [r2]",            // atomic { r0 = *r2 }
+                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.add(4) }
+                            "str r0, [r1]",            // *r1 = r0
+                            "str r3, [r1, #4]",        // *r1.add(4) = r3
+                            "mov r0, r1",              // r0 = r1
+                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                  // if C == 0 { jump 'retry }
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                        out("r0") _,
+                        out("r0") _, // old_val
                         in("r1") out_ptr, // new_val
                         in("r2") src, // ptr
+                        // __kuser_cmpxchg64 clobbers r3, lr, and flags.
                         out("r3") _,
                         out("lr") _,
-                        // Do not use `preserves_flags` because CMP and __kuser_cmpxchg64 modify the condition flags.
+                        // Do not use `preserves_flags` because __kuser_cmpxchg64 modifies the condition flags.
                         options(nostack),
                     );
                 }
@@ -425,23 +415,23 @@ macro_rules! atomic64 {
                 unsafe {
                     let mut out_tmp = MaybeUninit::<Self>::uninit();
                     asm!(
-                        "2:",
-                            "ldr r0, [r2]",
-                            "ldr r3, [r2, #4]",
-                            "str r0, [{out_tmp}]",
-                            "str r3, [{out_tmp}, #4]",
-                            "mov r0, {out_tmp}", // old_val
-                            blx!("{kuser_cmpxchg64}"),
-                            "cmp r0, #0",
-                            "bne 2b",
-                        out_tmp = in(reg) out_tmp.as_mut_ptr(),
+                        "2:", // 'retry:
+                            "ldr r0, [r2]",            // atomic { r0 = *r2 }
+                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.add(4) }
+                            "str r0, [{out}]",         // *out = r0
+                            "str r3, [{out}, #4]",     // *out.add(4) = r3
+                            "mov r0, {out}",           // r0 = out
+                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                  // if C == 0 { jump 'retry }
+                        out = in(reg) out_tmp.as_mut_ptr(),
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                        out("r0") _,
+                        out("r0") _, // old_val
                         in("r1") val, // new_val
                         in("r2") dst, // ptr
+                        // __kuser_cmpxchg64 clobbers r3, lr, and flags.
                         out("r3") _,
                         out("lr") _,
-                        // Do not use `preserves_flags` because CMP and __kuser_cmpxchg64 modify the condition flags.
+                        // Do not use `preserves_flags` because __kuser_cmpxchg64 modifies the condition flags.
                         options(nostack),
                     );
                 }
@@ -463,23 +453,23 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        "2:",
-                            "ldr r0, [r2]",
-                            "ldr r3, [r2, #4]",
-                            "str r0, [{out_tmp}]",
-                            "str r3, [{out_tmp}, #4]",
-                            "mov r0, {out_tmp}", // old_val
-                            blx!("{kuser_cmpxchg64}"),
-                            "cmp r0, #0",
-                            "bne 2b",
-                        out_tmp = in(reg) out_ptr,
+                        "2:", // 'retry:
+                            "ldr r0, [r2]",            // atomic { r0 = *r2 }
+                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.add(4) }
+                            "str r0, [{out}]",         // *out = r0
+                            "str r3, [{out}, #4]",     // *out.add(4) = r3
+                            "mov r0, {out}",           // r0 = out
+                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                  // if C == 0 { jump 'retry }
+                        out = in(reg) out_ptr,
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                        out("r0") _,
+                        out("r0") _, // old_val
                         in("r1") val, // new_val
                         in("r2") dst, // ptr
+                        // __kuser_cmpxchg64 clobbers r3, lr, and flags.
                         out("r3") _,
                         out("lr") _,
-                        // Do not use `preserves_flags` because CMP and __kuser_cmpxchg64 modify the condition flags.
+                        // Do not use `preserves_flags` because __kuser_cmpxchg64 modifies the condition flags.
                         options(nostack),
                     );
                 }
@@ -506,38 +496,37 @@ macro_rules! atomic64 {
                 unsafe {
                     let mut r: i32;
                     asm!(
-                        "2:",
-                            "ldr r0, [r2]",
-                            "ldr r3, [r2, #4]",
-                            "str r0, [{out_tmp}]",
-                            "str r3, [{out_tmp}, #4]",
-                            "eor r0, r0, {old_lo}",
-                            "eor r3, r3, {old_hi}",
-                            "orrs r0, r0, r3",
-                            "bne 3f",
-                            "mov r0, {out_tmp}", // old_val
-                            "mov r1, {new}", // new_val
-                            blx!("{kuser_cmpxchg64}"),
-                            "cmp r0, #0",
-                            "bne 2b",
-                            "b 4f",
-                        "3:",
+                        "2:", // 'retry:
+                            "ldr r0, [r2]",            // atomic { r0 = *r2 }
+                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.add(4) }
+                            "str r0, [{out}]",         // *out = r0
+                            "str r3, [{out}, #4]",     // *out.add(4) = r3
+                            "eor r0, r0, {old_lo}",    // r0 ^= old_lo
+                            "eor r3, r3, {old_hi}",    // r3 ^= old_hi
+                            "orrs r0, r0, r3",         // r0 |= r3; if r0 == 0 { Z = 1 } else { Z = 0 }
+                            "bne 3f",                  // if Z == 0 { jump 'cmp-fail }
+                            "mov r0, {out}",           // r0 = out
+                            "mov r1, {new}",           // r1 = new
+                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                  // if C == 0 { jump 'retry }
+                            "b 4f",                    // jump 'success
+                        "3:", // 'cmp-fail:
                             // write back to ensure atomicity
-                            "mov r0, {out_tmp}", // old_val
-                            "mov r1, {out_tmp}", // new_val
-                            blx!("{kuser_cmpxchg64}"),
-                            "cmp r0, #0",
-                            "bne 2b",
-                            "mov r0, #1",
-                        "4:",
+                            "mov r0, {out}",           // r0 = out
+                            "mov r1, {out}",           // r1 = out
+                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                  // if C == 0 { jump 'retry }
+                            "mov r0, #1",              // r0 = 1
+                        "4:", // 'success:
                         new = in(reg) new,
-                        out_tmp = in(reg) out_ptr,
+                        out = in(reg) out_ptr,
                         old_lo = in(reg) old.pair.lo,
                         old_hi = in(reg) old.pair.hi,
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                        out("r0") r,
-                        out("r1") _,
+                        out("r0") r, // old_val
+                        out("r1") _, // new_val
                         in("r2") dst, // ptr
+                        // __kuser_cmpxchg64 clobbers r3, lr, and flags.
                         out("r3") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because CMP, ORRS, and __kuser_cmpxchg64 modify the condition flags.

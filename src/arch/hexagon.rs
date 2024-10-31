@@ -4,8 +4,11 @@
 Hexagon
 
 Refs:
-- Hexagon V5x Programmer's Reference Manual
-  https://developer.qualcomm.com/download/hexagon/hexagon-v5x-programmers-reference-manual.pdf?referrer=node/6116
+- Qualcomm Hexagon V73 Programmer’s Reference Manual
+  https://docs.qualcomm.com/bundle/publicresource/80-N2040-53_REV_AB_Qualcomm_Hexagon_V73_Programmers_Reference_Manual.pdf
+
+Generated asm:
+- hexagon https://godbolt.org/z/hGMTeEvo1
 */
 
 #[path = "cfgs/hexagon.rs"]
@@ -23,7 +26,7 @@ use crate::{
 };
 
 macro_rules! atomic_load_store {
-    ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
+    ($int_type:ident, $suffix:tt, $u_suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -36,8 +39,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        // (atomic) load from src to out
-                        concat!("{out} = mem", $asm_u_suffix, $asm_suffix, "({src})"),
+                        concat!("{out} = mem", $u_suffix, $suffix, "({src})"), // atomic { out = *src }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -58,8 +60,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        // (atomic) store val to dst
-                        concat!("mem", $asm_suffix, "({dst}) = {val}"),
+                        concat!("mem", $suffix, "({dst}) = {val}"), // atomic { *dst = val }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         options(nostack, preserves_flags),
@@ -86,10 +87,10 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        "2:",
-                            "{out} = memw_locked({dst})",
-                            "memw_locked({dst},p0) = {val}",
-                            "if (!p0) jump 2b",
+                        "2:", // 'retry:
+                            "{out} = memw_locked({dst})",    // atomic { out = *dst; RESERVE = dst }
+                            "memw_locked({dst},p0) = {val}", // atomic { if RESERVE == dst { *dst = val; p0 = true } else { p0 = false }; RESERVE = None }
+                            "if (!p0) jump 2b",              // if !p0 { jump 'retry }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         out = out(reg) out,
@@ -115,16 +116,16 @@ macro_rules! atomic {
                 unsafe {
                     let mut r: i32 = 1;
                     asm!(
-                        "2:",
-                            "{out} = memw_locked({dst})",
-                            "{{ p0 = cmp.eq({out},{old})",
-                                "if (!p0.new) jump:nt 3f }}",
-                            "memw_locked({dst},p0) = {new}",
-                            "if (!p0) jump 2b",
-                            "jump 4f",
-                        "3:",
-                            "{r} = #0",
-                        "4:",
+                        "2:", // 'retry:
+                            "{out} = memw_locked({dst})",     // atomic { out = *dst; RESERVE = dst }
+                            "{{ p0 = cmp.eq({out},{old})",    // p0 = out == old
+                                "if (!p0.new) jump:nt 3f }}", // if !p0 { jump 'cmp-fail }
+                            "memw_locked({dst},p0) = {new}",  // atomic { if RESERVE == dst { *dst = new; p0 = true } else { p0 = false }; RESERVE = None }
+                            "if (!p0) jump 2b",               // if !p0 { jump 'retry }
+                            "jump 4f",                        // jump 'success
+                        "3:", // 'cmp-fail:
+                            "{r} = #0",                       // r = 0
+                        "4:", // 'success:
                         dst = in(reg) dst,
                         old = in(reg) old,
                         new = in(reg) new,
@@ -141,8 +142,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $asm_suffix:tt, $asm_u_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix, $asm_u_suffix);
+    ($int_type:ident, $suffix:tt, $u_suffix:tt) => {
+        atomic_load_store!($int_type, $suffix, $u_suffix);
         impl AtomicSwap for $int_type {
             #[inline(never)] // TODO: there is no way to mark p0 as clobbered
             unsafe fn atomic_swap(
@@ -159,21 +160,19 @@ macro_rules! atomic_sub_word {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     asm!(
-                        "{val} = asl({val},{shift})",
-                        "{val} = and({val},{mask})",
-                        "2:",
-                            "{out} = memw_locked({dst})",
-                            "{tmp} = and({out},{inv_mask})",
-                            "{tmp} = or({tmp},{val})",
-                            "memw_locked({dst},p0) = {tmp}",
-                            "if (!p0) jump 2b",
-                        "{out} = asr({out},{shift})",
+                        "{val} = asl({val},{shift})",        // val <<= shift
+                        "2:", // 'retry:
+                            "{out} = memw_locked({dst})",    // atomic { out = *dst; RESERVE = dst }
+                            "{tmp} = and({out},~{mask})",    // tmp = out & !mask
+                            "{tmp} = or({tmp},{val})",       // tmp |= new
+                            "memw_locked({dst},p0) = {tmp}", // atomic { if RESERVE == dst { *dst = tmp; p0 = true } else { p0 = false }; RESERVE = None }
+                            "if (!p0) jump 2b",              // if !p0 { jump 'retry }
+                        "{out} = asr({out},{shift})",        // out >>= shift
                         dst = in(reg) dst,
                         val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
                         mask = in(reg) mask,
-                        inv_mask = in(reg) !mask,
                         tmp = out(reg) _,
                         options(nostack),
                     );
@@ -200,31 +199,28 @@ macro_rules! atomic_sub_word {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     asm!(
-                        "{old} = asl({old},{shift})",
-                        "{new} = asl({new},{shift})",
-                        "{old} = and({old},{mask})",
-                        "{new} = and({new},{mask})",
-                        "2:",
-                            "{tmp} = memw_locked({dst})",
-                            "{out} = and({tmp},{mask})",
-                            "{{ p0 = cmp.eq({out},{old})",
-                                "if (!p0.new) jump:nt 3f }}",
-                            "{tmp} = and({tmp},{inv_mask})",
-                            "{tmp} = or({tmp},{new})",
-                            "memw_locked({dst},p0) = {tmp}",
-                            "if (!p0) jump 2b",
-                            "jump 4f",
-                        "3:",
-                            "{r} = #0",
-                        "4:",
-                        "{out} = asr({out},{shift})",
+                        "{old} = asl({old},{shift})",         // old <<= shift
+                        "{new} = asl({new},{shift})",         // new <<= shift
+                        "2:", // 'retry:
+                            "{out} = memw_locked({dst})",     // atomic { out = *dst; RESERVE = dst }
+                            "{tmp} = and({out},{mask})",      // tmp = out & mask
+                            "{{ p0 = cmp.eq({tmp},{old})",    // p0 = tmp == old
+                                "if (!p0.new) jump:nt 3f }}", // if !p0 { jump 'cmp-fail }
+                            "{tmp} = and({out},~{mask})",     // tmp = out & !mask
+                            "{tmp} = or({tmp},{new})",        // tmp |= new
+                            "memw_locked({dst},p0) = {tmp}",  // atomic { if RESERVE == dst { *dst = tmp; p0 = true } else { p0 = false }; RESERVE = None }
+                            "if (!p0) jump 2b",               // if !p0 { jump 'retry }
+                            "jump 4f",                        // jump 'success
+                        "3:", // 'cmp-fail:
+                            "{r} = #0",                       // r = 0
+                        "4:", // 'success:
+                        "{out} = asr({out},{shift})",         // out >>= shift
                         dst = in(reg) dst,
                         old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
                         new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
                         mask = in(reg) mask,
-                        inv_mask = in(reg) !mask,
                         tmp = out(reg) _,
                         r = inout(reg) r,
                         options(nostack),
@@ -260,8 +256,7 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        // (atomic) load from src to prev pair
-                        "{{ r3:2 = memd({src}) }}",
+                        "{{ r3:2 = memd({src}) }}", // atomic { r2:r3 = *src }
                         src = in(reg) src,
                         out("r2") prev_lo,
                         out("r3") prev_hi,
@@ -284,8 +279,7 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        // (atomic) store val pair to dst
-                        "memd({dst}) = r3:2",
+                        "memd({dst}) = r3:2", // atomic { *dst = r2:r3 }
                         dst = in(reg) dst,
                         in("r2") val.pair.lo,
                         in("r3") val.pair.hi,
@@ -308,10 +302,10 @@ macro_rules! atomic64 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        "2:",
-                            "{{ r5:4 = memd_locked({dst}) }}",
-                            "memd_locked({dst},p0) = r3:2",
-                            "if (!p0) jump 2b",
+                        "2:", // 'retry:
+                            "{{ r5:4 = memd_locked({dst}) }}", // atomic { r4:r5 = *dst; RESERVE = dst }
+                            "memd_locked({dst},p0) = r3:2",    // atomic { if RESERVE == dst { *dst = r2:r3; p0 = true } else { p0 = false }; RESERVE = None }
+                            "if (!p0) jump 2b",                // if !p0 { jump 'retry }
                         dst = in(reg) dst,
                         in("r2") val.pair.lo,
                         in("r3") val.pair.hi,
@@ -341,19 +335,19 @@ macro_rules! atomic64 {
                 unsafe {
                     let mut r: i32 = 1;
                     asm!(
-                        "2:",
-                            "{{ r7:6 = memd_locked({dst}) }}",
+                        "2:", // 'retry:
+                            "{{ r7:6 = memd_locked({dst}) }}", // atomic { r6:r7 = *dst; RESERVE = dst }
                             // TODO: merge two cmp?
-                            "{{ p0 = cmp.eq(r6,r2)",
-                                "if (!p0.new) jump:nt 3f }}",
-                            "{{ p0 = cmp.eq(r7,r3)",
-                                "if (!p0.new) jump:nt 3f }}",
-                            "memd_locked({dst},p0) = r5:4",
-                            "if (!p0) jump 2b",
-                            "jump 4f",
-                        "3:",
-                            "{r} = #0",
-                        "4:",
+                            "{{ p0 = cmp.eq(r6,r2)",           // p0 = r6 == r2
+                                "if (!p0.new) jump:nt 3f }}",  // if !p0 { jump 'cmp-fail }
+                            "{{ p0 = cmp.eq(r7,r3)",           // p0 = r7 == r3
+                                "if (!p0.new) jump:nt 3f }}",  // if !p0 { jump 'cmp-fail }
+                            "memd_locked({dst},p0) = r5:4",    // atomic { if RESERVE == dst { *dst = r4:r5; p0 = true } else { p0 = false }; RESERVE = None }
+                            "if (!p0) jump 2b",                // if !p0 { jump 'retry }
+                            "jump 4f",                         // jump 'success
+                        "3:", // 'cmp-fail:
+                            "{r} = #0",                        // r = 0
+                        "4:", // 'success:
                         dst = in(reg) dst,
                         r = inout(reg) r,
                         in("r2") old.pair.lo,

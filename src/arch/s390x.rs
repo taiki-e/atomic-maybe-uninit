@@ -3,14 +3,28 @@
 /*
 s390x
 
+This architecture provides the following atomic instructions:
+
+- Load/Store Instructions
+  - Baseline: {8,16,32,64}-bit
+    (Section "Storage-Operand Fetch References" and "Storage-Operand Store References" of z/Architecture Principles of Operation)
+  - Baseline: 128-bit (lpq, stpq)
+    (Section "LOAD PAIR FROM QUADWORD" and "STORE PAIR TO QUADWORD" of z/Architecture Principles of Operation)
+- Compare-and-Swap Instructions (CAS)
+  - Baseline: {32,64,128}-bit
+  (Section "Storage-Operand Update References" of z/Architecture Principles of Operation)
+- Interlocked-Access Facilities (RMW)
+  - Interlocked-Access Facility 1: {32,64}-bit fetch_{add,and,or,xor}, add with immediate value
+  - Interlocked-Access Facility 2: {and,or,xor} with immediate value
+  (Section "Storage-Operand Update References" of z/Architecture Principles of Operation)
+
 Refs:
 - z/Architecture Principles of Operation https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf
-- z/Architecture Reference Summary https://www.ibm.com/support/pages/zarchitecture-reference-summary
 - portable-atomic https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- s390x https://godbolt.org/z/3jvj9aeTq
-- s390x (z196) https://godbolt.org/z/5Ge3M7Y5e
+- s390x https://godbolt.org/z/PK1xK95xb
+- s390x (z196) https://godbolt.org/z/rW8cx3h5W
 */
 
 #[path = "cfgs/s390x.rs"]
@@ -27,6 +41,26 @@ use crate::{
     utils::{MaybeUninit128, Pair},
 };
 
+// bcr 14,0 (fast-BCR-serialization) requires z196 or later.
+#[cfg(any(
+    target_feature = "fast-serialization",
+    atomic_maybe_uninit_target_feature = "fast-serialization",
+))]
+macro_rules! serialization {
+    () => {
+        "bcr 14, 0"
+    };
+}
+#[cfg(not(any(
+    target_feature = "fast-serialization",
+    atomic_maybe_uninit_target_feature = "fast-serialization",
+)))]
+macro_rules! serialization {
+    () => {
+        "bcr 15, 0"
+    };
+}
+
 // Extracts and checks condition code.
 #[inline(always)]
 fn extract_cc(r: i64) -> bool {
@@ -39,7 +73,7 @@ fn complement(v: u32) -> u32 {
 }
 
 macro_rules! atomic_load_store {
-    ($int_type:ident, $l_suffix:tt, $asm_suffix:tt) => {
+    ($int_type:ident, $l_suffix:tt, $suffix:tt) => {
         impl AtomicLoad for $int_type {
             #[inline]
             unsafe fn atomic_load(
@@ -53,8 +87,7 @@ macro_rules! atomic_load_store {
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load from src to out
-                        concat!("l", $l_suffix, " {out}, 0({src})"),
+                        concat!("l", $l_suffix, " {out}, 0({src})"), // atomic { out = *src }
                         src = in(reg_addr) ptr_reg!(src),
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -75,11 +108,10 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($fence:tt) => {
+                        ($fence:expr) => {
                             asm!(
-                                // (atomic) store val to dst
-                                concat!("st", $asm_suffix, " {val}, 0({dst})"),
-                                $fence,
+                                concat!("st", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
+                                $fence,                                     // fence
                                 dst = in(reg_addr) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -89,17 +121,7 @@ macro_rules! atomic_load_store {
                     match order {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => atomic_store!(""),
-                        // bcr 14,0 (fast-BCR-serialization) requires z196 or later.
-                        #[cfg(any(
-                            target_feature = "fast-serialization",
-                            atomic_maybe_uninit_target_feature = "fast-serialization",
-                        ))]
-                        Ordering::SeqCst => atomic_store!("bcr 14, 0"),
-                        #[cfg(not(any(
-                            target_feature = "fast-serialization",
-                            atomic_maybe_uninit_target_feature = "fast-serialization",
-                        )))]
-                        Ordering::SeqCst => atomic_store!("bcr 15, 0"),
+                        Ordering::SeqCst => atomic_store!(serialization!()),
                         _ => unreachable!(),
                     }
                 }
@@ -109,8 +131,8 @@ macro_rules! atomic_load_store {
 }
 
 macro_rules! atomic {
-    ($int_type:ident, $asm_suffix:tt) => {
-        atomic_load_store!($int_type, $asm_suffix, $asm_suffix);
+    ($int_type:ident, $suffix:tt) => {
+        atomic_load_store!($int_type, $suffix, $suffix);
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -125,11 +147,10 @@ macro_rules! atomic {
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
-                        // (atomic) swap (CAS loop)
-                        concat!("l", $asm_suffix, " {out}, 0({dst})"),
-                        "2:",
-                            concat!("cs", $asm_suffix, " {out}, {val}, 0({dst})"),
-                            "jl 2b",
+                        concat!("l", $suffix, " {out}, 0({dst})"),             // atomic { out = *dst }
+                        "2:", // 'retry:
+                            concat!("cs", $suffix, " {out}, {val}, 0({dst})"), // atomic { if *dst == out { cc = 0; *dst = val } else { cc = 1; out = *dst } }
+                            "jl 2b",                                           // if cc == 1 { jump 'retry }
                         dst = in(reg_addr) ptr_reg!(dst),
                         val = in(reg) val,
                         out = out(reg) out,
@@ -157,10 +178,8 @@ macro_rules! atomic {
                     let r;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // (atomic) CAS
-                        concat!("cs", $asm_suffix, " {old}, {new}, 0({dst})"),
-                        // store condition code
-                        "ipm {r}",
+                        concat!("cs", $suffix, " {old}, {new}, 0({dst})"), // atomic { if *dst == old { cc = 0; *dst = new } else { cc = 1; old = *dst } }
+                        "ipm {r}",                                         // r[:] = cc
                         dst = in(reg_addr) ptr_reg!(dst),
                         new = in(reg) new,
                         r = lateout(reg) r,
@@ -176,8 +195,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $l_suffix:tt, $asm_suffix:tt, $bits:tt, $risbg_swap:tt, $risbg_cas:tt) => {
-        atomic_load_store!($int_type, $l_suffix, $asm_suffix);
+    ($int_type:ident, $l_suffix:tt, $suffix:tt, $bits:tt, $risbg_swap:tt, $risbg_cas:tt) => {
+        atomic_load_store!($int_type, $l_suffix, $suffix);
         impl AtomicSwap for $int_type {
             #[inline]
             unsafe fn atomic_swap(
@@ -196,21 +215,20 @@ macro_rules! atomic_sub_word {
                     // See also create_sub_word_mask_values.
                     asm!(
                         "l {prev}, 0({dst})",
-                        "2:",
-                            "rll {tmp}, {prev}, 0({shift})",
-                            concat!("risbg {tmp}, {val}, 32, ", $risbg_swap),
-                            "rll {tmp}, {tmp}, 0({shift_c})",
-                            "cs {prev}, {tmp}, 0({dst})",
+                        "2:", // 'retry:
+                            "rll {out}, {prev}, 0({shift})",
+                            concat!("risbg {out}, {val}, 32, ", $risbg_swap),
+                            "rll {out}, {out}, 0({shift_c})",
+                            "cs {prev}, {out}, 0({dst})",
                             "jl 2b",
                         concat!("rll {out}, {prev}, ", $bits ,"({shift})"),
                         dst = in(reg_addr) ptr_reg!(dst),
                         val = in(reg) val,
-                        out = lateout(reg) out,
+                        out = out(reg) out,
                         shift = in(reg_addr) shift,
                         shift_c = in(reg_addr) complement(shift),
-                        tmp = out(reg) _,
                         prev = out(reg) _,
-                        // Do not use `preserves_flags` because CS modifies the condition code.
+                        // Do not use `preserves_flags` because CS and RISBG modify the condition code.
                         options(nostack),
                     );
                 }
@@ -238,17 +256,16 @@ macro_rules! atomic_sub_word {
                     // See also create_sub_word_mask_values.
                     asm!(
                         "l {prev}, 0({dst})",
-                        "2:",
+                        "2:", // 'retry:
                             concat!("rll {out}, {prev}, ", $bits ,"({shift})"),
                             concat!("risbg {new}, {out}, 32, ", $risbg_cas, ", 0"),
-                            concat!("ll", $asm_suffix, "r {out}, {out}"),
+                            concat!("ll", $suffix, "r {out}, {out}"),
                             "cr {out}, {old}",
                             "jlh 3f",
                             concat!("rll {tmp}, {new}, -", $bits ,"({shift_c})"),
                             "cs {prev}, {tmp}, 0({dst})",
                             "jl 2b",
-                        "3:",
-                        // store condition code
+                        "3:", // 'cmp-fail:
                         "ipm {r}",
                         dst = in(reg_addr) ptr_reg!(dst),
                         prev = out(reg) _,
@@ -259,7 +276,7 @@ macro_rules! atomic_sub_word {
                         tmp = out(reg) _,
                         r = lateout(reg) r,
                         out = out(reg) out,
-                        // Do not use `preserves_flags` because CS modifies the condition code.
+                        // Do not use `preserves_flags` because CS, CR, and RISBG modify the condition code.
                         options(nostack),
                     );
                     (out, extract_cc(r))
@@ -297,8 +314,7 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        // (atomic) load from src to out pair
-                        "lpq %r0, 0({src})",
+                        "lpq %r0, 0({src})", // atomic { r0:r1 = *src }
                         src = in(reg_addr) ptr_reg!(src),
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") prev_hi,
@@ -322,11 +338,10 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($fence:tt) => {
+                        ($fence:expr) => {
                             asm!(
-                                // (atomic) store val pair to dst
-                                "stpq %r0, 0({dst})",
-                                $fence,
+                                "stpq %r0, 0({dst})", // atomic { *dst = r0:r1 }
+                                $fence,               // fence
                                 dst = in(reg_addr) ptr_reg!(dst),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 in("r0") val.pair.hi,
@@ -338,17 +353,7 @@ macro_rules! atomic128 {
                     match order {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => atomic_store!(""),
-                        // bcr 14,0 (fast-BCR-serialization) requires z196 or later.
-                        #[cfg(any(
-                            target_feature = "fast-serialization",
-                            atomic_maybe_uninit_target_feature = "fast-serialization",
-                        ))]
-                        Ordering::SeqCst => atomic_store!("bcr 14, 0"),
-                        #[cfg(not(any(
-                            target_feature = "fast-serialization",
-                            atomic_maybe_uninit_target_feature = "fast-serialization",
-                        )))]
-                        Ordering::SeqCst => atomic_store!("bcr 15, 0"),
+                        Ordering::SeqCst => atomic_store!(serialization!()),
                         _ => unreachable!(),
                     }
                 }
@@ -369,11 +374,11 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
-                        // (atomic) swap (CAS loop)
-                        "lpq %r0, 0({dst})",
-                        "2:",
-                            "cdsg %r0, %r12, 0({dst})",
-                            "jl 2b",
+                        "lg %r0, 8({dst})",             // atomic { r0 = *dst.add(8) }
+                        "lg %r1, 0({dst})",             // atomic { r1 = *dst }
+                        "2:", // 'retry:
+                            "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:r13 } else { cc = 1; r0:r1 = *dst } }
+                            "jl 2b",                    // if cc == 1 { jump 'retry }
                         dst = in(reg_addr) ptr_reg!(dst),
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         out("r0") prev_hi,
@@ -406,10 +411,8 @@ macro_rules! atomic128 {
                     let r;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        // (atomic) CAS
-                        "cdsg %r0, %r12, 0({dst})",
-                        // store condition code
-                        "ipm {r}",
+                        "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:13 } else { cc = 1; r0:r1 = *dst } }
+                        "ipm {r}",                  // r[:] = cc
                         dst = in(reg_addr) ptr_reg!(dst),
                         r = lateout(reg) r,
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.

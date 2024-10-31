@@ -23,6 +23,18 @@ use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
+macro_rules! atomic_rmw {
+    ($op:ident, $order:ident) => {
+        match $order {
+            Ordering::Relaxed => $op!("", ""),
+            Ordering::Acquire => $op!("memw", ""),
+            Ordering::Release => $op!("", "memw"),
+            Ordering::AcqRel | Ordering::SeqCst => $op!("memw", "memw"),
+            _ => unreachable!(),
+        }
+    };
+}
+
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($int_type:ident, $bits:tt, $narrow:tt, $unsigned:tt) => {
@@ -65,7 +77,7 @@ macro_rules! atomic_load_store {
             ) {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! atomic_store {
+                    macro_rules! store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 $release,                                              // fence
@@ -77,12 +89,7 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_store!("", ""),
-                        Ordering::Release => atomic_store!("", "memw"),
-                        Ordering::SeqCst => atomic_store!("memw", "memw"),
-                        _ => unreachable!(),
-                    }
+                    atomic_rmw!(store, order);
                 }
             }
         }
@@ -101,21 +108,21 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                let out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 $release,                     // fence
                                 "l32i.n {out}, {dst}, 0",     // atomic { out = *dst }
-                                "2:",
+                                "2:", // 'retry:
                                     "mov.n {tmp}, {out}",     // tmp = out
                                     "wsr {tmp}, scompare1",   // scompare1 = tmp
                                     "mov.n {out}, {val}",     // out = val
                                     "s32c1i {out}, {dst}, 0", // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
-                                    "bne {tmp}, {out}, 2b",   // if tmp != out { jump '2 }
+                                    "bne {tmp}, {out}, 2b",   // if tmp != out { jump 'retry }
                                 $acquire,                     // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
@@ -126,13 +133,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("memw", ""),
-                        Ordering::Release => atomic_swap!("", "memw"),
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("memw", "memw"),
-                        _ => unreachable!(),
-                    }
+                    atomic_rmw!(swap, order);
                 }
                 out
             }
@@ -153,16 +154,16 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: u32 = 1;
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 $release,                 // fence
                                 "wsr {old}, scompare1",   // scompare1 = old
                                 "s32c1i {out}, {dst}, 0", // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
                                 $acquire,                 // fence
-                                "beq {old}, {out}, 2f",   // if old == out { jump '2 }
+                                "beq {old}, {out}, 2f",   // if old == out { jump 'success }
                                 "movi {r}, 0",            // r = 0
-                                "2:",
+                                "2:", // 'success:
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 out = inout(reg) new => out,
@@ -172,13 +173,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("memw", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "memw"),
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("memw", "memw"),
-                        _ => unreachable!(),
-                    }
+                    atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
@@ -200,36 +195,36 @@ macro_rules! atomic_sub_word {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "ssl {shift}",                      // sar = 32 - shift
-                                "sll {val}, {val}",                 // val <<= shift
-                                $release,                           // fence
-                                "l32i.n {out}, {dst}, 0",           // atomic { out = *dst }
-                                "2:",
-                                    "mov.n {tmp}, {out}",           // tmp = out
-                                    "wsr {tmp}, scompare1",         // scompare1 = tmp
-                                    "and {out}, {out}, {inv_mask}", // out &= inv_mask
-                                    "or {out}, {out}, {val}",       // out |= val
-                                    "s32c1i {out}, {dst}, 0",       // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
-                                    "bne {tmp}, {out}, 2b",         // if tmp != out { jump '2 }
-                                "and {out}, {out}, {mask}",         // out &= mask
-                                "ssr {shift}",                      // sar = shift
-                                "srl {out}, {out}",                 // out >>= shift
-                                $acquire,                           // fence
+                                "ssl {shift}",                  // sar = for_sll(shift[:5])
+                                "sll {mask}, {mask}",           // mask <<= sar
+                                "sll {val}, {val}",             // val <<= sar
+                                $release,                       // fence
+                                "l32i.n {out}, {dst}, 0",       // atomic { out = *dst }
+                                "2:", // 'retry:
+                                    "mov.n {tmp}, {out}",       // tmp = out
+                                    "wsr {tmp}, scompare1",     // scompare1 = tmp
+                                    "xor {out}, {tmp}, {val}",  // out = tmp ^ val
+                                    "and {out}, {out}, {mask}", // out &= mask
+                                    "xor {out}, {out}, {tmp}",  // out ^= out
+                                    "s32c1i {out}, {dst}, 0",   // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
+                                    "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
+                                "ssr {shift}",                  // sar = for_srl(shift[:5])
+                                "srl {out}, {out}",             // out >>= sar
+                                $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
-                                mask = in(reg) mask,
-                                inv_mask = in(reg) !mask,
+                                mask = inout(reg) mask => _,
                                 tmp = out(reg) _,
                                 out("scompare1") _,
                                 out("sar") _,
@@ -237,13 +232,7 @@ macro_rules! atomic_sub_word {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!("", ""),
-                        Ordering::Acquire => atomic_swap!("memw", ""),
-                        Ordering::Release => atomic_swap!("", "memw"),
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!("memw", "memw"),
-                        _ => unreachable!(),
-                    }
+                    atomic_rmw!(swap, order);
                 }
                 out
             }
@@ -260,61 +249,54 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: u32;
-                    macro_rules! atomic_cmpxchg {
+                    macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "ssl {shift}",                        // sar = 32 - shift
-                                "sll {old}, {old}",                   // old <<= shift
-                                "sll {new}, {new}",                   // new <<= shift
-                                $release,                             // fence
-                                "l32i.n {prev}, {dst}, 0",            // atomic { prev = *dst }
-                                "and {out}, {prev}, {mask}",          // out = prev & mask
-                                "2:",
-                                    "bne {out}, {old}, 3f",           // if out != old { jump '3 }
-                                    "mov.n {tmp}, {prev}",            // tmp = prev
-                                    "wsr {tmp}, scompare1",           // scompare1 = tmp
-                                    "and {prev}, {prev}, {inv_mask}", // prev &= inv_mask
-                                    "or {prev}, {prev}, {new}",       // prev |= new
-                                    "s32c1i {prev}, {dst}, 0",        // atomic { _x = *dst; if _x == scompare1 { *dst = prev }; prev = _x }
-                                    "and {out}, {prev}, {mask}",      // out = prev & mask
-                                    "bne {tmp}, {prev}, 2b",          // if tmp != prev { jump '2 }
-                                    "movi {tmp}, 1",                  // tmp = 1
-                                    "j 4f",                           // jump '4
-                                "3:",
-                                    "movi {tmp}, 0",                  // tmp = 0
-                                "4:",
-                                "ssr {shift}",                        // sar = shift
-                                "srl {out}, {out}",                   // out >>= shift
-                                $acquire,                             // fence
+                                "ssl {shift}",                  // sar = for_sll(shift[:5])
+                                "sll {mask}, {mask}",           // mask <<= sar
+                                "sll {old}, {old}",             // old <<= sar
+                                "sll {new}, {new}",             // new <<= sar
+                                $release,                       // fence
+                                "l32i.n {out}, {dst}, 0",       // atomic { out = *dst }
+                                "2:", // 'retry:
+                                    "and {tmp}, {out}, {mask}", // tmp = out & mask
+                                    "bne {tmp}, {old}, 3f",     // if tmp != old { jump 'cmp-fail }
+                                    "mov.n {tmp}, {out}",       // tmp = out
+                                    "wsr {tmp}, scompare1",     // scompare1 = tmp
+                                    "xor {out}, {tmp}, {new}",  // out = tmp ^ new
+                                    "and {out}, {out}, {mask}", // out &= mask
+                                    "xor {out}, {out}, {tmp}",  // out ^= tmp
+                                    "s32c1i {out}, {dst}, 0",   // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
+                                    "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
+                                    "movi {tmp}, 1",            // tmp = 1
+                                    "j 4f",                     // jump 'success
+                                "3:", // 'cmp-fail:
+                                    "movi {tmp}, 0",            // tmp = 0
+                                "4:", // 'success:
+                                "ssr {shift}",                  // sar = for_srl(shift[:5])
+                                "srl {out}, {out}",             // out >>= sar
+                                $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
                                 new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
-                                mask = in(reg) mask,
-                                inv_mask = in(reg) !mask,
+                                mask = inout(reg) mask => _,
                                 tmp = out(reg) r,
-                                prev = out(reg) _,
                                 out("scompare1") _,
                                 out("sar") _,
                                 options(nostack, preserves_flags),
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_cmpxchg!("", ""),
-                        Ordering::Acquire => atomic_cmpxchg!("memw", ""),
-                        Ordering::Release => atomic_cmpxchg!("", "memw"),
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_cmpxchg!("memw", "memw"),
-                        _ => unreachable!(),
-                    }
+                    atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
