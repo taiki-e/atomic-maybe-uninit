@@ -21,8 +21,6 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
-// TODO: we can add options(preserves_flags) to some of asm!
-
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
         match $order {
@@ -60,7 +58,7 @@ macro_rules! atomic_load_store {
                                 ".set pop",
                                 src = in(reg) ptr_reg!(src),
                                 out = out(reg) out,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -96,7 +94,7 @@ macro_rules! atomic_load_store {
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -140,7 +138,7 @@ macro_rules! atomic {
                                 val = in(reg) val,
                                 out = out(reg) out,
                                 tmp = out(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -188,7 +186,7 @@ macro_rules! atomic {
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 tmp = out(reg) r,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -244,7 +242,7 @@ macro_rules! atomic_sub_word {
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,
                                 tmp = out(reg) _,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
@@ -304,7 +302,7 @@ macro_rules! atomic_sub_word {
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,
                                 tmp = out(reg) r,
-                                options(nostack),
+                                options(nostack, preserves_flags),
                             )
                         };
                     }
