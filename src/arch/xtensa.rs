@@ -204,7 +204,7 @@ macro_rules! atomic_sub_word {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "ssl {shift}",                  // sar = for_sll(shift[:5])
+                                "ssl {shift}",                  // sar = for_sll(shift & 31)
                                 "sll {mask}, {mask}",           // mask <<= sar
                                 "sll {val}, {val}",             // val <<= sar
                                 $release,                       // fence
@@ -217,7 +217,7 @@ macro_rules! atomic_sub_word {
                                     "xor {out}, {out}, {tmp}",  // out ^= out
                                     "s32c1i {out}, {dst}, 0",   // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
                                     "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
-                                "ssr {shift}",                  // sar = for_srl(shift[:5])
+                                "ssr {shift}",                  // sar = for_srl(shift & 31)
                                 "srl {out}, {out}",             // out >>= sar
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
@@ -259,7 +259,7 @@ macro_rules! atomic_sub_word {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "ssl {shift}",                  // sar = for_sll(shift[:5])
+                                "ssl {shift}",                  // sar = for_sll(shift & 31)
                                 "sll {mask}, {mask}",           // mask <<= sar
                                 "sll {old}, {old}",             // old <<= sar
                                 "sll {new}, {new}",             // new <<= sar
@@ -280,7 +280,7 @@ macro_rules! atomic_sub_word {
                                 "3:", // 'cmp-fail:
                                     "movi {tmp}, 0",            // tmp = 0
                                 "4:", // 'success:
-                                "ssr {shift}",                  // sar = for_srl(shift[:5])
+                                "ssr {shift}",                  // sar = for_srl(shift & 31)
                                 "srl {out}, {out}",             // out >>= sar
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
