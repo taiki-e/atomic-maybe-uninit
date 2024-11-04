@@ -16,8 +16,7 @@ macro_rules! __test_atomic {
             unsafe {
                 static VAR: AtomicMaybeUninit<$int_type> =
                     AtomicMaybeUninit::<$int_type>::const_new(MaybeUninit::new(10));
-                for (load_order, store_order) in load_orderings().into_iter().zip(store_orderings())
-                {
+                for (load_order, store_order) in LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS) {
                     assert_eq!(VAR.load(load_order).assume_init(), 10);
                     VAR.store(MaybeUninit::new(5), store_order);
                     assert_eq!(VAR.load(load_order).assume_init(), 5);
@@ -42,7 +41,7 @@ macro_rules! __test_atomic {
         swap();
         fn swap() {
             unsafe {
-                for order in swap_orderings() {
+                for order in SWAP_ORDERINGS {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
                     assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), 5);
                     assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
@@ -56,7 +55,7 @@ macro_rules! __test_atomic {
         compare_exchange();
         fn compare_exchange() {
             unsafe {
-                for (success, failure) in compare_exchange_orderings() {
+                for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
                     assert_eq!(
                         a.compare_exchange(
@@ -88,7 +87,7 @@ macro_rules! __test_atomic {
         compare_exchange_weak();
         fn compare_exchange_weak() {
             unsafe {
-                for (success, failure) in compare_exchange_orderings() {
+                for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(4));
                     assert_eq!(
                         a.compare_exchange_weak(
@@ -116,7 +115,7 @@ macro_rules! __test_atomic {
         fetch_update();
         fn fetch_update() {
             unsafe {
-                for (success, failure) in compare_exchange_orderings() {
+                for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                     let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(7));
                     assert_eq!(
                         a.fetch_update(success, failure, |_| None).unwrap_err().assume_init(),
@@ -182,35 +181,28 @@ fn main() -> ! {
     loop {}
 }
 
-fn load_orderings() -> [Ordering; 3] {
-    [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst]
-}
-fn store_orderings() -> [Ordering; 3] {
-    [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst]
-}
+const LOAD_ORDERINGS: [Ordering; 3] = [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst];
+const STORE_ORDERINGS: [Ordering; 3] = [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst];
 cfg_has_atomic_cas! {
-fn swap_orderings() -> [Ordering; 5] {
-    [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst]
-}
-fn compare_exchange_orderings() -> [(Ordering, Ordering); 15] {
-    [
-        (Ordering::Relaxed, Ordering::Relaxed),
-        (Ordering::Relaxed, Ordering::Acquire),
-        (Ordering::Relaxed, Ordering::SeqCst),
-        (Ordering::Acquire, Ordering::Relaxed),
-        (Ordering::Acquire, Ordering::Acquire),
-        (Ordering::Acquire, Ordering::SeqCst),
-        (Ordering::Release, Ordering::Relaxed),
-        (Ordering::Release, Ordering::Acquire),
-        (Ordering::Release, Ordering::SeqCst),
-        (Ordering::AcqRel, Ordering::Relaxed),
-        (Ordering::AcqRel, Ordering::Acquire),
-        (Ordering::AcqRel, Ordering::SeqCst),
-        (Ordering::SeqCst, Ordering::Relaxed),
-        (Ordering::SeqCst, Ordering::Acquire),
-        (Ordering::SeqCst, Ordering::SeqCst),
-    ]
-}
+const SWAP_ORDERINGS: [Ordering; 5] =
+    [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst];
+const COMPARE_EXCHANGE_ORDERINGS: [(Ordering, Ordering); 15] = [
+    (Ordering::Relaxed, Ordering::Relaxed),
+    (Ordering::Relaxed, Ordering::Acquire),
+    (Ordering::Relaxed, Ordering::SeqCst),
+    (Ordering::Acquire, Ordering::Relaxed),
+    (Ordering::Acquire, Ordering::Acquire),
+    (Ordering::Acquire, Ordering::SeqCst),
+    (Ordering::Release, Ordering::Relaxed),
+    (Ordering::Release, Ordering::Acquire),
+    (Ordering::Release, Ordering::SeqCst),
+    (Ordering::AcqRel, Ordering::Relaxed),
+    (Ordering::AcqRel, Ordering::Acquire),
+    (Ordering::AcqRel, Ordering::SeqCst),
+    (Ordering::SeqCst, Ordering::Relaxed),
+    (Ordering::SeqCst, Ordering::Acquire),
+    (Ordering::SeqCst, Ordering::SeqCst),
+];
 }
 
 #[inline(never)]
