@@ -118,6 +118,12 @@ default_targets=(
     # rustc --print target-list | grep -E '^s390'
     s390x-unknown-linux-gnu
 
+    # sparc
+    # rustc --print target-list | grep -E '^sparc'
+    sparc-unknown-none-elf
+    sparc-unknown-linux-gnu
+    sparc64-unknown-linux-gnu
+
     # msp430
     # rustc --print target-list | grep -E '^msp430'
     msp430-none-elf
@@ -190,7 +196,7 @@ if [[ "${rustc_version}" =~ nightly|dev ]]; then
         retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
     fi
     # We only run clippy on the recent nightly to avoid old clippy bugs.
-    if [[ "${rustc_minor_version}" -ge 84 ]]; then
+    if [[ "${rustc_minor_version}" -ge 84 ]] && [[ -z "${RUSTC:-}" ]]; then
         retry rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
         base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy)
         base_rustflags+=' -Z crate-attr=feature(unqualified_local_imports) -W unqualified_local_imports'
@@ -321,6 +327,11 @@ build() {
         s390x*)
             CARGO_TARGET_DIR="${target_dir}/z196" \
                 RUSTFLAGS="${target_rustflags} -C target-cpu=z196" \
+                x_cargo "${args[@]}" "$@"
+            ;;
+        sparc-unknown-none-elf)
+            CARGO_TARGET_DIR="${target_dir}/leon4" \
+                RUSTFLAGS="${target_rustflags} -C target-cpu=leon4" \
                 x_cargo "${args[@]}" "$@"
             ;;
     esac

@@ -6,6 +6,7 @@ andn
 aqrl
 armasm
 beqz
+Bicc
 bnez
 casp
 cbnz
@@ -22,7 +23,9 @@ DWCAS
 espup
 fild
 fistp
+gaisler
 getex
+GRLIB
 IMAFD
 inequal
 ishld
@@ -39,7 +42,9 @@ ldrex
 ldrexd
 ldsetp
 ldxp
+leoncasa
 lgcc
+libnspr
 libunwind
 linkall
 lmul
@@ -49,6 +54,7 @@ lwarx
 lwsync
 machdep
 mcpu
+membar
 memd
 memw
 mfcr
@@ -69,6 +75,8 @@ opensbi
 orrs
 partword
 pshufd
+putchar
+qbsp
 quadword
 rcpc
 risbg
@@ -85,6 +93,7 @@ sllv
 sltui
 sreg
 srlv
+stbar
 stilp
 stlxp
 stpq
@@ -96,7 +105,9 @@ stwcx
 stxp
 subarch
 swpp
+tsim
 uart
+ultrasparc
 usart
 uwrite
 uwriteln

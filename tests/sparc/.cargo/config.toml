@@ -1,0 +1,4 @@
+[target.sparc-unknown-none-elf]
+linker = "sparc-gaisler-elf-gcc"
+# Not in PATH (handled in tools/no-std.sh).
+# runner = "tsim-leon3-test-runner.sh"

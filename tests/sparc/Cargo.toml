@@ -1,0 +1,18 @@
+[package]
+name = "sparc-test"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+atomic-maybe-uninit = { path = "../.." }
+
+paste = "1"
+
+[workspace]
+resolver = "2"
+
+[lints.rust]
+rust_2018_idioms = "warn"
+single_use_lifetimes = "warn"
+# unsafe_op_in_unsafe_fn = "warn" # Set at crate-level instead since https://github.com/rust-lang/rust/pull/100081 is not available on MSRV
