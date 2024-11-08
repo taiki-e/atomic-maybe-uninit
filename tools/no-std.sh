@@ -38,6 +38,9 @@ default_targets=(
     riscv64imac-unknown-none-elf
     riscv64gc-unknown-none-elf
 
+    # sparc
+    sparc-unknown-none-elf
+
     # avr
     avr-unknown-gnu-atmega2560 # custom target
 
@@ -128,6 +131,12 @@ run() {
     local subcmd=run
     if [[ -z "${CI:-}" ]]; then
         case "${target}" in
+            sparc*)
+                if ! type -P tsim-leon3 >/dev/null; then
+                    printf '%s\n' "no-std test for ${target} requires tsim-leon3 (switched to build-only)"
+                    subcmd=build
+                fi
+                ;;
             avr*)
                 if ! type -P simavr >/dev/null; then
                     printf '%s\n' "no-std test for ${target} requires simavr (switched to build-only)"
@@ -167,6 +176,20 @@ run() {
             test_dir=tests/no-std-qemu
             linker=link.x
             target_rustflags+=" -C link-arg=-T${linker}"
+            ;;
+        sparc*)
+            case "${commit_date}" in
+                2023-08-23)
+                    # no asm support
+                    printf '%s\n' "target '${target}' is not supported on this version (skipped)"
+                    return 0
+                    ;;
+            esac
+            test_dir=tests/sparc
+            runner="$(pwd)/tools/tsim-leon3-test-runner.sh"
+            export "CARGO_TARGET_${target_upper}_RUNNER"="${runner}"
+            # Refs: https://github.com/ferrous-systems/sparc-experiments/blob/ff502602ffe57a0ac03a461563f8d84870b475a0/sparc-demo-rust/.cargo/config.toml
+            target_rustflags+=" -C target-cpu=gr712rc -C link-arg=-mcpu=leon3 -C link-arg=-qbsp=leon3"
             ;;
         avr*)
             test_dir=tests/avr

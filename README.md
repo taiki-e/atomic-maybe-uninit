@@ -18,7 +18,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, PowerPC, s390x, MSP430, Arm64EC, AVR, Hexagon, M68k, and Xtensa are supported.
+Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, PowerPC, s390x, MSP430, Arm64EC, AVR, SPARC, Hexagon, M68k, and Xtensa are supported.
 
 | target_arch                      | primitives                                          | load/store | swap/CAS |
 | -------------------------------- | --------------------------------------------------- |:----------:|:--------:|
@@ -40,6 +40,8 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, Power
 | arm64ec \[4]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | msp430 \[4] (experimental)       | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
 | avr \[4] (experimental)          | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| sparc \[4] \[7] (experimental)   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| sparc64 \[4] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | hexagon \[4] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | m68k \[4] (experimental)         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | xtensa \[4] (experimental)       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
@@ -50,6 +52,7 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, MIPS32, MIPS64, Power
 \[4] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 \[5] Requires cmpxchg16b target feature (enabled by default on Apple and Windows (except Windows 7) targets).<br>
 \[6] Requires target-cpu pwr8+ (powerpc64le is pwr8 by default).<br>
+\[7] Requires CAS instruction support.<br>
 
 Feel free to submit an issue if your target is not supported yet.
 

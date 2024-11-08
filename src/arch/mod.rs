@@ -39,6 +39,16 @@
             target_arch = "powerpc",
             target_arch = "powerpc64",
             target_arch = "s390x",
+            all(
+                target_arch = "sparc",
+                any(
+                    target_feature = "leoncasa",
+                    atomic_maybe_uninit_target_feature = "leoncasa",
+                    target_feature = "v9",
+                    atomic_maybe_uninit_target_feature = "v9",
+                ),
+            ),
+            target_arch = "sparc64",
             target_arch = "xtensa",
         ),
         atomic_maybe_uninit_unstable_asm_experimental_arch,
@@ -108,6 +118,20 @@ mod riscv;
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 #[cfg_attr(atomic_maybe_uninit_s390x_no_reg_addr, path = "s390x_no_reg_addr.rs")]
 mod s390x;
+#[cfg(any(
+    all(
+        target_arch = "sparc",
+        any(
+            target_feature = "leoncasa",
+            atomic_maybe_uninit_target_feature = "leoncasa",
+            target_feature = "v9",
+            atomic_maybe_uninit_target_feature = "v9",
+        ),
+    ),
+    target_arch = "sparc64",
+))]
+#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+mod sparc;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86;
 #[cfg(target_arch = "xtensa")]
