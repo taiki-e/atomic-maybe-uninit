@@ -98,7 +98,7 @@ jobs:
             target: aarch64_be-unknown-linux-gnu
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
             target: aarch64_be-unknown-linux-gnu
-          - rust: nightly
+          - rust: nightly-2024-11-07 # TODO: https://github.com/BurntSushi/memchr/pull/162
             target: aarch64_be-unknown-linux-gnu
           - rust: '1.59' # LLVM 13
             target: armv5te-unknown-linux-gnueabi
