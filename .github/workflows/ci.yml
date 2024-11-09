@@ -415,9 +415,9 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       - uses: taiki-e/install-action@cargo-hack
-        if: startsWith(matrix.rust, 'nightly')
+        if: matrix.rust == 'stable'
       - uses: taiki-e/install-action@espup
-        if: startsWith(matrix.rust, 'nightly')
+        if: matrix.rust == 'stable'
       - run: |
           retry() {
             for i in {1..10}; do
@@ -437,10 +437,14 @@ jobs:
             apt_packages+=(
               avr-libc
               gcc-avr
-              libnspr4
-              mspdebug
               simavr
             )
+            if [[ "${{ matrix.rust }}" != "nightly-2023-08-24" ]]; then
+              apt_packages+=(
+                libnspr4
+                mspdebug
+              )
+            fi
           fi
           retry sudo apt-get -o Acquire::Retries=10 -qq update
           retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends "${apt_packages[@]}"
@@ -452,16 +456,19 @@ jobs:
           sudo mv -- "opensbi-${OPENSBI_VERSION}-rv-bin/share/opensbi/ilp32/generic/firmware/fw_dynamic.elf" /usr/share/qemu/opensbi-riscv32-generic-fw_dynamic.elf
           rm -rf -- "opensbi-${OPENSBI_VERSION}-rv-bin"
           if [[ "${{ matrix.rust }}" == "nightly"* ]]; then
-            mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}
-            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-LlCjWuAbzH/9.3.1.2/msp430-gcc-9.3.1.11_linux64.tar.bz2 \
-              | tar xjf - --strip-components 1 -C "${HOME}"/msp430-gcc
-            printf '%s\n' "${HOME}"/msp430-gcc/bin >>"${GITHUB_PATH}"
-            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://www.gaisler.com/anonftp/bcc2/bin/bcc-2.3.1-gcc-sparc-linux64.tar.xz \
-              | tar xJf - --strip-components 1 -C "${HOME}"/sparc-bcc-gcc
-            printf '%s\n' "${HOME}"/sparc-bcc-gcc/bin >>"${GITHUB_PATH}"
-            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://www.gaisler.com/tsim3/tsim-eval/tsim-eval-3.1.11.tar.gz \
-              | tar xzf - --strip-components 1 -C "${HOME}"/tsim
-            printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
+            if [[ "${{ matrix.rust }}" != "nightly-2023-08-24" ]]; then
+              mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}
+              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-LlCjWuAbzH/9.3.1.2/msp430-gcc-9.3.1.11_linux64.tar.bz2 \
+                | tar xjf - --strip-components 1 -C "${HOME}"/msp430-gcc
+              printf '%s\n' "${HOME}"/msp430-gcc/bin >>"${GITHUB_PATH}"
+              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://www.gaisler.com/anonftp/bcc2/bin/bcc-2.3.1-gcc-sparc-linux64.tar.xz \
+                | tar xJf - --strip-components 1 -C "${HOME}"/sparc-bcc-gcc
+              printf '%s\n' "${HOME}"/sparc-bcc-gcc/bin >>"${GITHUB_PATH}"
+              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://www.gaisler.com/tsim3/tsim-eval/tsim-eval-3.1.11.tar.gz \
+                | tar xzf - --strip-components 1 -C "${HOME}"/tsim
+              printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
+            fi
+          elif [[ "${{ matrix.rust }}" == "stable" ]]; then
             retry espup install --targets esp32,esp32s2,esp32s3
           fi
         env:
@@ -470,9 +477,9 @@ jobs:
         if: startsWith(matrix.rust, 'nightly-')
       - run: tools/no-std.sh
       - run: tools/build.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
-        if: startsWith(matrix.rust, 'nightly')
+        if: matrix.rust == 'stable'
       - run: tools/no-std.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
-        if: startsWith(matrix.rust, 'nightly')
+        if: matrix.rust == 'stable'
 
   valgrind:
     needs: tidy
