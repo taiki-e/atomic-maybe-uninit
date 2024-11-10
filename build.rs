@@ -30,7 +30,7 @@ fn main() {
 
     if version.minor >= 80 {
         println!(
-            r#"cargo:rustc-check-cfg=cfg(target_feature,values("x87","v8m","fast-serialization","leoncasa","v9","isa-68020"))"#
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("x87","v8m","fast-serialization","isa-68020"))"#
         );
 
         // Custom cfgs set by build script. Not public API.
@@ -361,30 +361,32 @@ fn main() {
             target_feature_fallback("fast-serialization", arch9_features);
         }
         "sparc" => {
-            let mut leoncasa = false;
-            let mut v9 = false;
-            if let Some(cpu) = target_cpu() {
-                // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/Sparc/Sparc.td
-                match &*cpu {
-                    "myriad2" | "myriad2.1" | "myriad2.2" | "myriad2.3" | "ma2100" | "ma2150"
-                    | "ma2155" | "ma2450" | "ma2455" | "ma2x5x" | "ma2080" | "ma2085"
-                    | "ma2480" | "ma2485" | "ma2x8x" | "gr712rc" | "leon4" | "gr740" => {
-                        leoncasa = true;
+            // target_feature "leoncasa"/"v9" is unstable and available on rustc side since nightly-2024-11-11: https://github.com/rust-lang/rust/pull/132552
+            // Note: nightly-2024-11-10 is unavailable: https://github.com/rust-lang/rust/issues/132838
+            if !version.probe(84, 2024, 11, 10) || needs_target_feature_fallback(&version, None) {
+                let mut leoncasa = false;
+                let mut v9 = false;
+                if let Some(cpu) = target_cpu() {
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/Sparc/Sparc.td
+                    match &*cpu {
+                        "myriad2" | "myriad2.1" | "myriad2.2" | "myriad2.3" | "ma2100"
+                        | "ma2150" | "ma2155" | "ma2450" | "ma2455" | "ma2x5x" | "ma2080"
+                        | "ma2085" | "ma2480" | "ma2485" | "ma2x8x" | "gr712rc" | "leon4"
+                        | "gr740" => {
+                            leoncasa = true;
+                        }
+                        "v9" | "ultrasparc" | "ultrasparc3" | "niagara" | "niagara2"
+                        | "niagara3" | "niagara4" => v9 = true,
+                        _ => {}
                     }
-                    "v9" | "ultrasparc" | "ultrasparc3" | "niagara" | "niagara2" | "niagara3"
-                    | "niagara4" => v9 = true,
-                    _ => {}
+                } else {
+                    // https://github.com/llvm/llvm-project/pull/109278
+                    // https://github.com/rust-lang/rust/blob/1.82.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L17
+                    v9 = target_os == "linux" || target_os == "solaris";
                 }
-            } else {
-                // https://github.com/llvm/llvm-project/pull/109278
-                // https://github.com/rust-lang/rust/blob/1.82.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L17
-                v9 = target_os == "linux" || target_os == "solaris";
+                target_feature_fallback("leoncasa", leoncasa);
+                target_feature_fallback("v9", v9);
             }
-            // As of rustc 1.82, target_feature "leoncasa"/"v9" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.82.0/compiler/rustc_target/src/target_features.rs
-            // (will be added in https://github.com/rust-lang/rust/pull/132552)
-            target_feature_fallback("leoncasa", leoncasa);
-            target_feature_fallback("v9", v9);
         }
         "m68k" => {
             // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/M68k/M68k.td
