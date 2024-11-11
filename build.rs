@@ -36,7 +36,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_loongarch64_asm,atomic_maybe_uninit_s390x_no_reg_addr,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,portable_atomic_pre_llvm_20)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,portable_atomic_pre_llvm_20)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -84,8 +84,26 @@ fn main() {
 
     match target_arch {
         "loongarch64" => {
+            // asm! on LoongArch64 stabilized in Rust 1.72
             if version.minor < 72 {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_loongarch64_asm");
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm");
+            }
+        }
+        "s390x" => {
+            // asm! on s390x stabilized in Rust 1.84 (nightly-2024-11-11): https://github.com/rust-lang/rust/pull/131258
+            if !version.probe(84, 2024, 11, 10) {
+                if version.nightly
+                    && version.probe(77, 2024, 1, 4)
+                    && is_allowed_feature("asm_experimental_arch")
+                {
+                    // https://github.com/rust-lang/rust/pull/119431 merged in Rust 1.77 (nightly-2024-01-05).
+                    // The part of this feature we use has not been changed since nightly-2024-01-05
+                    // until it was stabilized in nightly-2024-11-11, so it can be safely enabled in
+                    // nightly, which is older than nightly-2024-11-11.
+                    println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
+                } else {
+                    println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm");
+                }
             }
         }
         "arm64ec" | "avr" | "hexagon" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6"
@@ -94,21 +112,8 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
         }
-        // https://github.com/rust-lang/rust/pull/111331 merged in Rust 1.71 (nightly-2023-05-09).
-        "s390x" => {
-            if version.nightly
-                && version.probe(71, 2023, 5, 8)
-                && is_allowed_feature("asm_experimental_arch")
-            {
-                // https://github.com/rust-lang/rust/pull/119431 merged in Rust 1.77 (nightly-2024-01-05).
-                if !version.probe(77, 2024, 1, 4) {
-                    println!("cargo:rustc-cfg=atomic_maybe_uninit_s390x_no_reg_addr");
-                }
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
-            }
-        }
-        // https://github.com/rust-lang/rust/pull/132472 merged in Rust 1.84 (nightly-2024-11-08).
         "sparc" | "sparc64" => {
+            // https://github.com/rust-lang/rust/pull/132472 merged in Rust 1.84 (nightly-2024-11-08).
             if version.nightly
                 && version.probe(84, 2024, 11, 7)
                 && is_allowed_feature("asm_experimental_arch")

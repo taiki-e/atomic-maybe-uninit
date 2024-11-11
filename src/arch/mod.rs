@@ -25,6 +25,7 @@
     target_arch = "riscv32",
     target_arch = "riscv64",
     target_arch = "loongarch64",
+    all(target_arch = "s390x", not(atomic_maybe_uninit_no_asm)),
     all(
         any(
             target_arch = "arm64ec",
@@ -38,7 +39,6 @@
             target_arch = "msp430",
             target_arch = "powerpc",
             target_arch = "powerpc64",
-            target_arch = "s390x",
             all(
                 target_arch = "sparc",
                 any(
@@ -115,8 +115,7 @@ mod powerpc;
 #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
 mod riscv;
 #[cfg(target_arch = "s390x")]
-#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
-#[cfg_attr(atomic_maybe_uninit_s390x_no_reg_addr, path = "s390x_no_reg_addr.rs")]
+#[cfg(not(atomic_maybe_uninit_no_asm))]
 mod s390x;
 #[cfg(any(
     all(

@@ -19,7 +19,7 @@
     target_arch = "aarch64",
     target_arch = "riscv32",
     target_arch = "riscv64",
-    all(target_arch = "loongarch64", not(atomic_maybe_uninit_no_loongarch64_asm)),
+    all(target_arch = "loongarch64", not(atomic_maybe_uninit_no_asm)),
 )))]
 #[path = "../arch/cfgs/unsupported.rs"]
 mod unsupported;
@@ -52,7 +52,7 @@ mod arm_linux;
 ))]
 mod armv8;
 #[cfg(target_arch = "loongarch64")]
-#[cfg(not(atomic_maybe_uninit_no_loongarch64_asm))]
+#[cfg(not(atomic_maybe_uninit_no_asm))]
 mod loongarch;
 #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
 mod riscv;
