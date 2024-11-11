@@ -25,10 +25,9 @@
     target_arch = "riscv32",
     target_arch = "riscv64",
     target_arch = "loongarch64",
-    all(target_arch = "s390x", not(atomic_maybe_uninit_no_asm)),
+    all(any(target_arch = "arm64ec", target_arch = "s390x"), not(atomic_maybe_uninit_no_asm)),
     all(
         any(
-            target_arch = "arm64ec",
             target_arch = "avr",
             target_arch = "hexagon",
             target_arch = "m68k",
@@ -57,10 +56,7 @@
 #[path = "cfgs/unsupported.rs"]
 mod unsupported;
 
-#[cfg(any(
-    target_arch = "aarch64",
-    all(target_arch = "arm64ec", atomic_maybe_uninit_unstable_asm_experimental_arch),
-))]
+#[cfg(any(target_arch = "aarch64", all(target_arch = "arm64ec", not(atomic_maybe_uninit_no_asm))))]
 mod aarch64;
 #[cfg(target_arch = "arm")]
 #[cfg(all(

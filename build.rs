@@ -89,11 +89,11 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm");
             }
         }
-        "s390x" => {
-            // asm! on s390x stabilized in Rust 1.84 (nightly-2024-11-11): https://github.com/rust-lang/rust/pull/131258
+        "arm64ec" | "s390x" => {
+            // asm! on Arm64EC and s390x stabilized in Rust 1.84 (nightly-2024-11-11): https://github.com/rust-lang/rust/pull/131781, https://github.com/rust-lang/rust/pull/131258
             if !version.probe(84, 2024, 11, 10) {
                 if version.nightly
-                    && version.probe(77, 2024, 1, 4)
+                    && (target_arch != "s390x" || version.probe(77, 2024, 1, 4))
                     && is_allowed_feature("asm_experimental_arch")
                 {
                     // https://github.com/rust-lang/rust/pull/119431 merged in Rust 1.77 (nightly-2024-01-05).
@@ -106,8 +106,8 @@ fn main() {
                 }
             }
         }
-        "arm64ec" | "avr" | "hexagon" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6"
-        | "msp430" | "powerpc" | "powerpc64" | "xtensa" => {
+        "avr" | "hexagon" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430"
+        | "powerpc" | "powerpc64" | "xtensa" => {
             if version.nightly && is_allowed_feature("asm_experimental_arch") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
