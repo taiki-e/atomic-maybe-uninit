@@ -72,8 +72,8 @@ fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
 }
 
 macro_rules! atomic {
-    ($int_type:ident, $cmp:ident, $cmp_ty:ident) => {
-        impl AtomicLoad for $int_type {
+    ($ty:ident, $cmp:ident, $cmp_ty:ident) => {
+        impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
@@ -88,7 +88,7 @@ macro_rules! atomic {
                 out
             }
         }
-        impl AtomicStore for $int_type {
+        impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
@@ -103,7 +103,7 @@ macro_rules! atomic {
                 unsafe { restore(s) }
             }
         }
-        impl AtomicSwap for $int_type {
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -121,7 +121,7 @@ macro_rules! atomic {
                 out
             }
         }
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,

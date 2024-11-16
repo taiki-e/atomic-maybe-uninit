@@ -9,12 +9,12 @@ use core::{mem::MaybeUninit, sync::atomic::Ordering};
 use atomic_maybe_uninit::*;
 
 macro_rules! __test_atomic {
-    ($int_type:ident) => {
+    ($ty:ident) => {
         load_store();
         fn load_store() {
             unsafe {
-                static VAR: AtomicMaybeUninit<$int_type> =
-                    AtomicMaybeUninit::<$int_type>::const_new(MaybeUninit::new(10));
+                static VAR: AtomicMaybeUninit<$ty> =
+                    AtomicMaybeUninit::<$ty>::const_new(MaybeUninit::new(10));
                 for (load_order, store_order) in LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS) {
                     assert_eq!(VAR.load(load_order).assume_init(), 10);
                     VAR.store(MaybeUninit::new(5), store_order);
@@ -23,11 +23,11 @@ macro_rules! __test_atomic {
                     let _v = VAR.load(load_order);
                     VAR.store(MaybeUninit::new(10), store_order);
 
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(1));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(1));
                     assert_eq!(a.load(load_order).assume_init(), 1);
                     a.store(MaybeUninit::new(2), store_order);
                     assert_eq!(a.load(load_order).assume_init(), 2);
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::uninit());
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
                     let _v = a.load(load_order);
                     a.store(MaybeUninit::new(2), store_order);
                     assert_eq!(a.load(load_order).assume_init(), 2);
@@ -40,11 +40,11 @@ macro_rules! __test_atomic {
         fn swap() {
             unsafe {
                 for order in SWAP_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                     assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), 5);
                     assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
                     let _v = a.swap(MaybeUninit::new(15), order);
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::uninit());
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
                     let _v = a.swap(MaybeUninit::new(10), order);
                     assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
                 }
@@ -54,7 +54,7 @@ macro_rules! __test_atomic {
         fn compare_exchange() {
             unsafe {
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                     assert_eq!(
                         a.compare_exchange(
                             MaybeUninit::new(5),
@@ -86,7 +86,7 @@ macro_rules! __test_atomic {
         fn compare_exchange_weak() {
             unsafe {
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(4));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(4));
                     assert_eq!(
                         a.compare_exchange_weak(
                             MaybeUninit::new(6),
@@ -114,7 +114,7 @@ macro_rules! __test_atomic {
         fn fetch_update() {
             unsafe {
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(7));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(7));
                     assert_eq!(
                         a.fetch_update(success, failure, |_| None).unwrap_err().assume_init(),
                         7
@@ -160,13 +160,13 @@ fn main() -> ! {
     }
 
     macro_rules! test_atomic {
-        ($int_type:ident) => {
+        ($ty:ident) => {
             paste::paste! {
-                fn [<test_atomic_ $int_type>]() {
-                    __test_atomic!($int_type);
+                fn [<test_atomic_ $ty>]() {
+                    __test_atomic!($ty);
                 }
-                print!("test test_atomic_{} ... ", stringify!($int_type));
-                [<test_atomic_ $int_type>]();
+                print!("test test_atomic_{} ... ", stringify!($ty));
+                [<test_atomic_ $ty>]();
                 println!("ok");
             }
         };

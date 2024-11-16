@@ -114,14 +114,14 @@ macro_rules! atomic_rmw_lr_sc {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($int_type:ident, $suffix:tt) => {
-        impl AtomicLoad for $int_type {
+    ($ty:ident, $suffix:tt) => {
+        impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -148,14 +148,14 @@ macro_rules! atomic_load_store {
                 out
             }
         }
-        impl AtomicStore for $int_type {
+        impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -186,21 +186,21 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic_swap {
-    ($int_type:ident, $suffix:tt) => {
+    ($ty:ident, $suffix:tt) => {
         #[cfg(any(
             target_feature = "a",
             atomic_maybe_uninit_target_feature = "a",
             target_feature = "zaamo",
             atomic_maybe_uninit_target_feature = "zaamo",
         ))]
-        impl AtomicSwap for $int_type {
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -226,11 +226,11 @@ macro_rules! atomic_swap {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident, $suffix:tt) => {
-        atomic_load_store!($int_type, $suffix);
-        atomic_swap!($int_type, $suffix);
+    ($ty:ident, $suffix:tt) => {
+        atomic_load_store!($ty, $suffix);
+        atomic_swap!($ty, $suffix);
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -239,7 +239,7 @@ macro_rules! atomic {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self>;
 
@@ -277,20 +277,20 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $suffix:tt) => {
-        atomic_load_store!($int_type, $suffix);
+    ($ty:ident, $suffix:tt) => {
+        atomic_load_store!($ty, $suffix);
         #[cfg(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"))]
-        atomic_swap!($int_type, $suffix);
+        atomic_swap!($ty, $suffix);
         #[cfg(not(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha")))]
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-        impl AtomicSwap for $int_type {
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
@@ -328,7 +328,7 @@ macro_rules! atomic_sub_word {
             }
         }
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -337,7 +337,7 @@ macro_rules! atomic_sub_word {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;

@@ -159,8 +159,8 @@ macro_rules! atomic_rmw {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($int_type:ident, $size:tt, $load_sign:tt) => {
-        impl AtomicLoad for $int_type {
+    ($ty:ident, $size:tt, $load_sign:tt) => {
+        impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
@@ -205,7 +205,7 @@ macro_rules! atomic_load_store {
                 out
             }
         }
-        impl AtomicStore for $int_type {
+        impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
@@ -237,9 +237,9 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident, $size:tt, $cc:tt) => {
-        atomic_load_store!($int_type, $size, "");
-        impl AtomicSwap for $int_type {
+    ($ty:ident, $size:tt, $cc:tt) => {
+        atomic_load_store!($ty, $size, "");
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -276,7 +276,7 @@ macro_rules! atomic {
                 out
             }
         }
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -321,9 +321,9 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $size:tt) => {
-        atomic_load_store!($int_type, $size, "u");
-        impl AtomicSwap for $int_type {
+    ($ty:ident, $size:tt) => {
+        atomic_load_store!($ty, $size, "u");
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -369,7 +369,7 @@ macro_rules! atomic_sub_word {
                 out
             }
         }
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,

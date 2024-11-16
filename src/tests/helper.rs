@@ -7,7 +7,7 @@ pub(crate) use std::sync::atomic::Ordering;
 use crate::*;
 
 macro_rules! test_common {
-    ($int_type:ident) => {
+    ($ty:ident) => {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
@@ -15,7 +15,7 @@ macro_rules! test_common {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks,
             )]
-            mod [<test_common_ $int_type>] {
+            mod [<test_common_ $ty>] {
                 use std::{
                     boxed::Box,
                     mem::{self, MaybeUninit},
@@ -29,17 +29,17 @@ macro_rules! test_common {
                         T: Send + Sync + Unpin + std::panic::UnwindSafe + std::panic::RefUnwindSafe,
                     >() {
                     }
-                    _assert::<AtomicMaybeUninit<$int_type>>();
+                    _assert::<AtomicMaybeUninit<$ty>>();
                 }
                 #[test]
                 fn accessor() {
                     #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
-                    const INTO_INNER: MaybeUninit<$int_type> = {
+                    const INTO_INNER: MaybeUninit<$ty> = {
                         let a = AtomicMaybeUninit::new(MaybeUninit::new(10));
                         a.into_inner()
                     };
                     #[cfg(not(atomic_maybe_uninit_no_const_mut_refs))]
-                    const GET_MUT: AtomicMaybeUninit<$int_type> = {
+                    const GET_MUT: AtomicMaybeUninit<$ty> = {
                         let mut a = AtomicMaybeUninit::new(MaybeUninit::uninit());
                         let _ = unsafe { AtomicMaybeUninit::from_ptr(a.as_ptr()) };
                         *a.get_mut() = MaybeUninit::new(5);
@@ -55,20 +55,20 @@ macro_rules! test_common {
                         {
                             assert_eq!(GET_MUT.into_inner().assume_init(), 5);
                         }
-                        let mut a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(10));
+                        let mut a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(10));
                         assert_eq!(*a.get_mut().as_mut_ptr(), 10);
                         assert_eq!(a.as_ptr() as *const (), &a as *const _ as *const ());
                         *a.get_mut() = MaybeUninit::new(5);
                         assert_eq!(a.into_inner().assume_init(), 5);
 
-                        let ptr: *mut Align16<MaybeUninit<$int_type>>
+                        let ptr: *mut Align16<MaybeUninit<$ty>>
                             = Box::into_raw(Box::new(Align16(MaybeUninit::new(0))));
                         assert!(
-                            ptr as usize % mem::align_of::<AtomicMaybeUninit<$int_type>>() == 0
+                            ptr as usize % mem::align_of::<AtomicMaybeUninit<$ty>>() == 0
                         );
                         {
-                            let a = AtomicMaybeUninit::<$int_type>::from_ptr(
-                                ptr.cast::<MaybeUninit<$int_type>>()
+                            let a = AtomicMaybeUninit::<$ty>::from_ptr(
+                                ptr.cast::<MaybeUninit<$ty>>()
                             );
                             *a.as_ptr() = MaybeUninit::new(1);
                         }
@@ -79,11 +79,11 @@ macro_rules! test_common {
                 #[test]
                 fn impls() {
                     unsafe {
-                        let a = AtomicMaybeUninit::<$int_type>::from(MaybeUninit::new(0));
-                        let b = AtomicMaybeUninit::<$int_type>::from(0);
+                        let a = AtomicMaybeUninit::<$ty>::from(MaybeUninit::new(0));
+                        let b = AtomicMaybeUninit::<$ty>::from(0);
                         assert_eq!(
                             std::format!("{a:?}"),
-                            concat!("atomic_maybe_uninit::AtomicMaybeUninit<", stringify!($int_type), ">"),
+                            concat!("atomic_maybe_uninit::AtomicMaybeUninit<", stringify!($ty), ">"),
                         );
                         assert_eq!(a.into_inner().assume_init(), b.into_inner().assume_init());
                     }
@@ -94,7 +94,7 @@ macro_rules! test_common {
 }
 
 macro_rules! test_atomic_load_store {
-    ($int_type:ident) => {
+    ($ty:ident) => {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
@@ -102,14 +102,14 @@ macro_rules! test_atomic_load_store {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks,
             )]
-            mod [<test_atomic_ $int_type>] {
-                __test_atomic!(load_store, $int_type);
+            mod [<test_atomic_ $ty>] {
+                __test_atomic!(load_store, $ty);
             }
         }
     };
 }
 macro_rules! test_atomic_load_store_swap {
-    ($int_type:ident) => {
+    ($ty:ident) => {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
@@ -117,15 +117,15 @@ macro_rules! test_atomic_load_store_swap {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks,
             )]
-            mod [<test_atomic_ $int_type>] {
-                __test_atomic!(load_store, $int_type);
-                __test_atomic!(swap, $int_type);
+            mod [<test_atomic_ $ty>] {
+                __test_atomic!(load_store, $ty);
+                __test_atomic!(swap, $ty);
             }
         }
     };
 }
 macro_rules! test_atomic {
-    ($int_type:ident) => {
+    ($ty:ident) => {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
@@ -133,17 +133,17 @@ macro_rules! test_atomic {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks,
             )]
-            mod [<test_atomic_ $int_type>] {
-                __test_atomic!(load_store, $int_type);
-                __test_atomic!(swap, $int_type);
-                __test_atomic!(cas, $int_type);
+            mod [<test_atomic_ $ty>] {
+                __test_atomic!(load_store, $ty);
+                __test_atomic!(swap, $ty);
+                __test_atomic!(cas, $ty);
             }
         }
     };
 }
 
 macro_rules! __test_atomic {
-    (load_store, $int_type:ident) => {
+    (load_store, $ty:ident) => {
         use std::{collections::BTreeSet, mem::MaybeUninit, vec, vec::Vec};
 
         use crossbeam_utils::thread;
@@ -152,20 +152,19 @@ macro_rules! __test_atomic {
 
         #[test]
         fn load_store() {
-            static VAR_RO: Align16<$int_type> = Align16(10);
-            static VAR: AtomicMaybeUninit<$int_type> =
-                AtomicMaybeUninit::<$int_type>::const_new(MaybeUninit::new(10));
+            static VAR_RO: Align16<$ty> = Align16(10);
+            static VAR: AtomicMaybeUninit<$ty> =
+                AtomicMaybeUninit::<$ty>::const_new(MaybeUninit::new(10));
             #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
-            static _VAR: AtomicMaybeUninit<$int_type> =
-                AtomicMaybeUninit::new(MaybeUninit::new(10));
-            let var = AtomicMaybeUninit::<$int_type>::const_new(MaybeUninit::new(10));
+            static _VAR: AtomicMaybeUninit<$ty> = AtomicMaybeUninit::new(MaybeUninit::new(10));
+            let var = AtomicMaybeUninit::<$ty>::const_new(MaybeUninit::new(10));
             unsafe {
                 assert_eq!(
                     VAR.load(Ordering::Relaxed).assume_init(),
                     var.load(Ordering::Relaxed).assume_init()
                 );
                 #[allow(clippy::ptr_as_ptr)]
-                if core::mem::size_of::<$int_type>() <= core::mem::size_of::<usize>()
+                if core::mem::size_of::<$ty>() <= core::mem::size_of::<usize>()
                     || cfg!(all(
                         any(target_arch = "aarch64", target_arch = "arm64ec"),
                         any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"),
@@ -181,8 +180,7 @@ macro_rules! __test_atomic {
                     || cfg!(target_arch = "hexagon")
                 {
                     assert_eq!(
-                        (*(&VAR_RO as *const Align16<$int_type>
-                            as *const AtomicMaybeUninit<$int_type>))
+                        (*(&VAR_RO as *const Align16<$ty> as *const AtomicMaybeUninit<$ty>))
                             .load(Ordering::Relaxed)
                             .assume_init(),
                         var.load(Ordering::Relaxed).assume_init()
@@ -200,11 +198,11 @@ macro_rules! __test_atomic {
                     let _v = VAR.load(load_order);
                     VAR.store(MaybeUninit::new(10), store_order);
 
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(1));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(1));
                     assert_eq!(a.load(load_order).assume_init(), 1);
                     a.store(MaybeUninit::new(2), store_order);
                     assert_eq!(a.load(load_order).assume_init(), 2);
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::uninit());
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
                     let _v = a.load(load_order);
                     a.store(MaybeUninit::new(2), store_order);
                     assert_eq!(a.load(load_order).assume_init(), 2);
@@ -214,7 +212,7 @@ macro_rules! __test_atomic {
             }
         }
         ::quickcheck::quickcheck! {
-            fn quickcheck_load_store(x: $int_type, y: $int_type) -> bool {
+            fn quickcheck_load_store(x: $ty, y: $ty) -> bool {
                 unsafe {
                     for (load_order, store_order) in
                         LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS)
@@ -243,9 +241,9 @@ macro_rules! __test_atomic {
         fn stress_load_store() {
             unsafe {
                 let (iterations, threads) = stress_test_config();
-                let data1 = (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>();
+                let data1 = (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>();
                 let set = data1.iter().copied().collect::<BTreeSet<_>>();
-                let a = AtomicMaybeUninit::<$int_type>::from(data1[fastrand::usize(0..iterations)]);
+                let a = AtomicMaybeUninit::<$ty>::from(data1[fastrand::usize(0..iterations)]);
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for _ in 0..threads {
@@ -273,19 +271,19 @@ macro_rules! __test_atomic {
             }
         }
     };
-    (swap, $int_type:ident) => {
+    (swap, $ty:ident) => {
         #[test]
         fn swap() {
             unsafe {
-                let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                 test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
                 for order in SWAP_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                     assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), 5);
                     if !cfg!(all(valgrind, target_arch = "aarch64")) {
                         assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
                         let _v = a.swap(MaybeUninit::new(15), order);
-                        let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::uninit());
+                        let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
                         let _v = a.swap(MaybeUninit::new(10), order);
                         assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
                     }
@@ -293,7 +291,7 @@ macro_rules! __test_atomic {
             }
         }
         ::quickcheck::quickcheck! {
-            fn quickcheck_swap(x: $int_type, y: $int_type) -> bool {
+            fn quickcheck_swap(x: $ty, y: $ty) -> bool {
                 unsafe {
                     for order in SWAP_ORDERINGS {
                         for base in [0, !0] {
@@ -317,18 +315,17 @@ macro_rules! __test_atomic {
             unsafe {
                 let (iterations, threads) = stress_test_config();
                 let data1 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let data2 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let set = &data1
                     .iter()
                     .flat_map(|v| v.iter().copied())
                     .chain(data2.iter().flat_map(|v| v.iter().copied()))
                     .collect::<BTreeSet<_>>();
-                let a =
-                    &AtomicMaybeUninit::<$int_type>::from(data2[0][fastrand::usize(0..iterations)]);
+                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][fastrand::usize(0..iterations)]);
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
@@ -375,16 +372,16 @@ macro_rules! __test_atomic {
             }
         }
     };
-    (cas, $int_type:ident) => {
+    (cas, $ty:ident) => {
         #[test]
         fn compare_exchange() {
             unsafe {
-                let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                 test_compare_exchange_ordering(|success, failure| {
                     a.compare_exchange(MaybeUninit::new(5), MaybeUninit::new(5), success, failure)
                 });
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                     assert_eq!(
                         a.compare_exchange(
                             MaybeUninit::new(5),
@@ -412,7 +409,7 @@ macro_rules! __test_atomic {
 
                     if !cfg!(valgrind) {
                         let mut u = MaybeUninit::uninit();
-                        let a = AtomicMaybeUninit::<$int_type>::new(u);
+                        let a = AtomicMaybeUninit::<$ty>::new(u);
                         while let Err(e) =
                             a.compare_exchange(u, MaybeUninit::new(10), success, failure)
                         {
@@ -438,7 +435,7 @@ macro_rules! __test_atomic {
         #[test]
         fn compare_exchange_weak() {
             unsafe {
-                let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(5));
+                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                 test_compare_exchange_ordering(|success, failure| {
                     a.compare_exchange_weak(
                         MaybeUninit::new(5),
@@ -448,7 +445,7 @@ macro_rules! __test_atomic {
                     )
                 });
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(4));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(4));
                     assert_eq!(
                         a.compare_exchange_weak(
                             MaybeUninit::new(6),
@@ -475,12 +472,12 @@ macro_rules! __test_atomic {
         #[test]
         fn fetch_update() {
             unsafe {
-                let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(7));
+                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(7));
                 test_compare_exchange_ordering(|set, fetch| {
                     a.fetch_update(set, fetch, |x| Some(x))
                 });
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(7));
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(7));
                     assert_eq!(
                         a.fetch_update(success, failure, |_| None).unwrap_err().assume_init(),
                         7
@@ -506,10 +503,10 @@ macro_rules! __test_atomic {
             }
         }
         ::quickcheck::quickcheck! {
-            fn quickcheck_compare_exchange(x: $int_type, y: $int_type) -> bool {
+            fn quickcheck_compare_exchange(x: $ty, y: $ty) -> bool {
                 unsafe {
                     let z = loop {
-                        let z = fastrand::$int_type(..);
+                        let z = fastrand::$ty(..);
                         if z != y {
                             break z;
                         }
@@ -563,10 +560,10 @@ macro_rules! __test_atomic {
                 }
                 true
             }
-            fn quickcheck_fetch_update(x: $int_type, y: $int_type) -> bool {
+            fn quickcheck_fetch_update(x: $ty, y: $ty) -> bool {
                 unsafe {
                     let z = loop {
-                        let z = fastrand::$int_type(..);
+                        let z = fastrand::$ty(..);
                         if z != y {
                             break z;
                         }
@@ -612,18 +609,17 @@ macro_rules! __test_atomic {
             unsafe {
                 let (iterations, threads) = stress_test_config();
                 let data1 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let data2 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let set = &data1
                     .iter()
                     .flat_map(|v| v.iter().copied())
                     .chain(data2.iter().flat_map(|v| v.iter().copied()))
                     .collect::<BTreeSet<_>>();
-                let a =
-                    &AtomicMaybeUninit::<$int_type>::from(data2[0][fastrand::usize(0..iterations)]);
+                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][fastrand::usize(0..iterations)]);
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
@@ -656,7 +652,7 @@ macro_rules! __test_atomic {
                             let mut v = vec![data2[0][0]; iterations];
                             for i in 0..iterations {
                                 let old = if i % 2 == 0 {
-                                    MaybeUninit::new(fastrand::$int_type(..))
+                                    MaybeUninit::new(fastrand::$ty(..))
                                 } else {
                                     a.load(Ordering::Relaxed)
                                 };
@@ -682,18 +678,17 @@ macro_rules! __test_atomic {
             unsafe {
                 let (iterations, threads) = stress_test_config();
                 let data1 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let data2 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$int_type(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let set = &data1
                     .iter()
                     .flat_map(|v| v.iter().copied())
                     .chain(data2.iter().flat_map(|v| v.iter().copied()))
                     .collect::<BTreeSet<_>>();
-                let a =
-                    &AtomicMaybeUninit::<$int_type>::from(data2[0][fastrand::usize(0..iterations)]);
+                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][fastrand::usize(0..iterations)]);
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
@@ -936,16 +931,16 @@ impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
 // This is still not exhaustive and only tests a few cases.
 // This currently only supports 32-bit or more integers.
 macro_rules! __stress_test_acquire_release {
-    (should_pass, $int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+    (should_pass, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             #[test]
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
                 __stress_test_acquire_release!(
-                    $int_type, $write, $load_order, $store_order);
+                    $ty, $write, $load_order, $store_order);
             }
         }
     };
-    (can_panic, $int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+    (can_panic, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             // Currently, to make this test work well enough outside of Miri, tens of thousands
             // of iterations are needed, but this test is slow in some environments.
@@ -954,11 +949,11 @@ macro_rules! __stress_test_acquire_release {
             #[ignore]
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
                 can_panic("a=", || __stress_test_acquire_release!(
-                    $int_type, $write, $load_order, $store_order));
+                    $ty, $write, $load_order, $store_order));
             }
         }
     };
-    ($int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
+    ($ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
         use std::{
             mem::MaybeUninit,
             sync::atomic::{AtomicUsize, Ordering},
@@ -971,16 +966,16 @@ macro_rules! __stress_test_acquire_release {
         let mut n: usize = 50_000;
         // This test is relatively fast because it spawns only one thread, but
         // the iterations are limited to a maximum value of integers.
-        if $int_type::try_from(n).is_err() {
-            n = $int_type::MAX as usize;
+        if $ty::try_from(n).is_err() {
+            n = $ty::MAX as usize;
         }
-        let a = &AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(0));
+        let a = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
         let b = &AtomicUsize::new(0);
         thread::scope(|s| unsafe {
             s.spawn(|_| {
                 for i in 0..n {
                     b.store(i, Ordering::Relaxed);
-                    a.$write(MaybeUninit::new(i as $int_type), Ordering::$store_order);
+                    a.$write(MaybeUninit::new(i as $ty), Ordering::$store_order);
                 }
             });
             loop {
@@ -996,7 +991,7 @@ macro_rules! __stress_test_acquire_release {
     }};
 }
 macro_rules! __stress_test_seqcst {
-    (should_pass, $int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+    (should_pass, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             // Currently, to make this test work well enough outside of Miri, tens of thousands
             // of iterations are needed, but this test is very slow in some environments because
@@ -1006,11 +1001,11 @@ macro_rules! __stress_test_seqcst {
             #[cfg_attr(qemu, ignore)]
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
                 __stress_test_seqcst!(
-                    $int_type, $write, $load_order, $store_order);
+                    $ty, $write, $load_order, $store_order);
             }
         }
     };
-    (can_panic, $int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+    (can_panic, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             // Currently, to make this test work well enough outside of Miri, tens of thousands
             // of iterations are needed, but this test is very slow in some environments because
@@ -1020,11 +1015,11 @@ macro_rules! __stress_test_seqcst {
             #[ignore]
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
                 can_panic("c=2", || __stress_test_seqcst!(
-                    $int_type, $write, $load_order, $store_order));
+                    $ty, $write, $load_order, $store_order));
             }
         }
     };
-    ($int_type:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
+    ($ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
         use std::{
             mem::MaybeUninit,
             sync::atomic::{AtomicUsize, Ordering},
@@ -1035,8 +1030,8 @@ macro_rules! __stress_test_seqcst {
         use crate::AtomicMaybeUninit;
 
         const N: usize = if cfg!(valgrind) { 50 } else { 50_000 };
-        let a = &AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(0));
-        let b = &AtomicMaybeUninit::<$int_type>::new(MaybeUninit::new(0));
+        let a = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
+        let b = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
         let c = &AtomicUsize::new(0);
         let ready = &AtomicUsize::new(0);
         thread::scope(|s| unsafe {
@@ -1121,7 +1116,7 @@ pub(crate) fn catch_unwind_on_non_seqcst_arch(pat: &str, f: impl Fn()) {
     }
 }
 macro_rules! stress_test_load_store {
-    ($int_type:ident) => {
+    ($ty:ident) => {
         // debug mode is slow.
         #[cfg(not(debug_assertions))]
         paste::paste! {
@@ -1131,17 +1126,17 @@ macro_rules! stress_test_load_store {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks
             )]
-            mod [<stress_acquire_release_load_store_ $int_type>] {
+            mod [<stress_acquire_release_load_store_ $ty>] {
                 use crate::tests::helper::catch_unwind_on_weak_memory_arch as can_panic;
-                __stress_test_acquire_release!(can_panic, $int_type, store, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $int_type, store, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $int_type, store, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $int_type, store, Acquire, Relaxed);
-                __stress_test_acquire_release!(should_pass, $int_type, store, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $int_type, store, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $int_type, store, SeqCst, Relaxed);
-                __stress_test_acquire_release!(should_pass, $int_type, store, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $int_type, store, SeqCst, SeqCst);
+                __stress_test_acquire_release!(can_panic, $ty, store, Relaxed, Relaxed);
+                __stress_test_acquire_release!(can_panic, $ty, store, Relaxed, Release);
+                __stress_test_acquire_release!(can_panic, $ty, store, Relaxed, SeqCst);
+                __stress_test_acquire_release!(can_panic, $ty, store, Acquire, Relaxed);
+                __stress_test_acquire_release!(should_pass, $ty, store, Acquire, Release);
+                __stress_test_acquire_release!(should_pass, $ty, store, Acquire, SeqCst);
+                __stress_test_acquire_release!(can_panic, $ty, store, SeqCst, Relaxed);
+                __stress_test_acquire_release!(should_pass, $ty, store, SeqCst, Release);
+                __stress_test_acquire_release!(should_pass, $ty, store, SeqCst, SeqCst);
             }
             #[allow(
                 clippy::alloc_instead_of_core,
@@ -1149,24 +1144,24 @@ macro_rules! stress_test_load_store {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks
             )]
-            mod [<stress_seqcst_load_store_ $int_type>] {
+            mod [<stress_seqcst_load_store_ $ty>] {
                 use crate::tests::helper::catch_unwind_on_non_seqcst_arch as can_panic;
-                __stress_test_seqcst!(can_panic, $int_type, store, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $int_type, store, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $int_type, store, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $int_type, store, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $int_type, store, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $int_type, store, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $int_type, store, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $int_type, store, SeqCst, Release);
-                __stress_test_seqcst!(should_pass, $int_type, store, SeqCst, SeqCst);
+                __stress_test_seqcst!(can_panic, $ty, store, Relaxed, Relaxed);
+                __stress_test_seqcst!(can_panic, $ty, store, Relaxed, Release);
+                __stress_test_seqcst!(can_panic, $ty, store, Relaxed, SeqCst);
+                __stress_test_seqcst!(can_panic, $ty, store, Acquire, Relaxed);
+                __stress_test_seqcst!(can_panic, $ty, store, Acquire, Release);
+                __stress_test_seqcst!(can_panic, $ty, store, Acquire, SeqCst);
+                __stress_test_seqcst!(can_panic, $ty, store, SeqCst, Relaxed);
+                __stress_test_seqcst!(can_panic, $ty, store, SeqCst, Release);
+                __stress_test_seqcst!(should_pass, $ty, store, SeqCst, SeqCst);
             }
         }
     };
 }
 macro_rules! stress_test {
-    ($int_type:ident) => {
-        stress_test_load_store!($int_type);
+    ($ty:ident) => {
+        stress_test_load_store!($ty);
         // debug mode is slow.
         #[cfg(not(debug_assertions))]
         paste::paste! {
@@ -1176,23 +1171,23 @@ macro_rules! stress_test {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks
             )]
-            mod [<stress_acquire_release_load_swap_ $int_type>] {
+            mod [<stress_acquire_release_load_swap_ $ty>] {
                 use crate::tests::helper::catch_unwind_on_weak_memory_arch as can_panic;
-                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, Acquire);
-                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, AcqRel);
-                __stress_test_acquire_release!(can_panic, $int_type, swap, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $int_type, swap, Acquire, Relaxed);
-                __stress_test_acquire_release!(can_panic, $int_type, swap, Acquire, Acquire);
-                __stress_test_acquire_release!(should_pass, $int_type, swap, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $int_type, swap, Acquire, AcqRel);
-                __stress_test_acquire_release!(should_pass, $int_type, swap, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $int_type, swap, SeqCst, Relaxed);
-                __stress_test_acquire_release!(can_panic, $int_type, swap, SeqCst, Acquire);
-                __stress_test_acquire_release!(should_pass, $int_type, swap, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $int_type, swap, SeqCst, AcqRel);
-                __stress_test_acquire_release!(should_pass, $int_type, swap, SeqCst, SeqCst);
+                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, Relaxed);
+                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, Acquire);
+                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, Release);
+                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, AcqRel);
+                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, SeqCst);
+                __stress_test_acquire_release!(can_panic, $ty, swap, Acquire, Relaxed);
+                __stress_test_acquire_release!(can_panic, $ty, swap, Acquire, Acquire);
+                __stress_test_acquire_release!(should_pass, $ty, swap, Acquire, Release);
+                __stress_test_acquire_release!(should_pass, $ty, swap, Acquire, AcqRel);
+                __stress_test_acquire_release!(should_pass, $ty, swap, Acquire, SeqCst);
+                __stress_test_acquire_release!(can_panic, $ty, swap, SeqCst, Relaxed);
+                __stress_test_acquire_release!(can_panic, $ty, swap, SeqCst, Acquire);
+                __stress_test_acquire_release!(should_pass, $ty, swap, SeqCst, Release);
+                __stress_test_acquire_release!(should_pass, $ty, swap, SeqCst, AcqRel);
+                __stress_test_acquire_release!(should_pass, $ty, swap, SeqCst, SeqCst);
             }
             #[allow(
                 clippy::alloc_instead_of_core,
@@ -1200,23 +1195,23 @@ macro_rules! stress_test {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks
             )]
-            mod [<stress_seqcst_load_swap_ $int_type>] {
+            mod [<stress_seqcst_load_swap_ $ty>] {
                 use crate::tests::helper::catch_unwind_on_non_seqcst_arch as can_panic;
-                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, Acquire);
-                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, AcqRel);
-                __stress_test_seqcst!(can_panic, $int_type, swap, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, Acquire);
-                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, AcqRel);
-                __stress_test_seqcst!(can_panic, $int_type, swap, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $int_type, swap, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $int_type, swap, SeqCst, Acquire);
-                __stress_test_seqcst!(can_panic, $int_type, swap, SeqCst, Release);
-                __stress_test_seqcst!(can_panic, $int_type, swap, SeqCst, AcqRel);
-                __stress_test_seqcst!(should_pass, $int_type, swap, SeqCst, SeqCst);
+                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, Relaxed);
+                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, Acquire);
+                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, Release);
+                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, AcqRel);
+                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, SeqCst);
+                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, Relaxed);
+                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, Acquire);
+                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, Release);
+                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, AcqRel);
+                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, SeqCst);
+                __stress_test_seqcst!(can_panic, $ty, swap, SeqCst, Relaxed);
+                __stress_test_seqcst!(can_panic, $ty, swap, SeqCst, Acquire);
+                __stress_test_seqcst!(can_panic, $ty, swap, SeqCst, Release);
+                __stress_test_seqcst!(can_panic, $ty, swap, SeqCst, AcqRel);
+                __stress_test_seqcst!(should_pass, $ty, swap, SeqCst, SeqCst);
             }
         }
     };

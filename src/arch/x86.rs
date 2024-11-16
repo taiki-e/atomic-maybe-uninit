@@ -48,16 +48,16 @@ macro_rules! ptr_modifier {
 
 macro_rules! atomic {
     (
-        $int_type:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
+        $ty:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
         $new_reg:tt
     ) => {
-        impl AtomicLoad for $int_type {
+        impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -73,14 +73,14 @@ macro_rules! atomic {
                 out
             }
         }
-        impl AtomicStore for $int_type {
+        impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -108,14 +108,14 @@ macro_rules! atomic {
                 }
             }
         }
-        impl AtomicSwap for $int_type {
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -132,7 +132,7 @@ macro_rules! atomic {
             }
         }
         #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -141,7 +141,7 @@ macro_rules! atomic {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -192,14 +192,14 @@ atomic!(usize, reg, "", "qword", "rax", "rcx");
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 macro_rules! atomic64 {
-    ($int_type:ident) => {
-        impl AtomicLoad for $int_type {
+    ($ty:ident) => {
+        impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
 
                 #[cfg(target_feature = "sse2")]
                 // SAFETY: the caller must uphold the safety contract.
@@ -286,18 +286,18 @@ macro_rules! atomic64 {
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
                 }
             }
         }
-        impl AtomicStore for $int_type {
+        impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
 
                 #[cfg(target_feature = "sse")]
                 // SAFETY: the caller must uphold the safety contract.
@@ -391,7 +391,7 @@ macro_rules! atomic64 {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    let val = MaybeUninit64 { $int_type: val };
+                    let val = MaybeUninit64 { $ty: val };
                     // atomic store by CMPXCHG8B is always SeqCst.
                     let _ = order;
                     asm!(
@@ -416,15 +416,15 @@ macro_rules! atomic64 {
                 }
             }
         }
-        impl AtomicSwap for $int_type {
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = MaybeUninit64 { $int_type: val };
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let val = MaybeUninit64 { $ty: val };
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -451,11 +451,11 @@ macro_rules! atomic64 {
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
                 }
             }
         }
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -464,9 +464,9 @@ macro_rules! atomic64 {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let old = MaybeUninit64 { $int_type: old };
-                let new = MaybeUninit64 { $int_type: new };
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let old = MaybeUninit64 { $ty: old };
+                let new = MaybeUninit64 { $ty: new };
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -489,7 +489,7 @@ macro_rules! atomic64 {
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (
-                        MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
+                        MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
                         r != 0
                     )
                 }
@@ -508,20 +508,20 @@ atomic64!(u64);
 #[cfg(target_arch = "x86_64")]
 #[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
 macro_rules! atomic128 {
-    ($int_type:ident) => {
+    ($ty:ident) => {
         #[cfg(target_pointer_width = "32")]
-        atomic128!($int_type, "edi");
+        atomic128!($ty, "edi");
         #[cfg(target_pointer_width = "64")]
-        atomic128!($int_type, "rdi");
+        atomic128!($ty, "rdi");
     };
-    ($int_type:ident, $rdi:tt) => {
-        impl AtomicLoad for $int_type {
+    ($ty:ident, $rdi:tt) => {
+        impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$int_type>() == 0);
+                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must guarantee that `src` is valid for both writes and
@@ -545,19 +545,19 @@ macro_rules! atomic128 {
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
                 }
             }
         }
-        impl AtomicStore for $int_type {
+        impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = MaybeUninit128 { $int_type: val };
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let val = MaybeUninit128 { $ty: val };
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
@@ -590,15 +590,15 @@ macro_rules! atomic128 {
                 }
             }
         }
-        impl AtomicSwap for $int_type {
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let val = MaybeUninit128 { $int_type: val };
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let val = MaybeUninit128 { $ty: val };
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
@@ -629,11 +629,11 @@ macro_rules! atomic128 {
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
                 }
             }
         }
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -642,9 +642,9 @@ macro_rules! atomic128 {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$int_type>() == 0);
-                let old = MaybeUninit128 { $int_type: old };
-                let new = MaybeUninit128 { $int_type: new };
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let old = MaybeUninit128 { $ty: old };
+                let new = MaybeUninit128 { $ty: new };
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
@@ -671,7 +671,7 @@ macro_rules! atomic128 {
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (
-                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$int_type,
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
                         r != 0
                     )
                 }

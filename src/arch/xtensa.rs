@@ -37,8 +37,8 @@ macro_rules! atomic_rmw {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($int_type:ident, $bits:tt, $narrow:tt, $unsigned:tt) => {
-        impl AtomicLoad for $int_type {
+    ($ty:ident, $bits:tt, $narrow:tt, $unsigned:tt) => {
+        impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
@@ -68,7 +68,7 @@ macro_rules! atomic_load_store {
                 out
             }
         }
-        impl AtomicStore for $int_type {
+        impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
@@ -98,10 +98,10 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($int_type:ident) => {
-        atomic_load_store!($int_type, "32", ".n", "");
+    ($ty:ident) => {
+        atomic_load_store!($ty, "32", ".n", "");
         #[cfg(target_feature = "s32c1i")]
-        impl AtomicSwap for $int_type {
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -139,7 +139,7 @@ macro_rules! atomic {
             }
         }
         #[cfg(target_feature = "s32c1i")]
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -184,10 +184,10 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($int_type:ident, $bits:tt) => {
-        atomic_load_store!($int_type, $bits, "", "u");
+    ($ty:ident, $bits:tt) => {
+        atomic_load_store!($ty, $bits, "", "u");
         #[cfg(target_feature = "s32c1i")]
-        impl AtomicSwap for $int_type {
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -238,7 +238,7 @@ macro_rules! atomic_sub_word {
             }
         }
         #[cfg(target_feature = "s32c1i")]
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,

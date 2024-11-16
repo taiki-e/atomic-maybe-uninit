@@ -53,8 +53,8 @@ unsafe fn restore(sr: u16) {
 }
 
 macro_rules! atomic {
-    ($int_type:ident, $suffix:tt) => {
-        impl AtomicLoad for $int_type {
+    ($ty:ident, $suffix:tt) => {
+        impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
@@ -74,7 +74,7 @@ macro_rules! atomic {
                 out
             }
         }
-        impl AtomicStore for $int_type {
+        impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
@@ -92,7 +92,7 @@ macro_rules! atomic {
                 }
             }
         }
-        impl AtomicSwap for $int_type {
+        impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -110,7 +110,7 @@ macro_rules! atomic {
                 out
             }
         }
-        impl AtomicCompareExchange for $int_type {
+        impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -125,7 +125,7 @@ macro_rules! atomic {
                 let out = unsafe { dst.read() };
                 // SAFETY: calling xor is safe.
                 let r = unsafe {
-                    let r: $int_type;
+                    let r: $ty;
                     asm!(
                         concat!("xor", $suffix, " {b}, {a}"),
                         a = inout(reg) old => r,
