@@ -29,7 +29,6 @@ GRLIB
 hwsync
 IMAFD
 inequal
-instrs
 ishld
 isync
 kuser
