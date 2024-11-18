@@ -6,19 +6,29 @@ SPARC
 This architecture provides the following atomic instructions:
 
 - Load/Store Instructions
-  - V7-V9: {8,16,32}-bit
-  - V8+,V9: 64-bit (LDX, STX)
-  (Section 8.4.4 "Memory Models" of the SPARC Architecture Manual, Version 9)
-- Compare-and-Swap Instructions (CAS)
-  - V8+,V9: {32,64}-bit
-  - V8 with CAS (e.g., LEON4): 32-bit
-  (Section 8.4.6 "Hardware Primitives for Mutual Exclusion" of the SPARC Architecture Manual, Version 9)
-- SWAP Instructions (RMW)
-  - V8-V9: 32-bit (deprecated in V9)
-  (Section 8.4.6 "Hardware Primitives for Mutual Exclusion" and A.57 "Swap Register with Memory" of the SPARC Architecture Manual, Version 9)
-- Load Store Unsigned Byte Instructions (RMW)
-  - V7-V9: 8-bit
-  (Section 8.4.6 "Hardware Primitives for Mutual Exclusion" of the SPARC Architecture Manual, Version 9)
+  - V7 or later: {8,16,32}-bit
+  - V8+,V9: 64-bit
+  (Refs: Section D.4.1 "Value Atomicity" of the SPARC Architecture Manual, Version 9)
+- Compare-and-Swap Instructions
+  - V8+,V9: {32,64}-bit CAS
+  - V8 with LEONCASA: 32-bit CAS
+  (Refs: Section 8.4.6 "Hardware Primitives for Mutual Exclusion" of the SPARC Architecture Manual, Version 9)
+- SWAP Instructions
+  - V7 or later: 32-bit swap (deprecated in V9)
+  (Refs: Section 8.4.6 "Hardware Primitives for Mutual Exclusion" and A.57 "Swap Register with Memory" of the SPARC Architecture Manual, Version 9)
+- Load Store Unsigned Byte Instructions
+  - V7 or later: 8-bit TAS
+  (Refs: Section 8.4.6 "Hardware Primitives for Mutual Exclusion" of the SPARC Architecture Manual, Version 9)
+
+Which memory barrier the above instructions imply depends on the memory model used.
+V8+ and V9 have three memory models: Total Store Order (TSO), Partial Store Order (PSO), and Relaxed
+Memory Order (RMO). V8 has TSO and PSO. Implementation of TSO (or a more strongly ordered model
+which implies TSO) is mandatory, and PSO and RMO are optional.
+(Refs: Section 8.4.4 "Memory Models" of the SPARC Architecture Manual, Version 9)
+
+Memory access instructions require proper alignment, but some instructions are implementation-dependent
+and may work with insufficient alignment.
+(Refs: Section 6.3.1.1 Memory Alignment Restrictions" of the SPARC Architecture Manual, Version 9)
 
 Refs:
 - The SPARC Architecture Manual, Version 9
@@ -28,9 +38,9 @@ Refs:
   https://temlib.org/pub/SparcStation/Standards/V8plus.pdf
 
 Generated asm:
-- sparcv8+leoncasa https://godbolt.org/z/n96j1W87s
-- sparcv8plus https://godbolt.org/z/qse81K1M5
-- sparc64 https://godbolt.org/z/PbxqToxj4
+- sparcv8+leoncasa https://godbolt.org/z/4TPGbfPo4
+- sparcv8plus https://godbolt.org/z/rvnPono8j
+- sparc64 https://godbolt.org/z/ejM3ooeec
 */
 
 #[path = "cfgs/sparc.rs"]
@@ -53,8 +63,7 @@ macro_rules! cas {
 #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
 macro_rules! cas {
     ("", $rs1:tt, $rs2:tt, $rd:tt) => {
-        // .p2align 4 is workaround for errata (GRLIB-TN-0011).
-        concat!(".p2align 4", "\n", "casa ", $rs1, " 10, ", $rs2, ", ", $rd)
+        concat!(leon_align!(), "casa ", $rs1, " 10, ", $rs2, ", ", $rd)
     };
 }
 
@@ -113,7 +122,26 @@ macro_rules! leon_nop {
 #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
 macro_rules! leon_nop {
     () => {
-        "nop"
+        "nop\n"
+    };
+}
+// Workaround for errata (GRLIB-TN-0011).
+// https://www.gaisler.com/index.php/information/app-tech-notes
+#[cfg(not(any(
+    target_arch = "sparc64",
+    target_feature = "v9",
+    atomic_maybe_uninit_target_feature = "v9",
+)))]
+#[cfg(not(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa")))]
+macro_rules! leon_align {
+    () => {
+        ""
+    };
+}
+#[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
+macro_rules! leon_align {
+    () => {
+        ".p2align 4\n"
     };
 }
 
@@ -126,16 +154,10 @@ macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
         match $order {
             Ordering::Relaxed => $op!("", ""),
-            Ordering::Acquire => {
-                $op!("membar #LoadLoad | #StoreLoad | #LoadStore | #StoreStore", "")
-            }
-            Ordering::Release => {
-                $op!("", "membar #LoadLoad | #StoreLoad | #LoadStore | #StoreStore")
-            }
-            Ordering::AcqRel | Ordering::SeqCst => $op!(
-                "membar #LoadLoad | #StoreLoad | #LoadStore | #StoreStore",
-                "membar #LoadLoad | #StoreLoad | #LoadStore | #StoreStore"
-            ),
+            // 15 == #LoadLoad | #StoreLoad | #LoadStore | #StoreStore
+            Ordering::Acquire => $op!("membar 15", ""),
+            Ordering::Release => $op!("", "membar 15"),
+            Ordering::AcqRel | Ordering::SeqCst => $op!("membar 15", "membar 15"),
             _ => unreachable!(),
         }
     };
@@ -147,11 +169,19 @@ macro_rules! atomic_rmw {
 )))]
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
+        // GCC and LLVM use different types of memory barriers in SPARC-V8, and probably have
+        // different semantics to obtain as a result. My experience with this platform is that LLVM
+        // is often incomplete and GCC's is more likely to be correct, but I use code with both
+        // semantics just to be safe.
         match $order {
             Ordering::Relaxed => $op!("", ""),
             Ordering::Acquire => $op!("stbar", ""),
-            Ordering::Release => $op!("", "stbar"),
-            Ordering::AcqRel | Ordering::SeqCst => $op!("stbar", "stbar"),
+            Ordering::Release => {
+                $op!("", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"))
+            }
+            Ordering::AcqRel | Ordering::SeqCst => {
+                $op!("stbar", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"))
+            }
             _ => unreachable!(),
         }
     };
@@ -171,8 +201,9 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load {
-                        ($acquire:tt) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
+                                $release,                                            // fence
                                 concat!("ld", $load_sign, $size, " [{src}], {out}"), // atomic { out = *src }
                                 $acquire,                                            // fence
                                 src = in(reg) ptr_reg!(src),
@@ -187,8 +218,11 @@ macro_rules! atomic_load_store {
                         atomic_maybe_uninit_target_feature = "v9",
                     ))]
                     match order {
-                        Ordering::Relaxed => atomic_load!(""),
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!("membar #LoadLoad | #StoreLoad | #LoadStore | #StoreStore"),
+                        Ordering::Relaxed => atomic_load!("", ""),
+                        // 3 == #LoadLoad | #StoreLoad
+                        // 5 == #LoadLoad | #LoadStore
+                        Ordering::Acquire => atomic_load!("membar 5", ""),
+                        Ordering::SeqCst => atomic_load!("membar 5", "membar 3"),
                         _ => unreachable!(),
                     }
                     #[cfg(not(any(
@@ -196,9 +230,14 @@ macro_rules! atomic_load_store {
                         target_feature = "v9",
                         atomic_maybe_uninit_target_feature = "v9",
                     )))]
+                    // GCC and LLVM use different types of memory barriers in SPARC-V8, and probably have
+                    // different semantics to obtain as a result. My experience with this platform is that LLVM
+                    // is often incomplete and GCC's is more likely to be correct, but I use code with both
+                    // semantics just to be safe.
                     match order {
-                        Ordering::Relaxed => atomic_load!(""),
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!("stbar"),
+                        Ordering::Relaxed => atomic_load!("", ""),
+                        Ordering::Acquire => atomic_load!("stbar", ""),
+                        Ordering::SeqCst => atomic_load!("stbar", concat!(leon_nop!(), leon_align!(), "ldstub [%sp-1], %g0")),
                         _ => unreachable!(),
                     }
                 }
@@ -214,8 +253,8 @@ macro_rules! atomic_load_store {
             ) {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! store {
-                        ($acquire:tt, $release:tt) => {
+                    macro_rules! atomic_store {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
                                 $release,                                // fence
@@ -228,7 +267,34 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
-                    atomic_rmw!(store, order);
+                    #[cfg(any(
+                        target_arch = "sparc64",
+                        target_feature = "v9",
+                        atomic_maybe_uninit_target_feature = "v9",
+                    ))]
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        // 10 == #StoreLoad | #StoreStore
+                        // 12 == #LoadStore | #StoreStore
+                        Ordering::Release => atomic_store!("", "membar 12"),
+                        Ordering::SeqCst => atomic_store!("membar 10", "membar 12"),
+                        _ => unreachable!(),
+                    }
+                    #[cfg(not(any(
+                        target_arch = "sparc64",
+                        target_feature = "v9",
+                        atomic_maybe_uninit_target_feature = "v9",
+                    )))]
+                    // GCC and LLVM use different types of memory barriers in SPARC-V8, and probably have
+                    // different semantics to obtain as a result. My experience with this platform is that LLVM
+                    // is often incomplete and GCC's is more likely to be correct, but I use code with both
+                    // semantics just to be safe.
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("", "stbar"),
+                        Ordering::SeqCst => atomic_store!(concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"), "stbar"),
+                        _ => unreachable!(),
+                    }
                 }
             }
         }
@@ -251,7 +317,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 $release,                                     // fence
                                 concat!("ld", $size, " [{dst}], {out}"),      // atomic { out = *dst }
@@ -292,7 +358,7 @@ macro_rules! atomic {
                 unsafe {
                     let mut r: crate::utils::RegSize;
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 leon_nop!(), // Workaround for errata (GRLIB-TN-0010).
                                 $release,                                 // fence
@@ -336,7 +402,7 @@ macro_rules! atomic_sub_word {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:expr, $release:expr) => {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(
@@ -386,7 +452,7 @@ macro_rules! atomic_sub_word {
                 unsafe {
                     let mut r: crate::utils::RegSize;
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:expr, $release:expr) => {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(

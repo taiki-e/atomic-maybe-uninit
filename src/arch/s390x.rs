@@ -1,30 +1,49 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 /*
-s390x
+s390x (SystemZ)
 
 This architecture provides the following atomic instructions:
 
 - Load/Store Instructions
-  - Baseline: {8,16,32,64}-bit
-    (Section "Storage-Operand Fetch References" and "Storage-Operand Store References" of z/Architecture Principles of Operation)
-  - Baseline: 128-bit (lpq, stpq)
-    (Section "LOAD PAIR FROM QUADWORD" and "STORE PAIR TO QUADWORD" of z/Architecture Principles of Operation)
-- Compare-and-Swap Instructions (CAS)
-  - Baseline: {32,64,128}-bit
-  (Section "Storage-Operand Update References" of z/Architecture Principles of Operation)
-- Interlocked-Access Facilities (RMW)
-  - Interlocked-Access Facility 1: {32,64}-bit fetch_{add,and,or,xor}, add with immediate value
-  - Interlocked-Access Facility 2: {and,or,xor} with immediate value
-  (Section "Storage-Operand Update References" of z/Architecture Principles of Operation)
+  - All {8,16,32,64}-bit load/store instructions that having Single-Access References
+    (Refs: Section "Storage-Operand Fetch References", "Storage-Operand Store References", and "Storage-Operand Consistency" of z/Architecture Principles of Operation, Fourteenth Edition)
+  - LPQ/STPQ: 128-bit load/store (arch1 or later)
+    (Refs: Section "LOAD PAIR FROM QUADWORD" and "STORE PAIR TO QUADWORD" of z/Architecture Principles of Operation, Fourteenth Edition)
+- Instructions that having Interlocked-Update References
+  - TS: 8-bit TAS (360 or later)
+    (TEST AND SET)
+  - CS{,Y,G}, CDS{,Y,G}: {32,64,128}-bit CAS (CS,CDS: 370 or later, CSG,CDSG: arch1 or later, CSY,CDSY: long-displacement facility added in arch3)
+    (COMPARE AND SWAP, COMPARE DOUBLE AND SWAP)
+  - LAA{,G}, LAAL{,G}, LAN{,G}, LAO{,G}, LAX{,G}: {32,64}-bit fetch-and-{add,and,or,xor} (interlocked-access facility 1 added in arch9)
+    (LOAD AND ADD, LOAD AND ADD LOGICAL, LOAD AND AND, LOAD AND OR, LOAD AND EXCLUSIVE OR)
+  - Aligned A{,G}SI, AL{,G}SI: {32,64}-bit add with immediate (interlocked-access facility 1 added in arch9)
+    (Storage-and-immediate formats of ADD IMMEDIATE and ADD LOGICAL WITH SIGNED IMMEDIATE)
+  - NI{,Y}, OI{,Y}, XI{,Y}: 8-bit {and,or,xor} with immediate (interlocked-access facility 2 added in arch10)
+    (Storage-and-immediate formats of AND, OR, and EXCLUSIVE OR)
+  - (Others: COMPARE AND REPLACE DAT TABLE ENTRY, COMPARE AND SWAP AND PURGE, COMPARE AND SWAP AND STORE, STORE CHARACTERS UNDER MASK (conditional))
+  (Refs: Section "Storage-Operand Update References" of z/Architecture Principles of Operation, Fourteenth Edition)
+
+Of the above instructions, instructions that having Interlocked-Update References
+other than STORE CHARACTERS UNDER MASK perform serialization.
+(Refs: Section "CPU Serialization" of z/Architecture Principles of Operation, Fourteenth Edition)
+
+The following instructions are usually used as standalone memory barrier:
+- BCR 15,0 (360 or later)
+- BCR 14,0 (fast-BCR-serialization facility added in arch9)
+(Refs: Section "BRANCH ON CONDITION" of z/Architecture Principles of Operation, Fourteenth Edition)
+
+Serialization corresponds to SeqCst semantics, all memory access has Acquire/Release semantics.
 
 Refs:
-- z/Architecture Principles of Operation https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf
-- portable-atomic https://github.com/taiki-e/portable-atomic
+- z/Architecture Principles of Operation, Fourteenth Edition (SA22-7832-13)
+  https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf
+- portable-atomic
+  https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- s390x https://godbolt.org/z/PK1xK95xb
-- s390x (z196) https://godbolt.org/z/rW8cx3h5W
+- s390x https://godbolt.org/z/Y4YvPsTWz
+- s390x (z196) https://godbolt.org/z/v9Wbro8oj
 */
 
 #[path = "cfgs/s390x.rs"]
@@ -41,7 +60,7 @@ use crate::{
     utils::{MaybeUninit128, Pair},
 };
 
-// bcr 14,0 (fast-BCR-serialization) requires z196 or later.
+// bcr 14,0 requires fast-BCR-serialization facility added in arch9 (z196).
 #[cfg(any(
     target_feature = "fast-serialization",
     atomic_maybe_uninit_target_feature = "fast-serialization",
@@ -62,14 +81,9 @@ macro_rules! serialization {
 }
 
 // Extracts and checks condition code.
-#[inline(always)]
+#[inline]
 fn extract_cc(r: i64) -> bool {
     r.wrapping_add(-268435456) & (1 << 31) != 0
-}
-
-#[inline(always)]
-fn complement(v: u32) -> u32 {
-    (v ^ !0).wrapping_add(1)
 }
 
 macro_rules! atomic_load_store {
@@ -108,10 +122,10 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($fence:expr) => {
+                        ($acquire:expr) => {
                             asm!(
                                 concat!("st", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
-                                $fence,                                     // fence
+                                $acquire,                                   // fence
                                 dst = in(reg_addr) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -172,10 +186,10 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
                 let out: MaybeUninit<Self>;
+                let r;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let r;
                     // compare_exchange is always SeqCst.
                     asm!(
                         concat!("cs", $suffix, " {old}, {new}, 0({dst})"), // atomic { if *dst == old { cc = 0; *dst = new } else { cc = 1; old = *dst } }
@@ -226,7 +240,7 @@ macro_rules! atomic_sub_word {
                         val = in(reg) val,
                         out = out(reg) out,
                         shift = in(reg_addr) shift,
-                        shift_c = in(reg_addr) complement(shift),
+                        shift_c = in(reg_addr) shift.wrapping_neg(),
                         prev = out(reg) _,
                         // Do not use `preserves_flags` because CS and RISBG modify the condition code.
                         options(nostack),
@@ -247,10 +261,10 @@ macro_rules! atomic_sub_word {
                 debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
                 let (dst, shift, _mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
+                let r;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let r;
                     // Implement sub-word atomic operations using word-sized CAS loop.
                     // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
@@ -272,7 +286,7 @@ macro_rules! atomic_sub_word {
                         old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
                         new = inout(reg) new => _,
                         shift = in(reg_addr) shift,
-                        shift_c = in(reg_addr) complement(shift),
+                        shift_c = in(reg_addr) shift.wrapping_neg(),
                         tmp = out(reg) _,
                         r = lateout(reg) r,
                         out = out(reg) out,
@@ -297,8 +311,6 @@ atomic!(u64, "g");
 atomic!(isize, "g");
 atomic!(usize, "g");
 
-// s390x has 128-bit atomic load/store/CAS instructions and other operations are emulated by CAS loop.
-// See https://github.com/taiki-e/portable-atomic/blob/HEAD/src/imp/atomic128/README.md for details.
 macro_rules! atomic128 {
     ($ty:ident) => {
         impl AtomicLoad for $ty {
@@ -308,7 +320,7 @@ macro_rules! atomic128 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
-                let (prev_hi, prev_lo);
+                let (out_hi, out_lo);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -317,11 +329,11 @@ macro_rules! atomic128 {
                         "lpq %r0, 0({src})", // atomic { r0:r1 = *src }
                         src = in(reg_addr) ptr_reg!(src),
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        out("r0") prev_hi,
-                        out("r1") prev_lo,
+                        out("r0") out_hi,
+                        out("r1") out_lo,
                         options(nostack, preserves_flags),
                     );
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.$ty
                 }
             }
         }
@@ -338,10 +350,10 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($fence:expr) => {
+                        ($acquire:expr) => {
                             asm!(
                                 "stpq %r0, 0({dst})", // atomic { *dst = r0:r1 }
-                                $fence,               // fence
+                                $acquire,             // acquire
                                 dst = in(reg_addr) ptr_reg!(dst),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                                 in("r0") val.pair.hi,
@@ -405,10 +417,10 @@ macro_rules! atomic128 {
                 let old = MaybeUninit128 { $ty: old };
                 let new = MaybeUninit128 { $ty: new };
                 let (prev_hi, prev_lo);
+                let r;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let r;
                     // compare_exchange is always SeqCst.
                     asm!(
                         "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:13 } else { cc = 1; r0:r1 = *dst } }

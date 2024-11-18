@@ -3,12 +3,25 @@
 /*
 MSP430
 
+This architecture is always single-core and the following operations are atomic:
+
+- Operation that is complete within a single instruction.
+  This is because the currently executing instruction must be completed before entering the
+  interrupt service routine.
+  (Refs: Section 1.3.4.1 "Interrupt Acceptance" of MSP430x5xx and MSP430x6xx Family User's Guide, Rev. Q: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=59)
+- Operations performed in a situation where all interrupts are disabled.
+  However, pure operations that are not affected by compiler fences (note: the correct interrupt
+  disabling and restoring implementation must implies compiler fences, e.g., asm without nomem/readonly)
+  may be moved out of the critical section by compiler optimizations.
+
 Refs:
-- MSP430x5xx and MSP430x6xx Family User's Guide https://www.ti.com/lit/ug/slau208q/slau208q.pdf
-- portable-atomic https://github.com/taiki-e/portable-atomic
+- MSP430x5xx and MSP430x6xx Family User's Guide, Rev. Q
+  https://www.ti.com/lit/ug/slau208q/slau208q.pdf
+- portable-atomic
+  https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- msp430 https://godbolt.org/z/zzncaW6Y5
+- msp430 https://godbolt.org/z/W8PYT7xx4
 */
 
 #[path = "cfgs/msp430.rs"]
@@ -26,17 +39,18 @@ fn disable() -> u16 {
     unsafe {
         // Do not use `nomem` and `readonly` because prevent subsequent memory accesses from being reordered before interrupts are disabled.
         // Do not use `preserves_flags` because DINT modifies the GIE (global interrupt enable) bit of the status register.
+        // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
         asm!(
-            "mov r2, {0}",
-            "dint {{ nop",
-            out(reg) sr,
+            "mov r2, {sr}", // sr = SR
+            "dint {{ nop",  // SR.GIE = 0
+            sr = out(reg) sr,
             options(nostack),
         );
     }
     sr
 }
 #[inline(always)]
-unsafe fn restore(sr: u16) {
+unsafe fn restore(prev_sr: u16) {
     // SAFETY: the caller must guarantee that the state was retrieved by the previous `disable`,
     unsafe {
         // This clobbers the entire status register, but we never explicitly modify
@@ -48,7 +62,12 @@ unsafe fn restore(sr: u16) {
         //
         // Do not use `nomem` and `readonly` because prevent preceding memory accesses from being reordered after interrupts are enabled.
         // Do not use `preserves_flags` because MOV modifies the status register.
-        asm!("nop {{ mov {0}, r2 {{ nop", in(reg) sr, options(nostack));
+        // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
+        asm!(
+            "nop {{ mov {prev_sr}, r2 {{ nop", // SR = prev_sr
+            prev_sr = in(reg) prev_sr,
+            options(nostack),
+        );
     }
 }
 
@@ -127,7 +146,7 @@ macro_rules! atomic {
                 let r = unsafe {
                     let r: $ty;
                     asm!(
-                        concat!("xor", $suffix, " {b}, {a}"),
+                        concat!("xor", $suffix, " {b}, {a}"), // a ^= b
                         a = inout(reg) old => r,
                         b = in(reg) out,
                         // Do not use `preserves_flags` because XOR modifies the V, N, Z, and C bits of the status register.
