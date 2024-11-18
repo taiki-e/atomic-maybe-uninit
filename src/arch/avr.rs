@@ -3,12 +3,28 @@
 /*
 AVR
 
+This architecture is always single-core and the following operations are atomic:
+
+- Operation that is complete within a single instruction.
+  This is because the currently executing instruction must be completed before entering the
+  interrupt service routine.
+  (Refs: https://developerhelp.microchip.com/xwiki/bin/view/products/mcu-mpu/8-bit-avr/structure/interrupts/)
+  The following two kinds of instructions are related to memory access:
+  - 8-bit load/store
+  - XCH, LAC, LAS, LAT: 8-bit swap,fetch-and-{clear,or,xor} (xmegau family)
+- Operations performed in a situation where all interrupts are disabled.
+  However, pure operations that are not affected by compiler fences (note: the correct interrupt
+  disabling and restoring implementation must implies compiler fences, e.g., asm without nomem/readonly)
+  may be moved out of the critical section by compiler optimizations.
+
 Refs:
-- AVR Instruction Set Manual https://ww1.microchip.com/downloads/en/DeviceDoc/AVR-InstructionSet-Manual-DS40002198.pdf
-- portable-atomic https://github.com/taiki-e/portable-atomic
+- AVR® Instruction Set Manual, Rev. DS40002198B
+  https://ww1.microchip.com/downloads/en/DeviceDoc/AVR-InstructionSet-Manual-DS40002198.pdf
+- portable-atomic
+  https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- avr https://godbolt.org/z/Yn6s3hcGf
+- avr https://godbolt.org/z/5TYW8x6T9
 */
 
 #[path = "cfgs/avr.rs"]
@@ -27,23 +43,27 @@ fn disable() -> u8 {
         // Do not use `nomem` and `readonly` because prevent subsequent memory accesses from being reordered before interrupts are disabled.
         // Do not use `preserves_flags` because CLI modifies the I bit of the status register (SREG).
         asm!(
-            "in {0}, 0x3F",
-            "cli",
-            out(reg) sreg,
+            "in {sreg}, 0x3F", // sreg = SREG
+            "cli",             // SREG.I = 0
+            sreg = out(reg) sreg,
             options(nostack),
         );
     }
     sreg
 }
 #[inline(always)]
-unsafe fn restore(sreg: u8) {
+unsafe fn restore(prev_sreg: u8) {
     // SAFETY: the caller must guarantee that the state was retrieved by the previous `disable`,
     unsafe {
         // This clobbers the entire status register. See msp430.rs to safety on this.
         //
         // Do not use `nomem` and `readonly` because prevent preceding memory accesses from being reordered after interrupts are enabled.
         // Do not use `preserves_flags` because OUT modifies the status register (SREG).
-        asm!("out 0x3F, {0}", in(reg) sreg, options(nostack));
+        asm!(
+            "out 0x3F, {prev_sreg}", // SREG = prev_sreg
+            prev_sreg = in(reg) prev_sreg,
+            options(nostack),
+        );
     }
 }
 
@@ -53,7 +73,12 @@ fn xor8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> u8 {
     // SAFETY: calling eor is safe.
     unsafe {
         // Do not use `preserves_flags` because EOR modifies Z, N, V, and S bits in the status register (SREG).
-        asm!("eor {a}, {b}", a = inout(reg) a => out, b = in(reg) b, options(pure, nomem, nostack));
+        asm!(
+            "eor {a}, {b}", // a ^= b
+            a = inout(reg) a => out,
+            b = in(reg) b,
+            options(pure, nomem, nostack),
+        );
     }
     out
 }
@@ -71,38 +96,8 @@ fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
     xor8(a1, b1) | xor8(a2, b2) == 0
 }
 
-macro_rules! atomic {
-    ($ty:ident, $cmp:ident, $cmp_ty:ident) => {
-        impl AtomicLoad for $ty {
-            #[inline]
-            unsafe fn atomic_load(
-                src: *const MaybeUninit<Self>,
-                _order: Ordering,
-            ) -> MaybeUninit<Self> {
-                let s = disable();
-                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
-                // On single-core systems, disabling interrupts is enough to prevent data race.
-                let out = unsafe { src.read() };
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
-                out
-            }
-        }
-        impl AtomicStore for $ty {
-            #[inline]
-            unsafe fn atomic_store(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                _order: Ordering,
-            ) {
-                let s = disable();
-                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
-                // On single-core systems, disabling interrupts is enough to prevent data race.
-                unsafe { dst.write(val) }
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
-            }
-        }
+macro_rules! atomic_swap {
+    ($ty:ident) => {
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -121,6 +116,10 @@ macro_rules! atomic {
                 out
             }
         }
+    };
+}
+macro_rules! atomic_cas {
+    ($ty:ident, $cmp:ident, $cmp_ty:ident) => {
         impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -155,9 +154,91 @@ macro_rules! atomic {
     };
 }
 
-atomic!(i8, cmp8, u8);
-atomic!(u8, cmp8, u8);
-atomic!(i16, cmp16, u16);
-atomic!(u16, cmp16, u16);
-atomic!(isize, cmp16, u16);
-atomic!(usize, cmp16, u16);
+macro_rules! atomic8 {
+    ($ty:ident) => {
+        impl AtomicLoad for $ty {
+            #[inline]
+            unsafe fn atomic_load(
+                src: *const MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                let out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        "ld {out}, Z", // atomic { out = *src }
+                        in("Z") src,
+                        out = out(reg) out,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                out
+            }
+        }
+        impl AtomicStore for $ty {
+            #[inline]
+            unsafe fn atomic_store(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                _order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        "st Z, {val}", // atomic { *dst = val }
+                        in("Z") dst,
+                        val = in(reg) val,
+                        options(nostack, preserves_flags),
+                    );
+                }
+            }
+        }
+        atomic_swap!($ty);
+        atomic_cas!($ty, cmp8, u8);
+    };
+}
+
+macro_rules! atomic16 {
+    ($ty:ident) => {
+        impl AtomicLoad for $ty {
+            #[inline]
+            unsafe fn atomic_load(
+                src: *const MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                let s = disable();
+                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+                // On single-core systems, disabling interrupts is enough to prevent data race.
+                let out = unsafe { src.read() };
+                // SAFETY: the state was retrieved by the previous `disable`.
+                unsafe { restore(s) }
+                out
+            }
+        }
+        impl AtomicStore for $ty {
+            #[inline]
+            unsafe fn atomic_store(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                _order: Ordering,
+            ) {
+                let s = disable();
+                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+                // On single-core systems, disabling interrupts is enough to prevent data race.
+                unsafe { dst.write(val) }
+                // SAFETY: the state was retrieved by the previous `disable`.
+                unsafe { restore(s) }
+            }
+        }
+        atomic_swap!($ty);
+        atomic_cas!($ty, cmp16, u16);
+    };
+}
+
+atomic8!(i8);
+atomic8!(u8);
+atomic16!(i16);
+atomic16!(u16);
+atomic16!(isize);
+atomic16!(usize);

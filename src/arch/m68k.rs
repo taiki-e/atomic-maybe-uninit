@@ -3,16 +3,26 @@
 /*
 M68k
 
+This architecture provides the following atomic instructions:
+
+- Load/Store Instructions
+  - {8,16,32}-bit
+- Multiprocessor Instructions
+  - TAS: 8-bit TAS (M68000 or later)
+  - CAS: {8,16,32}-bit CAS (M68020 or later)
+  - CAS2: {16,32}-bit double CAS (M68020 or later)
+  (Refs: Section 3.1.11 "Multiprocessor Instructions" of M68000 FAMILY Programmer's Reference Manual)
+
+Note that CAS2 is not yet supported in LLVM.
+
 Refs:
 - M68000 FAMILY Programmer's Reference Manual
   https://www.nxp.com/docs/en/reference-manual/M68000PRM.pdf
 - M68060 User’s Manual
   https://www.nxp.com/docs/en/data-sheet/MC68060UM.pdf
 
-Note that cas2 (double CAS) is not yet supported in LLVM.
-
 Generated asm:
-- m68k M68020 https://godbolt.org/z/7rhzK9d8n
+- m68k (M68020) https://godbolt.org/z/87Wxq1Wdj
 */
 
 #[path = "cfgs/m68k.rs"]

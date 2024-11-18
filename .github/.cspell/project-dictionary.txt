@@ -12,9 +12,9 @@ casp
 cbnz
 ccmp
 cdsg
+CDSY
 cinc
 clrex
-cmpd
 cmpw
 cmpxchg
 cset
@@ -26,14 +26,18 @@ fistp
 gaisler
 getex
 GRLIB
+hwsync
 IMAFD
 inequal
+instrs
 ishld
 isync
 kuser
+LAAL
 lclang
 ldapr
 ldar
+ldarx
 ldaxp
 ldclrp
 ldiapp
@@ -41,6 +45,7 @@ ldrd
 ldrex
 ldrexd
 ldsetp
+ldstub
 ldxp
 leoncasa
 lgcc
@@ -75,6 +80,7 @@ opensbi
 orrs
 partword
 pshufd
+pstq
 putchar
 qbsp
 quadword
@@ -94,6 +100,7 @@ sltui
 sreg
 srlv
 stbar
+stdcx
 stilp
 stlxp
 stpq
@@ -116,6 +123,7 @@ uxth
 virt
 wokwi
 xchg
+xmegau
 xmmword
 xorps
 zaamo
