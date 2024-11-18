@@ -5,7 +5,6 @@ andc
 andn
 aqrl
 armasm
-balign
 beqz
 Bicc
 bnez
@@ -30,7 +29,6 @@ GRLIB
 hwsync
 IMAFD
 inequal
-instrs
 ishld
 isync
 kuser
