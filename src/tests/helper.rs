@@ -200,8 +200,10 @@ macro_rules! __test_atomic {
 
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(1));
                     assert_eq!(a.load(load_order).assume_init(), 1);
-                    a.store(MaybeUninit::new(2), store_order);
-                    assert_eq!(a.load(load_order).assume_init(), 2);
+                    a.store(MaybeUninit::new($ty::MIN), store_order);
+                    assert_eq!(a.load(load_order).assume_init(), $ty::MIN);
+                    a.store(MaybeUninit::new($ty::MAX), store_order);
+                    assert_eq!(a.load(load_order).assume_init(), $ty::MAX);
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
                     let _v = a.load(load_order);
                     a.store(MaybeUninit::new(2), store_order);
@@ -279,7 +281,9 @@ macro_rules! __test_atomic {
                 test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
                 for order in SWAP_ORDERINGS {
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
-                    assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), 5);
+                    assert_eq!(a.swap(MaybeUninit::new($ty::MIN), order).assume_init(), 5);
+                    assert_eq!(a.swap(MaybeUninit::new($ty::MAX), order).assume_init(), $ty::MIN);
+                    assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), $ty::MAX);
                     if !cfg!(all(valgrind, target_arch = "aarch64")) {
                         assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
                         let _v = a.swap(MaybeUninit::new(15), order);
