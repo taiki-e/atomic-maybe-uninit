@@ -12,6 +12,28 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+This release includes improvements to platform support, various optimizations, [significant improvements to code comments](https://github.com/taiki-e/atomic-maybe-uninit/pull/30), etc.
+
+- Improvements to platform support:
+  - Support SPARC/SPARC64 (experimental). ([#31](https://github.com/taiki-e/atomic-maybe-uninit/pull/31))
+  - Support M68k (experimental). ([#27](https://github.com/taiki-e/atomic-maybe-uninit/pull/27), [#28](https://github.com/taiki-e/atomic-maybe-uninit/pull/28))
+  - Support Xtensa (experimental). ([#26](https://github.com/taiki-e/atomic-maybe-uninit/pull/26), [#29](https://github.com/taiki-e/atomic-maybe-uninit/pull/29))
+  - Support swap/CAS on MSP430 (experimental). ([4fb09a7](https://github.com/taiki-e/atomic-maybe-uninit/commit/4fb09a724485073ebdcb27ecd2d89a2e30997f7f))
+
+- Update to stabilized [s390x](https://github.com/rust-lang/rust/pull/131258) and [Arm64EC](https://github.com/rust-lang/rust/pull/131781) inline assembly. ([c9d7286](https://github.com/taiki-e/atomic-maybe-uninit/commit/c9d72863c9701ed6b91088631fd6c83c3635d8dd), [3a85789](https://github.com/taiki-e/atomic-maybe-uninit/commit/3a85789eda2cf3c1432335b91d2e73d2d763721f))
+
+- Make `from_ptr` `const fn` on Rust 1.83+. (align to the [std atomic change in Rust 1.84](https://github.com/rust-lang/rust/pull/131717)) ([c8ef5c4](https://github.com/taiki-e/atomic-maybe-uninit/commit/c8ef5c4eefb45d372c8b95ab196d5b1ed195f810))
+
+- Various optimizations:
+  - AArch64: Optimize 128-bit SeqCst load when FEAT_LRCPC3 enabled and 128-bit SeqCst store when FEAT_LRCPC3 enabled and FEAT_LSE128 is disabled. ([#30](https://github.com/taiki-e/atomic-maybe-uninit/pull/30))
+  - pre-v6 Arm Linux/Android: Optimize {8,16,32}-bit swap/CAS and all 64-bit atomics. ([#30](https://github.com/taiki-e/atomic-maybe-uninit/pull/30))
+  - PowerPC: Optimize {8,16}-bit swap/CAS ([#30](https://github.com/taiki-e/atomic-maybe-uninit/pull/30)), all Acquire/AcqRel/SeqCst swap/CAS, all CAS with Relaxed failure ordering, and {8,16}-bit weak CAS ([18aadd2](https://github.com/taiki-e/atomic-maybe-uninit/commit/18aadd249062b0874f3017623e0be73f8df529de)).
+  - s390x: Optimize {8,16,128}-bit swap. ([#30](https://github.com/taiki-e/atomic-maybe-uninit/pull/30))
+  - RISC-V, MIPS, LoongArch64, Hexagon: Optimize {8,16}-bit swap/CAS. ([#30](https://github.com/taiki-e/atomic-maybe-uninit/pull/30))
+  - AVR: Optimize 8-bit load/store. ([18aadd2](https://github.com/taiki-e/atomic-maybe-uninit/commit/18aadd249062b0874f3017623e0be73f8df529de))
+
+- Respect [`RUSTC_BOOTSTRAP=-1` recently added in nightly](https://github.com/rust-lang/rust/pull/132993) in rustc version detection. ([07f64d5](https://github.com/taiki-e/atomic-maybe-uninit/commit/07f64d56bfa0e1cee64531f111e5d5cb827fbd21))
+
 ## [0.3.3] - 2024-10-14
 
 - Make `get_mut` `const fn` on Rust 1.83+. ([484a32f](https://github.com/taiki-e/atomic-maybe-uninit/commit/484a32f8cc2a45315b6868e6984036814f9850b5))
