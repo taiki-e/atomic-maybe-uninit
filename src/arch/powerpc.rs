@@ -10,6 +10,7 @@ This architecture provides the following atomic instructions:
   - lq/stq: 128-bit load/store (PPC64-only, ISA 2.07 or later, included in the Linux Compliancy subset and AIX Compliancy subset)
     (lq and stq are available since ISA 2.03, but were privileged instructions and big-endian mode only and not guaranteed to be atomic, in pre-2.07 ISA)
   - plq/pstq: 128-bit load/store (PPC64-only, ISA 3.1 or later, included in the Linux Compliancy subset and AIX Compliancy subset)
+    (Note: Not mentioned in "Single-Copy Atomicity" section, but GCC uses them for 128-bit load/store: https://github.com/gcc-mirror/gcc/commit/3bcdb5dec72b6d7b197821c2b814bc9fc07f4628)
   (Refs: Section 1.4 "Single-Copy Atomicity" of Power ISA 3.1C Book II)
 - Load And Reserve and Store Conditional Instructions (aka LL/SC)
   - l{b,h}arx/st{b,h}cx.: {8,16}-bit LL/SC (ISA 2.06 or later, included in all compliancy subsets)
@@ -23,6 +24,8 @@ This architecture provides the following atomic instructions:
   - st{w,d}at: {32,64}-bit add,and,or,xor,max,min (PPC64-only, ISA 3.0 or later, included in the AIX Compliancy subset)
     (Others: Store Twin)
   (Refs: Section 4.5 "Atomic Memory Operations" of Power ISA 3.1C Book II)
+
+Note that plq/pstq is not yet supported in LLVM (as of 19).
 
 None of the above instructions imply a memory barrier.
 - A sync (sync 0, sync 0,0, hwsync) instruction can be used as both an “import barrier” and an “export barrier”.
