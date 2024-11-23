@@ -135,6 +135,10 @@ default_targets=(
     # hexagon
     # rustc --print target-list | grep -E '^hexagon'
     hexagon-unknown-linux-musl
+
+    # csky
+    # rustc --print target-list | grep -E '^csky'
+    csky-unknown-linux-gnuabiv2
 )
 
 x() {
