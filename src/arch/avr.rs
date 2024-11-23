@@ -3,19 +3,8 @@
 /*
 AVR
 
-This architecture is always single-core and the following operations are atomic:
-
-- Operation that is complete within a single instruction.
-  This is because the currently executing instruction must be completed before entering the
-  interrupt service routine.
-  (Refs: https://developerhelp.microchip.com/xwiki/bin/view/products/mcu-mpu/8-bit-avr/structure/interrupts/)
-  The following two kinds of instructions are related to memory access:
-  - 8-bit load/store
-  - XCH, LAC, LAS, LAT: 8-bit swap,fetch-and-{clear,or,xor} (xmegau family)
-- Operations performed in a situation where all interrupts are disabled.
-  However, pure operations that are not affected by compiler fences (note: the correct interrupt
-  disabling and restoring implementation must implies compiler fences, e.g., asm without nomem/readonly)
-  may be moved out of the critical section by compiler optimizations.
+See "Atomic operation overview by architecture" for atomic operations in this architecture:
+https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#avr
 
 Refs:
 - AVR® Instruction Set Manual, Rev. DS40002198B

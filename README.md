@@ -55,6 +55,8 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, Arm64EC, s390x, MIPS,
 \[7] Requires Rust 1.84+.<br>
 \[8] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 
+See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md) for more information about atomic operations in these architectures.
+
 Feel free to submit an issue if your target is not supported yet.
 
 ## Related Projects

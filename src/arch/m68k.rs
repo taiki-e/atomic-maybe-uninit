@@ -3,17 +3,8 @@
 /*
 M68k
 
-This architecture provides the following atomic instructions:
-
-- Load/Store Instructions
-  - {8,16,32}-bit
-- Multiprocessor Instructions
-  - TAS: 8-bit TAS (M68000 or later)
-  - CAS: {8,16,32}-bit CAS (M68020 or later)
-  - CAS2: {16,32}-bit double CAS (M68020 or later)
-  (Refs: Section 3.1.11 "Multiprocessor Instructions" of M68000 FAMILY Programmer's Reference Manual)
-
-Note that CAS2 is not yet supported in LLVM.
+See "Atomic operation overview by architecture" for atomic operations in this architecture:
+https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#m68k
 
 Refs:
 - M68000 FAMILY Programmer's Reference Manual

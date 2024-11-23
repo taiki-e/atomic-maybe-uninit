@@ -3,32 +3,8 @@
 /*
 SPARC
 
-This architecture provides the following atomic instructions:
-
-- Load/Store Instructions
-  - V7 or later: {8,16,32}-bit
-  - V8+,V9: 64-bit
-  (Refs: Section D.4.1 "Value Atomicity" of the SPARC Architecture Manual, Version 9)
-- Compare-and-Swap Instructions
-  - V8+,V9: {32,64}-bit CAS
-  - V8 with LEONCASA: 32-bit CAS
-  (Refs: Section 8.4.6 "Hardware Primitives for Mutual Exclusion" of the SPARC Architecture Manual, Version 9)
-- SWAP Instructions
-  - V7 or later: 32-bit swap (deprecated in V9)
-  (Refs: Section 8.4.6 "Hardware Primitives for Mutual Exclusion" and A.57 "Swap Register with Memory" of the SPARC Architecture Manual, Version 9)
-- Load Store Unsigned Byte Instructions
-  - V7 or later: 8-bit TAS
-  (Refs: Section 8.4.6 "Hardware Primitives for Mutual Exclusion" of the SPARC Architecture Manual, Version 9)
-
-Which memory barrier the above instructions imply depends on the memory model used.
-V8+ and V9 have three memory models: Total Store Order (TSO), Partial Store Order (PSO), and Relaxed
-Memory Order (RMO). V8 has TSO and PSO. Implementation of TSO (or a more strongly ordered model
-which implies TSO) is mandatory, and PSO and RMO are optional.
-(Refs: Section 8.4.4 "Memory Models" of the SPARC Architecture Manual, Version 9)
-
-Memory access instructions require proper alignment, but some instructions are implementation-dependent
-and may work with insufficient alignment.
-(Refs: Section 6.3.1.1 Memory Alignment Restrictions" of the SPARC Architecture Manual, Version 9)
+See "Atomic operation overview by architecture" for atomic operations in this architecture:
+https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#sparc
 
 Refs:
 - The SPARC Architecture Manual, Version 9

@@ -8,6 +8,7 @@ armasm
 beqz
 Bicc
 bnez
+boundedly
 casp
 cbnz
 ccmp
@@ -26,6 +27,7 @@ fistp
 gaisler
 getex
 GRLIB
+Halfword
 hwsync
 IMAFD
 inequal
@@ -87,6 +89,7 @@ rcpc
 risbg
 rsbegin
 rsend
+RVWMO
 scompare
 seqz
 sete

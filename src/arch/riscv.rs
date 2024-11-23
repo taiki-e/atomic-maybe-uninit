@@ -3,34 +3,8 @@
 /*
 RISC-V
 
-This architecture provides the following atomic instructions:
-
-- Load/Store Instructions (relaxed load/store)
-  - All aligned {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) load/store instructions
-    Currently, there is no guaranteed 128-bit atomic load/store even on RV128.
-    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/rvwmo.adoc#memory-model-primitives
-- Load-Acquire and Store-Release Instructions (acquire/seqcst load and release/seqcst store)
-  - (experimental) Zalasr extension: {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64)
-    https://github.com/riscv/riscv-zalasr
-- Load-Reserved/Store-Conditional (LR/SC) Instructions (aka LL/SC)
-  - Zalrsc extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64)
-    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/a-st-ext.adoc#zalrsc-extension-for-load-reservedstore-conditional-instructions
-- Atomic Memory Operation (AMO) Instructions
-  - Zaamo extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64) swap,fetch_{add,and,or,xor,max.min}
-    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/a-st-ext.adoc#zaamo-extension-for-atomic-memory-operations
-  - Zabha extension: {8,16}-bit swap,fetch_{add,and,or,xor,max.min}
-    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zabha.adoc
-- Atomic Compare-and-Swap (CAS) Instructions
-  - Zacas extension: {32,64}-bit (for RV32 & RV64) and 128-bit (for RV64)
-    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zacas.adoc
-  - Zacas and Zabha extensions: {8,16}-bit
-    https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zabha.adoc
-
-Of the above instructions, instructions other than relaxed load/store, can specify the memory ordering.
-The mappings from the C/C++ atomic operations are described in the RISC-V Atomics ABI Specification.
-
-Note: "A" extension comprises instructions provided by Zalrsc and Zaamo extensions,
-Zabha and Zacas extensions depends upon Zaamo extension.
+See "Atomic operation overview by architecture" for atomic operations in this architecture:
+https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#risc-v
 
 Refs:
 - RISC-V Instruction Set Manual

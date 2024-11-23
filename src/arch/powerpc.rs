@@ -3,41 +3,8 @@
 /*
 PowerPC and PowerPC64
 
-This architecture provides the following atomic instructions:
-
-- Load/Store Instructions
-  - All aligned {8,16,32}-bit and 64-bit (PPC64-only) single load/store instructions other than Move Assist instruction
-  - lq/stq: 128-bit load/store (PPC64-only, ISA 2.07 or later, included in the Linux Compliancy subset and AIX Compliancy subset)
-    (lq and stq are available since ISA 2.03, but were privileged instructions and big-endian mode only and not guaranteed to be atomic, in pre-2.07 ISA)
-  - plq/pstq: 128-bit load/store (PPC64-only, ISA 3.1 or later, included in the Linux Compliancy subset and AIX Compliancy subset)
-    (Note: Not mentioned in "Single-Copy Atomicity" section, but GCC uses them for 128-bit load/store: https://github.com/gcc-mirror/gcc/commit/3bcdb5dec72b6d7b197821c2b814bc9fc07f4628)
-  (Refs: Section 1.4 "Single-Copy Atomicity" of Power ISA 3.1C Book II)
-- Load And Reserve and Store Conditional Instructions (aka LL/SC)
-  - l{b,h}arx/st{b,h}cx.: {8,16}-bit LL/SC (ISA 2.06 or later, included in all compliancy subsets)
-  - lwarx/stwcx.: 32-bit LL/SC (PPC or later, included in all compliancy subsets)
-  - ldarx/stdcx.: 64-bit LL/SC (PPC64-only, PPC or later, included in all compliancy subsets)
-  - lqarx/stqcx.: 128-bit LL/SC (PPC64-only, ISA 2.07 or later, included in the Linux Compliancy subset and AIX Compliancy subset)
-  (Refs: Section 4.6.2 "Load And Reserve and Store Conditional Instructions" of Power ISA 3.1C Book II)
-- Atomic Memory Operation (AMO) Instructions
-  - l{w,d}at: {32,64}-bit swap,fetch-and-{add,and,or,xor,max,min} (PPC64-only, ISA 3.0 or later, included in the AIX Compliancy subset)
-    (Others: Compare and Swap Not Equal, Fetch and Increment Bounded, Fetch and Increment Equal, Fetch and Decrement Bounded)
-  - st{w,d}at: {32,64}-bit add,and,or,xor,max,min (PPC64-only, ISA 3.0 or later, included in the AIX Compliancy subset)
-    (Others: Store Twin)
-  (Refs: Section 4.5 "Atomic Memory Operations" of Power ISA 3.1C Book II)
-
-Note that plq/pstq is not yet supported in LLVM (as of 19).
-
-None of the above instructions imply a memory barrier.
-- A sync (sync 0, sync 0,0, hwsync) instruction can be used as both an “import barrier” and an “export barrier”.
-- A lwsync (sync 1, sync 1,0) instruction can be used as both an “import barrier” and an “export barrier”,
-  if the specified storage location is in storage that is neither Write Through Required nor Caching Inhibited.
-- An “import barrier” can be constructed by a branch that depends on the loaded value (even a branch
-  that depends on a comparison of the same register is okay), followed by an isync instruction.
-(sync, lwsync, and isync are available since POWER1, included in all compliancy subsets)
-(Refs: Section 1.7.1 "Storage Access Ordering" and Section B.2 "Lock Acquisition and Release, and Related Techniques" of Power ISA 3.1C Book II)
-
-sync corresponds to SeqCst semantics, lwsync corresponds to AcqRel semantics, and
-isync with appropriate sequence corresponds to Acquire semantics.
+See "Atomic operation overview by architecture" for atomic operations in this architecture:
+https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#powerpc
 
 Refs:
 - Power ISA

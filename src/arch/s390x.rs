@@ -3,37 +3,8 @@
 /*
 s390x (SystemZ)
 
-This architecture provides the following atomic instructions:
-
-- Load/Store Instructions
-  - All {8,16,32,64}-bit load/store instructions that having Single-Access References
-    (Refs: Section "Storage-Operand Fetch References", "Storage-Operand Store References", and "Storage-Operand Consistency" of z/Architecture Principles of Operation, Fourteenth Edition)
-  - LPQ/STPQ: 128-bit load/store (arch1 or later)
-    (Refs: Section "LOAD PAIR FROM QUADWORD" and "STORE PAIR TO QUADWORD" of z/Architecture Principles of Operation, Fourteenth Edition)
-- Instructions that having Interlocked-Update References
-  - TS: 8-bit TAS (360 or later)
-    (TEST AND SET)
-  - CS{,Y,G}, CDS{,Y,G}: {32,64,128}-bit CAS (CS,CDS: 370 or later, CSG,CDSG: arch1 or later, CSY,CDSY: long-displacement facility added in arch3)
-    (COMPARE AND SWAP, COMPARE DOUBLE AND SWAP)
-  - LAA{,G}, LAAL{,G}, LAN{,G}, LAO{,G}, LAX{,G}: {32,64}-bit fetch-and-{add,and,or,xor} (interlocked-access facility 1 added in arch9)
-    (LOAD AND ADD, LOAD AND ADD LOGICAL, LOAD AND AND, LOAD AND OR, LOAD AND EXCLUSIVE OR)
-  - Aligned A{,G}SI, AL{,G}SI: {32,64}-bit add with immediate (interlocked-access facility 1 added in arch9)
-    (Storage-and-immediate formats of ADD IMMEDIATE and ADD LOGICAL WITH SIGNED IMMEDIATE)
-  - NI{,Y}, OI{,Y}, XI{,Y}: 8-bit {and,or,xor} with immediate (interlocked-access facility 2 added in arch10)
-    (Storage-and-immediate formats of AND, OR, and EXCLUSIVE OR)
-  - (Others: COMPARE AND REPLACE DAT TABLE ENTRY, COMPARE AND SWAP AND PURGE, COMPARE AND SWAP AND STORE, STORE CHARACTERS UNDER MASK (conditional))
-  (Refs: Section "Storage-Operand Update References" of z/Architecture Principles of Operation, Fourteenth Edition)
-
-Of the above instructions, instructions that having Interlocked-Update References
-other than STORE CHARACTERS UNDER MASK perform serialization.
-(Refs: Section "CPU Serialization" of z/Architecture Principles of Operation, Fourteenth Edition)
-
-The following instructions are usually used as standalone memory barrier:
-- BCR 15,0 (360 or later)
-- BCR 14,0 (fast-BCR-serialization facility added in arch9)
-(Refs: Section "BRANCH ON CONDITION" of z/Architecture Principles of Operation, Fourteenth Edition)
-
-Serialization corresponds to SeqCst semantics, all memory access has Acquire/Release semantics.
+See "Atomic operation overview by architecture" for atomic operations in this architecture:
+https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#s390x
 
 Refs:
 - z/Architecture Principles of Operation, Fourteenth Edition (SA22-7832-13)

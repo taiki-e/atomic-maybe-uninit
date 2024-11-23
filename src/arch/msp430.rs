@@ -3,16 +3,8 @@
 /*
 MSP430
 
-This architecture is always single-core and the following operations are atomic:
-
-- Operation that is complete within a single instruction.
-  This is because the currently executing instruction must be completed before entering the
-  interrupt service routine.
-  (Refs: Section 1.3.4.1 "Interrupt Acceptance" of MSP430x5xx and MSP430x6xx Family User's Guide, Rev. Q: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=59)
-- Operations performed in a situation where all interrupts are disabled.
-  However, pure operations that are not affected by compiler fences (note: the correct interrupt
-  disabling and restoring implementation must implies compiler fences, e.g., asm without nomem/readonly)
-  may be moved out of the critical section by compiler optimizations.
+See "Atomic operation overview by architecture" for atomic operations in this architecture:
+https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#msp430
 
 Refs:
 - MSP430x5xx and MSP430x6xx Family User's Guide, Rev. Q
