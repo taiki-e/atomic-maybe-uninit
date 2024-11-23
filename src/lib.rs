@@ -418,12 +418,12 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// struct Test(u8, u16);
     ///
     /// unsafe {
-    ///     let x = mem::transmute::<_, MaybeUninit<u32>>(Test(0, 0));
+    ///     let x = mem::transmute::<Test, MaybeUninit<u32>>(Test(0, 0));
     ///     let v = AtomicMaybeUninit::new(x);
     ///     while v
     ///         .compare_exchange(
-    ///             mem::transmute::<_, MaybeUninit<u32>>(Test(0, 0)),
-    ///             mem::transmute::<_, MaybeUninit<u32>>(Test(1, 0)),
+    ///             mem::transmute::<Test, MaybeUninit<u32>>(Test(0, 0)),
+    ///             mem::transmute::<Test, MaybeUninit<u32>>(Test(1, 0)),
     ///             Ordering::AcqRel,
     ///             Ordering::Acquire,
     ///         )
@@ -450,8 +450,8 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///     mut current: Test,
     ///     new: Test,
     /// ) -> Result<Test, Test> {
-    ///     let mut current_raw = mem::transmute::<_, MaybeUninit<u32>>(current);
-    ///     let new_raw = mem::transmute::<_, MaybeUninit<u32>>(new);
+    ///     let mut current_raw = mem::transmute::<Test, MaybeUninit<u32>>(current);
+    ///     let new_raw = mem::transmute::<Test, MaybeUninit<u32>>(new);
     ///     loop {
     ///         match v.compare_exchange_weak(current_raw, new_raw, Ordering::AcqRel, Ordering::Acquire)
     ///         {
@@ -460,7 +460,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///                 break Ok(current);
     ///             }
     ///             Err(previous_raw) => {
-    ///                 let previous = mem::transmute_copy(&previous_raw);
+    ///                 let previous = mem::transmute::<MaybeUninit<u32>, Test>(previous_raw);
     ///
     ///                 if !Test::eq(&previous, &current) {
     ///                     break Err(previous);
@@ -478,7 +478,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// }
     ///
     /// unsafe {
-    ///     let x = mem::transmute::<_, MaybeUninit<u32>>(Test(0, 0));
+    ///     let x = mem::transmute::<Test, MaybeUninit<u32>>(Test(0, 0));
     ///     let v = AtomicMaybeUninit::new(x);
     ///     while atomic_compare_exchange(&v, Test(0, 0), Test(1, 0)).is_err() {}
     /// }
