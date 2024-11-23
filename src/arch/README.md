@@ -13,7 +13,7 @@ This document describes the operations that are considered atomic by architectur
 - [s390x](#s390x)
 - [SPARC](#sparc)
 
-TODO: write sections for AArch64, Arm, Hexagon, LoongArch, MIPS, x86, Xtensa
+TODO: write sections for AArch64, Arm, C-SKY, Hexagon, LoongArch, MIPS, x86, Xtensa
 
 ## AVR
 
