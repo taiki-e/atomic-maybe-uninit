@@ -136,6 +136,19 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
     }
 }
 
+#[allow(unused_macros)]
+macro_rules! debug_assert_ptr_for_atomic {
+    ($ptr:ident, $ty:ty) => {{
+        let _: *const _ = $ptr; // ensure $ptr is a pointer (*mut _ or *const _)
+        #[cfg(debug_assertions)]
+        crate::utils::assert_ptr_for_atomic($ptr as usize, core::mem::size_of::<$ty>());
+    }};
+}
+#[allow(dead_code)]
+pub(crate) fn assert_ptr_for_atomic(addr: usize, size: usize) {
+    assert!(addr != 0 && addr % size == 0);
+}
+
 /// Zero-extends the given 32-bit pointer to `MaybeUninit<u64>`.
 /// This is used for 64-bit architecture's 32-bit ABI (e.g., AArch64 ILP32 ABI).
 /// See ptr_reg! macro in src/gen/utils.rs for details.

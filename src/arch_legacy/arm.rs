@@ -27,10 +27,7 @@ Generated asm:
 #[path = "../arch/cfgs/arm.rs"]
 mod cfgs;
 
-use core::{
-    mem::{self, MaybeUninit},
-    sync::atomic::Ordering,
-};
+use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
 #[cfg(any(
     any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
@@ -179,7 +176,7 @@ macro_rules! atomic {
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(src, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
 
@@ -217,7 +214,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(dst, $ty);
                 let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -258,7 +255,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let val = val.as_ptr();
@@ -321,7 +318,7 @@ macro_rules! atomic {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let old = old.as_ptr();
@@ -475,7 +472,7 @@ macro_rules! atomic {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let old = old.as_ptr();
@@ -630,7 +627,7 @@ macro_rules! atomic64 {
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(src, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
 
@@ -672,7 +669,7 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(dst, $ty);
                 let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -724,7 +721,7 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let val = val.as_ptr();
@@ -786,7 +783,7 @@ macro_rules! atomic64 {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let old = old.as_ptr();
@@ -970,7 +967,7 @@ macro_rules! atomic64 {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_ptr_for_atomic!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let old = old.as_ptr();
