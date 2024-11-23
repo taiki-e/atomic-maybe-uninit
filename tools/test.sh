@@ -181,7 +181,7 @@ case "${target}" in
     hexagon-unknown-linux-musl)
         release=(--release)
         build_std+=(-Z build-std-features=llvm-libunwind)
-        flags=' -C link-args=-lclang_rt.builtins-hexagon -C opt-level=s'
+        flags=' -C link-args=-lclang_rt.builtins-hexagon -C opt-level=z'
         export RUSTFLAGS="${RUSTFLAGS:-}${flags}"
         export RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${flags}"
         ;;
