@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Documentation improvements.
+
 ## [0.3.4] - 2024-11-19
 
 This release includes improvements to platform support, various optimizations, [significant improvements to code comments](https://github.com/taiki-e/atomic-maybe-uninit/pull/30), etc.
