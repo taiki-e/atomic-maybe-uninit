@@ -435,6 +435,7 @@ jobs:
             apt_packages+=(
               avr-libc
               gcc-avr
+              qemu-system-sparc
               simavr
             )
             if [[ "${{ matrix.rust }}" != "nightly-2023-08-24" ]]; then

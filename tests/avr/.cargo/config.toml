@@ -1,2 +1,0 @@
-[target.avr-unknown-gnu-atmega2560]
-runner = "simavr --mcu atmega2560"

@@ -194,6 +194,8 @@ extern "C" fn main() -> i32 {
     test_atomic!(i32);
     test_atomic!(u32);
 
+    println!("Tests finished successfully");
+
     0
 }
 
@@ -225,6 +227,7 @@ const COMPARE_EXCHANGE_ORDERINGS: [(Ordering, Ordering); 15] = [
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
     println!("{info}");
+    // Note that this doesn't make tsim-leon3 to be exit with non-zero exit code.
     unsafe { sim::_exit(1) }
 }
 
