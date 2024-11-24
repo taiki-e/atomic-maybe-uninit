@@ -26,7 +26,7 @@ use crate::{
 };
 
 macro_rules! atomic_load_store {
-    ($ty:ident, $suffix:tt, $u_suffix:tt) => {
+    ($ty:ident, $size:tt, $load_ext:tt) => {
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -39,7 +39,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("{out} = mem", $u_suffix, $suffix, "({src})"), // atomic { out = *src }
+                        concat!("{out} = mem", $load_ext, $size, "({src})"), // atomic { out = *src }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -60,7 +60,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("mem", $suffix, "({dst}) = {val}"), // atomic { *dst = val }
+                        concat!("mem", $size, "({dst}) = {val}"), // atomic { *dst = val }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         options(nostack, preserves_flags),
@@ -142,8 +142,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($ty:ident, $suffix:tt, $u_suffix:tt) => {
-        atomic_load_store!($ty, $suffix, $u_suffix);
+    ($ty:ident, $size:tt) => {
+        atomic_load_store!($ty, $size, "u");
         impl AtomicSwap for $ty {
             #[inline(never)] // TODO: there is no way to mark p0 as clobbered
             unsafe fn atomic_swap(
@@ -233,10 +233,10 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(i8, "b", "u");
-atomic_sub_word!(u8, "b", "u");
-atomic_sub_word!(i16, "h", "u");
-atomic_sub_word!(u16, "h", "u");
+atomic_sub_word!(i8, "b");
+atomic_sub_word!(u8, "b");
+atomic_sub_word!(i16, "h");
+atomic_sub_word!(u16, "h");
 atomic!(i32);
 atomic!(u32);
 atomic!(isize);

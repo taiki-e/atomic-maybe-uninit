@@ -92,7 +92,7 @@ macro_rules! atomic_rmw_lr_sc {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $suffix:tt) => {
+    ($ty:ident, $size:tt) => {
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -107,9 +107,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                $release,                                  // fence
-                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = *src }
-                                $acquire,                                  // fence
+                                $release,                                // fence
+                                concat!("l", $size, " {out}, 0({src})"), // atomic { out = *src }
+                                $acquire,                                // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -140,9 +140,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                $release,                                  // fence
-                                concat!("s", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
-                                $acquire,                                  // fence
+                                $release,                                // fence
+                                concat!("s", $size, " {val}, 0({dst})"), // atomic { *dst = val }
+                                $acquire,                                // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -164,7 +164,7 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic_swap {
-    ($ty:ident, $suffix:tt) => {
+    ($ty:ident, $size:tt) => {
         #[cfg(any(
             target_feature = "a",
             atomic_maybe_uninit_target_feature = "a",
@@ -186,7 +186,7 @@ macro_rules! atomic_swap {
                     macro_rules! swap {
                         ($order:tt) => {
                             asm!(
-                                concat!("amoswap.", $suffix, $order, " {out}, {val}, 0({dst})"), // atomic { _x = *dst; *dst = val; out = _x }
+                                concat!("amoswap.", $size, $order, " {out}, {val}, 0({dst})"), // atomic { _x = *dst; *dst = val; out = _x }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = lateout(reg) out,
@@ -204,9 +204,9 @@ macro_rules! atomic_swap {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $suffix:tt) => {
-        atomic_load_store!($ty, $suffix);
-        atomic_swap!($ty, $suffix);
+    ($ty:ident, $size:tt) => {
+        atomic_load_store!($ty, $size);
+        atomic_swap!($ty, $size);
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
         impl AtomicCompareExchange for $ty {
             #[inline]
@@ -228,13 +228,13 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("lr.", $suffix, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
-                                    "bne {out}, {old}, 3f",                                     // if out != old { jump 'cmp-fail }
-                                    concat!("sc.", $suffix, $release, " {r}, {new}, 0({dst})"), // atomic { if RS == dst { *dst = new; r = 0 } else { r = nonzero }; RS = None }
-                                    "bnez {r}, 2b",                                             // if r != 0 { jump 'retry }
+                                    concat!("lr.", $size, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
+                                    "bne {out}, {old}, 3f",                                   // if out != old { jump 'cmp-fail }
+                                    concat!("sc.", $size, $release, " {r}, {new}, 0({dst})"), // atomic { if RS == dst { *dst = new; r = 0 } else { r = nonzero }; RS = None }
+                                    "bnez {r}, 2b",                                           // if r != 0 { jump 'retry }
                                 "3:", // 'cmp-fail:
-                                "xor {r}, {out}, {old}",                                        // r = out ^ old
-                                "seqz {r}, {r}",                                                // if r == 0 { r = 1 } else { r = 0 }
+                                "xor {r}, {out}, {old}",                                      // r = out ^ old
+                                "seqz {r}, {r}",                                              // if r == 0 { r = 1 } else { r = 0 }
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
@@ -255,10 +255,10 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $suffix:tt) => {
-        atomic_load_store!($ty, $suffix);
+    ($ty:ident, $size:tt) => {
+        atomic_load_store!($ty, $size);
         #[cfg(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"))]
-        atomic_swap!($ty, $suffix);
+        atomic_swap!($ty, $size);
         #[cfg(not(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha")))]
         #[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
         impl AtomicSwap for $ty {

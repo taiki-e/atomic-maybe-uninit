@@ -32,8 +32,8 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
     atomic_maybe_uninit_target_feature = "v9",
 ))]
 macro_rules! cas {
-    ($size:tt, $rs1:tt, $rs2:tt, $rd:tt) => {
-        concat!("cas", $size, " ", $rs1, ", ", $rs2, ", ", $rd)
+    ($suffix:tt, $rs1:tt, $rs2:tt, $rd:tt) => {
+        concat!("cas", $suffix, " ", $rs1, ", ", $rs2, ", ", $rd)
     };
 }
 #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
@@ -165,7 +165,7 @@ macro_rules! atomic_rmw {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $size:tt, $load_sign:tt) => {
+    ($ty:ident, $suffix:tt, $load_sign:tt) => {
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -179,9 +179,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_load {
                         ($acquire:expr, $release:expr) => {
                             asm!(
-                                $release,                                            // fence
-                                concat!("ld", $load_sign, $size, " [{src}], {out}"), // atomic { out = *src }
-                                $acquire,                                            // fence
+                                $release,                                              // fence
+                                concat!("ld", $load_sign, $suffix, " [{src}], {out}"), // atomic { out = *src }
+                                $acquire,                                              // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -233,9 +233,9 @@ macro_rules! atomic_load_store {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
-                                $release,                                // fence
-                                concat!("st", $size, " {val}, [{dst}]"), // atomic { *dst = val }
-                                $acquire,                                // fence
+                                $release,                                  // fence
+                                concat!("st", $suffix, " {val}, [{dst}]"), // atomic { *dst = val }
+                                $acquire,                                  // fence
                                 leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
@@ -279,8 +279,8 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $size:tt, $cc:tt) => {
-        atomic_load_store!($ty, $size, "");
+    ($ty:ident, $suffix:tt, $cc:tt) => {
+        atomic_load_store!($ty, $suffix, "");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -295,15 +295,15 @@ macro_rules! atomic {
                     macro_rules! swap {
                         ($acquire:expr, $release:expr) => {
                             asm!(
-                                $release,                                     // fence
-                                concat!("ld", $size, " [{dst}], {out}"),      // atomic { out = *dst }
+                                $release,                                       // fence
+                                concat!("ld", $suffix, " [{dst}], {out}"),      // atomic { out = *dst }
                                 "2:", // 'retry:
-                                    "mov {out}, {tmp}",                       // tmp = out
-                                    "mov {val}, {out}",                       // out = val
-                                    cas!($size, "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = _x }
-                                    "cmp {out}, {tmp}",                       // if out == tmp { cc.Z = true } else { cc.Z = false }
-                                    bne!($cc, "2b"),                          // if !cc.Z { jump 'retry }
-                                $acquire,                                     // fence
+                                    "mov {out}, {tmp}",                         // tmp = out
+                                    "mov {val}, {out}",                         // out = val
+                                    cas!($suffix, "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = _x }
+                                    "cmp {out}, {tmp}",                         // if out == tmp { cc.Z = true } else { cc.Z = false }
+                                    bne!($cc, "2b"),                            // if !cc.Z { jump 'retry }
+                                $acquire,                                       // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = out(reg) out,
@@ -337,12 +337,12 @@ macro_rules! atomic {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 leon_nop!(), // Workaround for errata (GRLIB-TN-0010).
-                                $release,                                 // fence
-                                cas!($size, "[{dst}]", "{old}", "{out}"), // atomic { _x = *dst; if _x == old { *dst = out }; out = _x }
-                                "cmp {out}, {old}",                       // if out == old { cc.Z = true } else { cc.Z = false }
-                                "mov %g0, {r}",                           // r = 0
-                                move_!($cc, "1", "{r}"),                  // if cc.Z { r = 1 }
-                                $acquire,                                 // fence
+                                $release,                                   // fence
+                                cas!($suffix, "[{dst}]", "{old}", "{out}"), // atomic { _x = *dst; if _x == old { *dst = out }; out = _x }
+                                "cmp {out}, {old}",                         // if out == old { cc.Z = true } else { cc.Z = false }
+                                "mov %g0, {r}",                             // r = 0
+                                move_!($cc, "1", "{r}"),                    // if cc.Z { r = 1 }
+                                $acquire,                                   // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 out = inout(reg) new => out,
@@ -363,8 +363,8 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $size:tt) => {
-        atomic_load_store!($ty, $size, "u");
+    ($ty:ident, $suffix:tt) => {
+        atomic_load_store!($ty, $suffix, "u");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(

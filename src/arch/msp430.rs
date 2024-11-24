@@ -64,7 +64,7 @@ unsafe fn restore(prev_sr: u16) {
 }
 
 macro_rules! atomic {
-    ($ty:ident, $suffix:tt) => {
+    ($ty:ident, $size:tt) => {
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -76,7 +76,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("mov", $suffix, " @{src}, {out}"), // atomic { out = *src }
+                        concat!("mov.", $size, " @{src}, {out}"), // atomic { out = *src }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -95,7 +95,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("mov", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
+                        concat!("mov.", $size, " {val}, 0({dst})"), // atomic { *dst = val }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         options(nostack, preserves_flags),
@@ -138,7 +138,7 @@ macro_rules! atomic {
                 let r = unsafe {
                     let r: $ty;
                     asm!(
-                        concat!("xor", $suffix, " {b}, {a}"), // a ^= b
+                        concat!("xor.", $size, " {b}, {a}"), // a ^= b
                         a = inout(reg) old => r,
                         b = in(reg) out,
                         // Do not use `preserves_flags` because XOR modifies the V, N, Z, and C bits of the status register.
@@ -158,9 +158,9 @@ macro_rules! atomic {
     };
 }
 
-atomic!(i8, ".b");
-atomic!(u8, ".b");
-atomic!(i16, ".w");
-atomic!(u16, ".w");
-atomic!(isize, ".w");
-atomic!(usize, ".w");
+atomic!(i8, "b");
+atomic!(u8, "b");
+atomic!(i16, "w");
+atomic!(u16, "w");
+atomic!(isize, "w");
+atomic!(usize, "w");

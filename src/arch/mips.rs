@@ -36,7 +36,7 @@ macro_rules! atomic_rmw {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $suffix:tt, $l_u_suffix:tt) => {
+    ($ty:ident, $size:tt, $l_u_suffix:tt) => {
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -53,8 +53,8 @@ macro_rules! atomic_load_store {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = *src }
-                                $acquire,                                  // fence
+                                concat!("l", $size, " {out}, 0({src})"), // atomic { out = *src }
+                                $acquire,                                // fence
                                 ".set pop",
                                 src = in(reg) ptr_reg!(src),
                                 out = out(reg) out,
@@ -88,9 +88,9 @@ macro_rules! atomic_load_store {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                $release,                                  // fence
-                                concat!("s", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
-                                $acquire,                                  // fence
+                                $release,                                // fence
+                                concat!("s", $size, " {val}, 0({dst})"), // atomic { *dst = val }
+                                $acquire,                                // fence
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
@@ -107,8 +107,8 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $suffix:tt, $ll_sc_suffix:tt) => {
-        atomic_load_store!($ty, $suffix, "");
+    ($ty:ident, $size:tt, $ll_sc_suffix:tt) => {
+        atomic_load_store!($ty, $size, "");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -201,8 +201,8 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $suffix:tt) => {
-        atomic_load_store!($ty, $suffix, "u");
+    ($ty:ident, $size:tt) => {
+        atomic_load_store!($ty, $size, "u");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
