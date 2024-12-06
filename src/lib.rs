@@ -798,7 +798,7 @@ mod private {
     /// # Safety
     ///
     /// The implementer must guarantee that `align_of::<Self::Align>() == size_of::<Self>()`.
-    // Auto traits is needed to better docs.
+    // Auto traits are needed to better docs.
     pub unsafe trait PrimitivePriv:
         Copy + Send + Sync + Unpin + UnwindSafe + RefUnwindSafe
     {
