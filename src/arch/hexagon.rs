@@ -75,7 +75,7 @@ macro_rules! atomic {
     ($ty:ident) => {
         atomic_load_store!($ty, "w", "");
         impl AtomicSwap for $ty {
-            #[inline(never)] // TODO: there is no way to mark p0 as clobbered
+            #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
@@ -94,14 +94,15 @@ macro_rules! atomic {
                         dst = in(reg) dst,
                         val = in(reg) val,
                         out = out(reg) out,
-                        options(nostack),
+                        out("p0") _,
+                        options(nostack, preserves_flags),
                     );
                 }
                 out
             }
         }
         impl AtomicCompareExchange for $ty {
-            #[inline(never)] // TODO: there is no way to mark p0 as clobbered
+            #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
@@ -131,7 +132,8 @@ macro_rules! atomic {
                         new = in(reg) new,
                         out = out(reg) out,
                         r = inout(reg) r,
-                        options(nostack),
+                        out("p0") _,
+                        options(nostack, preserves_flags),
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
@@ -145,7 +147,7 @@ macro_rules! atomic_sub_word {
     ($ty:ident, $size:tt) => {
         atomic_load_store!($ty, $size, "u");
         impl AtomicSwap for $ty {
-            #[inline(never)] // TODO: there is no way to mark p0 as clobbered
+            #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
@@ -174,14 +176,15 @@ macro_rules! atomic_sub_word {
                         shift = in(reg) shift,
                         mask = in(reg) mask,
                         tmp = out(reg) _,
-                        options(nostack),
+                        out("p0") _,
+                        options(nostack, preserves_flags),
                     );
                 }
                 out
             }
         }
         impl AtomicCompareExchange for $ty {
-            #[inline(never)] // TODO: there is no way to mark p0 as clobbered
+            #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
@@ -223,7 +226,8 @@ macro_rules! atomic_sub_word {
                         mask = in(reg) mask,
                         tmp = out(reg) _,
                         r = inout(reg) r,
-                        options(nostack),
+                        out("p0") _,
+                        options(nostack, preserves_flags),
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
@@ -289,7 +293,7 @@ macro_rules! atomic64 {
             }
         }
         impl AtomicSwap for $ty {
-            #[inline(never)] // TODO: there is no way to mark p0 as clobbered
+            #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
@@ -311,14 +315,15 @@ macro_rules! atomic64 {
                         in("r3") val.pair.hi,
                         out("r4") prev_lo,
                         out("r5") prev_hi,
-                        options(nostack),
+                        out("p0") _,
+                        options(nostack, preserves_flags),
                     );
                     MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
                 }
             }
         }
         impl AtomicCompareExchange for $ty {
-            #[inline(never)] // TODO: there is no way to mark p0 as clobbered
+            #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
@@ -356,7 +361,8 @@ macro_rules! atomic64 {
                         in("r5") new.pair.hi,
                         out("r6") prev_lo,
                         out("r7") prev_hi,
-                        options(nostack),
+                        out("p0") _,
+                        options(nostack, preserves_flags),
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty, r != 0)

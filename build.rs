@@ -106,9 +106,18 @@ fn main() {
                 }
             }
         }
-        "avr" | "hexagon" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430"
-        | "powerpc" | "powerpc64" | "xtensa" => {
+        "avr" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430" | "powerpc"
+        | "powerpc64" | "xtensa" => {
             if version.nightly && is_allowed_feature("asm_experimental_arch") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
+            }
+        }
+        "hexagon" => {
+            // https://github.com/rust-lang/rust/pull/133452 merged in Rust 1.85 (nightly-2024-11-29).
+            if version.nightly
+                && version.probe(85, 2024, 11, 28)
+                && is_allowed_feature("asm_experimental_arch")
+            {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
         }

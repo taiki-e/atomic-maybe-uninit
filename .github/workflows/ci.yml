@@ -154,7 +154,7 @@ jobs:
             target: i686-unknown-linux-gnu
           - rust: nightly
             target: i686-unknown-linux-gnu
-          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
+          - rust: nightly-2024-11-29 # Rust 1.85, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
             target: hexagon-unknown-linux-musl
           - rust: nightly
             target: hexagon-unknown-linux-musl
