@@ -329,13 +329,8 @@ fn main() {
         "powerpc" | "powerpc64" => {
             // target_feature "partword-atomics"/"quadword-atomics" is unstable and available on rustc side since nightly-2024-09-28: https://github.com/rust-lang/rust/pull/130873
             if !version.probe(83, 2024, 9, 27) || needs_target_feature_fallback(&version, None) {
-                // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/PowerPC/PPC.td#L702
-                // See also https://github.com/rust-lang/rust/issues/59932
-                let mut pwr8_features = target_arch == "powerpc64"
-                    && env::var("CARGO_CFG_TARGET_ENDIAN")
-                        .expect("CARGO_CFG_TARGET_ENDIAN not set")
-                        == "little";
-                if let Some(cpu) = &target_cpu() {
+                let mut pwr8_features = false;
+                if let Some(cpu) = target_cpu() {
                     if let Some(mut cpu_version) = cpu.strip_prefix("pwr") {
                         cpu_version = cpu_version.strip_suffix('x').unwrap_or(cpu_version); // for pwr5x and pwr6x
                         if let Ok(cpu_version) = cpu_version.parse::<u32>() {
@@ -349,6 +344,13 @@ fn main() {
                         // https://github.com/llvm/llvm-project/blob/llvmorg-12.0.0/llvm/lib/Target/PowerPC/PPC.td#L370
                         pwr8_features = cpu == "future" || cpu == "ppc64le";
                     }
+                } else {
+                    // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/PowerPC/PPC.td#L702
+                    // See also https://github.com/rust-lang/rust/issues/59932
+                    pwr8_features = target_arch == "powerpc64"
+                        && env::var("CARGO_CFG_TARGET_ENDIAN")
+                            .expect("CARGO_CFG_TARGET_ENDIAN not set")
+                            == "little";
                 }
                 // power8 features: https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/PowerPC/PPC.td#L409
                 // l[bh]arx and st[bh]cx.
@@ -358,7 +360,6 @@ fn main() {
             }
         }
         "s390x" => {
-            // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/SystemZ/SystemZFeatures.td
             let mut arch9_features = false; // z196+
             if let Some(cpu) = target_cpu() {
                 // LLVM and GCC recognize the same names:
@@ -405,24 +406,16 @@ fn main() {
             }
         }
         "m68k" => {
-            // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/M68k/M68k.td
-            // Linux requires M68020+.
-            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L6
-            let mut isa_68020 = target_os == "linux";
+            let mut isa_68020 = false;
             if let Some(cpu) = target_cpu() {
+                // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/M68k/M68k.td
                 match &*cpu {
                     "M68020" | "M68030" | "M68040" | "M68060" => isa_68020 = true,
-                    "M68000" | "M68010" => isa_68020 = false,
-                    _ => {
-                        if env::var_os("ATOMIC_MAYBE_UNINIT_DENY_WARNINGS").is_some() {
-                            panic!("unrecognized m68k CPU: {target}")
-                        }
-                        println!(
-                            "cargo:warning={}: unrecognized m68k CPU: {target}",
-                            env!("CARGO_PKG_NAME")
-                        );
-                    }
+                    _ => {}
                 }
+            } else {
+                // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L6
+                isa_68020 = target_os == "linux";
             }
             // As of rustc 1.80, target_feature "isa-68020" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs
