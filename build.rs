@@ -30,7 +30,7 @@ fn main() {
 
     if version.minor >= 80 {
         println!(
-            r#"cargo:rustc-check-cfg=cfg(target_feature,values("x87","v8m","fast-serialization","isa-68020"))"#
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization","isa-68020"))"#
         );
 
         // Custom cfgs set by build script. Not public API.
@@ -135,13 +135,16 @@ fn main() {
 
     match target_arch {
         "x86" => {
-            // i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work.
-            // And core assumes x87 is always available.
-            // https://github.com/rust-lang/rust/blob/1.80.0/library/core/src/num/dec2flt/fpu.rs#L6
-            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/i686_unknown_uefi.rs#L24
-            // However, custom bare metal targets tend to disable x87 and do not use floats.
-            let x87 = target_os != "none";
-            target_feature_fallback("x87", x87);
+            // target_feature "x87" is unstable and available on rustc side since nightly-2024-12-14: https://github.com/rust-lang/rust/pull/133099
+            if !version.probe(85, 2024, 12, 13) || needs_target_feature_fallback(&version, None) {
+                // i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work on pre-nightly-2024-12-14 or non-nightly.
+                // And core assumes x87 is always available.
+                // https://github.com/rust-lang/rust/blob/1.80.0/library/core/src/num/dec2flt/fpu.rs#L6
+                // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/i686_unknown_uefi.rs#L24
+                // However, custom bare metal targets tend to disable x87 and do not use floats.
+                let x87 = target_os != "none";
+                target_feature_fallback("x87", x87);
+            }
         }
         "x86_64" => {
             // cmpxchg16b_target_feature stabilized in Rust 1.69.
