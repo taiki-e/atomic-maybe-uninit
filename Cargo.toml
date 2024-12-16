@@ -61,6 +61,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(target_feature,values("zaamo","zabha"))', # 1.83+ https://github.com/rust-lang/rust/pull/130877
     'cfg(target_feature,values("leoncasa","v9"))', # 1.84+ https://github.com/rust-lang/rust/pull/132552
     'cfg(target_feature,values("x87"))', # 1.85+ https://github.com/rust-lang/rust/pull/133099
+    'cfg(target_feature,values("isa-68020"))', # 1.85+ https://github.com/rust-lang/rust/pull/134329
     'cfg(target_pointer_width,values("128"))',
     # Known custom cfgs, excluding those that may be set by build script.
     # Not public API.

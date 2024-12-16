@@ -29,9 +29,7 @@ fn main() {
     };
 
     if version.minor >= 80 {
-        println!(
-            r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization","isa-68020"))"#
-        );
+        println!(r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization"))"#);
 
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -409,20 +407,21 @@ fn main() {
             }
         }
         "m68k" => {
-            let mut isa_68020 = false;
-            if let Some(cpu) = target_cpu() {
-                // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/M68k/M68k.td
-                match &*cpu {
-                    "M68020" | "M68030" | "M68040" | "M68060" => isa_68020 = true,
-                    _ => {}
+            // target_feature "isa-68020" is unstable and available on rustc side since nightly-2024-12-16: https://github.com/rust-lang/rust/pull/134329
+            if !version.probe(85, 2024, 12, 15) || needs_target_feature_fallback(&version, None) {
+                let mut isa_68020 = false;
+                if let Some(cpu) = target_cpu() {
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/M68k/M68k.td
+                    match &*cpu {
+                        "M68020" | "M68030" | "M68040" | "M68060" => isa_68020 = true,
+                        _ => {}
+                    }
+                } else {
+                    // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L6
+                    isa_68020 = target_os == "linux";
                 }
-            } else {
-                // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L6
-                isa_68020 = target_os == "linux";
+                target_feature_fallback("isa-68020", isa_68020);
             }
-            // As of rustc 1.80, target_feature "isa-68020" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs
-            target_feature_fallback("isa-68020", isa_68020);
         }
         _ => {}
     }
