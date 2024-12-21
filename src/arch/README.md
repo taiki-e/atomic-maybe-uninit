@@ -5,21 +5,39 @@ This directory contains architecture-specific atomic implementations.
 
 This document describes the operations that are considered atomic by architecture.
 
+- [AArch64](#aarch64)
+- [Arm](#arm)
 - [AVR](#avr)
+- [Hexagon](#hexagon)
+- [LoongArch](#loongarch)
 - [M68k](#m68k)
+- [MIPS](#mips)
 - [MSP430](#msp430)
 - [PowerPC](#powerpc)
 - [RISC-V](#risc-v)
 - [s390x](#s390x)
 - [SPARC](#sparc)
+- [x86](#x86)
+- [Xtensa](#xtensa)
 
-TODO: write sections for AArch64, Arm, Hexagon, LoongArch, MIPS, x86, Xtensa
+## AArch64
+
+target_arch: aarch64, arm64ec<br>
+Implementation: [aarch64.rs](aarch64.rs)<br>
+
+TODO
+
+## Arm
+
+target_arch: arm<br>
+Implementation: [arm.rs](arm.rs), [armv8.rs](armv8.rs), [arm_linux.rs](arm_linux.rs)<br>
+
+TODO
 
 ## AVR
 
 target_arch: avr<br>
-Implementation: [avr.rs](avr.rs)
-
+Implementation: [avr.rs](avr.rs)<br>
 Refs: [AVR® Instruction Set Manual, Rev. DS40002198B](https://ww1.microchip.com/downloads/en/DeviceDoc/AVR-InstructionSet-Manual-DS40002198.pdf)
 
 This architecture is always single-core and the following operations are atomic:
@@ -37,11 +55,24 @@ This architecture is always single-core and the following operations are atomic:
   disabling and restoring implementation must imply compiler fences, e.g., asm without nomem/readonly)
   may be moved out of the critical section by compiler optimizations.
 
+## Hexagon
+
+target_arch: hexagon<br>
+Implementation: [hexagon.rs](hexagon.rs)<br>
+
+TODO
+
+## LoongArch
+
+target_arch: loongarch64<br>
+Implementation: [loongarch.rs](loongarch.rs)<br>
+
+TODO
+
 ## M68k
 
 target_arch: m68k<br>
-Implementation: [m68k.rs](m68k.rs)
-
+Implementation: [m68k.rs](m68k.rs)<br>
 Refs: [M68000 FAMILY Programmer's Reference Manual](https://www.nxp.com/docs/en/reference-manual/M68000PRM.pdf)
 
 The following instructions are atomic if the address is properly aligned and the specified storage meets the requirements:
@@ -58,11 +89,36 @@ The following instructions are atomic if the address is properly aligned and the
 
 Note that CAS2 is not yet supported in LLVM (as of 19).
 
+## MIPS
+
+target_arch: mips, mips32r6, mips64, mips64r6<br>
+Implementation: [mips.rs](mips.rs)<br>
+Refs: [The MIPS32® Instruction Set Manual, Revision 6.06 (MD00086)](https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00086-2B-MIPS32BIS-AFP-6.06.pdf), [The MIPS64® Instruction Set Reference Manual, Revision 6.06 (MD00087)](https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00087-2B-MIPS64BIS-AFP-6.06.pdf), [MIPS® Coherence Protocol Specification, Revision 01.01 (MD00605)](https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00605-2B-CMPCOHERE-AFP-01.01.pdf)
+
+The following instructions are atomic if the address is properly aligned and the specified storage meets the requirements:
+
+- Load/Store Instructions
+  - {8,16,32}-bit and 64-bit (MIPS64 only)
+
+- LoadLinked and StoreConditional Instructions (LL/SC)
+  - LL/SC: 32-bit LL/SC (MIPS32 or later)
+  - LLD/SCD: 64-bit LL/SC (MIPS64 or later)
+  - LLE/SCE: 32-bit LL/SC (MIPS32 or later, only present if Config5EVA=1)
+  - LLWP/SCWP: 64-bit LL/SC (MIPS32R6 or later, only present if Config5XNP=0)
+  - LLWPE/SCWPE: 64-bit LL/SC (MIPS32R6 or later, only present if Config5XNP=0 and Config5EVA=1)
+  - LLDP/SCDP: 128-bit LL/SC (MIPS64R6 or later, only present if Config5XNP is 0)
+
+Note that LL{W,D}P{,E}/SC{W,D}P{,E} is not yet supported in LLVM (as of 19).
+
+None of the above instructions imply a memory barrier.
+Several types of memory barriers are provided by SYNC instruction, but only SYNC (SYNC 0) is mandatory.
+<br>
+(Refs: Section 4.6.2 "Memory Barriers" and section 4.6.3 "Implicit Memory Barriers" of MIPS® Coherence Protocol Specification)
+
 ## MSP430
 
 target_arch: msp430<br>
-Implementation: [msp430.rs](msp430.rs)
-
+Implementation: [msp430.rs](msp430.rs)<br>
 Refs: [MSP430x5xx and MSP430x6xx Family User's Guide, Rev. Q](https://www.ti.com/lit/ug/slau208q/slau208q.pdf)
 
 This architecture is always single-core and the following operations are atomic:
@@ -80,8 +136,7 @@ This architecture is always single-core and the following operations are atomic:
 ## PowerPC
 
 target_arch: powerpc, powerpc64<br>
-Implementation: [powerpc.rs](powerpc.rs)
-
+Implementation: [powerpc.rs](powerpc.rs)<br>
 Refs: Power ISA ([3.1C](https://files.openpower.foundation/s/9izgC5Rogi5Ywmm), [2.07B](https://ibm.ent.box.com/s/jd5w15gz301s5b5dt375mshpq9c3lh4u))
 
 The following instructions are atomic if the address is properly aligned and the specified storage meets the requirements:
@@ -139,7 +194,7 @@ Note that plq/pstq is not yet supported in LLVM (as of 19).
 None of the above instructions imply a memory barrier.
 
 - A sync (sync 0, sync 0,0, hwsync) instruction can be used as both an “import barrier” and an “export barrier”.<br>
-  Compatibility: POWER1 or later
+  Compatibility: POWER1 or later (some BookE processors don't have this and provide msync instead)
   - ISA 2.07B: included in the requirements as Base category
   - ISA 3.1C: included in all compliancy subsets
 - A lwsync (sync 1, sync 1,0) instruction can be used as both an “import barrier” and an “export barrier”,
@@ -158,8 +213,7 @@ with appropriate sequence corresponds to Acquire semantics.
 ## RISC-V
 
 target_arch: riscv32, riscv64<br>
-Implementation: [riscv.rs](riscv.rs)
-
+Implementation: [riscv.rs](riscv.rs)<br>
 Refs: [RISC-V Instruction Set Manual](https://github.com/riscv/riscv-isa-manual)
 
 The following instructions are atomic if the address is properly aligned and the specified storage meets the requirements:
@@ -198,8 +252,7 @@ Zabha and Zacas extensions depends upon Zaamo extension.
 ## s390x
 
 target_arch: s390x<br>
-Implementation: [s390x.rs](s390x.rs)
-
+Implementation: [s390x.rs](s390x.rs)<br>
 Refs: z/Architecture Principles of Operation ([Fourteenth Edition](https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf))
 
 The following instructions are atomic if the address is properly aligned and the specified storage meets the requirements:
@@ -241,8 +294,7 @@ Serialization corresponds to SeqCst semantics, all memory access has Acquire/Rel
 ## SPARC
 
 target_arch: sparc, sparc64<br>
-Implementation: [sparc.rs](sparc.rs)
-
+Implementation: [sparc.rs](sparc.rs)<br>
 Refs: The SPARC Architecture Manual ([Version 9, Version 8](https://sparc.org/technical-documents))
 
 The following instructions are atomic if the address is properly aligned and the specified storage meets the requirements:
@@ -278,3 +330,17 @@ V8+ and V9 have three memory models: Total Store Order (TSO), Partial Store Orde
 Memory Order (RMO). V8 has only TSO and PSO. Implementation of TSO (or a more strongly ordered model
 which implies TSO) is mandatory, and PSO and RMO are optional.<br>
 (Refs: Section 8.4.4 "Memory Models" of the SPARC Architecture Manual, Version 9)
+
+## x86
+
+target_arch: x86, x86_64<br>
+Implementation: [x86.rs](x86.rs)<br>
+
+TODO
+
+## Xtensa
+
+target_arch: xtensa<br>
+Implementation: [xtensa.rs](xtensa.rs)<br>
+
+TODO

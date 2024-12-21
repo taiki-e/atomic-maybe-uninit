@@ -53,6 +53,9 @@ lgcc
 libnspr
 libunwind
 linkall
+LLDP
+LLWP
+LLWPE
 lmul
 lqarx
 lrcpc
@@ -73,6 +76,7 @@ movq
 movsd
 movss
 mspdebug
+msync
 muldi
 neoverse
 noat
@@ -90,7 +94,10 @@ risbg
 rsbegin
 rsend
 RVWMO
+SCDP
 scompare
+SCWP
+SCWPE
 seqz
 sete
 shufps
