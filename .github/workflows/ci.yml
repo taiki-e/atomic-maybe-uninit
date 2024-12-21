@@ -461,12 +461,12 @@ jobs:
               retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-LlCjWuAbzH/9.3.1.2/msp430-gcc-9.3.1.11_linux64.tar.bz2 \
                 | tar xjf - --strip-components 1 -C "${HOME}"/msp430-gcc
               printf '%s\n' "${HOME}"/msp430-gcc/bin >>"${GITHUB_PATH}"
-              # https://www.gaisler.com/anonftp/bcc2/bin/
-              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://www.gaisler.com/anonftp/bcc2/bin/bcc-2.3.1-gcc-sparc-linux64.tar.xz \
+              # https://download.gaisler.com/anonftp/bcc2/bin/
+              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://download.gaisler.com/anonftp/bcc2/bin/bcc-2.3.1-gcc-sparc-linux64.tar.xz \
                 | tar xJf - --strip-components 1 -C "${HOME}"/sparc-bcc-gcc
               printf '%s\n' "${HOME}"/sparc-bcc-gcc/bin >>"${GITHUB_PATH}"
-              # https://www.gaisler.com/index.php/downloads/simulators
-              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://www.gaisler.com/tsim3/tsim-eval/tsim-eval-3.1.11.tar.gz \
+              # https://www.gaisler.com/products/tsim3
+              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://download.gaisler.com/products/TSIM3/bin/tsim-eval/tsim-eval-3.1.11.tar.gz \
                 | tar xzf - --strip-components 1 -C "${HOME}"/tsim
               printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
             fi

@@ -88,7 +88,7 @@ macro_rules! move_ {
 }
 
 // Workaround for errata (GRLIB-TN-0009, GRLIB-TN-0010).
-// https://www.gaisler.com/index.php/information/app-tech-notes
+// https://www.gaisler.com/app-notes-tech-notes-and-white-papers
 #[cfg(not(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa")))]
 macro_rules! leon_nop {
     () => {
@@ -102,7 +102,7 @@ macro_rules! leon_nop {
     };
 }
 // Workaround for errata (GRLIB-TN-0011).
-// https://www.gaisler.com/index.php/information/app-tech-notes
+// https://www.gaisler.com/app-notes-tech-notes-and-white-papers
 #[cfg(not(any(
     target_arch = "sparc64",
     target_feature = "v9",
