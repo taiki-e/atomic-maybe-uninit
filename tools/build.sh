@@ -68,6 +68,11 @@ default_targets=(
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "avr" then .key else empty end'
   avr-unknown-gnu-atmega2560 # custom target
 
+  # bpf
+  # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "bpf" then .key else empty end'
+  bpfeb-unknown-none
+  bpfel-unknown-none
+
   # hexagon
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
   hexagon-unknown-linux-musl
