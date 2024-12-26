@@ -129,6 +129,91 @@ macro_rules! atomic64 {
     };
 }
 
+/*
+// TODO: doesn't work due to "bitwise operator &= on pointer prohibited" verification error.
+macro_rules! atomic_sub_word {
+    ($ty:ident, $size:tt) => {
+        atomic_load_store!($ty, $size);
+        impl AtomicSwap for $ty {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
+                let mut out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // See also create_sub_word_mask_values.
+                    asm!(
+                        "{mask} <<= {shift}",                        // mask <<= shift & 63
+                        "{val} <<= {shift}",                         // val <<= shift & 63
+                        "r0 = *(u64 *) ({dst} + 0)",                 // atomic { r0 = *dst }
+                        "2:", // 'retry:
+                            "{prev} = r0",                           // prev = r0
+                            "{new} = {val}",                         // new = val
+                            "{new} ^= r0",                           // new ^= r0
+                            "{new} &= {mask}",                       // new &= mask
+                            "{new} ^= r0",                           // new ^= r0
+                            "r0 = cmpxchg_64({dst} + 0, r0, {new})", // atomic { _x = *dst; if _x == r0 { *dst = new }; r0 = _x }
+                            "if r0 != {prev} goto 2b",               // if r0 != prev { jump 'retry }
+                        "r0 >>= {shift}",                            // r0 >>= shift & 63
+                        dst = in(reg) dst,
+                        val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
+                        shift = in(reg) shift,
+                        mask = inout(reg) mask => _,
+                        prev = out(reg) _,
+                        new = out(reg) _,
+                        out("r0") out,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                out
+            }
+        }
+        /*
+        impl AtomicCompareExchange for $ty {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                _success: Ordering,
+                _failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
+                let mut out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    let mut r: i32 = 1;
+                    // Implement sub-word atomic operations using word-sized LL/SC loop.
+                    // See also create_sub_word_mask_values.
+                    asm!(
+                        "TODO",
+                        options(nostack, preserves_flags),
+                    );
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+                    (out, r != 0)
+                }
+            }
+        }
+        */
+    };
+}
+
+atomic_sub_word!(i8, "u8");
+atomic_sub_word!(u8, "u8");
+atomic_sub_word!(i16, "u16");
+atomic_sub_word!(u16, "u16");
+atomic_sub_word!(i32, "u32");
+atomic_sub_word!(u32, "u32");
+*/
 atomic_load_store!(i8, "u8");
 atomic_load_store!(u8, "u8");
 atomic_load_store!(i16, "u16");
