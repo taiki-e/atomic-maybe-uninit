@@ -31,6 +31,7 @@
     all(
         any(
             target_arch = "avr",
+            target_arch = "bpf",
             target_arch = "hexagon",
             target_arch = "m68k",
             target_arch = "mips",
@@ -88,6 +89,9 @@ mod armv8;
 #[cfg(target_arch = "avr")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod avr;
+#[cfg(target_arch = "bpf")]
+#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+mod bpf;
 #[cfg(target_arch = "hexagon")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod hexagon;
