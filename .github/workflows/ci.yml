@@ -138,6 +138,9 @@ jobs:
             target: armeb-unknown-linux-gnueabi
           - rust: nightly
             target: armeb-unknown-linux-gnueabi
+          # TODO
+          # - rust: nightly
+          #   target: csky-unknown-linux-gnuabiv2
           - rust: '1.59' # LLVM 13
             target: i586-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
