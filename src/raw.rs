@@ -21,6 +21,14 @@ pub trait Primitive: crate::private::PrimitivePriv {}
 /// Atomic load.
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
+#[cfg_attr(
+    not(atomic_maybe_uninit_no_diagnostic_namespace),
+    diagnostic::on_unimplemented(
+        message = "atomic load of `{Self}` is not available on this target",
+        label = "this associated function is not available on this target",
+        note = "see <https://docs.rs/atomic-maybe-uninit/latest/atomic_maybe_uninit/#platform-support> for more."
+    )
+)]
 pub trait AtomicLoad: Primitive {
     /// Loads a value from `src`.
     ///
@@ -49,6 +57,14 @@ pub trait AtomicLoad: Primitive {
 /// Atomic store.
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
+#[cfg_attr(
+    not(atomic_maybe_uninit_no_diagnostic_namespace),
+    diagnostic::on_unimplemented(
+        message = "atomic store of `{Self}` is not available on this target",
+        label = "this associated function is not available on this target",
+        note = "see <https://docs.rs/atomic-maybe-uninit/latest/atomic_maybe_uninit/#platform-support> for more."
+    )
+)]
 pub trait AtomicStore: Primitive {
     /// Stores a value into `dst`.
     ///
@@ -77,6 +93,14 @@ pub trait AtomicStore: Primitive {
 /// Atomic swap.
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
+#[cfg_attr(
+    not(atomic_maybe_uninit_no_diagnostic_namespace),
+    diagnostic::on_unimplemented(
+        message = "atomic swap of `{Self}` is not available on this target",
+        label = "this associated function is not available on this target",
+        note = "see <https://docs.rs/atomic-maybe-uninit/latest/atomic_maybe_uninit/#platform-support> for more."
+    )
+)]
 pub trait AtomicSwap: AtomicLoad + AtomicStore {
     /// Stores a value into `dst`, returning the previous value.
     ///
@@ -110,6 +134,14 @@ pub trait AtomicSwap: AtomicLoad + AtomicStore {
 /// Atomic compare and exchange.
 ///
 /// This trait is sealed and cannot be implemented for types outside of `atomic-maybe-uninit`.
+#[cfg_attr(
+    not(atomic_maybe_uninit_no_diagnostic_namespace),
+    diagnostic::on_unimplemented(
+        message = "atomic compare and exchange of `{Self}` is not available on this target",
+        label = "this associated function is not available on this target",
+        note = "see <https://docs.rs/atomic-maybe-uninit/latest/atomic_maybe_uninit/#platform-support> for more."
+    )
+)]
 pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     /// Stores a value into `dst` if the current value is the same as
     /// the `current` value. Here, "the same" is determined using byte-wise

@@ -34,7 +34,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,portable_atomic_pre_llvm_20)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,portable_atomic_pre_llvm_20)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -71,6 +71,10 @@ fn main() {
     if !version.probe(74, 2023, 8, 23) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm_maybe_uninit");
     }
+    // #[diagnostic] stabilized in Rust 1.78 (nightly-2024-03-09): https://github.com/rust-lang/rust/pull/119888
+    if !version.probe(78, 2024, 3, 8) {
+        println!("cargo:rustc-cfg=atomic_maybe_uninit_no_diagnostic_namespace");
+    }
     // const_mut_refs/const_refs_to_cell stabilized in Rust 1.83 (nightly-2024-09-16): https://github.com/rust-lang/rust/pull/129195
     if !version.probe(83, 2024, 9, 15) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_const_mut_refs");
@@ -96,8 +100,7 @@ fn main() {
                 {
                     // https://github.com/rust-lang/rust/pull/119431 merged in Rust 1.77 (nightly-2024-01-05).
                     // The part of this feature we use has not been changed since nightly-2024-01-05
-                    // until it was stabilized in nightly-2024-11-11, so it can be safely enabled in
-                    // nightly, which is older than nightly-2024-11-11.
+                    // until it was stabilized, so it can safely be enabled in nightly for that period.
                     println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
                 } else {
                     println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm");
