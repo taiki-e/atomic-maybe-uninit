@@ -135,6 +135,11 @@ default_targets=(
     # hexagon
     # rustc --print target-list | grep -E '^hexagon'
     hexagon-unknown-linux-musl
+
+    # bpf
+    # rustc --print target-list | grep -E '^bpf'
+    bpfeb-unknown-none
+    bpfel-unknown-none
 )
 
 x() {
