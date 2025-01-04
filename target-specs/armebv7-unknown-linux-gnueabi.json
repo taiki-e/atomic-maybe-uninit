@@ -8,6 +8,7 @@
   "features": "+v7,+thumb2,+soft-float,-neon",
   "has-rpath": true,
   "has-thread-local": true,
+  "llvm-floatabi": "soft",
   "llvm-target": "armebv7-unknown-linux-gnueabi",
   "max-atomic-width": 64,
   "os": "linux",

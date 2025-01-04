@@ -9,6 +9,7 @@
   "features": "+thumb2,+soft-float,-neon,+strict-align",
   "linker": "rust-lld",
   "linker-flavor": "ld.lld",
+  "llvm-floatabi": "soft",
   "llvm-target": "armv8a-none-eabi",
   "max-atomic-width": 64,
   "panic-strategy": "abort",

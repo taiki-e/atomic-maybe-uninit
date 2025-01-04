@@ -8,6 +8,7 @@
   "features": "+fp-armv8,-fp64,-d32",
   "linker": "rust-lld",
   "linker-flavor": "gnu-lld",
+  "llvm-floatabi": "hard",
   "llvm-target": "armebv8r-none-eabihf",
   "max-atomic-width": 64,
   "panic-strategy": "abort",
