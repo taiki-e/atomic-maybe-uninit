@@ -88,6 +88,7 @@ Feel free to submit an issue if your target is not supported yet.
     // Code outside of cfg(test) shouldn't use float.
     clippy::float_arithmetic,
 )]
+#![cfg_attr(atomic_maybe_uninit_no_strict_provenance, allow(unstable_name_collisions))]
 #![allow(clippy::inline_always)]
 #![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
 

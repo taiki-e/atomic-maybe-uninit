@@ -190,6 +190,7 @@ base_args=(${pre_args[@]+"${pre_args[@]}"} hack build)
 target_dir=$(pwd)/target
 nightly=''
 base_rustflags="${RUSTFLAGS:-}"
+strict_provenance_lints=''
 if [[ "${rustc_version}" =~ nightly|dev ]]; then
     nightly=1
     if [[ -z "${is_custom_toolchain}" ]]; then
@@ -200,6 +201,7 @@ if [[ "${rustc_version}" =~ nightly|dev ]]; then
         retry rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
         base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy)
         base_rustflags+=' -Z crate-attr=feature(unqualified_local_imports) -W unqualified_local_imports'
+        strict_provenance_lints=' -Z crate-attr=feature(strict_provenance_lints) -W fuzzy_provenance_casts'
     fi
 fi
 export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
@@ -223,6 +225,9 @@ build() {
     if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
         cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg "${target_flags[@]}")
         retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
+        # core/alloc/std sets feature(strict_provenance_lints), so we cannot use
+        # -Z crate-attr=feature(strict_provenance_lints) when -Z build-std is needed.
+        target_rustflags+="${strict_provenance_lints}"
     elif [[ -n "${nightly}" ]]; then
         cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg "${target_flags[@]}")
         # Only build core because our library code doesn't depend on std.

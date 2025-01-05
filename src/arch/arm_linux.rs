@@ -41,7 +41,7 @@ const KUSER_CMPXCHG64: usize = 0xFFFF0F60;
 fn kuser_helper_version() -> i32 {
     // SAFETY: core assumes that at least __kuser_memory_barrier (__kuser_helper_version >= 3) is
     // available on this platform. __kuser_helper_version is always available on such a platform.
-    unsafe { (KUSER_HELPER_VERSION as *const i32).read() }
+    unsafe { crate::utils::ptr::with_exposed_provenance::<i32>(KUSER_HELPER_VERSION).read() }
 }
 
 #[cfg(any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"))]
