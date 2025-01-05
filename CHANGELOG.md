@@ -12,6 +12,14 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Optimize Hexagon atomic RMWs. ([cd12f7b](https://github.com/taiki-e/atomic-maybe-uninit/commit/cd12f7b60fb41796528fe351e6d5b8ad1bb3dedf))
+
+- Improve compile-time detection of x86_32 x87. ([7c40f86](https://github.com/taiki-e/atomic-maybe-uninit/commit/7c40f86e2eba61bdf4268129c39d1721f2efe1f1))
+
+- Improve compile-time detection of m68k isa-68020. ([0aec2a6](https://github.com/taiki-e/atomic-maybe-uninit/commit/0aec2a6703d4bc92bbd5e9619d370754d0299754))
+
+- Improve diagnostics when method is unavailable. ([b9f7f2d](https://github.com/taiki-e/atomic-maybe-uninit/commit/b9f7f2da3af19cee947ac2685833de6d9a924959))
+
 ## [0.3.5] - 2024-11-23
 
 - Documentation improvements.
