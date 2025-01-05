@@ -75,31 +75,33 @@ macro_rules! __test_atomic {
         fn compare_exchange() {
             unsafe {
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
-                    assert_eq!(
-                        a.compare_exchange(
-                            MaybeUninit::new(5),
-                            MaybeUninit::new(10),
-                            success,
-                            failure
-                        )
-                        .unwrap()
-                        .assume_init(),
-                        5
-                    );
-                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
-                    assert_eq!(
-                        a.compare_exchange(
-                            MaybeUninit::new(6),
-                            MaybeUninit::new(12),
-                            success,
-                            failure
-                        )
-                        .unwrap_err()
-                        .assume_init(),
-                        10
-                    );
-                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
+                    for (x, y) in [(5, 10), ($ty::MAX, $ty::MIN), ($ty::MIN, $ty::MAX)] {
+                        let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(x));
+                        assert_eq!(
+                            a.compare_exchange(
+                                MaybeUninit::new(x),
+                                MaybeUninit::new(y),
+                                success,
+                                failure
+                            )
+                            .unwrap()
+                            .assume_init(),
+                            x
+                        );
+                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                        assert_eq!(
+                            a.compare_exchange(
+                                MaybeUninit::new(6),
+                                MaybeUninit::new(12),
+                                success,
+                                failure
+                            )
+                            .unwrap_err()
+                            .assume_init(),
+                            y
+                        );
+                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                    }
                 }
             }
         }
@@ -107,27 +109,29 @@ macro_rules! __test_atomic {
         fn compare_exchange_weak() {
             unsafe {
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(4));
-                    assert_eq!(
-                        a.compare_exchange_weak(
-                            MaybeUninit::new(6),
-                            MaybeUninit::new(8),
-                            success,
-                            failure
-                        )
-                        .unwrap_err()
-                        .assume_init(),
-                        4
-                    );
-                    let mut old = a.load(Ordering::Relaxed);
-                    loop {
-                        let new = MaybeUninit::new(old.assume_init() * 2);
-                        match a.compare_exchange_weak(old, new, success, failure) {
-                            Ok(_) => break,
-                            Err(x) => old = x,
+                    for x in [4, $ty::MAX, $ty::MIN] {
+                        let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(x));
+                        assert_eq!(
+                            a.compare_exchange_weak(
+                                MaybeUninit::new(6),
+                                MaybeUninit::new(8),
+                                success,
+                                failure
+                            )
+                            .unwrap_err()
+                            .assume_init(),
+                            x
+                        );
+                        let mut old = a.load(Ordering::Relaxed);
+                        loop {
+                            let new = MaybeUninit::new(old.assume_init().wrapping_add(2));
+                            match a.compare_exchange_weak(old, new, success, failure) {
+                                Ok(_) => break,
+                                Err(x) => old = x,
+                            }
                         }
+                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), x.wrapping_add(2));
                     }
-                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 8);
                 }
             }
         }
