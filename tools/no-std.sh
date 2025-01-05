@@ -169,7 +169,7 @@ run() {
     retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
   elif [[ -n "${nightly}" ]]; then
     case "${target}" in
-      m68k*) ;;
+      m68k* | csky*) ;;
       *) args+=(-Z build-std="core") ;;
     esac
   else
@@ -225,7 +225,7 @@ run() {
       linker=linkall.x
       target_rustflags+=" -C link-arg=-Wl,-T${linker} -C link-arg=-nostartfiles"
       ;;
-    m68k*)
+    m68k* | csky*)
       test_dir=tests/m68k
       # This is a workaround for the problem of `core` failing to compile in LLVM 19 (and older).
       # https://github.com/llvm/llvm-project/issues/107939
@@ -254,7 +254,7 @@ run() {
   (
     cd -- "${test_dir}"
     case "${target}" in
-      m68k*) ;;
+      m68k* | csky*) ;;
       *)
         CARGO_TARGET_DIR="${target_dir}/no-std-test" \
           RUSTFLAGS="${target_rustflags}" \

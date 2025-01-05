@@ -19,6 +19,9 @@ use core::prelude::v1::*;
 #[path = "../../../src/utils.rs"]
 mod utils;
 
+#[cfg(target_arch = "csky")]
+#[path = "../../../src/arch/csky.rs"]
+mod csky;
 #[cfg(target_arch = "m68k")]
 #[path = "../../../src/arch/m68k.rs"]
 mod m68k;
