@@ -728,7 +728,11 @@ if [[ -f .cspell.json ]]; then
                 if [[ "${manifest_path}" != "Cargo.toml" ]] && [[ "$(tomlq -c '.workspace' "${manifest_path}")" == "null" ]]; then
                     continue
                 fi
-                dependencies+="$(cargo metadata --format-version=1 --no-deps --manifest-path "${manifest_path}" | jq -r '. as $metadata | .workspace_members[] as $id | $metadata.packages[] | select(.id == $id) | .dependencies[].name')"$'\n'
+                m=$(cargo metadata --format-version=1 --no-deps --manifest-path "${manifest_path}" || :)
+                if [[ -z "${m}" ]]; then
+                    continue # Ignore broken manifest
+                fi
+                dependencies+="$(jq -r '. as $metadata | .workspace_members[] as $id | $metadata.packages[] | select(.id == $id) | .dependencies[].name' <<<"${m}")"$'\n'
             done
             dependencies=$(LC_ALL=C sort -f -u <<<"${dependencies//[0-9_-]/$'\n'}")
         fi

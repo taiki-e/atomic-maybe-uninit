@@ -109,6 +109,7 @@ sltui
 sreg
 srlv
 stbar
+stdarch
 stdcx
 stilp
 stlxp

@@ -5,6 +5,7 @@ updates:
       - /
       # crates with [workspace] table are not recognized by the above 'directory: /'
       - /tests/avr
+      # - /tests/m68k # This has a path dependency on a crate that does not exist at checkout that is initialized by the script.
       - /tests/msp430
       - /tests/no-std-qemu
       - /tests/xtensa
