@@ -46,6 +46,9 @@ default_targets=(
 
     # msp430
     msp430-none-elf
+
+    # m68k
+    m68k-unknown-linux-gnu
 )
 
 x() {
@@ -164,7 +167,10 @@ run() {
     if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
         retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
     elif [[ -n "${nightly}" ]]; then
-        args+=(-Z build-std="core")
+        case "${target}" in
+            m68k*) ;;
+            *) args+=(-Z build-std="core") ;;
+        esac
     else
         printf '%s\n' "target '${target}' requires nightly compiler (skipped)"
         return 0
@@ -218,15 +224,42 @@ run() {
             linker=linkall.x
             target_rustflags+=" -C link-arg=-Wl,-T${linker} -C link-arg=-nostartfiles"
             ;;
+        m68k*)
+            test_dir=tests/m68k
+            # This is a workaround for the problem of `core` failing to compile in LLVM 19 (and older).
+            # https://github.com/llvm/llvm-project/issues/107939
+            init_core='1'
+            if [[ -f ./"${test_dir}"/rust-src/rust-version ]]; then
+                core_version=$(<./"${test_dir}"/rust-src/rust-version)
+                if [[ "${core_version}" == "${rustc_version}${commit_date}" ]]; then
+                    init_core=''
+                fi
+            fi
+            if [[ -n "${init_core}" ]]; then
+                rm -rf ./"${test_dir}"/rust-src
+                mkdir -p ./"${test_dir}"/rust-src
+                sysroot=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print sysroot)
+                cp -r "${sysroot}"/lib/rustlib/src/rust/library/{core,stdarch,portable-simd} ./"${test_dir}"/rust-src/
+                printf '%s\n' "${rustc_version}${commit_date}" >./"${test_dir}"/rust-src/rust-version
+            fi
+            ;;
         *) bail "unrecognized target '${target}'" ;;
     esac
-    args+=(--all-features)
+    case "${target}" in
+        m68k*) ;;
+        *) args+=(--all-features) ;;
+    esac
 
     (
         cd -- "${test_dir}"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-            RUSTFLAGS="${target_rustflags}" \
-            x_cargo "${args[@]}" "$@"
+        case "${target}" in
+            m68k*) ;;
+            *)
+                CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+                    RUSTFLAGS="${target_rustflags}" \
+                    x_cargo "${args[@]}" "$@"
+                ;;
+        esac
         CARGO_TARGET_DIR="${target_dir}/no-std-test" \
             RUSTFLAGS="${target_rustflags}" \
             x_cargo "${args[@]}" --release "$@"
@@ -252,6 +285,18 @@ run() {
                 CARGO_TARGET_DIR="${target_dir}/no-std-test" \
                     RUSTFLAGS="${target_rustflags}" \
                     x_cargo "${args[@]}" --release "$@"
+                ;;
+            m68k*)
+                # Note: We cannot test everything at once due to size.
+                # isize, usize, i8, u8 are covered by the run with the default feature.
+                # NB: Sync feature list with tests/m68k/Cargo.toml
+                feature=i16,u16,i32,u32,i64,u64
+                # CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+                #     RUSTFLAGS="${target_rustflags}" \
+                #     x_cargo "${args[@]}" --features "${feature}" "$@"
+                CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+                    RUSTFLAGS="${target_rustflags}" \
+                    x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
                 ;;
         esac
     )

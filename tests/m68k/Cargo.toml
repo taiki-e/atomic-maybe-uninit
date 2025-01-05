@@ -1,0 +1,46 @@
+[package]
+name = "no-core"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[features]
+default = ["isize", "usize", "i8", "u8"]
+# NB: Sync feature list with tools/no-std.sh
+isize = []
+usize = []
+i8 = []
+u8 = []
+i16 = []
+u16 = []
+i32 = []
+u32 = []
+i64 = []
+u64 = []
+
+[dependencies]
+# atomic-maybe-uninit = { path = "../.." }
+
+core = { path = "rust-src/core" }
+paste = "1"
+
+[workspace]
+resolver = "2"
+
+[lints.rust]
+rust_2018_idioms = "warn"
+single_use_lifetimes = "warn"
+# unsafe_op_in_unsafe_fn = "warn" # Set at crate-level instead since https://github.com/rust-lang/rust/pull/100081 is not available on MSRV
+
+[profile.dev]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+
+[profile.release]
+codegen-units = 1
+lto = true
+# TODO: panic in cas test with -C opt-level=3
+opt-level = "s"
+panic = "abort"
