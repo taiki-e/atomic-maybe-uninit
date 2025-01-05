@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.6] - 2025-01-05
+
 - Optimize Hexagon atomic RMWs. ([cd12f7b](https://github.com/taiki-e/atomic-maybe-uninit/commit/cd12f7b60fb41796528fe351e6d5b8ad1bb3dedf))
 
 - Improve compile-time detection of x86_32 x87. ([7c40f86](https://github.com/taiki-e/atomic-maybe-uninit/commit/7c40f86e2eba61bdf4268129c39d1721f2efe1f1))
@@ -290,7 +292,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.5...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.6...HEAD
+[0.3.6]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.2...v0.3.3
