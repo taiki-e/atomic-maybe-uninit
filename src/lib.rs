@@ -40,7 +40,7 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, Arm64EC, s390x, MIPS,
 | m68k \[8] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | xtensa \[8] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 
-\[1] Arm's atomic RMW operations are not available on v6-m (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (Linux is M68020 by default). Xtensa's atomic RMW operations are not available on esp32s2.<br>
+\[1] Arm's atomic RMW operations are not available on Armv6-M (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (Linux is M68020 by default). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple and Windows (except Windows 7) targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[4] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
