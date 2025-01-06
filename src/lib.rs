@@ -800,6 +800,7 @@ mod private {
     ///
     /// The implementer must guarantee that `align_of::<Self::Align>() == size_of::<Self>()`.
     // Auto traits are needed to better docs.
+    #[allow(unknown_lints, unnameable_types)] // Not public API. unnameable_types is available on Rust 1.79+
     pub unsafe trait PrimitivePriv:
         Copy + Send + Sync + Unpin + UnwindSafe + RefUnwindSafe
     {
@@ -808,14 +809,19 @@ mod private {
     }
 
     #[repr(align(1))]
+    #[allow(unknown_lints, unnameable_types)] // Not public API. unnameable_types is available on Rust 1.79+
     pub struct Align1(#[allow(dead_code)] u8);
     #[repr(align(2))]
+    #[allow(unknown_lints, unnameable_types)] // Not public API. unnameable_types is available on Rust 1.79+
     pub struct Align2(#[allow(dead_code)] u16);
     #[repr(align(4))]
+    #[allow(unknown_lints, unnameable_types)] // Not public API. unnameable_types is available on Rust 1.79+
     pub struct Align4(#[allow(dead_code)] u32);
     #[repr(align(8))]
+    #[allow(unknown_lints, unnameable_types)] // Not public API. unnameable_types is available on Rust 1.79+
     pub struct Align8(#[allow(dead_code)] u64);
     #[repr(align(16))]
+    #[allow(unknown_lints, unnameable_types)] // Not public API. unnameable_types is available on Rust 1.79+
     pub struct Align16(#[allow(dead_code)] u128);
     #[cfg(target_pointer_width = "16")]
     pub(crate) type AlignPtr = Align2;
