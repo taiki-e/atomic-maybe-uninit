@@ -34,7 +34,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,portable_atomic_pre_llvm_20)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -85,7 +85,7 @@ fn main() {
     }
 
     if version.llvm < 20 {
-        println!("cargo:rustc-cfg=portable_atomic_pre_llvm_20");
+        println!("cargo:rustc-cfg=atomic_maybe_uninit_pre_llvm_20");
     }
 
     match target_arch {
