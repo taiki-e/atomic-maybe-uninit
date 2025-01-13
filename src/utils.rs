@@ -253,6 +253,8 @@ type RetInt = RegSize;
 #[allow(dead_code)]
 #[inline]
 pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetInt, RetInt) {
+    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
+    use self::ptr::PtrExt as _;
     // RISC-V, MIPS, SPARC, LoongArch, Xtensa, BPF: shift amount of 32-bit shift instructions is 5 bits unsigned (0-31).
     // PowerPC, C-SKY: shift amount of 32-bit shift instructions is 6 bits unsigned (0-63) and shift amount 32-63 means "clear".
     // Arm: shift amount of 32-bit shift instructions is 8 bits unsigned (0-255).
@@ -292,10 +294,6 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
     }
     (aligned_ptr, shift as RetInt, mask)
 }
-
-#[cfg(atomic_maybe_uninit_no_strict_provenance)]
-#[allow(unused_imports)]
-use self::ptr::PtrExt;
 
 // strict_provenance polyfill for pre-1.84 rustc.
 #[allow(dead_code)]
