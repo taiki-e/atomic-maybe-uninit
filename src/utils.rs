@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #[allow(unused_imports)]
-pub(crate) use self::gen::RegSize;
+pub(crate) use self::generated::RegSize;
 #[macro_use]
 #[path = "gen/utils.rs"]
-mod gen;
+mod generated;
 
 use core::{
     mem::{self, ManuallyDrop, MaybeUninit},
