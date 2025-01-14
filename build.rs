@@ -144,8 +144,8 @@ fn main() {
             if !version.probe(85, 2024, 12, 13) || needs_target_feature_fallback(&version, None) {
                 // i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work on pre-nightly-2024-12-14 or non-nightly.
                 // And core assumes x87 is always available.
-                // https://github.com/rust-lang/rust/blob/1.80.0/library/core/src/num/dec2flt/fpu.rs#L6
-                // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/i686_unknown_uefi.rs#L24
+                // https://github.com/rust-lang/rust/blob/1.84.0/library/core/src/num/dec2flt/fpu.rs#L6
+                // https://github.com/rust-lang/rust/blob/1.84.0/compiler/rustc_target/src/spec/targets/i686_unknown_uefi.rs#L24
                 // However, custom bare metal targets tend to disable x87 and do not use floats.
                 let x87 = target_os != "none";
                 target_feature_fallback("x87", x87);
@@ -247,10 +247,10 @@ fn main() {
                 "v7r" | "v8r" | "v9r" => {} // rclass
                 "v6m" | "v7em" | "v7m" | "v8m" => mclass = true,
                 // arm-linux-androideabi is v5te
-                // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L18
+                // https://github.com/rust-lang/rust/blob/1.84.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L18
                 _ if target == "arm-linux-androideabi" => subarch = "v5te",
                 // armeb-unknown-linux-gnueabi is v8 & aclass
-                // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L18
+                // https://github.com/rust-lang/rust/blob/1.84.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L18
                 _ if target == "armeb-unknown-linux-gnueabi" => subarch = "v8",
                 // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
                 "" => subarch = "v6",
@@ -285,8 +285,8 @@ fn main() {
             } else {
                 (false, false)
             };
-            // As of rustc 1.80, target_feature "v8m" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs#L54
+            // As of rustc 1.84, target_feature "v8m" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.84.0/compiler/rustc_target/src/target_features.rs#L102
             v6 |= target_feature_fallback("v8m", v8m);
             if needs_target_feature_fallback(&version, None) {
                 v7 |= target_feature_fallback("v8", v8);
@@ -379,8 +379,8 @@ fn main() {
                     _ => {}
                 }
             }
-            // As of rustc 1.80, target_feature "fast-serialization" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/target_features.rs
+            // As of rustc 1.84, target_feature "fast-serialization" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.84.0/compiler/rustc_target/src/target_features.rs#L547
             // arch9 features: https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/SystemZ/SystemZFeatures.td#L103
             // bcr 14,0
             target_feature_fallback("fast-serialization", arch9_features);
@@ -406,7 +406,7 @@ fn main() {
                     }
                 } else {
                     // https://github.com/llvm/llvm-project/pull/109278
-                    // https://github.com/rust-lang/rust/blob/1.82.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L17
+                    // https://github.com/rust-lang/rust/blob/1.84.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L18
                     v9 = target_os == "linux" || target_os == "solaris";
                 }
                 target_feature_fallback("leoncasa", leoncasa);
@@ -424,7 +424,7 @@ fn main() {
                         _ => {}
                     }
                 } else {
-                    // https://github.com/rust-lang/rust/blob/1.80.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L6
+                    // https://github.com/rust-lang/rust/blob/1.84.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L6
                     isa_68020 = target_os == "linux";
                 }
                 target_feature_fallback("isa-68020", isa_68020);

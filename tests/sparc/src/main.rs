@@ -236,7 +236,7 @@ fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
 }
 
 mod sim {
-    // Refs: https://github.com/rust-lang/rust/blob/59ae5eba7e74d2cc7d8d611662e8b3a642d7093a/src/doc/rustc/src/platform-support/sparc-unknown-none-elf.md
+    // Refs: https://github.com/rust-lang/rust/blob/1.84.0/src/doc/rustc/src/platform-support/sparc-unknown-none-elf.md
 
     use core::fmt;
 
