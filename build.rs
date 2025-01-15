@@ -160,7 +160,7 @@ fn main() {
                 // (Since Rust 1.78, Windows (except Windows 7) targets also enable CMPXCHG16B, but
                 // this branch is only used on pre-1.69 that cmpxchg16b_target_feature is unstable.)
                 // Script to get builtin targets that support CMPXCHG16B by default:
-                // $ (for target in $(rustc --print target-list | grep -E '^x86_64'); do rustc --print cfg --target "${target}" | grep -Fq '"cmpxchg16b"' && printf '%s\n' "${target}"; done)
+                // $ (for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "x86_64" then .key else empty end'); do rustc --print cfg --target "${target}" | grep -Fq '"cmpxchg16b"' && printf '%s\n' "${target}"; done)
                 let is_apple = env::var("CARGO_CFG_TARGET_VENDOR").unwrap_or_default() == "apple";
                 let cmpxchg16b = is_apple;
                 // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/KM3jz616j
@@ -176,9 +176,9 @@ fn main() {
                 // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/AArch64/AArch64Processors.td#L1203
                 // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.0/llvm/lib/Target/AArch64/AArch64Processors.td#L865
                 // Script to get builtin targets that support FEAT_LSE/FEAT_LSE2/FEAT_LRCPC by default:
-                // $ (for target in $(rustc --print target-list | grep -E '^aarch64|^arm64'); do rustc --print cfg --target "${target}" | grep -Fq '"lse"' && printf '%s\n' "${target}"; done)
-                // $ (for target in $(rustc --print target-list | grep -E '^aarch64|^arm64'); do rustc --print cfg --target "${target}" | grep -Fq '"lse2"' && printf '%s\n' "${target}"; done)
-                // $ (for target in $(rustc --print target-list | grep -E '^aarch64|^arm64'); do rustc --print cfg --target "${target}" | grep -Fq '"rcpc"' && printf '%s\n' "${target}"; done)
+                // $ (for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "aarch64" or .value.arch == "arm64ec" then .key else empty end'); do rustc --print cfg --target "${target}" | grep -Fq '"lse"' && printf '%s\n' "${target}"; done)
+                // $ (for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "aarch64" or .value.arch == "arm64ec" then .key else empty end'); do rustc --print cfg --target "${target}" | grep -Fq '"lse2"' && printf '%s\n' "${target}"; done)
+                // $ (for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "aarch64" or .value.arch == "arm64ec" then .key else empty end'); do rustc --print cfg --target "${target}" | grep -Fq '"rcpc"' && printf '%s\n' "${target}"; done)
                 let is_macos = target_os == "macos";
                 let mut lse = is_macos;
                 let mut rcpc = is_macos;
@@ -205,12 +205,9 @@ fn main() {
             subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
             subarch = subarch.split_once('.').unwrap_or((subarch, "")).0; // ignore .base/.main suffix
             let mut known = true;
-            // As of rustc nightly-2024-05-04, there are the following "vN*" patterns:
-            // $ rustc +nightly --print target-list | grep -E '^(arm|thumb)(eb)?' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
+            // As of rustc nightly-2025-01-13, there are the following "vN*" patterns:
+            // $ rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
             // ""
-            // "64_32"
-            // "64e"
-            // "64ec"
             // "v4t"
             // "v5te"
             // "v6"
@@ -230,8 +227,6 @@ fn main() {
             // - v7, v7a, v7neon, v7s, and v7k are aclass
             // - v6m, v7em, v7m, and v8m are mclass
             // - v7r and v8r are rclass
-            // - 64_32 and 64e are aarch64
-            // - 64ec is arm64ec
             //
             // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
             // For example:
