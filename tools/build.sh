@@ -10,23 +10,8 @@ cd -- "$(dirname -- "$0")"/..
 #    ./tools/build.sh [+toolchain] [target]...
 
 default_targets=(
-    # x86_64
-    # rustc --print target-list | grep -E '^x86_64'
-    x86_64-unknown-linux-gnu
-    # x86_64 X32 ABI
-    x86_64-unknown-linux-gnux32
-    # x86_64 with CMPXCHG16B
-    x86_64-apple-darwin
-    # x86_64 without SSE
-    x86_64-unknown-none
-
-    # x86
-    # rustc --print target-list | grep -E '^i.86'
-    i586-unknown-linux-gnu
-    i686-unknown-linux-gnu
-
     # aarch64
-    # rustc --print target-list | grep -E '^(aarch64|arm64)'
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "aarch64" then .key else empty end'
     aarch64-unknown-linux-gnu
     # big endian
     aarch64_be-unknown-linux-gnu
@@ -38,11 +23,11 @@ default_targets=(
     aarch64-apple-darwin
 
     # arm64ec
-    # rustc --print target-list | grep -E '^arm64ec'
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm64ec" then .key else empty end'
     arm64ec-pc-windows-msvc
 
     # arm
-    # rustc --print target-list | grep -E '^(arm|thumb)'
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end'
     # v4T
     armv4t-unknown-linux-gnueabi
     # v5TE
@@ -79,22 +64,25 @@ default_targets=(
     thumbv8m.main-none-eabi
     thumbv8m.main-none-eabihf
 
-    # riscv
-    # rustc --print target-list | grep -E '^riscv'
-    # riscv32 with A-extension
-    riscv32imac-unknown-none-elf
-    # riscv32 without A-extension
-    riscv32i-unknown-none-elf
-    # riscv64 with A-extension
-    riscv64gc-unknown-linux-gnu
-    # riscv64 without A-extension
-    riscv64i-unknown-none-elf # custom target
+    # avr
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "avr" then .key else empty end'
+    avr-unknown-gnu-atmega2560 # custom target
+
+    # hexagon
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
+    hexagon-unknown-linux-musl
 
     # loongarch
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "loongarch64" then .key else empty end'
     loongarch64-unknown-linux-gnu
 
+    # m68k
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "m68k" then .key else empty end'
+    # TODO(m68k): LLVM bug: https://github.com/rust-lang/rust/issues/89498
+    # m68k-unknown-linux-gnu
+
     # mips
-    # rustc --print target-list | grep -E '^mips'
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "mips" or .value.arch == "mips32r6" or .value.arch == "mips64" or .value.arch == "mips64r6" then .key else empty end'
     # mips32r2
     mips-unknown-linux-gnu
     mipsel-unknown-linux-gnu
@@ -108,33 +96,53 @@ default_targets=(
     mipsisa64r6-unknown-linux-gnuabi64
     mipsisa64r6el-unknown-linux-gnuabi64
 
+    # msp430
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "msp430" then .key else empty end'
+    msp430-none-elf
+
     # powerpc
-    # rustc --print target-list | grep -E '^powerpc'
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "powerpc" or .value.arch == "powerpc64" then .key else empty end'
     powerpc-unknown-linux-gnu
     powerpc64-unknown-linux-gnu
     powerpc64le-unknown-linux-gnu
 
+    # riscv
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "riscv32" or .value.arch == "riscv64" then .key else empty end'
+    # riscv32 with A-extension
+    riscv32imac-unknown-none-elf
+    # riscv32 without A-extension
+    riscv32i-unknown-none-elf
+    # riscv64 with A-extension
+    riscv64gc-unknown-linux-gnu
+    # riscv64 without A-extension
+    riscv64i-unknown-none-elf # custom target
+
     # s390x
-    # rustc --print target-list | grep -E '^s390'
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "s390x" then .key else empty end'
     s390x-unknown-linux-gnu
 
     # sparc
-    # rustc --print target-list | grep -E '^sparc'
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "sparc" or .value.arch == "sparc64" then .key else empty end'
     sparc-unknown-none-elf
     sparc-unknown-linux-gnu
     sparc64-unknown-linux-gnu
 
-    # msp430
-    # rustc --print target-list | grep -E '^msp430'
-    msp430-none-elf
+    # x86
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "x86" then .key else empty end'
+    # no SSE
+    i586-unknown-linux-gnu
+    # with SSE2
+    i686-unknown-linux-gnu
 
-    # avr
-    # rustc --print target-list | grep -E '^avr'
-    avr-unknown-gnu-atmega2560 # custom target
-
-    # hexagon
-    # rustc --print target-list | grep -E '^hexagon'
-    hexagon-unknown-linux-musl
+    # x86_64
+    # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "x86_64" then .key else empty end'
+    x86_64-unknown-linux-gnu
+    # with CMPXCHG16B
+    x86_64-apple-darwin
+    # X32 ABI
+    x86_64-unknown-linux-gnux32
+    # no SSE
+    x86_64-unknown-none
 )
 
 x() {
@@ -147,7 +155,7 @@ x_cargo() {
     if [[ -n "${RUSTFLAGS:-}" ]]; then
         printf '%s\n' "+ RUSTFLAGS='${RUSTFLAGS}' \\"
     fi
-    x cargo "$@"
+    x cargo ${pre_args[@]+"${pre_args[@]}"} "$@"
     printf '\n'
 }
 retry() {
@@ -159,6 +167,20 @@ retry() {
         fi
     done
     "$@"
+}
+bail() {
+    printf >&2 'error: %s\n' "$*"
+    exit 1
+}
+is_no_std() {
+    case "$1" in
+        *-linux-none*) ;;
+        # https://github.com/rust-lang/rust/blob/1.84.0/library/std/build.rs#L65
+        # ESP-IDF supports std, but it is often broken.
+        # TODO(aarch64_be): https://github.com/BurntSushi/memchr/pull/162
+        *-none* | *-psp* | *-psx* | *-cuda* | avr* | *-espidf | aarch64_be*) return 0 ;;
+    esac
+    return 1
 }
 
 pre_args=()
@@ -186,8 +208,14 @@ rustc_minor_version="${rustc_version#*.}"
 rustc_minor_version="${rustc_minor_version%%.*}"
 llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | { grep -E '^LLVM version:' || true; } | cut -d' ' -f3)
 llvm_version="${llvm_version%%.*}"
-base_args=(${pre_args[@]+"${pre_args[@]}"} hack build)
 target_dir=$(pwd)/target
+# Do not use check here because it misses some errors such as invalid inline asm operands and LLVM codegen errors.
+subcmd=build
+if [[ -n "${TESTS:-}" ]]; then
+    # TESTS=1 builds binaries, so cargo build requires toolchain and libraries.
+    subcmd=check
+fi
+base_args=(hack "${subcmd}")
 nightly=''
 base_rustflags="${RUSTFLAGS:-}"
 strict_provenance_lints=''
@@ -197,13 +225,15 @@ if [[ "${rustc_version}" =~ nightly|dev ]]; then
         retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
     fi
     # We only run clippy on the recent nightly to avoid old clippy bugs.
-    if [[ "${rustc_minor_version}" -ge 84 ]] && [[ -z "${RUSTC:-}" ]]; then
+    if [[ "${rustc_minor_version}" -ge 86 ]] && [[ -z "${RUSTC:-}" ]] && [[ -n "${TESTS:-}" ]]; then
+        subcmd=clippy
         retry rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
-        base_args=(${pre_args[@]+"${pre_args[@]}"} hack clippy)
+        base_args=(hack "${subcmd}")
         base_rustflags+=' -Z crate-attr=feature(unqualified_local_imports) -W unqualified_local_imports'
         strict_provenance_lints=' -Z crate-attr=feature(strict_provenance_lints) -W fuzzy_provenance_casts'
     fi
 fi
+export CARGO_TARGET_DIR="${target_dir}"
 export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
 
 build() {
@@ -230,8 +260,18 @@ build() {
         target_rustflags+="${strict_provenance_lints}"
     elif [[ -n "${nightly}" ]]; then
         cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg "${target_flags[@]}")
-        # Only build core because our library code doesn't depend on std.
-        args+=(-Z build-std="core")
+        if [[ -n "${TESTS:-}" ]]; then
+            if is_no_std "${target}"; then
+                args+=(-Z build-std="core,alloc")
+            elif grep -Eq '^panic="abort"' <<<"${cfgs}"; then
+                args+=(-Z build-std="panic_abort,std")
+            else
+                args+=(-Z build-std)
+            fi
+        else
+            # Only build core because our library code doesn't depend on std.
+            args+=(-Z build-std="core")
+        fi
     else
         printf '%s\n' "target '${target}' requires nightly compiler (skipped all checks)"
         return 0
@@ -245,11 +285,52 @@ build() {
             target_rustflags+=" -C opt-level=s"
         fi
     fi
+    if ! grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
+        case "${target}" in
+            # TODO: LLVM bug: Undefined temporary symbol error when building std.
+            mips-*-linux-* | mipsel-*-linux-*) target_rustflags+=" -C opt-level=1" ;;
+        esac
+    fi
 
-    args+=(
-        --workspace --no-private
-        --feature-powerset --optional-deps
-    )
+    if [[ -n "${TESTS:-}" ]]; then
+        # We use std in main tests, so we cannot build them on no-std targets.
+        # Some no-std targets have target-specific test crates, so build public
+        # crates' library part and (if they exist) target-specific test crates.
+        if is_no_std "${target}"; then
+            case "${target}" in
+                sparc-*) target_rustflags+=' -C target-cpu=leon4' ;;
+            esac
+            RUSTFLAGS="${target_rustflags}" \
+                x_cargo "${args[@]}" --manifest-path Cargo.toml "$@"
+            # Most target-specific test crates are nightly-only.
+            if [[ -n "${nightly}" ]]; then
+                local test_dir=''
+                # NB: sync with tools/no-std.sh
+                case "${target}" in
+                    arm* | thumb* | riscv*) test_dir=tests/no-std-qemu ;;
+                    avr-unknown-gnu-atmega2560) test_dir=tests/avr ;; # tests/avr is for atmega2560 not atmega328
+                    msp430*) test_dir=tests/msp430 ;;
+                    sparc-*) test_dir=tests/sparc ;;
+                    xtensa*) test_dir=tests/xtensa ;;
+                esac
+                if [[ -n "${test_dir}" ]]; then
+                    RUSTFLAGS="${target_rustflags}" \
+                        x_cargo "${args[@]}" --all-features --manifest-path "${test_dir}"/Cargo.toml "$@"
+                fi
+            fi
+            return 0
+        fi
+        args+=(
+            --tests
+            --all-features
+            --workspace
+        )
+    else
+        args+=(
+            --feature-powerset --optional-deps
+            --workspace --no-private
+        )
+    fi
     RUSTFLAGS="${target_rustflags}" \
         x_cargo "${args[@]}" "$@"
     case "${target}" in

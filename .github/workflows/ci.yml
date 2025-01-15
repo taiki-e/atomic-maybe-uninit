@@ -46,6 +46,8 @@ jobs:
       pull-requests: write # for gh pr edit --add-assignee
       repository-projects: read # for gh pr edit --add-assignee
     secrets: inherit
+    with:
+      clippy: false # covered by TESTS=1 ./tools/build.sh
 
   test:
     needs: tidy
@@ -369,16 +371,21 @@ jobs:
 
   build:
     needs: tidy
+    name: build (${{ matrix.name || matrix.rust }})
     strategy:
       fail-fast: false
       matrix:
-        rust:
-          - '1.59'
-          - stable
-          - beta
-          - nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
-          - nightly-2023-08-24 # The oldest nightly version that supports MaybeUninit registers: https://github.com/rust-lang/rust/pull/114790
-          - nightly
+        include:
+          - rust: '1.59'
+          - rust: stable
+          - rust: beta
+          - rust: nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
+          - rust: nightly-2023-08-24 # The oldest nightly version that supports MaybeUninit registers: https://github.com/rust-lang/rust/pull/114790
+          - rust: nightly
+          # Check that test suite can be built
+          - name: nightly, --tests
+            rust: nightly
+            tests: 1
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -388,6 +395,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
       - uses: taiki-e/install-action@cargo-hack
       - run: tools/build.sh
+        env:
+          TESTS: ${{ matrix.tests }}
 
   no-std:
     needs: tidy
@@ -482,6 +491,10 @@ jobs:
         if: startsWith(matrix.rust, 'nightly-')
       - run: tools/no-std.sh
       - run: tools/build.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
+        if: matrix.rust == 'stable'
+      - run: tools/build.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
+        env:
+          TESTS: 1
         if: matrix.rust == 'stable'
       - run: tools/no-std.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
         if: matrix.rust == 'stable'
