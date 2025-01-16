@@ -414,7 +414,7 @@ jobs:
           - stable
           - nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
           - nightly
-    runs-on: ubuntu-24.04 # TODO: use ubuntu-latest once https://github.com/actions/runner-images/issues/10636 done
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@v1
