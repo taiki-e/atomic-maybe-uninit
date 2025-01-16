@@ -6,6 +6,7 @@
 
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
+use arduino_hal::avr_device;
 use atomic_maybe_uninit::*;
 
 macro_rules! __test_atomic {
@@ -236,6 +237,8 @@ fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
 
 mod sim {
     use core::fmt;
+
+    use arduino_hal::avr_device;
 
     pub fn exit(_code: u32) -> ! {
         // Note that there is no way to exit simavr with a non-zero exit code.
