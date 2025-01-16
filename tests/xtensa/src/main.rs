@@ -156,7 +156,7 @@ macro_rules! __test_atomic {
     };
 }
 
-#[esp_hal::entry]
+#[esp_hal::main]
 fn main() -> ! {
     macro_rules! test_atomic {
         ($ty:ident) => {
