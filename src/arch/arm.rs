@@ -259,7 +259,7 @@ macro_rules! atomic {
                                     "bne 2b",                                          // if Z == 0 { jump 'retry }
                                 $acquire,                                              // fence
                                 dst = in(reg) dst,
-                                val = inout(reg) val => _,
+                                val = in(reg) val,
                                 out = out(reg) out,
                                 r = out(reg) _,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -321,7 +321,7 @@ macro_rules! atomic {
                                 "4:", // 'success:
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -350,7 +350,7 @@ macro_rules! atomic {
                                 "4:", // 'success:
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -382,7 +382,7 @@ macro_rules! atomic {
                                 "5:", // 'end:
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -442,7 +442,7 @@ macro_rules! atomic {
                                 $acquire,                                          // fence
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -470,7 +470,7 @@ macro_rules! atomic {
                                 "5:", // 'end:
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -497,7 +497,7 @@ macro_rules! atomic {
                                 "5:", // 'success:
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
-                                new = inout(reg) new => _,
+                                new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,
                                 // Do not use `preserves_flags` because CMP modifies the condition flags.
@@ -602,8 +602,8 @@ macro_rules! atomic64 {
                                 $acquire,                         // fence
                                 dst = in(reg) dst,
                                 // val pair - must be even-numbered and not R14
-                                inout("r2") val.pair.lo => _,
-                                inout("r3") val.pair.hi => _,
+                                in("r2") val.pair.lo,
+                                in("r3") val.pair.hi,
                                 // tmp pair - must be even-numbered and not R14
                                 out("r4") _,
                                 out("r5") _,
@@ -648,8 +648,8 @@ macro_rules! atomic64 {
                                 dst = in(reg) dst,
                                 r = out(reg) _,
                                 // val pair - must be even-numbered and not R14
-                                inout("r2") val.pair.lo => _,
-                                inout("r3") val.pair.hi => _,
+                                in("r2") val.pair.lo,
+                                in("r3") val.pair.hi,
                                 // prev pair - must be even-numbered and not R14
                                 out("r0") prev_lo,
                                 out("r1") prev_hi,
@@ -717,8 +717,8 @@ macro_rules! atomic64 {
                                 out("r2") prev_lo,
                                 out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r4") new.pair.lo => _,
-                                inout("r5") new.pair.hi => _,
+                                in("r4") new.pair.lo,
+                                in("r5") new.pair.hi,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
@@ -756,8 +756,8 @@ macro_rules! atomic64 {
                                 out("r2") prev_lo,
                                 out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r4") new.pair.lo => _,
-                                inout("r5") new.pair.hi => _,
+                                in("r4") new.pair.lo,
+                                in("r5") new.pair.hi,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
@@ -798,8 +798,8 @@ macro_rules! atomic64 {
                                 out("r2") prev_lo,
                                 out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r4") new.pair.lo => _,
-                                inout("r5") new.pair.hi => _,
+                                in("r4") new.pair.lo,
+                                in("r5") new.pair.hi,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
@@ -864,8 +864,8 @@ macro_rules! atomic64 {
                                 out("r2") prev_lo,
                                 out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r4") new.pair.lo => _,
-                                inout("r5") new.pair.hi => _,
+                                in("r4") new.pair.lo,
+                                in("r5") new.pair.hi,
                                 // Do not use `preserves_flags` because ORRS modifies the condition flags.
                                 options(nostack),
                             )
@@ -900,8 +900,8 @@ macro_rules! atomic64 {
                                 out("r2") prev_lo,
                                 out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r4") new.pair.lo => _,
-                                inout("r5") new.pair.hi => _,
+                                in("r4") new.pair.lo,
+                                in("r5") new.pair.hi,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )
@@ -935,8 +935,8 @@ macro_rules! atomic64 {
                                 out("r2") prev_lo,
                                 out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
-                                inout("r4") new.pair.lo => _,
-                                inout("r5") new.pair.hi => _,
+                                in("r4") new.pair.lo,
+                                in("r5") new.pair.hi,
                                 // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
                                 options(nostack),
                             )

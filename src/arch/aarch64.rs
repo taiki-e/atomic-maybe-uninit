@@ -293,7 +293,7 @@ macro_rules! atomic {
                                     "mov {r:w}, #1",                                                                 // r = 1
                                     "clrex",                                                                         // EXCLUSIVE = None
                                 "4:", // 'success:
-                                dst = inout(reg) ptr_reg!(dst) => _,
+                                dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
                                 out = out(reg) out,
