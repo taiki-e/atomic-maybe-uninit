@@ -54,201 +54,375 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # See also LLVM version table in https://github.com/taiki-e/portable-atomic/blob/HEAD/.github/workflows/ci.yml.
         include:
+          # ------------------------------------------------------------
+          # x86_64-unknown-linux-gnu
           - rust: '1.59' # LLVM 13
+            target: x86_64-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
+            target: x86_64-unknown-linux-gnu
+          # - rust: '1.81' # LLVM 18
+          #   target: x86_64-unknown-linux-gnu
           - rust: stable
+            target: x86_64-unknown-linux-gnu
           - rust: beta
+            target: x86_64-unknown-linux-gnu
           - rust: nightly
+            target: x86_64-unknown-linux-gnu
           - rust: nightly
+            target: x86_64-unknown-linux-gnu
             flags: -C panic=abort -Z panic_abort_tests
           - rust: nightly
+            target: x86_64-unknown-linux-gnu
             flags: -Z codegen-backend=cranelift
+          # ------------------------------------------------------------
+          # x86_64-apple-darwin
           - rust: nightly
-            # target: x86_64-apple-darwin
-            os: macos-13 # x86_64
+            target: x86_64-apple-darwin
+            os: macos-13
+          - rust: nightly
+            target: x86_64-apple-darwin
+            os: macos-latest # Rosetta on AArch64
+          # ------------------------------------------------------------
+          # x86_64-pc-windows-msvc
+          - rust: nightly
+            target: x86_64-pc-windows-msvc
+            os: windows-latest
+          # ------------------------------------------------------------
+          # aarch64-unknown-linux-gnu
+          - rust: '1.59' # LLVM 13
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          # - rust: '1.81' # LLVM 18
+          #   target: aarch64-unknown-linux-gnu
+          #   os: ubuntu-24.04-arm
+          - rust: stable
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - rust: beta
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - rust: nightly
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - rust: nightly
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest # QEMU on x86_64
+          - rust: nightly
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+            flags: -Z codegen-backend=cranelift
+          # ------------------------------------------------------------
+          # aarch64-apple-darwin
           - rust: '1.59' # LLVM 13
             target: aarch64-apple-darwin
-            os: macos-latest # AArch64
+            os: macos-latest
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: aarch64-apple-darwin
-            os: macos-latest # AArch64
+            os: macos-latest
+          # - rust: '1.81' # LLVM 18
+          #   target: aarch64-apple-darwin
+          #   os: macos-latest
           - rust: stable
             target: aarch64-apple-darwin
-            os: macos-latest # AArch64
+            os: macos-latest
+          - rust: beta
+            target: aarch64-apple-darwin
+            os: macos-latest
           - rust: nightly
             target: aarch64-apple-darwin
-            os: macos-latest # AArch64
-          - rust: '1.59' # LLVM 13
-            target: aarch64-unknown-linux-gnu
-          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
-            target: aarch64-unknown-linux-gnu
-          - rust: stable
-            target: aarch64-unknown-linux-gnu
-          - rust: nightly
-            target: aarch64-unknown-linux-gnu
-          - rust: nightly
-            target: aarch64-unknown-linux-gnu
-            flags: -Z codegen-backend=cranelift
+            os: macos-latest
+          # ------------------------------------------------------------
+          # aarch64_be-unknown-linux-gnu
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use stable asm on this target)
             target: aarch64_be-unknown-linux-gnu
             os: ubuntu-22.04
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
             target: aarch64_be-unknown-linux-gnu
             os: ubuntu-22.04
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: aarch64_be-unknown-linux-gnu
+          #   os: ubuntu-22.04
           - rust: nightly-2024-11-07 # TODO: https://github.com/BurntSushi/memchr/pull/162
             target: aarch64_be-unknown-linux-gnu
             os: ubuntu-22.04
+          # ------------------------------------------------------------
+          # armv5te-unknown-linux-gnueabi
           - rust: '1.59' # LLVM 13
             target: armv5te-unknown-linux-gnueabi
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv5te-unknown-linux-gnueabi
+          # - rust: '1.81' # LLVM 18
+          #   target: armv5te-unknown-linux-gnueabi
           - rust: stable
             target: armv5te-unknown-linux-gnueabi
+          # - rust: beta
+          #   target: armv5te-unknown-linux-gnueabi
           - rust: nightly
             target: armv5te-unknown-linux-gnueabi
+          # ------------------------------------------------------------
+          # arm-unknown-linux-gnueabi
           - rust: '1.59' # LLVM 13
             target: arm-unknown-linux-gnueabi
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: arm-unknown-linux-gnueabi
+          # - rust: '1.81' # LLVM 18
+          #   target: arm-unknown-linux-gnueabi
           - rust: stable
             target: arm-unknown-linux-gnueabi
+          # - rust: beta
+          #   target: arm-unknown-linux-gnueabi
           - rust: nightly
             target: arm-unknown-linux-gnueabi
+          # ------------------------------------------------------------
+          # armv7-unknown-linux-gnueabi
           - rust: '1.59' # LLVM 13
             target: armv7-unknown-linux-gnueabi
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv7-unknown-linux-gnueabi
+          # - rust: '1.81' # LLVM 18
+          #   target: armv7-unknown-linux-gnueabi
           - rust: stable
             target: armv7-unknown-linux-gnueabi
+          # - rust: beta
+          #   target: armv7-unknown-linux-gnueabi
           - rust: nightly
             target: armv7-unknown-linux-gnueabi
+          # ------------------------------------------------------------
+          # armv7-unknown-linux-gnueabihf
           - rust: '1.59' # LLVM 13
             target: armv7-unknown-linux-gnueabihf
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv7-unknown-linux-gnueabihf
+          # - rust: '1.81' # LLVM 18
+          #   target: armv7-unknown-linux-gnueabihf
           - rust: stable
             target: armv7-unknown-linux-gnueabihf
+          # - rust: beta
+          #   target: armv7-unknown-linux-gnueabihf
           - rust: nightly
             target: armv7-unknown-linux-gnueabihf
+          # ------------------------------------------------------------
+          # armeb-unknown-linux-gnueabi
           - rust: nightly-2022-09-16 # Rust 1.65, LLVM 15 (version that this target was added)
             target: armeb-unknown-linux-gnueabi
             os: ubuntu-22.04
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armeb-unknown-linux-gnueabi
             os: ubuntu-22.04
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: armeb-unknown-linux-gnueabi
+          #   os: ubuntu-22.04
           - rust: nightly
             target: armeb-unknown-linux-gnueabi
             os: ubuntu-22.04
+          # ------------------------------------------------------------
+          # i586-unknown-linux-gnu
           - rust: '1.59' # LLVM 13
             target: i586-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: i586-unknown-linux-gnu
+          # - rust: '1.81' # LLVM 18
+          #   target: i586-unknown-linux-gnu
           - rust: stable
             target: i586-unknown-linux-gnu
+          # - rust: beta
+          #   target: i586-unknown-linux-gnu
           - rust: nightly
             target: i586-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # i686-unknown-linux-gnu
           - rust: '1.59' # LLVM 13
             target: i686-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: i686-unknown-linux-gnu
+          # - rust: '1.81' # LLVM 18
+          #   target: i686-unknown-linux-gnu
           - rust: stable
             target: i686-unknown-linux-gnu
+          # - rust: beta
+          #   target: i686-unknown-linux-gnu
           - rust: nightly
             target: i686-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # hexagon-unknown-linux-musl
           - rust: nightly-2024-11-29 # Rust 1.85, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
             target: hexagon-unknown-linux-musl
           - rust: nightly
             target: hexagon-unknown-linux-musl
-          - rust: '1.72' # LLVM 16, inline asm for loongarch has been stabilized in Rust 1.72
+          # ------------------------------------------------------------
+          # loongarch64-unknown-linux-gnu
+          - rust: '1.72' # LLVM 16 (inline asm for loongarch64 has been stabilized in Rust 1.72)
             target: loongarch64-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: loongarch64-unknown-linux-gnu
+          # - rust: '1.81' # LLVM 18
+          #   target: loongarch64-unknown-linux-gnu
           - rust: stable
             target: loongarch64-unknown-linux-gnu
+          # - rust: beta
+          #   target: loongarch64-unknown-linux-gnu
           - rust: nightly
             target: loongarch64-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # mips-unknown-linux-gnu
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: mips-unknown-linux-gnu
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mips-unknown-linux-gnu
           - rust: nightly
             target: mips-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # mipsel-unknown-linux-gnu
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: mipsel-unknown-linux-gnu
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mipsel-unknown-linux-gnu
           - rust: nightly
             target: mipsel-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # mips64-unknown-linux-gnuabi64
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: mips64-unknown-linux-gnuabi64
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mips64-unknown-linux-gnuabi64
           - rust: nightly
             target: mips64-unknown-linux-gnuabi64
+          # ------------------------------------------------------------
+          # mips64el-unknown-linux-gnuabi64
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: mips64el-unknown-linux-gnuabi64
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mips64el-unknown-linux-gnuabi64
           - rust: nightly
             target: mips64el-unknown-linux-gnuabi64
+          # ------------------------------------------------------------
+          # mipsisa32r6-unknown-linux-gnu
           - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
             target: mipsisa32r6-unknown-linux-gnu
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mipsisa32r6-unknown-linux-gnu
           - rust: nightly
             target: mipsisa32r6-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # mipsisa32r6el-unknown-linux-gnu
           - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
             target: mipsisa32r6el-unknown-linux-gnu
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mipsisa32r6el-unknown-linux-gnu
           - rust: nightly
             target: mipsisa32r6el-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # mipsisa64r6-unknown-linux-gnuabi64
           - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
             target: mipsisa64r6-unknown-linux-gnuabi64
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mipsisa64r6-unknown-linux-gnuabi64
           - rust: nightly
             target: mipsisa64r6-unknown-linux-gnuabi64
+          # ------------------------------------------------------------
+          # mipsisa64r6el-unknown-linux-gnuabi64
           - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
             target: mipsisa64r6el-unknown-linux-gnuabi64
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mipsisa64r6el-unknown-linux-gnuabi64
           - rust: nightly
             target: mipsisa64r6el-unknown-linux-gnuabi64
+          # ------------------------------------------------------------
+          # powerpc-unknown-linux-gnu
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: powerpc-unknown-linux-gnu
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: powerpc-unknown-linux-gnu
           - rust: nightly
             target: powerpc-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # powerpc64-unknown-linux-gnu
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: powerpc64-unknown-linux-gnu
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: powerpc64-unknown-linux-gnu
           - rust: nightly
             target: powerpc64-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # powerpc64le-unknown-linux-gnu
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: powerpc64le-unknown-linux-gnu
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: powerpc64le-unknown-linux-gnu
           - rust: nightly
             target: powerpc64le-unknown-linux-gnu
-          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
+          # ------------------------------------------------------------
+          # riscv32gc-unknown-linux-gnu
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
             target: riscv32gc-unknown-linux-gnu
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: riscv32gc-unknown-linux-gnu
           - rust: nightly
             target: riscv32gc-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # riscv64gc-unknown-linux-gnu
           - rust: '1.59' # LLVM 13
             target: riscv64gc-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: riscv64gc-unknown-linux-gnu
+          # - rust: '1.81' # LLVM 18
+          #   target: riscv64gc-unknown-linux-gnu
           - rust: stable
             target: riscv64gc-unknown-linux-gnu
+          # - rust: beta
+          #   target: riscv64gc-unknown-linux-gnu
           - rust: nightly
             target: riscv64gc-unknown-linux-gnu
           # TODO: cranelift doesn't support cfg(target_feature): https://github.com/rust-lang/rustc_codegen_cranelift/issues/1400
           # - rust: nightly
           #   target: riscv64gc-unknown-linux-gnu
           #   flags: -Z codegen-backend=cranelift
-          # - rust: '1.84' # LLVM 19 (oldest stable version we can use asm on this target)
-          #   target: s390x-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # s390x-unknown-linux-gnu
           - rust: nightly-2024-01-05 # Rust 1.77, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: s390x-unknown-linux-gnu
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: s390x-unknown-linux-gnu
+          - rust: '1.84' # LLVM 19 (inline asm for s390x has been stabilized in Rust 1.84)
+            target: s390x-unknown-linux-gnu
+          - rust: stable
+            target: s390x-unknown-linux-gnu
+          # - rust: beta
+          #   target: s390x-unknown-linux-gnu
           - rust: nightly
             target: s390x-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # sparc64-unknown-linux-gnu
           - rust: nightly-2024-11-08 # Rust 1.84, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
             target: sparc64-unknown-linux-gnu
           - rust: nightly
             target: sparc64-unknown-linux-gnu
+          # ------------------------------------------------------------
+          # thumbv7neon-unknown-linux-gnueabihf
           - rust: '1.59' # LLVM 13
             target: thumbv7neon-unknown-linux-gnueabihf
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: thumbv7neon-unknown-linux-gnueabihf
+          # - rust: '1.81' # LLVM 18
+          #   target: thumbv7neon-unknown-linux-gnueabihf
           - rust: stable
             target: thumbv7neon-unknown-linux-gnueabihf
+          # - rust: beta
+          #   target: thumbv7neon-unknown-linux-gnueabihf
           - rust: nightly
             target: thumbv7neon-unknown-linux-gnueabihf
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     timeout-minutes: 60
     steps:
+      # https://github.com/orgs/community/discussions/148648#discussioncomment-11867019
+      - name: Workaround for AArch64 Linux runner bug
+        run: for var in PATH XDG_CONFIG_HOME; do sed -Ee "s/^/${var}=/" -e 's/(runner)admin/\1/g' <<< "${!var}"; done | tee -a -- "${GITHUB_ENV}"
+        if: endsWith(matrix.os, '-arm')
       - uses: taiki-e/checkout-action@v1
       - run: |
           lscpu
@@ -261,6 +435,17 @@ jobs:
       - uses: taiki-e/github-actions/install-rust@main
         with:
           toolchain: ${{ matrix.rust }}
+      - id: prepare
+        run: |
+          if [[ "${{ matrix.target }}" == '' ]]; then
+            printf 'matrix.target must be set\n'
+            exit 1
+          fi
+          host="$(rustc -vV | grep -E '^host:' | cut -d' ' -f2)"
+          if [[ "${host}" != "${{ matrix.target }}" ]]; then
+            printf '%s\n' "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
+            printf '%s\n' "target-not-host=true" >>"${GITHUB_OUTPUT}"
+          fi
       - uses: taiki-e/install-action@cargo-hack
       - uses: taiki-e/install-action@cargo-minimal-versions
       - uses: taiki-e/install-action@cargo-careful
@@ -268,17 +453,22 @@ jobs:
       - uses: taiki-e/setup-cross-toolchain-action@v1
         with:
           target: ${{ matrix.target }}
-        if: matrix.target != ''
-      - run: printf '%s\n' "RUSTFLAGS=${RUSTFLAGS} --cfg qemu" >>"${GITHUB_ENV}"
-        if: matrix.target != '' && !startsWith(matrix.target, 'i686') && !startsWith(matrix.target, 'x86_64') && !startsWith(matrix.os, 'macos')
+        if: steps.prepare.outputs.target-not-host == 'true'
+      - run: |
+          target="${{ matrix.target }}"
+          target_lower="${target//-/_}"
+          target_lower="${target_lower//./_}"
+          target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
+          if [[ "$(eval "printf '%s\n' \${CARGO_TARGET_${target_upper}_RUNNER}")" == *"qemu"* ]]; then
+            printf '%s\n' "RUSTFLAGS=${RUSTFLAGS} --cfg qemu" >>"${GITHUB_ENV}"
+          fi
       - run: |
           printf '%s\n' "RUSTFLAGS=${RUSTFLAGS} ${{ matrix.flags }}" >>"${GITHUB_ENV}"
           printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS} ${{ matrix.flags }}" >>"${GITHUB_ENV}"
         if: matrix.flags != ''
-      - run: printf '%s\n' "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
-        if: matrix.target != '' && !contains(matrix.target, '-darwin')
       # TODO: LLVM bug: Undefined temporary symbol error when building std.
-      - run: printf 'RELEASE=--release\n' >>"${GITHUB_ENV}"
+      - name: Workaround for LLVM bug about MIPS32
+        run: printf 'RELEASE=--release\n' >>"${GITHUB_ENV}"
         if: startsWith(matrix.target, 'mips-') || startsWith(matrix.target, 'mipsel-')
 
       - run: tools/test.sh -vv ${TARGET:-} ${DOCTEST_XCOMPILE:-} ${BUILD_STD:-} ${RELEASE:-}
@@ -290,7 +480,7 @@ jobs:
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
-        if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos')
+        if: startsWith(matrix.target, 'x86_64') && !contains(matrix.target, '-darwin')
       # x86 -sse2
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
@@ -304,18 +494,18 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+soft-float,-x87,-mmx
         if: startsWith(matrix.target, 'i586')
       # aarch64 +lse
+      # macOS is skipped because it is +rcpc,+lse,+lse2 by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
-        # macOS is skipped because it is +rcpc,+lse,+lse2 by default
         if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
       # aarch64 +rcpc,+lse,+lse2
+      # macOS is skipped because it is +rcpc,+lse,+lse2 by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc,+lse,+lse2
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc,+lse,+lse2
-        # macOS is skipped because it is +rcpc,+lse,+lse2 by default
         if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
       # arm v8 little endian
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
@@ -383,6 +573,7 @@ jobs:
       matrix:
         include:
           - rust: '1.59'
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
           - rust: stable
           - rust: beta
           - rust: nightly-2023-08-23 # The last nightly version that doesn't support MaybeUninit registers.
@@ -412,7 +603,9 @@ jobs:
         rust:
           - '1.64' # LLVM 14
           - stable
+          # - beta
           - nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
+          # - nightly-2024-07-31 # Rust 1.82, LLVM 18
           - nightly
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -507,19 +700,49 @@ jobs:
 
   valgrind:
     needs: tidy
-    runs-on: ubuntu-latest
+    name: valgrind (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     timeout-minutes: 60
     steps:
+      # https://github.com/orgs/community/discussions/148648#discussioncomment-11867019
+      - name: Workaround for AArch64 Linux runner bug
+        run: for var in PATH XDG_CONFIG_HOME; do sed -Ee "s/^/${var}=/" -e 's/(runner)admin/\1/g' <<< "${!var}"; done | tee -a -- "${GITHUB_ENV}"
+        if: endsWith(matrix.os, '-arm')
       - uses: taiki-e/checkout-action@v1
       - uses: taiki-e/github-actions/install-rust@nightly
+      - run: |
+          if [[ "${{ matrix.target }}" == '' ]]; then
+            printf 'matrix.target must be set\n'
+            exit 1
+          fi
+          host="$(rustc -vV | grep -E '^host:' | cut -d' ' -f2)"
+          if [[ "${host}" != "${{ matrix.target }}" ]]; then
+            printf 'matrix.target must be the same as host\n'
+            exit 1
+          fi
       # - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
       - uses: taiki-e/install-action@valgrind
       - run: tools/test.sh valgrind -vv
-      # +cmpxchg16b
+      # x86_64 +cmpxchg16b
       - run: tools/test.sh valgrind -vv
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
+        if: startsWith(matrix.target, 'x86_64')
+      # aarch64 +lse
+      # As of Valgrind 3.19, Valgrind supports atomic instructions of Armv8.0 and Armv8.1 (FEAT_LSE).
+      - run: tools/test.sh valgrind -vv
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
+        if: startsWith(matrix.target, 'aarch64')
 
   codegen:
     runs-on: ubuntu-latest

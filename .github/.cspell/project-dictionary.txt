@@ -78,7 +78,6 @@ movss
 mspdebug
 msync
 muldi
-neoverse
 noat
 nostartfiles
 opensbi
