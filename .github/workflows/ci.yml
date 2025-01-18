@@ -196,16 +196,25 @@ jobs:
           # armv7-unknown-linux-gnueabihf
           - rust: '1.59' # LLVM 13
             target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
           # - rust: '1.81' # LLVM 18
           #   target: armv7-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
           - rust: stable
             target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
           # - rust: beta
           #   target: armv7-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
           - rust: nightly
             target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
+          - rust: nightly
+            target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest # QEMU on x86_64
           # ------------------------------------------------------------
           # armeb-unknown-linux-gnueabi
           - rust: nightly-2022-09-16 # Rust 1.65, LLVM 15 (version that this target was added)
@@ -406,16 +415,25 @@ jobs:
           # thumbv7neon-unknown-linux-gnueabihf
           - rust: '1.59' # LLVM 13
             target: thumbv7neon-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: thumbv7neon-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
           # - rust: '1.81' # LLVM 18
           #   target: thumbv7neon-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
           - rust: stable
             target: thumbv7neon-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
           # - rust: beta
           #   target: thumbv7neon-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
           - rust: nightly
             target: thumbv7neon-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
+          - rust: nightly
+            target: thumbv7neon-unknown-linux-gnueabihf
+            os: ubuntu-latest # QEMU on x86_64
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     timeout-minutes: 60
     steps:
@@ -470,6 +488,7 @@ jobs:
       - run: tools/test.sh -vv ${TARGET:-} ${DOCTEST_XCOMPILE:-} ${BUILD_STD:-} ${RELEASE:-}
       # We test doctest only once with the default build conditions because doctest is slow.
       # src/tests has extended copies of doctest, so this will not reduce test coverage.
+
       # x86_64 +cmpxchg16b
       # macOS is skipped because it is +cmpxchg16b by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
@@ -508,7 +527,7 @@ jobs:
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
-        if: matrix.target == 'armv7-unknown-linux-gnueabi'
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
       # arm v6 with legacy cp15_barrier
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
