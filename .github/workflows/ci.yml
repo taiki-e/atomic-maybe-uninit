@@ -93,28 +93,28 @@ jobs:
           # aarch64-unknown-linux-gnu
           - rust: '1.59' # LLVM 13
             target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           # - rust: '1.81' # LLVM 18
           #   target: aarch64-unknown-linux-gnu
-          #   os: ubuntu-24.04-arm
+          #   os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: stable
             target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: beta
             target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: nightly
             target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: nightly
             target: aarch64-unknown-linux-gnu
             os: ubuntu-latest # QEMU on x86_64
           - rust: nightly
             target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
             flags: -Z codegen-backend=cranelift
           # ------------------------------------------------------------
           # aarch64-apple-darwin
@@ -196,22 +196,22 @@ jobs:
           # armv7-unknown-linux-gnueabihf
           - rust: '1.59' # LLVM 13
             target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           # - rust: '1.81' # LLVM 18
           #   target: armv7-unknown-linux-gnueabihf
-          #   os: ubuntu-24.04-arm
+          #   os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: stable
             target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           # - rust: beta
           #   target: armv7-unknown-linux-gnueabihf
-          #   os: ubuntu-24.04-arm
+          #   os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: nightly
             target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: nightly
             target: armv7-unknown-linux-gnueabihf
             os: ubuntu-latest # QEMU on x86_64
@@ -415,22 +415,22 @@ jobs:
           # thumbv7neon-unknown-linux-gnueabihf
           - rust: '1.59' # LLVM 13
             target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           # - rust: '1.81' # LLVM 18
           #   target: thumbv7neon-unknown-linux-gnueabihf
-          #   os: ubuntu-24.04-arm
+          #   os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: stable
             target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           # - rust: beta
           #   target: thumbv7neon-unknown-linux-gnueabihf
-          #   os: ubuntu-24.04-arm
+          #   os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: nightly
             target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
           - rust: nightly
             target: thumbv7neon-unknown-linux-gnueabihf
             os: ubuntu-latest # QEMU on x86_64
@@ -722,7 +722,7 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     timeout-minutes: 60
     steps:
