@@ -349,6 +349,8 @@ jobs:
           #   target: powerpc-unknown-linux-gnu
           - rust: nightly
             target: powerpc-unknown-linux-gnu
+            # Use +secure-plt (and -Z build-std) to work around "bss-plt forced due to .." linker warning.
+            flags: -C target-feature=+secure-plt
           # ------------------------------------------------------------
           # powerpc64-unknown-linux-gnu
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
@@ -480,6 +482,8 @@ jobs:
           printf '%s\n' "RUSTFLAGS=${RUSTFLAGS} ${{ matrix.flags }}" >>"${GITHUB_ENV}"
           printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS} ${{ matrix.flags }}" >>"${GITHUB_ENV}"
         if: matrix.flags != ''
+      - run: printf '%s\n' 'BUILD_STD=-Z build-std' >>"${GITHUB_ENV}"
+        if: contains(matrix.flags, '+secure-plt')
       # TODO: LLVM bug: Undefined temporary symbol error when building std.
       - name: Workaround for LLVM bug about MIPS32
         run: printf 'RELEASE=--release\n' >>"${GITHUB_ENV}"
