@@ -532,6 +532,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///     assert_eq!(v.load(Ordering::Relaxed).assume_init(), 10);
     /// }
     /// ```
+    #[doc(alias = "compare_and_swap")]
     #[inline]
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn compare_exchange(
@@ -618,6 +619,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///     }
     /// }
     /// ```
+    #[doc(alias = "compare_and_swap")]
     #[inline]
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn compare_exchange_weak(
