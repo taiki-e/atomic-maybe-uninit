@@ -6,7 +6,8 @@
 [![msrv](https://img.shields.io/badge/msrv-1.59-blue?style=flat-square&logo=rust)](https://www.rust-lang.org)
 [![github actions](https://img.shields.io/github/actions/workflow/status/taiki-e/atomic-maybe-uninit/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/taiki-e/atomic-maybe-uninit/actions)
 
-<!-- tidy:crate-doc:start -->
+<!-- tidy:sync-markdown-to-rustdoc:start:src/lib.rs -->
+
 Atomic operations on potentially uninitialized integers.
 
 ## Motivation
@@ -67,7 +68,7 @@ Feel free to submit an issue if your target is not supported yet.
 [portable-atomic]: https://github.com/taiki-e/portable-atomic
 [undefined-behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html
 
-<!-- tidy:crate-doc:end -->
+<!-- tidy:sync-markdown-to-rustdoc:end -->
 
 ## License
 

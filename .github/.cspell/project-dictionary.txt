@@ -51,7 +51,6 @@ ldxp
 leoncasa
 lgcc
 libnspr
-libunwind
 linkall
 LLDP
 LLWP
@@ -61,7 +60,6 @@ lqarx
 lrcpc
 lwarx
 lwsync
-machdep
 mcpu
 membar
 memd
@@ -85,7 +83,6 @@ orrs
 partword
 pshufd
 pstq
-putchar
 qbsp
 quadword
 rcpc
