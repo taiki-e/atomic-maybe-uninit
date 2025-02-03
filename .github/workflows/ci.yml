@@ -347,7 +347,7 @@ jobs:
           #   target: powerpc-unknown-linux-gnu
           - rust: nightly
             target: powerpc-unknown-linux-gnu
-            # Use +secure-plt (and -Z build-std) to work around "bss-plt forced due to .." linker warning.
+            # Use +secure-plt (and -Z build-std) to work around "bss-plt forced due to .." linker warning: https://github.com/rust-lang/rust/pull/136154
             flags: -C target-feature=+secure-plt
           # ------------------------------------------------------------
           # powerpc64-unknown-linux-gnu
