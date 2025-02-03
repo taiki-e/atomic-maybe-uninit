@@ -3,23 +3,7 @@
 /*
 Armv8 AArch32
 
-LLVM doesn't generate CLREX for Armv8-M Baseline, but it actually supports CLREX.
-https://developer.arm.com/documentation/dui1095/a/The-Cortex-M23-Instruction-Set/Memory-access-instructions
-https://community.arm.com/cfs-file/__key/telligent-evolution-components-attachments/01-2057-00-00-00-01-28-35/Cortex_2D00_M-for-Beginners-_2D00_-2017_5F00_EN_5F00_v2.pdf
-
-Refs:
-- Arm A-profile A32/T32 Instruction Set Architecture
-  https://developer.arm.com/documentation/ddi0597/latest
-- Arm Architecture Reference Manual for A-profile architecture
-  https://developer.arm.com/documentation/ddi0487/latest (PDF)
-- ARM Architecture Reference Manual Supplement - ARMv8, for the ARMv8-R AArch32 architecture profile
-  https://developer.arm.com/documentation/ddi0568/latest (PDF)
-- Armv8-M Architecture Reference Manual
-  https://developer.arm.com/documentation/ddi0553/latest (PDF)
-- Arm Cortex-M33 Devices Generic User Guide
-  https://developer.arm.com/documentation/100235/0100
-- Arm Cortex-M23 Devices Generic User Guide
-  https://developer.arm.com/documentation/dui1095/a
+See arch/armv8.rs for references and notes.
 
 Generated asm:
 - armv8-a https://godbolt.org/z/Mx8z81463

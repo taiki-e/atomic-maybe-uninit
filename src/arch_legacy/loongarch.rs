@@ -3,6 +3,8 @@
 /*
 LoongArch
 
+See arch/loongarch.rs for references and notes.
+
 Generated asm:
 - loongarch64 https://godbolt.org/z/vTxfajT14
 */

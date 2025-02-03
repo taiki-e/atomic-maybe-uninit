@@ -3,14 +3,7 @@
 /*
 RISC-V
 
-Refs:
-- RISC-V Instruction Set Manual
-  https://github.com/riscv/riscv-isa-manual/tree/riscv-isa-release-8b9dc50-2024-08-30
-  "A" Extension for Atomic Instructions
-  https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/a-st-ext.adoc
-- RISC-V Atomics ABI Specification
-  https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/draft-20240829-13bfa9f54634cb60d86b9b333e109f077805b4b3/riscv-atomic.adoc
-- portable-atomic https://github.com/taiki-e/portable-atomic
+See arch/riscv.rs for references and notes.
 
 Generated asm:
 - riscv64gc https://godbolt.org/z/nW3Po8n4K

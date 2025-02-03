@@ -3,19 +3,7 @@
 /*
 Armv6 and Armv7
 
-Refs:
-- ARM Architecture Reference Manual ARMv7-A and ARMv7-R edition
-  https://developer.arm.com/documentation/ddi0406/cb
-- ARMv6 Differences
-  https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv6-Differences
-- ARM11 MPCore Processor Technical Reference Manual
-  https://developer.arm.com/documentation/ddi0360/f
-- ARMv7-M Architecture Reference Manual
-  https://developer.arm.com/documentation/ddi0403/latest (PDF)
-- Armv6-M Architecture Reference Manual
-  https://developer.arm.com/documentation/ddi0419/latest (PDF)
-- Instruction Set Assembly Guide for Armv7 and earlier Arm architectures Reference Guide
-  https://developer.arm.com/documentation/100076/0200
+See arch/arm.rs for references and notes.
 
 Generated asm:
 - armv7-a https://godbolt.org/z/P93x9TjWs

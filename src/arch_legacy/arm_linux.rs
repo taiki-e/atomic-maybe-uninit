@@ -3,15 +3,7 @@
 /*
 Pre-v6 Arm Linux/Android
 
-Refs:
-- https://github.com/torvalds/linux/blob/v6.13/Documentation/arch/arm/kernel_user_helpers.rst
-- https://github.com/rust-lang/compiler-builtins/blob/compiler_builtins-v0.1.124/src/arm_linux.rs
-- ARMv4 and ARMv5 Differences
-  https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences
-
-Note: __kuser_cmpxchg and __kuser_cmpxchg64 are always SeqCst.
-https://github.com/torvalds/linux/blob/v6.13/arch/arm/kernel/entry-armv.S#L814-L822
-https://github.com/torvalds/linux/blob/v6.13/arch/arm/kernel/entry-armv.S#L700-L707
+See arch/arm_linux.rs for references and notes.
 
 Generated asm:
 - armv5te https://godbolt.org/z/r61s7cnG8

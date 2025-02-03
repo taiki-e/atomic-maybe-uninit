@@ -3,9 +3,7 @@
 /*
 x86 and x86_64
 
-Refs:
-- x86 and amd64 instruction reference https://www.felixcloutier.com/x86
-- portable-atomic https://github.com/taiki-e/portable-atomic
+See arch/x86.rs for references and notes.
 
 Generated asm:
 - x86_64 https://godbolt.org/z/fvqWGT5E6

@@ -3,16 +3,7 @@
 /*
 AArch64
 
-Refs:
-- Arm A-profile A64 Instruction Set Architecture
-  https://developer.arm.com/documentation/ddi0602/2024-12
-- Arm Compiler armasm User Guide
-  https://developer.arm.com/documentation/dui0801/latest
-- Arm Architecture Reference Manual for A-profile architecture
-  https://developer.arm.com/documentation/ddi0487/latest (PDF)
-- Arm Architecture Reference Manual Supplement - Armv8, for Armv8-R AArch64 architecture profile
-  https://developer.arm.com/documentation/ddi0600/latest (PDF)
-- portable-atomic https://github.com/taiki-e/portable-atomic
+See arch/aarch64.rs for references and notes.
 
 Generated asm:
 - aarch64 https://godbolt.org/z/6TKofhrbb
