@@ -6,12 +6,12 @@ Xtensa
 Refs:
 - Xtensa Instruction Set Architecture (ISA) Summary for all Xtensa LX Processors
   https://www.cadence.com/content/dam/cadence-www/global/en_US/documents/tools/silicon-solutions/compute-ip/isa-summary.pdf
-- https://github.com/espressif/llvm-project/blob/xtensa_release_18.1.2/llvm/test/CodeGen/Xtensa/atomic-load-store.ll
-- https://github.com/espressif/llvm-project/blob/xtensa_release_18.1.2/llvm/test/CodeGen/Xtensa/atomicrmw.ll
+- https://github.com/espressif/llvm-project/blob/xtensa_release_19.1.2/llvm/test/CodeGen/Xtensa/atomic-load-store.ll
+- https://github.com/espressif/llvm-project/blob/xtensa_release_19.1.2/llvm/test/CodeGen/Xtensa/atomicrmw.ll
   Note that LLVM's codegen for sub-word atomics seem to be suboptimal (extra branch, memw, l32i.n, etc.).
 
 Note that l32ai (acquire load), s32ri (release store), and l32ex/s32ex/getex (LL/SC) are not yet supported in LLVM.
-https://github.com/espressif/llvm-project/blob/xtensa_release_18.1.2/llvm/lib/Target/Xtensa/XtensaInstrInfo.td
+https://github.com/espressif/llvm-project/blob/xtensa_release_19.1.2/llvm/lib/Target/Xtensa/XtensaInstrInfo.td
 */
 
 #[path = "cfgs/xtensa.rs"]

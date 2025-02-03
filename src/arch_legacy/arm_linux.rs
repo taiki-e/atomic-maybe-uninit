@@ -4,10 +4,14 @@
 Pre-v6 Arm Linux/Android
 
 Refs:
-- https://github.com/torvalds/linux/blob/v6.12/Documentation/arch/arm/kernel_user_helpers.rst
+- https://github.com/torvalds/linux/blob/v6.13/Documentation/arch/arm/kernel_user_helpers.rst
 - https://github.com/rust-lang/compiler-builtins/blob/compiler_builtins-v0.1.124/src/arm_linux.rs
 - ARMv4 and ARMv5 Differences
   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences
+
+Note: __kuser_cmpxchg and __kuser_cmpxchg64 are always SeqCst.
+https://github.com/torvalds/linux/blob/v6.13/arch/arm/kernel/entry-armv.S#L814-L822
+https://github.com/torvalds/linux/blob/v6.13/arch/arm/kernel/entry-armv.S#L700-L707
 
 Generated asm:
 - armv5te https://godbolt.org/z/r61s7cnG8
@@ -25,7 +29,7 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
-// https://github.com/torvalds/linux/blob/v6.12/Documentation/arch/arm/kernel_user_helpers.rst
+// https://github.com/torvalds/linux/blob/v6.13/Documentation/arch/arm/kernel_user_helpers.rst
 const KUSER_HELPER_VERSION: usize = 0xFFFF0FFC;
 // __kuser_helper_version >= 2 (kernel version 2.6.12+)
 const KUSER_CMPXCHG: usize = 0xFFFF0FC0;

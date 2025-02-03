@@ -4,7 +4,7 @@
 LoongArch
 
 Refs:
-- https://github.com/torvalds/linux/blob/v6.12/Documentation/arch/loongarch/introduction.rst#references
+- https://github.com/torvalds/linux/blob/v6.13/Documentation/arch/loongarch/introduction.rst#references
 
 Generated asm:
 - loongarch64 https://godbolt.org/z/36649a5c8
