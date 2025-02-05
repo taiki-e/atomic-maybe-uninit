@@ -5,6 +5,7 @@
 #![no_main]
 #![no_core]
 #![warn(unsafe_op_in_unsafe_fn)]
+#![allow(clippy::undocumented_unsafe_blocks, clippy::wildcard_imports)]
 #![cfg_attr(atomic_maybe_uninit_no_strict_provenance, allow(unstable_name_collisions))]
 
 #[macro_use]

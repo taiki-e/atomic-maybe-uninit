@@ -3,6 +3,8 @@
 #![no_main]
 #![no_std]
 #![warn(unsafe_op_in_unsafe_fn)]
+#![allow(clippy::undocumented_unsafe_blocks, clippy::wildcard_imports)]
+#![allow(clippy::used_underscore_items)] // https://github.com/rust-lang/rust-clippy/issues/14156
 
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
