@@ -215,12 +215,13 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_load_store(x: $ty, y: $ty) -> bool {
+                let mut rng = fastrand::Rng::new();
                 unsafe {
                     for (load_order, store_order) in
                         LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS)
                     {
                         for base in [0, !0] {
-                            let mut arr = Array::new(base);
+                            let mut arr = Array::new(base, &mut rng);
                             arr.set(x);
                             let a = arr.get();
                             assert_eq!(a.load(load_order).assume_init(), x);
@@ -242,25 +243,28 @@ macro_rules! __test_atomic {
         #[test]
         fn stress_load_store() {
             unsafe {
-                let (iterations, threads) = stress_test_config();
-                let data1 = (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>();
+                let mut rng = fastrand::Rng::new();
+                let (iterations, threads) = stress_test_config(&mut rng);
+                let data1 = (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>();
                 let set = data1.iter().copied().collect::<BTreeSet<_>>();
-                let a = AtomicMaybeUninit::<$ty>::from(data1[fastrand::usize(0..iterations)]);
+                let a = AtomicMaybeUninit::<$ty>::from(data1[rng.usize(0..iterations)]);
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for _ in 0..threads {
                         s.spawn(|_| {
+                            let mut rng = fastrand::Rng::new();
                             let now = *now;
                             for i in 0..iterations {
-                                a.store(MaybeUninit::new(data1[i]), rand_store_ordering());
+                                a.store(MaybeUninit::new(data1[i]), rand_store_ordering(&mut rng));
                             }
                             std::eprintln!("store end={:?}", now.elapsed());
                         });
                         s.spawn(|_| {
+                            let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![0; iterations];
                             for i in 0..iterations {
-                                v[i] = a.load(rand_load_ordering()).assume_init();
+                                v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                             }
                             std::eprintln!("load end={:?}", now.elapsed());
                             for v in v {
@@ -296,10 +300,11 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_swap(x: $ty, y: $ty) -> bool {
+                let mut rng = fastrand::Rng::new();
                 unsafe {
                     for order in SWAP_ORDERINGS {
                         for base in [0, !0] {
-                            let mut arr = Array::new(base);
+                            let mut arr = Array::new(base, &mut rng);
                             arr.set(x);
                             let a = arr.get();
                             assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
@@ -317,39 +322,42 @@ macro_rules! __test_atomic {
         #[test]
         fn stress_swap() {
             unsafe {
-                let (iterations, threads) = stress_test_config();
+                let mut rng = fastrand::Rng::new();
+                let (iterations, threads) = stress_test_config(&mut rng);
                 let data1 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let data2 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let set = &data1
                     .iter()
                     .flat_map(|v| v.iter().copied())
                     .chain(data2.iter().flat_map(|v| v.iter().copied()))
                     .collect::<BTreeSet<_>>();
-                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][fastrand::usize(0..iterations)]);
+                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
                         if thread % 2 == 0 {
                             s.spawn(move |_| {
+                                let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 for i in 0..iterations {
                                     a.store(
                                         MaybeUninit::new(data1[thread][i]),
-                                        rand_store_ordering(),
+                                        rand_store_ordering(&mut rng),
                                     );
                                 }
                                 std::eprintln!("store end={:?}", now.elapsed());
                             });
                         } else {
                             s.spawn(|_| {
+                                let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 let mut v = vec![0; iterations];
                                 for i in 0..iterations {
-                                    v[i] = a.load(rand_load_ordering()).assume_init();
+                                    v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                                 std::eprintln!("load end={:?}", now.elapsed());
                                 for v in v {
@@ -358,11 +366,15 @@ macro_rules! __test_atomic {
                             });
                         }
                         s.spawn(move |_| {
+                            let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![0; iterations];
                             for i in 0..iterations {
                                 v[i] = a
-                                    .swap(MaybeUninit::new(data2[thread][i]), rand_swap_ordering())
+                                    .swap(
+                                        MaybeUninit::new(data2[thread][i]),
+                                        rand_swap_ordering(&mut rng),
+                                    )
                                     .assume_init();
                             }
                             std::eprintln!("swap end={:?}", now.elapsed());
@@ -512,16 +524,17 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_compare_exchange(x: $ty, y: $ty) -> bool {
+                let mut rng = fastrand::Rng::new();
                 unsafe {
                     let z = loop {
-                        let z = fastrand::$ty(..);
+                        let z = rng.$ty(..);
                         if z != y {
                             break z;
                         }
                     };
                     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                         for base in [0, !0] {
-                            let mut arr = Array::new(base);
+                            let mut arr = Array::new(base, &mut rng);
                             arr.set(x);
                             let a = arr.get();
                             assert_eq!(
@@ -569,16 +582,17 @@ macro_rules! __test_atomic {
                 true
             }
             fn quickcheck_fetch_update(x: $ty, y: $ty) -> bool {
+                let mut rng = fastrand::Rng::new();
                 unsafe {
                     let z = loop {
-                        let z = fastrand::$ty(..);
+                        let z = rng.$ty(..);
                         if z != y {
                             break z;
                         }
                     };
                     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                         for base in [0, !0] {
-                            let mut arr = Array::new(base);
+                            let mut arr = Array::new(base, &mut rng);
                             arr.set(x);
                             let a = arr.get();
                             assert_eq!(
@@ -615,39 +629,42 @@ macro_rules! __test_atomic {
         #[test]
         fn stress_compare_exchange() {
             unsafe {
-                let (iterations, threads) = stress_test_config();
+                let mut rng = fastrand::Rng::new();
+                let (iterations, threads) = stress_test_config(&mut rng);
                 let data1 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let data2 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let set = &data1
                     .iter()
                     .flat_map(|v| v.iter().copied())
                     .chain(data2.iter().flat_map(|v| v.iter().copied()))
                     .collect::<BTreeSet<_>>();
-                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][fastrand::usize(0..iterations)]);
+                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
                         if thread % 2 == 0 {
                             s.spawn(move |_| {
+                                let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 for i in 0..iterations {
                                     a.store(
                                         MaybeUninit::new(data1[thread][i]),
-                                        rand_store_ordering(),
+                                        rand_store_ordering(&mut rng),
                                     );
                                 }
                                 std::eprintln!("store end={:?}", now.elapsed());
                             });
                         } else {
                             s.spawn(|_| {
+                                let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 let mut v = vec![0; iterations];
                                 for i in 0..iterations {
-                                    v[i] = a.load(rand_load_ordering()).assume_init();
+                                    v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                                 std::eprintln!("load end={:?}", now.elapsed());
                                 for v in v {
@@ -656,16 +673,17 @@ macro_rules! __test_atomic {
                             });
                         }
                         s.spawn(move |_| {
+                            let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![data2[0][0]; iterations];
                             for i in 0..iterations {
                                 let old = if i % 2 == 0 {
-                                    MaybeUninit::new(fastrand::$ty(..))
+                                    MaybeUninit::new(rng.$ty(..))
                                 } else {
                                     a.load(Ordering::Relaxed)
                                 };
                                 let new = MaybeUninit::new(data2[thread][i]);
-                                let o = rand_compare_exchange_ordering();
+                                let o = rand_compare_exchange_ordering(&mut rng);
                                 match a.compare_exchange(old, new, o.0, o.1) {
                                     Ok(r) => assert_eq!(old.assume_init(), r.assume_init()),
                                     Err(r) => v[i] = r.assume_init(),
@@ -684,39 +702,42 @@ macro_rules! __test_atomic {
         #[test]
         fn stress_fetch_update() {
             unsafe {
-                let (iterations, threads) = stress_test_config();
+                let mut rng = fastrand::Rng::new();
+                let (iterations, threads) = stress_test_config(&mut rng);
                 let data1 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let data2 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| fastrand::$ty(..)).collect::<Vec<_>>())
+                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
                     .collect::<Vec<_>>();
                 let set = &data1
                     .iter()
                     .flat_map(|v| v.iter().copied())
                     .chain(data2.iter().flat_map(|v| v.iter().copied()))
                     .collect::<BTreeSet<_>>();
-                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][fastrand::usize(0..iterations)]);
+                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
                         if thread % 2 == 0 {
                             s.spawn(move |_| {
+                                let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 for i in 0..iterations {
                                     a.store(
                                         MaybeUninit::new(data1[thread][i]),
-                                        rand_store_ordering(),
+                                        rand_store_ordering(&mut rng),
                                     );
                                 }
                                 std::eprintln!("store end={:?}", now.elapsed());
                             });
                         } else {
                             s.spawn(|_| {
+                                let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 let mut v = vec![0; iterations];
                                 for i in 0..iterations {
-                                    v[i] = a.load(rand_load_ordering()).assume_init();
+                                    v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                                 std::eprintln!("load end={:?}", now.elapsed());
                                 for v in v {
@@ -725,13 +746,14 @@ macro_rules! __test_atomic {
                             });
                         }
                         s.spawn(move |_| {
+                            let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![0; iterations];
                             for i in 0..iterations {
                                 v[i] = a
                                     .fetch_update(
-                                        rand_swap_ordering(),
-                                        rand_load_ordering(),
+                                        rand_swap_ordering(&mut rng),
+                                        rand_load_ordering(&mut rng),
                                         |_| Some(MaybeUninit::new(data2[thread][i])),
                                     )
                                     .unwrap()
@@ -772,8 +794,8 @@ fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::Strin
 }
 pub(crate) const LOAD_ORDERINGS: [Ordering; 3] =
     [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst];
-pub(crate) fn rand_load_ordering() -> Ordering {
-    LOAD_ORDERINGS[fastrand::usize(0..LOAD_ORDERINGS.len())]
+pub(crate) fn rand_load_ordering(rng: &mut fastrand::Rng) -> Ordering {
+    LOAD_ORDERINGS[rng.usize(0..LOAD_ORDERINGS.len())]
 }
 #[track_caller]
 pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
@@ -794,8 +816,8 @@ pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) 
 }
 pub(crate) const STORE_ORDERINGS: [Ordering; 3] =
     [Ordering::Relaxed, Ordering::Release, Ordering::SeqCst];
-pub(crate) fn rand_store_ordering() -> Ordering {
-    STORE_ORDERINGS[fastrand::usize(0..STORE_ORDERINGS.len())]
+pub(crate) fn rand_store_ordering(rng: &mut fastrand::Rng) -> Ordering {
+    STORE_ORDERINGS[rng.usize(0..STORE_ORDERINGS.len())]
 }
 #[track_caller]
 pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
@@ -816,8 +838,8 @@ pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T)
 }
 pub(crate) const SWAP_ORDERINGS: [Ordering; 5] =
     [Ordering::Relaxed, Ordering::Release, Ordering::Acquire, Ordering::AcqRel, Ordering::SeqCst];
-pub(crate) fn rand_swap_ordering() -> Ordering {
-    SWAP_ORDERINGS[fastrand::usize(0..SWAP_ORDERINGS.len())]
+pub(crate) fn rand_swap_ordering(rng: &mut fastrand::Rng) -> Ordering {
+    SWAP_ORDERINGS[rng.usize(0..SWAP_ORDERINGS.len())]
 }
 pub(crate) fn test_swap_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
     for order in SWAP_ORDERINGS {
@@ -841,8 +863,8 @@ pub(crate) const COMPARE_EXCHANGE_ORDERINGS: [(Ordering, Ordering); 15] = [
     (Ordering::SeqCst, Ordering::Acquire),
     (Ordering::SeqCst, Ordering::SeqCst),
 ];
-pub(crate) fn rand_compare_exchange_ordering() -> (Ordering, Ordering) {
-    COMPARE_EXCHANGE_ORDERINGS[fastrand::usize(0..COMPARE_EXCHANGE_ORDERINGS.len())]
+pub(crate) fn rand_compare_exchange_ordering(rng: &mut fastrand::Rng) -> (Ordering, Ordering) {
+    COMPARE_EXCHANGE_ORDERINGS[rng.usize(0..COMPARE_EXCHANGE_ORDERINGS.len())]
 }
 pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
     f: impl Fn(Ordering, Ordering) -> T,
@@ -871,9 +893,9 @@ pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
     }
 }
 // for stress test generated by __test_atomic macro
-pub(crate) fn stress_test_config() -> (usize, usize) {
+pub(crate) fn stress_test_config(rng: &mut fastrand::Rng) -> (usize, usize) {
     let iterations = if cfg!(debug_assertions) { 5_000 } else { 25_000 };
-    let threads = if cfg!(debug_assertions) { 2 } else { fastrand::usize(2..=8) };
+    let threads = if cfg!(debug_assertions) { 2 } else { rng.usize(2..=8) };
     std::eprintln!("threads={threads}");
     (iterations, threads)
 }
@@ -896,7 +918,7 @@ pub(crate) struct Array<T: Primitive> {
     idx: usize,
 }
 impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
-    pub(crate) fn new(base: T) -> Self {
+    pub(crate) fn new(base: T, rng: &mut fastrand::Rng) -> Self {
         Self {
             arr: Align16([
                 AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
@@ -913,7 +935,7 @@ impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
             base,
             // 0 1 2 3 4 5 6 7 8 9
             //       ^ ^ ^ ^
-            idx: fastrand::usize(3..=6),
+            idx: rng.usize(3..=6),
         }
     }
     pub(crate) fn get(&self) -> &AtomicMaybeUninit<T> {
