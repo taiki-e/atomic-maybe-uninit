@@ -174,6 +174,8 @@ fn main() {
                 }
             }
             target_feature_if("mclass", is_mclass, &version, None, true);
+            target_feature_if("thumb-mode", target.starts_with("thumb"), &version, None, true);
+            target_feature_if("thumb2", false, &version, None, true);
             let mut v5te = known && subarch.starts_with("v5te");
             let mut v6 = known && subarch.starts_with("v6");
             let mut v7 = known && subarch.starts_with("v7");
