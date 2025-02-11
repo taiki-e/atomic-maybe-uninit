@@ -28,6 +28,7 @@
     target_pointer_width = "32",
     any(
         target_arch = "aarch64",
+        target_arch = "amdgpu",
         target_arch = "arm64ec",
         target_arch = "bpf",
         target_arch = "loongarch64",
@@ -70,6 +71,7 @@ mod imp {
     target_pointer_width = "32",
     any(
         target_arch = "aarch64",
+        target_arch = "amdgpu",
         target_arch = "arm64ec",
         target_arch = "bpf",
         target_arch = "loongarch64",
