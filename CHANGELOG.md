@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Optimize PowerPC64 128-bit load/store on POWER10+ little-endian
+
 ## [0.3.4] - 2024-11-19
 
 This release includes improvements to platform support, various optimizations, [significant improvements to code comments](https://github.com/taiki-e/atomic-maybe-uninit/pull/30), etc.

@@ -53,7 +53,17 @@ Generated asm:
 - powerpc64 (pwr8) https://godbolt.org/z/4r3xGo8ef
 - powerpc64le (pwr7) https://godbolt.org/z/9zzaKcWbe
 - powerpc64le https://godbolt.org/z/3cs6ennKG
+- powerpc64le (pwr10) https://godbolt.org/z/GzW367svM
 */
+
+// GCC: https://github.com/gcc-mirror/gcc/blob/534e14ad115da0fc1581a637b048a03ecbda1eaf/gcc/config/rs6000/sync.md
+// TODO: use p{lq,stq} on pwr10+ (balign 64,,4 version fails on quickcheck on functional-sim, balign 64 version fails on quickcheck&stress on functional-sim)
+// https://github.com/gcc-mirror/gcc/commit/3bcdb5dec72b6d7b197821c2b814bc9fc07f4628
+// https://github.com/torvalds/linux/commit/620a6473df36f8dc6f70bc85ff3465b2e21d1254
+//   https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=61322e8387a4a39a3f55e2432680c55a
+// TODO: use l{w,d}at for swap on pwr9+?
+// https://gcc.gnu.org/onlinedocs/gcc/PowerPC-Atomic-Memory-Operation-Functions.html
+// https://github.com/gcc-mirror/gcc/blob/master/gcc/config/rs6000/amo.h
 
 #[path = "cfgs/powerpc.rs"]
 mod cfgs;
@@ -533,11 +543,57 @@ macro_rules! atomic128 {
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
+                #[cfg(all(
+                    any(
+                        target_feature = "prefix-instrs",
+                        atomic_maybe_uninit_target_feature = "prefix-instrs",
+                    ),
+                    target_endian = "little",
+                ))]
+                use crate::utils::{MaybeUninit128Be as MaybeUninit128, PairBe as Pair};
+
                 debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
                 let (out_hi, out_lo);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    #[cfg(all(
+                        any(
+                            target_feature = "prefix-instrs",
+                            atomic_maybe_uninit_target_feature = "prefix-instrs",
+                        ),
+                        target_endian = "little",
+                    ))]
+                    macro_rules! atomic_load_acquire {
+                        ($release:tt) => {
+                            asm!(
+                                $release,
+                                // p{lq,stq} is unsupported in LLVM 19, so use manually align and .long.
+                                // plq %r4, 0(%r3)  // atomic { r4:r5 = *src }
+                                ".balign 64",
+                                ".long 0x04000000", // p
+                                ".long 0xe0830000", // lq %r4, 0(%r3)
+                                "cmpw %r4, %r4",    // if r4 == r4 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                "bne- %cr0, 2f",    // if unlikely(cr0.EQ == 0) { jump 'never }
+                                "2:", // 'never:
+                                "isync",            // fence (works in combination with a branch that depends on the loaded value)
+                                in("r3") ptr_reg!(src),
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                                out("r4") out_hi,
+                                out("r5") out_lo,
+                                out("cr0") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(all(
+                        any(
+                            target_feature = "prefix-instrs",
+                            atomic_maybe_uninit_target_feature = "prefix-instrs",
+                        ),
+                        target_endian = "little",
+                    )))]
                     macro_rules! atomic_load_acquire {
                         ($release:tt) => {
                             asm!(
@@ -559,6 +615,33 @@ macro_rules! atomic128 {
                     }
                     match order {
                         Ordering::Relaxed => {
+                            #[cfg(all(
+                                any(
+                                    target_feature = "prefix-instrs",
+                                    atomic_maybe_uninit_target_feature = "prefix-instrs",
+                                ),
+                                target_endian = "little",
+                            ))]
+                            asm!(
+                                // p{lq,stq} is unsupported in LLVM 19, so use manually align and .long.
+                                // plq %r4, 0(%r3)  // atomic { r4:r5 = *src }
+                                ".balign 64",
+                                ".long 0x04000000", // p
+                                ".long 0xe0830000", // lq %r4, 0(%r3)
+                                in("r3") ptr_reg!(src),
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                                out("r4") out_hi,
+                                out("r5") out_lo,
+                                options(nostack, preserves_flags),
+                            );
+                            #[cfg(not(all(
+                                any(
+                                    target_feature = "prefix-instrs",
+                                    atomic_maybe_uninit_target_feature = "prefix-instrs",
+                                ),
+                                target_endian = "little",
+                            )))]
                             asm!(
                                 "lq %r4, 0({src})", // atomic { r4:r5 = *src }
                                 src = in(reg_nonzero) ptr_reg!(src),
@@ -584,11 +667,52 @@ macro_rules! atomic128 {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
+                #[cfg(all(
+                    any(
+                        target_feature = "prefix-instrs",
+                        atomic_maybe_uninit_target_feature = "prefix-instrs",
+                    ),
+                    target_endian = "little",
+                ))]
+                use crate::utils::MaybeUninit128Be as MaybeUninit128;
+
                 debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
                 let val = MaybeUninit128 { $ty: val };
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    #[cfg(all(
+                        any(
+                            target_feature = "prefix-instrs",
+                            atomic_maybe_uninit_target_feature = "prefix-instrs",
+                        ),
+                        target_endian = "little",
+                    ))]
+                    macro_rules! atomic_store {
+                        ($release:tt) => {
+                            asm!(
+                                $release,              // fence
+                                // p{lq,stq} is unsupported in LLVM 19, so use manually align and .long.
+                                // "pstq %r4, 0(%r3)", // atomic { *dst = r4:r5 }
+                                ".balign 64",
+                                ".long 0x04000000",    // p
+                                ".long 0xf0830000",    // stq %r4, 0(%r3)
+                                in("r3") ptr_reg!(dst),
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                                in("r4") val.pair.hi,
+                                in("r5") val.pair.lo,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    #[cfg(not(all(
+                        any(
+                            target_feature = "prefix-instrs",
+                            atomic_maybe_uninit_target_feature = "prefix-instrs",
+                        ),
+                        target_endian = "little",
+                    )))]
                     macro_rules! atomic_store {
                         ($release:tt) => {
                             asm!(

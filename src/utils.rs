@@ -206,6 +206,15 @@ pub(crate) union MaybeUninit128 {
     pub(crate) i128: MaybeUninit<i128>,
     pub(crate) pair: Pair<u64>,
 }
+#[cfg(target_arch = "powerpc64")]
+#[allow(dead_code)]
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub(crate) union MaybeUninit128Be {
+    pub(crate) u128: MaybeUninit<u128>,
+    pub(crate) i128: MaybeUninit<i128>,
+    pub(crate) pair: PairBe<u64>,
+}
 /// A 64-bit value represented as a pair of 32-bit values.
 ///
 /// This type is `#[repr(C)]`, both fields have the same in-memory representation
@@ -218,26 +227,34 @@ pub(crate) union MaybeUninit64 {
     pub(crate) i64: MaybeUninit<i64>,
     pub(crate) pair: Pair<u32>,
 }
+#[cfg(not(any(
+    target_endian = "little",
+    target_arch = "aarch64",
+    target_arch = "arm",
+    target_arch = "arm64ec",
+)))]
+pub(crate) use self::PairBe as Pair;
+#[cfg(any(
+    target_endian = "little",
+    target_arch = "aarch64",
+    target_arch = "arm",
+    target_arch = "arm64ec",
+))]
+pub(crate) use self::PairLe as Pair;
+/// Little-endian order pair.
 #[allow(dead_code)]
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub(crate) struct Pair<T: Copy> {
-    // little endian order
-    #[cfg(any(
-        target_endian = "little",
-        target_arch = "aarch64",
-        target_arch = "arm",
-        target_arch = "arm64ec",
-    ))]
+pub(crate) struct PairLe<T: Copy> {
     pub(crate) lo: MaybeUninit<T>,
     pub(crate) hi: MaybeUninit<T>,
-    // big endian order
-    #[cfg(not(any(
-        target_endian = "little",
-        target_arch = "aarch64",
-        target_arch = "arm",
-        target_arch = "arm64ec",
-    )))]
+}
+/// Big-endian order pair.
+#[allow(dead_code)]
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub(crate) struct PairBe<T: Copy> {
+    pub(crate) hi: MaybeUninit<T>,
     pub(crate) lo: MaybeUninit<T>,
 }
 

@@ -301,16 +301,23 @@ build() {
                     x_cargo "${args[@]}" "$@"
             fi
             ;;
-        powerpc64-*)
-            # powerpc64le- (little-endian) is skipped because it is pwr8 by default
-            CARGO_TARGET_DIR="${target_dir}/pwr8" \
-                RUSTFLAGS="${target_rustflags} -C target-cpu=pwr8" \
-                x_cargo "${args[@]}" "$@"
-            ;;
-        powerpc64le-*)
-            # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
-            CARGO_TARGET_DIR="${target_dir}/pwr7" \
-                RUSTFLAGS="${target_rustflags} -C target-cpu=pwr7" \
+        powerpc64*)
+            case "${target}" in
+                powerpc64-*)
+                    # powerpc64le- (little-endian) is skipped because it is pwr8 by default
+                    CARGO_TARGET_DIR="${target_dir}/pwr8" \
+                        RUSTFLAGS="${target_rustflags} -C target-cpu=pwr8" \
+                        x_cargo "${args[@]}" "$@"
+                    ;;
+                powerpc64le-*)
+                    # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
+                    CARGO_TARGET_DIR="${target_dir}/pwr7" \
+                        RUSTFLAGS="${target_rustflags} -C target-cpu=pwr7" \
+                        x_cargo "${args[@]}" "$@"
+                    ;;
+            esac
+            CARGO_TARGET_DIR="${target_dir}/pwr10" \
+                RUSTFLAGS="${target_rustflags} -C target-cpu=pwr10" \
                 x_cargo "${args[@]}" "$@"
             ;;
         riscv*)
