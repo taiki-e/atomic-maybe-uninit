@@ -224,89 +224,86 @@ jobs:
         if: matrix.flags != ''
       - run: echo "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
         if: matrix.target != '' && !contains(matrix.target, '-darwin')
-      # TODO: LLVM bug: Undefined temporary symbol error when building std.
-      - run: echo "RELEASE=--release" >>"${GITHUB_ENV}"
-        if: startsWith(matrix.target, 'mips-') || startsWith(matrix.target, 'mipsel-')
 
-      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv $TARGET $DOCTEST_XCOMPILE $BUILD_STD
       # We test doctest only once with the default build conditions because doctest is slow.
       # src/tests has extended copies of doctest, so this will not reduce test coverage.
       # x86_64 +cmpxchg16b
       # macOS is skipped because it is +cmpxchg16b by default
-      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
         if: (matrix.target == '' || startsWith(matrix.target, 'x86_64')) && !startsWith(matrix.os, 'macos')
       # x86 -sse2
-      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
         if: startsWith(matrix.target, 'i686')
       # aarch64 +lse
-      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
         # macOS is skipped because it is +rcpc,+lse,+lse2 by default
         if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
       # aarch64 +rcpc,+lse,+lse2
-      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc,+lse,+lse2
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc,+lse,+lse2
         # macOS is skipped because it is +rcpc,+lse,+lse2 by default
         if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
       # arm v8 little endian
-      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
         if: matrix.target == 'armv7-unknown-linux-gnueabi'
       # arm v6 with legacy cp15_barrier
-      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
         if: matrix.target == 'arm-unknown-linux-gnueabi'
       # arm v7 big endian
       # armeb-unknown-linux-gnueabi is v8 by default, use custom target instead
-      - run: tools/test.sh -vv --tests --target armebv7-unknown-linux-gnueabi -Z build-std $RELEASE
+      - run: tools/test.sh -vv --tests --target armebv7-unknown-linux-gnueabi -Z build-std
         env:
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_LINKER: armeb-unknown-linux-gnueabi-gcc
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
         if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi'
       # arm v4t
-      - run: tools/test.sh -vv --tests --target armv4t-unknown-linux-gnueabi -Z build-std $RELEASE
+      - run: tools/test.sh -vv --tests --target armv4t-unknown-linux-gnueabi -Z build-std
         env:
           CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_LINKER: arm-linux-gnueabi-gcc
           CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-arm
         if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armv5te-unknown-linux-gnueabi'
       # powerpc64 pwr7
       # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
-      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
         if: startsWith(matrix.target, 'powerpc64le-')
       # powerpc64 pwr8
       # powerpc64le- (little-endian) is skipped because it is pwr8 by default
-      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD
         env:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr8
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr8
         if: startsWith(matrix.target, 'powerpc64-')
       # s390x z196 (arch9)
-      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD $RELEASE
+      - run: tools/test.sh -vv --tests $TARGET $BUILD_STD
         env:
           # TODO: disable high-word LLVM target-feature to avoid LLVM codegen bug.
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=z196 -C target-feature=-high-word
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196 -C target-feature=-high-word
         if: startsWith(matrix.target, 's390x')
 
-      - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features $TARGET $BUILD_STD $RELEASE
-      - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features $TARGET $BUILD_STD $RELEASE --direct
+      - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features $TARGET $BUILD_STD
+      - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features $TARGET $BUILD_STD --direct
         # Old nightly compilers do not support -Z direct-minimal-versions
         if: matrix.rust == 'nightly'
 
