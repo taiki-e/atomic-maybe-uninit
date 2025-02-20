@@ -174,7 +174,7 @@ jobs:
             target: arm-unknown-linux-gnueabi
           # - rust: beta
           #   target: arm-unknown-linux-gnueabi
-          - rust: nightly
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
             target: arm-unknown-linux-gnueabi
           # ------------------------------------------------------------
           # armv7-unknown-linux-gnueabi
@@ -188,7 +188,7 @@ jobs:
             target: armv7-unknown-linux-gnueabi
           # - rust: beta
           #   target: armv7-unknown-linux-gnueabi
-          - rust: nightly
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
             target: armv7-unknown-linux-gnueabi
           # ------------------------------------------------------------
           # armv7-unknown-linux-gnueabihf
@@ -210,7 +210,7 @@ jobs:
           - rust: nightly
             target: armv7-unknown-linux-gnueabihf
             os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
-          - rust: nightly
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
             target: armv7-unknown-linux-gnueabihf
             os: ubuntu-latest # QEMU on x86_64
           # ------------------------------------------------------------
@@ -224,7 +224,7 @@ jobs:
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: armeb-unknown-linux-gnueabi
           #   os: ubuntu-22.04
-          - rust: nightly
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
             target: armeb-unknown-linux-gnueabi
             os: ubuntu-22.04
           # ------------------------------------------------------------
@@ -407,7 +407,7 @@ jobs:
           # sparc64-unknown-linux-gnu
           - rust: nightly-2024-11-08 # Rust 1.84, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
             target: sparc64-unknown-linux-gnu
-          - rust: nightly
+          - rust: nightly-2025-02-17 # TODO: "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20
             target: sparc64-unknown-linux-gnu
           # ------------------------------------------------------------
           # thumbv7neon-unknown-linux-gnueabihf
@@ -429,7 +429,7 @@ jobs:
           - rust: nightly
             target: thumbv7neon-unknown-linux-gnueabihf
             os: ubuntu-22.04-arm # TODO: update to 24.04 when https://github.com/rust-lang/rust/issues/135867 solved
-          - rust: nightly
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
             target: thumbv7neon-unknown-linux-gnueabihf
             os: ubuntu-latest # QEMU on x86_64
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
