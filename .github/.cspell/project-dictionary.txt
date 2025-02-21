@@ -16,6 +16,7 @@ cdsg
 CDSY
 cinc
 clrex
+cmpne
 cmpw
 cmpxchg
 cset
@@ -41,6 +42,7 @@ ldar
 ldarx
 ldaxp
 ldclrp
+ldex
 ldiapp
 ldrd
 ldrex
@@ -107,6 +109,7 @@ srlv
 stbar
 stdarch
 stdcx
+stex
 stilp
 stlxp
 stpq
