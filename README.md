@@ -18,7 +18,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, and Xtensa are supported.
+Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, C-SKY, and Xtensa are supported.
 
 | target_arch                     | primitives                                          | load/store | swap/CAS |
 | ------------------------------- | --------------------------------------------------- |:----------:|:--------:|
@@ -44,6 +44,7 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, Arm64EC, s390x, MIPS,
 | sparc64 \[8] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | hexagon \[8] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | m68k \[8] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| csky \[8] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | xtensa \[8] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 
 \[1] Arm's atomic RMW operations are not available on Armv6-M (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) extension such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (Linux is M68020 by default). Xtensa's atomic RMW operations are not available on esp32s2.<br>
