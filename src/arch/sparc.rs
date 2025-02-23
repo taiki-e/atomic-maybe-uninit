@@ -361,7 +361,6 @@ macro_rules! atomic {
     };
 }
 
-#[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
         atomic_load_store!($ty, $suffix, "u");

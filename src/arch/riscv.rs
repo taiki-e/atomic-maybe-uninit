@@ -53,12 +53,12 @@ use crate::raw::AtomicCompareExchange;
 ))]
 use crate::raw::AtomicSwap;
 use crate::raw::{AtomicLoad, AtomicStore};
-#[cfg(target_arch = "riscv64")]
-#[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
-use crate::utils::{MaybeUninit128 as MaybeUninitDw, Pair};
 #[cfg(target_arch = "riscv32")]
 #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
 use crate::utils::{MaybeUninit64 as MaybeUninitDw, Pair};
+#[cfg(target_arch = "riscv64")]
+#[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+use crate::utils::{MaybeUninit128 as MaybeUninitDw, Pair};
 
 #[cfg(not(all(
     not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
@@ -442,7 +442,6 @@ macro_rules! atomic {
     };
 }
 
-#[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($ty:ident, $size:tt, $shift:tt) => {
         atomic_load_store!($ty, $size);

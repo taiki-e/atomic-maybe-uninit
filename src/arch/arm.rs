@@ -166,6 +166,7 @@ macro_rules! asm_use_dmb {
     };
 }
 
+#[rustfmt::skip]
 macro_rules! atomic {
     ($ty:ident, $suffix:tt) => {
         impl AtomicLoad for $ty {
@@ -281,7 +282,6 @@ macro_rules! atomic {
                 out
             }
         }
-        #[rustfmt::skip]
         #[cfg(any(
             any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
             not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),

@@ -26,12 +26,12 @@ use core::{
 };
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
-#[cfg(target_arch = "x86_64")]
-#[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
-use crate::utils::{MaybeUninit128, Pair};
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 use crate::utils::{MaybeUninit64, Pair};
+#[cfg(target_arch = "x86_64")]
+#[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+use crate::utils::{MaybeUninit128, Pair};
 
 #[cfg(target_pointer_width = "32")]
 macro_rules! ptr_modifier {

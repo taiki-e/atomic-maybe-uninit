@@ -148,7 +148,7 @@ macro_rules! __test_atomic {
 
         use crossbeam_utils::thread;
 
-        use crate::{tests::helper::*, AtomicMaybeUninit};
+        use crate::{AtomicMaybeUninit, tests::helper::*};
 
         #[test]
         fn load_store() {

@@ -182,7 +182,6 @@ macro_rules! atomic {
     };
 }
 
-#[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($ty:ident, $bits:tt) => {
         atomic_load_store!($ty, $bits, "", "u");

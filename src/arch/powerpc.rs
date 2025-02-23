@@ -84,7 +84,6 @@ fn test_cr0_eq(cr: crate::utils::RegSize) -> bool {
     cr & 0x20000000 != 0
 }
 
-#[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $size:tt, $load_ext:tt) => {
         impl AtomicLoad for $ty {
@@ -292,7 +291,6 @@ macro_rules! atomic {
     };
 }
 
-#[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($ty:ident, $size:tt) => {
         #[cfg(any(

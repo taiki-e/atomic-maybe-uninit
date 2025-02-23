@@ -564,11 +564,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         // field.
         let (out, ok) =
             unsafe { T::atomic_compare_exchange(self.v.get(), current, new, success, failure) };
-        if ok {
-            Ok(out)
-        } else {
-            Err(out)
-        }
+        if ok { Ok(out) } else { Err(out) }
     }
 
     /// Stores a value into the atomic value if the current value is the same as
@@ -652,11 +648,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         let (out, ok) = unsafe {
             T::atomic_compare_exchange_weak(self.v.get(), current, new, success, failure)
         };
-        if ok {
-            Ok(out)
-        } else {
-            Err(out)
-        }
+        if ok { Ok(out) } else { Err(out) }
     }
 
     /// Fetches the value, and applies a function to it that returns an optional
@@ -788,14 +780,14 @@ int!(u128, Align16);
 int!(isize, AlignPtr);
 int!(usize, AlignPtr);
 
-#[cfg(target_pointer_width = "128")]
-pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_atomic_ptr};
 #[cfg(target_pointer_width = "16")]
 pub use {cfg_has_atomic_16 as cfg_has_atomic_ptr, cfg_no_atomic_16 as cfg_no_atomic_ptr};
 #[cfg(target_pointer_width = "32")]
 pub use {cfg_has_atomic_32 as cfg_has_atomic_ptr, cfg_no_atomic_32 as cfg_no_atomic_ptr};
 #[cfg(target_pointer_width = "64")]
 pub use {cfg_has_atomic_64 as cfg_has_atomic_ptr, cfg_no_atomic_64 as cfg_no_atomic_ptr};
+#[cfg(target_pointer_width = "128")]
+pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_atomic_ptr};
 
 mod private {
     #![allow(missing_debug_implementations)]
@@ -843,10 +835,10 @@ mod private {
     // Check that all cfg_ macros work.
     #[allow(unused_imports)]
     use crate::{
-        cfg_has_atomic_128, cfg_has_atomic_16, cfg_has_atomic_32, cfg_has_atomic_64,
-        cfg_has_atomic_8, cfg_has_atomic_cas, cfg_has_atomic_ptr, cfg_no_atomic_128,
-        cfg_no_atomic_16, cfg_no_atomic_32, cfg_no_atomic_64, cfg_no_atomic_8, cfg_no_atomic_cas,
-        cfg_no_atomic_ptr, AtomicMaybeUninit,
+        AtomicMaybeUninit, cfg_has_atomic_8, cfg_has_atomic_16, cfg_has_atomic_32,
+        cfg_has_atomic_64, cfg_has_atomic_128, cfg_has_atomic_cas, cfg_has_atomic_ptr,
+        cfg_no_atomic_8, cfg_no_atomic_16, cfg_no_atomic_32, cfg_no_atomic_64, cfg_no_atomic_128,
+        cfg_no_atomic_cas, cfg_no_atomic_ptr,
     };
     // TODO: make these type aliases public?
     cfg_has_atomic_8! {
