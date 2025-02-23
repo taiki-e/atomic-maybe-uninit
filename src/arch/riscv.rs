@@ -492,7 +492,7 @@ macro_rules! atomic_sub_word {
                                 "not {mask}, {mask}",                                     // mask = !mask
                                 "2:", // 'retry:
                                     concat!("lr.w", $acquire, " {out}, 0({dst})"),        // atomic { out = *dst; RS = dst }
-                                    "and {tmp}, {out}, {mask}",                           // tmp = out & !mask
+                                    "and {tmp}, {out}, {mask}",                           // tmp = out & mask
                                     "or {tmp}, {tmp}, {val}",                             // tmp |= val
                                     concat!("sc.w", $release, " {tmp}, {tmp}, 0({dst})"), // atomic { if RS == dst { *dst = tmp; tmp = 0 } else { tmp = nonzero }; RS = None }
                                     "bnez {tmp}, 2b",                                     // if tmp != 0 { jump 'retry }
@@ -555,7 +555,7 @@ macro_rules! atomic_sub_word {
                                 "2:", // 'retry:
                                     // out_tmp will be used for later comparison.
                                     "mv {out_tmp}, {out}",                                      // out_tmp = out
-                                    "and {tmp}, {out}, {mask}",                                 // tmp = out & !mask
+                                    "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
                                     "or {tmp}, {tmp}, {val}",                                   // tmp |= val
                                     concat!("amocas.w", $asm_order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = *dst } }
                                     "bne {out}, {out_tmp}, 2b",                                 // if out != out_tmp { jump 'retry }
