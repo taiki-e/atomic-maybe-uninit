@@ -1,5 +1,5 @@
 [package]
-name = "no-core"
+name = "m68k-test"
 version = "0.0.0"
 edition = "2021"
 rust-version = "1.64" # Prevent clippy from suggesting a code that requires a new version.
@@ -20,9 +20,8 @@ i64 = []
 u64 = []
 
 [dependencies]
-# atomic-maybe-uninit = { path = "../.." }
+atomic-maybe-uninit = { path = "../.." }
 
-core = { path = "rust-src/core" }
 paste = "1"
 
 [lints]
@@ -91,6 +90,6 @@ panic = "abort"
 [profile.release]
 codegen-units = 1
 lto = true
-# TODO: panic in cas test with -C opt-level=3
+# TODO: panic in cas test with -C opt-level=3 as of LLVM 20
 opt-level = "s"
 panic = "abort"

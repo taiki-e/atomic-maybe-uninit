@@ -170,10 +170,7 @@ run() {
   if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
     retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
   elif [[ -n "${nightly}" ]]; then
-    case "${target}" in
-      m68k*) ;;
-      *) args+=(-Z build-std="core") ;;
-    esac
+    args+=(-Z build-std="core")
   else
     printf '%s\n' "target '${target}' requires nightly compiler (skipped)"
     return 0
@@ -228,23 +225,12 @@ run() {
       target_rustflags+=" -C link-arg=-Wl,-T${linker} -C link-arg=-nostartfiles"
       ;;
     m68k*)
+      if [[ "${llvm_version}" -lt 20 ]]; then
+        # pre-20 LLVM bug https://github.com/llvm/llvm-project/issues/107939
+        printf '%s\n' "target '${target}' is not supported on this version (skipped)"
+        return 0
+      fi
       test_dir=tests/m68k
-      # This is a workaround for the problem of `core` failing to compile in LLVM 19 (and older).
-      # https://github.com/llvm/llvm-project/issues/107939
-      init_core='1'
-      if [[ -f ./"${test_dir}"/rust-src/rust-version ]]; then
-        core_version=$(<./"${test_dir}"/rust-src/rust-version)
-        if [[ "${core_version}" == "${rustc_version}${commit_date}" ]]; then
-          init_core=''
-        fi
-      fi
-      if [[ -n "${init_core}" ]]; then
-        rm -rf -- ./"${test_dir}"/rust-src
-        mkdir -p -- ./"${test_dir}"/rust-src
-        sysroot=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print sysroot)
-        cp -r -- "${sysroot}"/lib/rustlib/src/rust/library/{core,stdarch,portable-simd} ./"${test_dir}"/rust-src/
-        printf '%s\n' "${rustc_version}${commit_date}" >./"${test_dir}"/rust-src/rust-version
-      fi
       ;;
     *) bail "unrecognized target '${target}'" ;;
   esac
