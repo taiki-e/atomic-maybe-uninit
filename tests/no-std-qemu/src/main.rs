@@ -190,6 +190,10 @@ fn run() {
         test_atomic!(i64);
         test_atomic!(u64);
     }
+    cfg_has_atomic_128! {
+        test_atomic!(i128);
+        test_atomic!(u128);
+    }
 }
 
 const LOAD_ORDERINGS: [Ordering; 3] = [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst];

@@ -574,6 +574,12 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo
         if: startsWith(matrix.target, 'riscv')
+      # riscv zacas-based sub-word RMW ({8,16}-bit swap/cas with Zacas without Zalrsc & Zabha)
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+zacas --cfg atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+zacas --cfg atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word
+        if: startsWith(matrix.target, 'riscv')
       # s390x z196 (arch9)
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:

@@ -107,6 +107,8 @@ macro_rules! cfg_no_atomic_128 {
     atomic_maybe_uninit_target_feature = "a",
     target_feature = "zalrsc",
     atomic_maybe_uninit_target_feature = "zalrsc",
+    target_feature = "zacas",
+    atomic_maybe_uninit_target_feature = "zacas",
 ))]
 #[macro_export]
 macro_rules! cfg_has_atomic_cas {
@@ -117,6 +119,8 @@ macro_rules! cfg_has_atomic_cas {
     atomic_maybe_uninit_target_feature = "a",
     target_feature = "zalrsc",
     atomic_maybe_uninit_target_feature = "zalrsc",
+    target_feature = "zacas",
+    atomic_maybe_uninit_target_feature = "zacas",
 ))]
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
@@ -127,6 +131,8 @@ macro_rules! cfg_no_atomic_cas {
     atomic_maybe_uninit_target_feature = "a",
     target_feature = "zalrsc",
     atomic_maybe_uninit_target_feature = "zalrsc",
+    target_feature = "zacas",
+    atomic_maybe_uninit_target_feature = "zacas",
 )))]
 #[macro_export]
 macro_rules! cfg_has_atomic_cas {
@@ -137,6 +143,8 @@ macro_rules! cfg_has_atomic_cas {
     atomic_maybe_uninit_target_feature = "a",
     target_feature = "zalrsc",
     atomic_maybe_uninit_target_feature = "zalrsc",
+    target_feature = "zacas",
+    atomic_maybe_uninit_target_feature = "zacas",
 )))]
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {

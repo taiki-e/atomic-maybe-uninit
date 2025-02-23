@@ -103,6 +103,8 @@ if [[ -z "${is_custom_toolchain}" ]]; then
 fi
 rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^release:' | cut -d' ' -f2)
+llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | { grep -E '^LLVM version:' || true; } | cut -d' ' -f3)
+llvm_version="${llvm_version%%.*}"
 commit_date=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^commit-date:' | cut -d' ' -f2)
 workspace_dir=$(pwd)
 target_dir="${workspace_dir}/target"
@@ -265,14 +267,51 @@ run() {
       RUSTFLAGS="${target_rustflags}" \
       x_cargo "${args[@]}" --release "$@"
     case "${target}" in
-      riscv??[ie]-* | riscv??[ie]m-* | riscv??[ie]mc-*)
-        # With Zalrsc without Zaamo
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-zalrsc" \
-          RUSTFLAGS="${target_rustflags} -C target-feature=+zalrsc" \
-          x_cargo "${args[@]}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-zalrsc" \
-          RUSTFLAGS="${target_rustflags} -C target-feature=+zalrsc" \
-          x_cargo "${args[@]}" --release "$@"
+      riscv*)
+        case "${target}" in
+          riscv??[ie]-* | riscv??[ie]m-* | riscv??[ie]mc-*)
+            # With Zalrsc without Zaamo
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-zalrsc" \
+              RUSTFLAGS="${target_rustflags} -C target-feature=+zalrsc" \
+              x_cargo "${args[@]}" "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-zalrsc" \
+              RUSTFLAGS="${target_rustflags} -C target-feature=+zalrsc" \
+              x_cargo "${args[@]}" --release "$@"
+            ;;
+        esac
+        local arch
+        case "${target}" in
+          riscv32*) arch=riscv32 ;;
+          riscv64*) arch=riscv64 ;;
+          *) bail "${target}" ;;
+        esac
+        # Support for Zabha extension requires LLVM 19+ and QEMU 9.1+.
+        # https://github.com/qemu/qemu/commit/be4a8db7f304347395b081ae5848bad2f507d0c4
+        qemu_version=$(qemu-system-"${arch}" --version | sed -En '1 s/QEMU emulator version [^ ]+ \(v([^ )]+)\)/\1/p')
+        if [[ -z "${qemu_version}" ]]; then
+          qemu_version=$(qemu-system-"${arch}" --version | sed -En '1 s/QEMU emulator version ([^ )]+)/\1/p')
+        fi
+        if [[ "${llvm_version}" -ge 19 ]] && [[ "${qemu_version}" =~ ^(9\.[^0]|[1-9][0-9]+\.) ]]; then
+          export "CARGO_TARGET_${target_upper}_RUNNER"="qemu-system-${arch} -M virt -cpu max -display none -semihosting -kernel"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zacas" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zacas" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zacas" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zacas" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha-zacas" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha-zacas" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
+            x_cargo "${args[@]}" --release "$@"
+        fi
         ;;
       avr*)
         # Run with qemu-system-avr.
