@@ -29,31 +29,34 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, Arm64EC, s390x, MIPS,
 | arm (except for M-profile) \[3] | i64,u64                                             | ✓          | ✓        |
 | aarch64                         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | riscv32                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| riscv32 (+zacas) \[4]           | i64,u64                                             | ✓          | ✓        |
 | riscv64                         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
-| loongarch64 \[6]                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| arm64ec \[7]                    | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| s390x \[7]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| mips / mips32r6 \[8]            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| mips64 / mips64r6 \[8]          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| powerpc \[8]                    | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| powerpc64 \[8]                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| powerpc64 (+quadword-atomics) \[4] \[8]| i128,u128                                    | ✓          | ✓        |
-| msp430 \[8] (experimental)      | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| avr \[8] (experimental)         | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| sparc \[5] \[8] (experimental)  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| sparc64 \[8] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| hexagon \[8] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| m68k \[8] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| xtensa \[8] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| riscv64 (+zacas) \[4]           | i128,u128                                           | ✓          | ✓        |
+| loongarch64 \[7]                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| arm64ec \[8]                    | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| s390x \[8]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| mips / mips32r6 \[9]            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| mips64 / mips64r6 \[9]          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| powerpc \[9]                    | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| powerpc64 \[9]                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| powerpc64 (+quadword-atomics) \[5] \[9]| i128,u128                                    | ✓          | ✓        |
+| msp430 \[9] (experimental)      | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| avr \[9] (experimental)         | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| sparc \[6] \[9] (experimental)  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| sparc64 \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| hexagon \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| m68k \[9] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| xtensa \[9] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 
 \[1] Arm's atomic RMW operations are not available on Armv6-M (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc extension, such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (Linux is M68020 by default). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple and Windows (except Windows 7) targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
-\[4] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
-\[5] Requires `v9` or `leoncasa` target feature (enabled by default on Linux).<br>
-\[6] Requires Rust 1.72+.<br>
-\[7] Requires Rust 1.84+.<br>
-\[8] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
+\[4] Requires `zacas` target feature.<br>
+\[5] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
+\[6] Requires `v9` or `leoncasa` target feature (enabled by default on Linux).<br>
+\[7] Requires Rust 1.72+.<br>
+\[8] Requires Rust 1.84+.<br>
+\[9] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 
 See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md) for more information about atomic operations in these architectures.
 

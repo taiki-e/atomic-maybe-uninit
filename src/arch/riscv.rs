@@ -22,7 +22,6 @@ Generated asm:
 */
 
 // TODO:
-// - 64-bit/128-bit atomics on RV32/RV64 with Zacas
 // - {8,16}-bit swap/cas with Zacas without Zalrsc & Zabha (use amocas.w)
 
 #[path = "cfgs/riscv.rs"]
@@ -53,6 +52,12 @@ use crate::raw::AtomicCompareExchange;
 ))]
 use crate::raw::AtomicSwap;
 use crate::raw::{AtomicLoad, AtomicStore};
+#[cfg(target_arch = "riscv64")]
+#[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+use crate::utils::{MaybeUninit128 as MaybeUninitDw, Pair};
+#[cfg(target_arch = "riscv32")]
+#[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+use crate::utils::{MaybeUninit64 as MaybeUninitDw, Pair};
 
 #[cfg(not(all(
     not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
@@ -644,3 +649,166 @@ atomic!(usize, "w");
 atomic!(isize, "d");
 #[cfg(target_pointer_width = "64")]
 atomic!(usize, "d");
+
+#[rustfmt::skip]
+macro_rules! atomic_dw {
+    ($ty:ident, $size:tt, $reg_size:tt, $reg_size_offset:tt) => {
+        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+        impl AtomicLoad for $ty {
+            #[inline]
+            unsafe fn atomic_load(
+                src: *const MaybeUninit<Self>,
+                order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                let (out_lo, out_hi);
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports Zacas extension.
+                unsafe {
+                    macro_rules! load {
+                        ($fence:tt, $asm_order:tt) => {
+                            asm!(
+                                $fence,                                                     // fence
+                                concat!("amocas.", $size, $asm_order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
+                                src = in(reg) ptr_reg!(src),
+                                inout("a2") 0 as crate::utils::RegSize => out_lo,
+                                inout("a3") 0 as crate::utils::RegSize => out_hi,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw_amocas!(load, order);
+                    MaybeUninitDw { pair: Pair { lo: out_lo, hi: out_hi } }.$ty
+                }
+            }
+        }
+        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+        impl AtomicStore for $ty {
+            #[inline]
+            unsafe fn atomic_store(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    <$ty as AtomicSwap>::atomic_swap(dst, val, order);
+                }
+            }
+        }
+        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+        impl AtomicSwap for $ty {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let val = MaybeUninitDw { $ty: val };
+                let (mut prev_lo, mut prev_hi);
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports Zacas extension.
+                unsafe {
+                    macro_rules! swap {
+                        // fence is not emitted because we retry until CAS success
+                        ($_fence:tt, $asm_order:tt) => {
+                            asm!(
+                                // This is not single-copy atomic reads, but this is ok because subsequent
+                                // CAS will check for consistency.
+                                concat!("l", $reg_size, " a4, ({dst})"),                        // atomic { a4 = *dst }
+                                concat!("l", $reg_size, " a5, ", $reg_size_offset, "({dst})"),  // atomic { a5 = *dst.add($reg_size_offset) }
+                                "2:", // 'retry:
+                                    // tmp_lo:tmp_hi will be used for later comparison.
+                                    "mv {tmp_lo}, a4",                                          // tmp_lo = a4
+                                    "mv {tmp_hi}, a5",                                          // tmp_hi = a5
+                                    concat!("amocas.", $size, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                    "xor {tmp_lo}, {tmp_lo}, a4",                               // tmp_lo ^= a4
+                                    "xor {tmp_hi}, {tmp_hi}, a5",                               // tmp_hi ^= a5
+                                    "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                          // tmp_lo |= tmp_hi
+                                    "bnez {tmp_lo}, 2b",                                        // if tmp_lo != 0 { jump 'retry }
+                                dst = in(reg) ptr_reg!(dst),
+                                tmp_lo = out(reg) _,
+                                tmp_hi = out(reg) _,
+                                // must be allocated to even/odd register pair
+                                out("a4") prev_lo,
+                                out("a5") prev_hi,
+                                // must be allocated to even/odd register pair
+                                in("a2") val.pair.lo,
+                                in("a3") val.pair.hi,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw_amocas!(swap, order);
+                    MaybeUninitDw { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                }
+            }
+        }
+        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+        impl AtomicCompareExchange for $ty {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let order = crate::utils::upgrade_success_ordering(success, failure);
+                let old = MaybeUninitDw { $ty: old };
+                let new = MaybeUninitDw { $ty: new };
+                let (prev_lo, prev_hi);
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports Zacas extension.
+                unsafe {
+                    let mut r: crate::utils::RegSize;
+                    macro_rules! cmpxchg {
+                        ($fence:tt, $asm_order:tt) => {
+                            asm!(
+                                $fence,                                                     // fence
+                                // tmp_lo:tmp_hi will be used for later comparison.
+                                "mv {tmp_lo}, a4",                                          // tmp_lo = a4
+                                "mv {tmp_hi}, a5",                                          // tmp_hi = a5
+                                concat!("amocas.", $size, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                "xor {tmp_lo}, {tmp_lo}, a4",                               // tmp_lo ^= a4
+                                "xor {tmp_hi}, {tmp_hi}, a5",                               // tmp_hi ^= a5
+                                "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                          // tmp_lo |= tmp_hi
+                                "seqz {tmp_lo}, {tmp_lo}",                                  // if tmp_lo == 0 { tmp_lo = 1 } else { tmp_lo = 0 }
+                                dst = in(reg) ptr_reg!(dst),
+                                tmp_lo = out(reg) r,
+                                tmp_hi = out(reg) _,
+                                // must be allocated to even/odd register pair
+                                inout("a4") old.pair.lo => prev_lo,
+                                inout("a5") old.pair.hi => prev_hi,
+                                // must be allocated to even/odd register pair
+                                in("a2") new.pair.lo,
+                                in("a3") new.pair.hi,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw_amocas!(cmpxchg, order, failure = failure);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+                    (
+                        MaybeUninitDw { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
+                        r != 0
+                    )
+                }
+            }
+        }
+    };
+}
+
+#[cfg(target_arch = "riscv32")]
+atomic_dw!(i64, "d", "w", "4");
+#[cfg(target_arch = "riscv32")]
+atomic_dw!(u64, "d", "w", "4");
+#[cfg(target_arch = "riscv64")]
+atomic_dw!(i128, "q", "d", "8");
+#[cfg(target_arch = "riscv64")]
+atomic_dw!(u128, "q", "d", "8");

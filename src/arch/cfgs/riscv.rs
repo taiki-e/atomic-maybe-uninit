@@ -26,30 +26,78 @@ macro_rules! cfg_has_atomic_32 {
 macro_rules! cfg_no_atomic_32 {
     ($($tt:tt)*) => {};
 }
-#[cfg(target_arch = "riscv32")]
-#[macro_export]
-macro_rules! cfg_has_atomic_64 {
-    ($($tt:tt)*) => {};
-}
-#[cfg(target_arch = "riscv32")]
-#[macro_export]
-macro_rules! cfg_no_atomic_64 {
-    ($($tt:tt)*) => { $($tt)* };
-}
-#[cfg(target_arch = "riscv64")]
+#[cfg(any(
+    all(
+        target_arch = "riscv32",
+        any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+    ),
+    target_arch = "riscv64",
+))]
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(target_arch = "riscv64")]
+#[cfg(any(
+    all(
+        target_arch = "riscv32",
+        any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+    ),
+    target_arch = "riscv64",
+))]
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => {};
 }
+#[cfg(not(any(
+    all(
+        target_arch = "riscv32",
+        any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+    ),
+    target_arch = "riscv64",
+)))]
+#[macro_export]
+macro_rules! cfg_has_atomic_64 {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(any(
+    all(
+        target_arch = "riscv32",
+        any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+    ),
+    target_arch = "riscv64",
+)))]
+#[macro_export]
+macro_rules! cfg_no_atomic_64 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(all(
+    target_arch = "riscv64",
+    any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+))]
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(all(
+    target_arch = "riscv64",
+    any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+))]
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(all(
+    target_arch = "riscv64",
+    any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+)))]
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {
     ($($tt:tt)*) => {};
 }
+#[cfg(not(all(
+    target_arch = "riscv64",
+    any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+)))]
 #[macro_export]
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
