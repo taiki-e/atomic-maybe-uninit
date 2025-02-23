@@ -24,7 +24,6 @@ Generated asm:
 // TODO:
 // - 64-bit/128-bit atomics on RV32/RV64 with Zacas
 // - {8,16}-bit swap/cas with Zacas without Zalrsc & Zabha (use amocas.w)
-// - {32,64}-bit swap with Zalrsc without Zaamo (use lr/sc)
 
 #[path = "cfgs/riscv.rs"]
 mod cfgs;
@@ -56,6 +55,7 @@ use crate::raw::AtomicSwap;
 use crate::raw::{AtomicLoad, AtomicStore};
 
 #[cfg(not(all(
+    not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
     any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
     any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
 )))]
@@ -72,6 +72,7 @@ macro_rules! w {
     };
 }
 #[cfg(not(all(
+    not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
     any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
     any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
 )))]
@@ -88,11 +89,14 @@ macro_rules! w {
     };
 }
 
-#[cfg(any(
-    target_feature = "a",
-    atomic_maybe_uninit_target_feature = "a",
-    target_feature = "zaamo",
-    atomic_maybe_uninit_target_feature = "zaamo",
+#[cfg(all(
+    not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+    any(
+        target_feature = "a",
+        atomic_maybe_uninit_target_feature = "a",
+        target_feature = "zaamo",
+        atomic_maybe_uninit_target_feature = "zaamo",
+    ),
 ))]
 macro_rules! atomic_rmw_amo {
     ($op:ident, $order:ident) => {
@@ -124,6 +128,7 @@ macro_rules! atomic_rmw_amocas {
     };
 }
 #[cfg(not(all(
+    not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
     any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
     any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
 )))]
@@ -218,11 +223,14 @@ macro_rules! atomic_load_store {
     };
 }
 
-#[cfg(any(
-    target_feature = "a",
-    atomic_maybe_uninit_target_feature = "a",
-    target_feature = "zaamo",
-    atomic_maybe_uninit_target_feature = "zaamo",
+#[cfg(all(
+    not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+    any(
+        target_feature = "a",
+        atomic_maybe_uninit_target_feature = "a",
+        target_feature = "zaamo",
+        atomic_maybe_uninit_target_feature = "zaamo",
+    ),
 ))]
 #[rustfmt::skip]
 macro_rules! atomic_zaamo {
@@ -265,13 +273,64 @@ macro_rules! atomic {
         atomic_load_store!($ty, $size);
 
         // swap
+        #[cfg(all(
+            not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+            any(
+                target_feature = "a",
+                atomic_maybe_uninit_target_feature = "a",
+                target_feature = "zaamo",
+                atomic_maybe_uninit_target_feature = "zaamo",
+            ),
+        ))]
+        atomic_zaamo!($ty, $size);
+        #[cfg(not(all(
+            not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+            any(
+                target_feature = "a",
+                atomic_maybe_uninit_target_feature = "a",
+                target_feature = "zaamo",
+                atomic_maybe_uninit_target_feature = "zaamo",
+            ),
+        )))]
         #[cfg(any(
             target_feature = "a",
             atomic_maybe_uninit_target_feature = "a",
-            target_feature = "zaamo",
-            atomic_maybe_uninit_target_feature = "zaamo",
+            target_feature = "zalrsc",
+            atomic_maybe_uninit_target_feature = "zalrsc",
         ))]
-        atomic_zaamo!($ty, $size);
+        impl AtomicSwap for $ty {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                let mut out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports Zalrsc extension.
+                unsafe {
+                    macro_rules! swap {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                "2:", // 'retry:
+                                    concat!("lr.", $size, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
+                                    concat!("sc.", $size, $release, " {r}, {val}, 0({dst})"), // atomic { if RS == dst { *dst = val; r = 0 } else { r = nonzero }; RS = None }
+                                    "bnez {r}, 2b",                                           // if r != 0 { jump 'retry }
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) val,
+                                out = out(reg) out,
+                                r = out(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw_lr_sc!(swap, order);
+                }
+                out
+            }
+        }
 
         // compare_exchange
         #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
@@ -375,9 +434,15 @@ macro_rules! atomic_sub_word {
         atomic_load_store!($ty, $size);
 
         // swap
-        #[cfg(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"))]
+        #[cfg(all(
+            not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+        ))]
         atomic_zaamo!($ty, $size);
-        #[cfg(not(any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha")))]
+        #[cfg(not(all(
+            not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+        )))]
         #[cfg(any(
             target_feature = "a",
             atomic_maybe_uninit_target_feature = "a",

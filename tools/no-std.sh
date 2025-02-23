@@ -265,6 +265,15 @@ run() {
       RUSTFLAGS="${target_rustflags}" \
       x_cargo "${args[@]}" --release "$@"
     case "${target}" in
+      riscv??[ie]-* | riscv??[ie]m-* | riscv??[ie]mc-*)
+        # With Zalrsc without Zaamo
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-zalrsc" \
+          RUSTFLAGS="${target_rustflags} -C target-feature=+zalrsc" \
+          x_cargo "${args[@]}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-zalrsc" \
+          RUSTFLAGS="${target_rustflags} -C target-feature=+zalrsc" \
+          x_cargo "${args[@]}" --release "$@"
+        ;;
       avr*)
         # Run with qemu-system-avr.
         subcmd=run

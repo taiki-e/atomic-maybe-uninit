@@ -54,22 +54,42 @@ macro_rules! cfg_has_atomic_128 {
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+#[cfg(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zalrsc",
+    atomic_maybe_uninit_target_feature = "zalrsc",
+))]
 #[macro_export]
 macro_rules! cfg_has_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a"))]
+#[cfg(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zalrsc",
+    atomic_maybe_uninit_target_feature = "zalrsc",
+))]
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => {};
 }
-#[cfg(not(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a")))]
+#[cfg(not(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zalrsc",
+    atomic_maybe_uninit_target_feature = "zalrsc",
+)))]
 #[macro_export]
 macro_rules! cfg_has_atomic_cas {
     ($($tt:tt)*) => {};
 }
-#[cfg(not(any(target_feature = "a", atomic_maybe_uninit_target_feature = "a")))]
+#[cfg(not(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zalrsc",
+    atomic_maybe_uninit_target_feature = "zalrsc",
+)))]
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };

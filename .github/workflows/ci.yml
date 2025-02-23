@@ -568,6 +568,12 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+zabha,+zacas
           QEMU_CPU: max
         if: startsWith(matrix.target, 'riscv')
+      # riscv zalrsc-based RMW ({32,64}-bit swap with Zalrsc without Zaamo)
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo
+        if: startsWith(matrix.target, 'riscv')
       # s390x z196 (arch9)
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
