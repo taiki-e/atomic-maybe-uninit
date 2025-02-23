@@ -1,4 +1,5 @@
 addi
+amocas
 amoswap
 amswap
 andc
@@ -100,8 +101,10 @@ shufps
 signedness
 simavr
 simio
+slli
 sllv
 sltui
+srai
 sreg
 srlv
 stbar

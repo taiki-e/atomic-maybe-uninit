@@ -276,21 +276,27 @@ build() {
     printf '%s\n' "target '${target}' requires nightly compiler (skipped all checks)"
     return 0
   fi
-  if [[ "${target}" == "avr"* ]]; then
-    if [[ "${llvm_version}" -eq 16 ]]; then
-      # https://github.com/rust-lang/compiler-builtins/issues/523
-      target_rustflags+=" -C linker-plugin-lto -C codegen-units=1"
-    elif [[ "${llvm_version}" -ge 17 ]]; then
-      # https://github.com/rust-lang/rust/issues/88252
-      target_rustflags+=" -C opt-level=s"
-    fi
-  fi
-  if ! grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
-    case "${target}" in
-      # TODO: LLVM bug: Undefined temporary symbol error when building std.
-      mips-*-linux-* | mipsel-*-linux-*) target_rustflags+=" -C opt-level=1" ;;
-    esac
-  fi
+  case "${target}" in
+    avr*)
+      if [[ "${llvm_version}" -eq 16 ]]; then
+        # https://github.com/rust-lang/compiler-builtins/issues/523
+        target_rustflags+=" -C linker-plugin-lto -C codegen-units=1"
+      elif [[ "${llvm_version}" -ge 17 ]]; then
+        # https://github.com/rust-lang/rust/issues/88252
+        target_rustflags+=" -C opt-level=s"
+      fi
+      if [[ "${target}" == "avr-none" ]]; then
+        # "error: target requires explicitly specifying a cpu with `-C target-cpu`"
+        target_rustflags+=" -C target-cpu=atmega328p"
+      fi
+      ;;
+    mips-*-linux-* | mipsel-*-linux-*)
+      if ! grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
+        # TODO: LLVM bug: Undefined temporary symbol error when building std.
+        target_rustflags+=" -C opt-level=1"
+      fi
+      ;;
+  esac
 
   if [[ -n "${TESTS:-}" ]]; then
     # We use std in main tests, so we cannot build them on no-std targets.
@@ -400,13 +406,25 @@ build() {
         x_cargo "${args[@]}" "$@"
       ;;
     riscv*)
-      # Support for Zaamo/Zabha extension requires LLVM 19+.
+      # Support for Zaamo/Zabha/Zalrsc extensions requires LLVM 19+.
       if [[ "${llvm_version}" -ge 19 ]]; then
         CARGO_TARGET_DIR="${target_dir}/zaamo" \
           RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo" \
           x_cargo "${args[@]}" "$@"
         CARGO_TARGET_DIR="${target_dir}/zabha" \
           RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha" \
+          x_cargo "${args[@]}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/zalrsc" \
+          RUSTFLAGS="${target_rustflags} -C target-feature=+zalrsc" \
+          x_cargo "${args[@]}" "$@"
+      fi
+      # Support for Zacas extension requires LLVM 20+.
+      if [[ "${llvm_version}" -ge 20 ]]; then
+        CARGO_TARGET_DIR="${target_dir}/zacas" \
+          RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zacas" \
+          x_cargo "${args[@]}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/zabha-zacas" \
+          RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
           x_cargo "${args[@]}" "$@"
       fi
       ;;
