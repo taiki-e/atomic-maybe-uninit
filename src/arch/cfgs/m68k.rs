@@ -26,10 +26,22 @@ macro_rules! cfg_has_atomic_32 {
 macro_rules! cfg_no_atomic_32 {
     ($($tt:tt)*) => {};
 }
+#[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
+#[macro_export]
+macro_rules! cfg_has_atomic_64 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
+#[macro_export]
+macro_rules! cfg_no_atomic_64 {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020")))]
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
     ($($tt:tt)*) => {};
 }
+#[cfg(not(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020")))]
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
