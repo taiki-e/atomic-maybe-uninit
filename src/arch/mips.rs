@@ -233,12 +233,12 @@ macro_rules! atomic_sub_word {
                                 ".set noat",
                                 "sllv {mask}, {mask}, {shift}", // mask <<= shift & 31
                                 "sllv {val}, {val}, {shift}",   // val <<= shift & 31
+                                "nor {mask}, {mask}, $zero",    // mask = !mask
                                 $release,                       // fence
                                 "2:", // 'retry:
                                     "ll {out}, 0({dst})",       // atomic { out = *dst; LL = dst }
-                                    "xor {tmp}, {out}, {val}",  // tmp = out ^ val
-                                    "and {tmp}, {tmp}, {mask}", // tmp &= mask
-                                    "xor {tmp}, {tmp}, {out}",  // tmp ^= out
+                                    "and {tmp}, {out}, {mask}", // tmp = out & mask
+                                    "or {tmp}, {tmp}, {val}",   // tmp |= val
                                     "sc {tmp}, 0({dst})",       // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
                                     "beqz {tmp}, 2b",           // if tmp == 0 { jump 'retry }
                                 "srlv {out}, {out}, {shift}",   // out >>= shift & 31
