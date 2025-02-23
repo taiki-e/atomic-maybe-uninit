@@ -108,7 +108,6 @@ srai
 sreg
 srlv
 stbar
-stdarch
 stdcx
 stilp
 stlxp
