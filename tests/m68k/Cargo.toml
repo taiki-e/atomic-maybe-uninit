@@ -20,9 +20,8 @@ i64 = []
 u64 = []
 
 [dependencies]
-# atomic-maybe-uninit = { path = "../.." }
+atomic-maybe-uninit = { path = "../.." }
 
-core = { path = "rust-src/core" }
 paste = "1"
 
 [lints]
@@ -91,6 +90,6 @@ panic = "abort"
 [profile.release]
 codegen-units = 1
 lto = true
-# TODO: panic in cas test with -C opt-level=3
+# TODO: panic in cas test with -C opt-level=3 in LLVM 19-20
 opt-level = "s"
 panic = "abort"
