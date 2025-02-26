@@ -371,7 +371,7 @@ macro_rules! atomic {
                                 $fence,                                                           // fence
                                 // old will be used for later comparison.
                                 "mv {out}, {old}",                                                // out = old
-                                concat!("amocas.", $size, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == old { *dst = new } else { old = *dst } }
+                                concat!("amocas.", $size, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
                                 "xor {r}, {out}, {old}",                                          // r = out ^ old
                                 "seqz {r}, {r}",                                                  // if r == 0 { r = 1 } else { r = 0 }
                                 dst = in(reg) ptr_reg!(dst),
@@ -606,7 +606,7 @@ macro_rules! atomic_sub_word {
                                 // old will be used for later comparison.
                                 "mv {out}, {old}",                                                // out = old
                                 concat!("slli {old}, {old}, ", $shift),                           // old <<= $shift
-                                concat!("amocas.", $size, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == old { *dst = new } else { old = *dst } }
+                                concat!("amocas.", $size, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
                                 concat!("srai {old}, {old}, ", $shift),                           // old >>= $shift
                                 "xor {r}, {out}, {old}",                                          // r = out ^ old
                                 "seqz {r}, {r}",                                                  // if r == 0 { r = 1 } else { r = 0 }
