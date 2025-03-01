@@ -62,6 +62,8 @@ jobs:
             target: x86_64-unknown-linux-gnu
           # - rust: '1.81' # LLVM 18
           #   target: x86_64-unknown-linux-gnu
+          # - rust: '1.86' # LLVM 19
+          #   target: x86_64-unknown-linux-gnu
           - rust: stable
             target: x86_64-unknown-linux-gnu
           - rust: beta
@@ -98,6 +100,9 @@ jobs:
           # - rust: '1.81' # LLVM 18
           #   target: aarch64-unknown-linux-gnu
           #   os: ubuntu-24.04-arm
+          # - rust: '1.86' # LLVM 19
+          #   target: aarch64-unknown-linux-gnu
+          #   os: ubuntu-24.04-arm
           - rust: stable
             target: aarch64-unknown-linux-gnu
             os: ubuntu-24.04-arm
@@ -125,6 +130,9 @@ jobs:
           # - rust: '1.81' # LLVM 18
           #   target: aarch64-apple-darwin
           #   os: macos-latest
+          # - rust: '1.86' # LLVM 19
+          #   target: aarch64-apple-darwin
+          #   os: macos-latest
           - rust: stable
             target: aarch64-apple-darwin
             os: macos-latest
@@ -145,6 +153,9 @@ jobs:
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: aarch64_be-unknown-linux-gnu
           #   os: ubuntu-22.04
+          # - rust: nightly-2024-11-07 # Rust 1.84, LLVM 19 (broken on nightly-2025-02-17 due to https://github.com/BurntSushi/memchr/pull/162)
+          #   target: aarch64_be-unknown-linux-gnu
+          #   os: ubuntu-22.04
           - rust: nightly-2024-11-07 # TODO: https://github.com/BurntSushi/memchr/pull/162
             target: aarch64_be-unknown-linux-gnu
             os: ubuntu-22.04
@@ -155,6 +166,8 @@ jobs:
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv5te-unknown-linux-gnueabi
           # - rust: '1.81' # LLVM 18
+          #   target: armv5te-unknown-linux-gnueabi
+          # - rust: '1.86' # LLVM 19
           #   target: armv5te-unknown-linux-gnueabi
           - rust: stable
             target: armv5te-unknown-linux-gnueabi
@@ -170,6 +183,8 @@ jobs:
             target: arm-unknown-linux-gnueabi
           # - rust: '1.81' # LLVM 18
           #   target: arm-unknown-linux-gnueabi
+          # - rust: '1.86' # LLVM 19
+          #   target: arm-unknown-linux-gnueabi
           - rust: stable
             target: arm-unknown-linux-gnueabi
           # - rust: beta
@@ -183,6 +198,8 @@ jobs:
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv7-unknown-linux-gnueabi
           # - rust: '1.81' # LLVM 18
+          #   target: armv7-unknown-linux-gnueabi
+          # - rust: '1.86' # LLVM 19
           #   target: armv7-unknown-linux-gnueabi
           - rust: stable
             target: armv7-unknown-linux-gnueabi
@@ -199,6 +216,9 @@ jobs:
             target: armv7-unknown-linux-gnueabihf
             os: ubuntu-24.04-arm
           # - rust: '1.81' # LLVM 18
+          #   target: armv7-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
+          # - rust: '1.86' # LLVM 19
           #   target: armv7-unknown-linux-gnueabihf
           #   os: ubuntu-24.04-arm
           - rust: stable
@@ -224,6 +244,9 @@ jobs:
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: armeb-unknown-linux-gnueabi
           #   os: ubuntu-22.04
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
+          #   target: armeb-unknown-linux-gnueabi
+          #   os: ubuntu-22.04
           - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
             target: armeb-unknown-linux-gnueabi
             os: ubuntu-22.04
@@ -234,6 +257,8 @@ jobs:
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: i586-unknown-linux-gnu
           # - rust: '1.81' # LLVM 18
+          #   target: i586-unknown-linux-gnu
+          # - rust: '1.86' # LLVM 19
           #   target: i586-unknown-linux-gnu
           - rust: stable
             target: i586-unknown-linux-gnu
@@ -248,6 +273,8 @@ jobs:
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: i686-unknown-linux-gnu
           # - rust: '1.81' # LLVM 18
+          #   target: i686-unknown-linux-gnu
+          # - rust: '1.86' # LLVM 19
           #   target: i686-unknown-linux-gnu
           - rust: stable
             target: i686-unknown-linux-gnu
@@ -269,6 +296,8 @@ jobs:
             target: loongarch64-unknown-linux-gnu
           # - rust: '1.81' # LLVM 18
           #   target: loongarch64-unknown-linux-gnu
+          # - rust: '1.86' # LLVM 19
+          #   target: loongarch64-unknown-linux-gnu
           - rust: stable
             target: loongarch64-unknown-linux-gnu
           # - rust: beta
@@ -281,6 +310,8 @@ jobs:
             target: mips-unknown-linux-gnu
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: mips-unknown-linux-gnu
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
+          #   target: mips-unknown-linux-gnu
           - rust: nightly
             target: mips-unknown-linux-gnu
           # ------------------------------------------------------------
@@ -288,6 +319,8 @@ jobs:
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: mipsel-unknown-linux-gnu
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mipsel-unknown-linux-gnu
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
           #   target: mipsel-unknown-linux-gnu
           - rust: nightly
             target: mipsel-unknown-linux-gnu
@@ -297,6 +330,8 @@ jobs:
             target: mips64-unknown-linux-gnuabi64
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: mips64-unknown-linux-gnuabi64
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
+          #   target: mips64-unknown-linux-gnuabi64
           - rust: nightly
             target: mips64-unknown-linux-gnuabi64
           # ------------------------------------------------------------
@@ -304,6 +339,8 @@ jobs:
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: mips64el-unknown-linux-gnuabi64
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mips64el-unknown-linux-gnuabi64
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
           #   target: mips64el-unknown-linux-gnuabi64
           - rust: nightly
             target: mips64el-unknown-linux-gnuabi64
@@ -313,6 +350,8 @@ jobs:
             target: mipsisa32r6-unknown-linux-gnu
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: mipsisa32r6-unknown-linux-gnu
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
+          #   target: mipsisa32r6-unknown-linux-gnu
           - rust: nightly
             target: mipsisa32r6-unknown-linux-gnu
           # ------------------------------------------------------------
@@ -320,6 +359,8 @@ jobs:
           - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
             target: mipsisa32r6el-unknown-linux-gnu
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mipsisa32r6el-unknown-linux-gnu
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
           #   target: mipsisa32r6el-unknown-linux-gnu
           - rust: nightly
             target: mipsisa32r6el-unknown-linux-gnu
@@ -329,6 +370,8 @@ jobs:
             target: mipsisa64r6-unknown-linux-gnuabi64
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: mipsisa64r6-unknown-linux-gnuabi64
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
+          #   target: mipsisa64r6-unknown-linux-gnuabi64
           - rust: nightly
             target: mipsisa64r6-unknown-linux-gnuabi64
           # ------------------------------------------------------------
@@ -336,6 +379,8 @@ jobs:
           - rust: nightly-2023-09-20 # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
             target: mipsisa64r6el-unknown-linux-gnuabi64
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: mipsisa64r6el-unknown-linux-gnuabi64
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
           #   target: mipsisa64r6el-unknown-linux-gnuabi64
           - rust: nightly
             target: mipsisa64r6el-unknown-linux-gnuabi64
@@ -345,6 +390,8 @@ jobs:
             target: powerpc-unknown-linux-gnu
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: powerpc-unknown-linux-gnu
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
+          #   target: powerpc-unknown-linux-gnu
           - rust: nightly
             target: powerpc-unknown-linux-gnu
           # ------------------------------------------------------------
@@ -352,6 +399,8 @@ jobs:
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
             target: powerpc64-unknown-linux-gnu
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: powerpc64-unknown-linux-gnu
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
           #   target: powerpc64-unknown-linux-gnu
           - rust: nightly
             target: powerpc64-unknown-linux-gnu
@@ -361,6 +410,8 @@ jobs:
             target: powerpc64le-unknown-linux-gnu
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: powerpc64le-unknown-linux-gnu
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
+          #   target: powerpc64le-unknown-linux-gnu
           - rust: nightly
             target: powerpc64le-unknown-linux-gnu
           # ------------------------------------------------------------
@@ -368,6 +419,8 @@ jobs:
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
             target: riscv32gc-unknown-linux-gnu
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: riscv32gc-unknown-linux-gnu
+          # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
           #   target: riscv32gc-unknown-linux-gnu
           - rust: nightly
             target: riscv32gc-unknown-linux-gnu
@@ -378,6 +431,8 @@ jobs:
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: riscv64gc-unknown-linux-gnu
           # - rust: '1.81' # LLVM 18
+          #   target: riscv64gc-unknown-linux-gnu
+          # - rust: '1.86' # LLVM 19
           #   target: riscv64gc-unknown-linux-gnu
           - rust: stable
             target: riscv64gc-unknown-linux-gnu
@@ -418,6 +473,9 @@ jobs:
             target: thumbv7neon-unknown-linux-gnueabihf
             os: ubuntu-24.04-arm
           # - rust: '1.81' # LLVM 18
+          #   target: thumbv7neon-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
+          # - rust: '1.86' # LLVM 19
           #   target: thumbv7neon-unknown-linux-gnueabihf
           #   os: ubuntu-24.04-arm
           - rust: stable
@@ -633,6 +691,7 @@ jobs:
           # - beta
           - nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
           # - nightly-2024-07-31 # Rust 1.82, LLVM 18
+          # - nightly-2025-02-17 # Rust 1.87, LLVM 19
           - nightly
     runs-on: ubuntu-latest
     timeout-minutes: 60
