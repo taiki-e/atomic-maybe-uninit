@@ -18,6 +18,7 @@ Refs:
 
 Generated asm:
 - powerpc https://godbolt.org/z/6PMzWfhEM
+- powerpc (+msync) https://godbolt.org/z/hsEGM66T9
 - powerpc (pwr8) https://godbolt.org/z/5KvMh4Phn
 - powerpc64 https://godbolt.org/z/exbfnjTW4
 - powerpc64 (pwr8) https://godbolt.org/z/4r3xGo8ef
@@ -42,13 +43,28 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 ))]
 use crate::utils::{MaybeUninit128, Pair};
 
+// https://gcc.gnu.org/legacy-ml/gcc-patches/2006-11/msg01238.html
+// https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L140
+#[cfg(any(target_feature = "msync", atomic_maybe_uninit_target_feature = "msync"))]
+macro_rules! lwsync {
+    () => {
+        "sync"
+    };
+}
+#[cfg(not(any(target_feature = "msync", atomic_maybe_uninit_target_feature = "msync")))]
+macro_rules! lwsync {
+    () => {
+        "lwsync"
+    };
+}
+
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
         match $order {
             Ordering::Relaxed => $op!("", ""),
             Ordering::Acquire => $op!("isync", ""),
-            Ordering::Release => $op!("", "lwsync"),
-            Ordering::AcqRel => $op!("isync", "lwsync"),
+            Ordering::Release => $op!("", lwsync!()),
+            Ordering::AcqRel => $op!("isync", lwsync!()),
             Ordering::SeqCst => $op!("isync", "sync"),
             _ => unreachable!(),
         }
@@ -60,8 +76,8 @@ macro_rules! atomic_cas {
             match $success {
                 Ordering::Relaxed => $op!("", "", ""),
                 Ordering::Acquire => $op!("", "isync", ""),
-                Ordering::Release => $op!("", "", "lwsync"),
-                Ordering::AcqRel => $op!("", "isync", "lwsync"),
+                Ordering::Release => $op!("", "", lwsync!()),
+                Ordering::AcqRel => $op!("", "isync", lwsync!()),
                 Ordering::SeqCst => $op!("", "isync", "sync"),
                 _ => unreachable!(),
             }
@@ -70,7 +86,7 @@ macro_rules! atomic_cas {
             match order {
                 // Relaxed and Release are covered in $failure == Relaxed branch.
                 Ordering::Acquire => $op!("isync", "", ""),
-                Ordering::AcqRel => $op!("isync", "", "lwsync"),
+                Ordering::AcqRel => $op!("isync", "", lwsync!()),
                 Ordering::SeqCst => $op!("isync", "", "sync"),
                 _ => unreachable!(),
             }
@@ -98,7 +114,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load_acquire {
-                        ($release:tt) => {
+                        ($release:expr) => {
                             asm!(
                                 $release,
                                 concat!("l", $size, $load_ext, " {out}, 0({src})"), // atomic { out = *src }
@@ -142,7 +158,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($release:tt) => {
+                        ($release:expr) => {
                             asm!(
                                 $release,                                 // fence
                                 concat!("st", $size, " {val}, 0({dst})"), // atomic { *dst = val }
@@ -154,7 +170,7 @@ macro_rules! atomic_load_store {
                     }
                     match order {
                         Ordering::Relaxed => atomic_store!(""),
-                        Ordering::Release => atomic_store!("lwsync"),
+                        Ordering::Release => atomic_store!(lwsync!()),
                         Ordering::SeqCst => atomic_store!("sync"),
                         _ => unreachable!(),
                     }
@@ -181,7 +197,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 $release,                                        // fence
                                 "2:", // 'retry:
@@ -218,7 +234,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! cmpxchg {
-                        ($acquire_always:tt, $acquire_success:tt, $release:tt) => {
+                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
                                 $release,                                        // fence
                                 "2:", // 'retry:
@@ -261,7 +277,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! cmpxchg_weak {
-                        ($acquire_always:tt, $acquire_success:tt, $release:tt) => {
+                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
                                 $release,                                    // fence
                                 concat!("l", $size, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
@@ -324,7 +340,7 @@ macro_rules! atomic_sub_word {
                     // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 "slw {val}, {val}, {shift}",     // val <<= shift
                                 $release,                        // fence
@@ -376,7 +392,7 @@ macro_rules! atomic_sub_word {
                     // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg {
-                        ($acquire_always:tt, $acquire_success:tt, $release:tt) => {
+                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
                                 "slw {old}, {old}, {shift}",     // old <<= shift
                                 "slw {new}, {new}, {shift}",     // new <<= shift
@@ -431,7 +447,7 @@ macro_rules! atomic_sub_word {
                     // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg_weak {
-                        ($acquire_always:tt, $acquire_success:tt, $release:tt) => {
+                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
                                 "slw {old}, {old}, {shift}", // old <<= shift
                                 "slw {new}, {new}, {shift}", // new <<= shift
@@ -507,7 +523,7 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_load_acquire {
-                        ($release:tt) => {
+                        ($release:expr) => {
                             asm!(
                                 $release,
                                 "lq %r4, 0({src})", // atomic { r4:r5 = *src }
@@ -558,7 +574,7 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($release:tt) => {
+                        ($release:expr) => {
                             asm!(
                                 $release,            // fence
                                 "stq %r4, 0({dst})", // atomic { *dst = r4:r5 }
@@ -573,7 +589,7 @@ macro_rules! atomic128 {
                     }
                     match order {
                         Ordering::Relaxed => atomic_store!(""),
-                        Ordering::Release => atomic_store!("lwsync"),
+                        Ordering::Release => atomic_store!(lwsync!()),
                         Ordering::SeqCst => atomic_store!("sync"),
                         _ => unreachable!(),
                     }
@@ -594,7 +610,7 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:expr, $release:expr) => {
                             asm!(
                                 $release,                   // fence
                                 "2:", // 'retry:
@@ -637,7 +653,7 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! cmpxchg {
-                        ($acquire_always:tt, $acquire_success:tt, $release:tt) => {
+                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
                                 $release,                               // fence
                                 "2:", // 'retry:
@@ -693,7 +709,7 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! cmpxchg_weak {
-                        ($acquire_always:tt, $acquire_success:tt, $release:tt) => {
+                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
                                 $release,                           // fence
                                 "lqarx %r8, 0, {dst}",              // atomic { RESERVE = (dst, 16); r8:r9 = *dst }

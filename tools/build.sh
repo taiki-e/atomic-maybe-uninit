@@ -393,6 +393,11 @@ build() {
           x_cargo "${args[@]}" "$@"
       fi
       ;;
+    powerpc-*)
+      CARGO_TARGET_DIR="${target_dir}/msync" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+msync" \
+        x_cargo "${args[@]}" "$@"
+      ;;
     powerpc64-*)
       # powerpc64le- (little-endian) is skipped because it is pwr8 by default
       CARGO_TARGET_DIR="${target_dir}/pwr8" \

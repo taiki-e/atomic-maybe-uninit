@@ -605,6 +605,12 @@ jobs:
           CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_LINKER: arm-linux-gnueabi-gcc
           CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-arm
         if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armv5te-unknown-linux-gnueabi'
+      # powerpc +msync
+      - run: tools/test.sh -vv --tests ${TARGET:-} -Z build-std ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+msync
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+msync
+        if: startsWith(matrix.rust, 'nightly') && startsWith(matrix.target, 'powerpc-')
       # powerpc64 pwr7
       # powerpc64- (big-endian) is skipped because it is pre-pwr8 by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}

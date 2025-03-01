@@ -194,7 +194,7 @@ Note that plq/pstq is not yet supported in LLVM (as of 19).
 None of the above instructions imply a memory barrier.
 
 - A sync (sync 0, sync 0,0, hwsync) instruction can be used as both an “import barrier” and an “export barrier”.<br>
-  Compatibility: POWER1 or later (some BookE processors don't have this and provide msync instead)
+  Compatibility: POWER1 or later (some BookE processors don't have this and provide msync which has the same bit-pattern instead but no lwsync support)
   - ISA 2.07B: included in the requirements as Base category
   - ISA 3.1C: included in all compliancy subsets
 - A lwsync (sync 1, sync 1,0) instruction can be used as both an “import barrier” and an “export barrier”,
