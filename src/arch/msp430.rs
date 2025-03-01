@@ -13,7 +13,7 @@ Refs:
   https://github.com/taiki-e/portable-atomic
 
 Generated asm:
-- msp430 https://godbolt.org/z/W8PYT7xx4
+- msp430 https://godbolt.org/z/vsrq45h5q
 */
 
 #[path = "cfgs/msp430.rs"]
@@ -22,46 +22,6 @@ mod cfgs;
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
-
-// See portable-atomic's interrupt module for more.
-#[inline(always)]
-fn disable() -> u16 {
-    let sr: u16;
-    // SAFETY: reading the status register and disabling interrupts are safe.
-    unsafe {
-        // Do not use `nomem` and `readonly` because prevent subsequent memory accesses from being reordered before interrupts are disabled.
-        // Do not use `preserves_flags` because DINT modifies the GIE (global interrupt enable) bit of the status register.
-        // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
-        asm!(
-            "mov r2, {sr}", // sr = SR
-            "dint {{ nop",  // SR.GIE = 0
-            sr = out(reg) sr,
-            options(nostack),
-        );
-    }
-    sr
-}
-#[inline(always)]
-unsafe fn restore(prev_sr: u16) {
-    // SAFETY: the caller must guarantee that the state was retrieved by the previous `disable`,
-    unsafe {
-        // This clobbers the entire status register, but we never explicitly modify
-        // flags within a critical session, and the only flags that may be changed
-        // within a critical session are the arithmetic flags that are changed as
-        // a side effect of arithmetic operations, etc., which LLVM recognizes,
-        // so it is safe to clobber them here.
-        // See also the discussion at https://github.com/taiki-e/portable-atomic/pull/40.
-        //
-        // Do not use `nomem` and `readonly` because prevent preceding memory accesses from being reordered after interrupts are enabled.
-        // Do not use `preserves_flags` because MOV modifies the status register.
-        // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
-        asm!(
-            "nop {{ mov {prev_sr}, r2 {{ nop", // SR = prev_sr
-            prev_sr = in(reg) prev_sr,
-            options(nostack),
-        );
-    }
-}
 
 macro_rules! atomic {
     ($ty:ident, $size:tt) => {
@@ -110,14 +70,25 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let s = disable();
+                let out: MaybeUninit<Self>;
+
                 // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
                 // On single-core systems, disabling interrupts is enough to prevent data race.
-                let out = unsafe { dst.read() };
-                // SAFETY: see dst.read()
-                unsafe { dst.write(val) }
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
+                // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
+                unsafe {
+                    asm!(
+                        "mov r2, {sr}",                             // sr = SR
+                        "dint {{ nop",                              // atomic { SR.GIE = 0
+                        concat!("mov.", $size, " @{dst}, {out}"),   //   out = *dst
+                        concat!("mov.", $size, " {val}, 0({dst})"), //   *dst = val
+                        "nop {{ mov {sr}, r2 {{ nop",               //   SR = sr }
+                        dst = in(reg) dst,
+                        val = in(reg) val,
+                        out = out(reg) out,
+                        sr = out(reg) _,
+                        options(nostack, preserves_flags),
+                    );
+                }
                 out
             }
         }
@@ -130,29 +101,32 @@ macro_rules! atomic {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                let s = disable();
+                let out: MaybeUninit<Self>;
+                let mut r: $ty;
+
                 // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
                 // On single-core systems, disabling interrupts is enough to prevent data race.
-                let out = unsafe { dst.read() };
-                // SAFETY: calling xor is safe.
-                let r = unsafe {
-                    let r: $ty;
+                // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
+                unsafe {
                     asm!(
-                        concat!("xor.", $size, " {b}, {a}"), // a ^= b
-                        a = inout(reg) old => r,
-                        b = in(reg) out,
-                        // Do not use `preserves_flags` because XOR modifies the V, N, Z, and C bits of the status register.
-                        options(pure, nomem, nostack),
+                        "mov r2, {sr}",                             // sr = SR
+                        "dint {{ nop",                              // atomic { SR.GIE = 0
+                        concat!("mov.", $size, " @{dst}, {out}"),   //   out = *dst
+                        concat!("xor.", $size, " {out}, {old}"),    //   old ^= out; if old == 0 { SR.Z = 1 } else { SR.Z = 0 }
+                        "jne 2f",                                   //   if SR.Z == 0 { jump 'cmp-fail }
+                        concat!("mov.", $size, " {new}, 0({dst})"), //   *dst = new
+                        "2:", // 'cmp-fail:
+                        "nop {{ mov {sr}, r2 {{ nop",               //   SR = sr }
+                        dst = in(reg) dst,
+                        old = inout(reg) old => r,
+                        new = in(reg) new,
+                        out = out(reg) out,
+                        sr = out(reg) _,
+                        // XOR modifies the status register, but `preserves_flags` is okay since SREG is restored at the end.
+                        options(nostack, preserves_flags),
                     );
-                    r == 0
-                };
-                if r {
-                    // SAFETY: see dst.read()
-                    unsafe { dst.write(new) }
+                    (out, r == 0)
                 }
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
-                (out, r)
             }
         }
     };
