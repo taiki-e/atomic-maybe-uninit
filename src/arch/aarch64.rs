@@ -85,9 +85,9 @@ macro_rules! atomic {
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
                         // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC.
-                        #[cfg(any(target_feature = "rcpc", atomic_maybe_uninit_target_feature = "rcpc"))]
+                        #[cfg(target_feature = "rcpc")]
                         Ordering::Acquire => atomic_load!("ap"),
-                        #[cfg(not(any(target_feature = "rcpc", atomic_maybe_uninit_target_feature = "rcpc")))]
+                        #[cfg(not(target_feature = "rcpc"))]
                         Ordering::Acquire => atomic_load!("a"),
                         Ordering::SeqCst => atomic_load!("a"),
                         _ => unreachable!(),
@@ -145,7 +145,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    #[cfg(target_feature = "lse")]
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             // Refs:
@@ -162,7 +162,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+                    #[cfg(not(target_feature = "lse"))]
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
@@ -200,7 +200,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
-                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    #[cfg(target_feature = "lse")]
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             // Refs:
@@ -227,7 +227,7 @@ macro_rules! atomic {
                             (out, r != 0)
                         }};
                     }
-                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+                    #[cfg(not(target_feature = "lse"))]
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
@@ -259,7 +259,7 @@ macro_rules! atomic {
                     atomic_rmw!(cmpxchg, order, write = success)
                 }
             }
-            #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+            #[cfg(not(target_feature = "lse"))]
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
                 dst: *mut MaybeUninit<Self>,
@@ -431,7 +431,7 @@ macro_rules! atomic128 {
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    #[cfg(target_feature = "lse")]
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -445,7 +445,7 @@ macro_rules! atomic128 {
                             )
                         };
                     }
-                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+                    #[cfg(not(target_feature = "lse"))]
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -642,7 +642,7 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     let mut r: i32;
-                    #[cfg(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse"))]
+                    #[cfg(target_feature = "lse")]
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             // Refs: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
@@ -678,7 +678,7 @@ macro_rules! atomic128 {
                             )
                         }};
                     }
-                    #[cfg(not(any(target_feature = "lse", atomic_maybe_uninit_target_feature = "lse")))]
+                    #[cfg(not(target_feature = "lse"))]
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(

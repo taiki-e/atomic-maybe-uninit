@@ -154,7 +154,7 @@ fn main() {
             }
         }
         "x86_64" => {
-            // cmpxchg16b_target_feature stabilized in Rust 1.69.
+            // cmpxchg16b_target_feature stabilized in Rust 1.69. (for arch_legacy)
             if needs_target_feature_fallback(&version, Some(69)) {
                 // x86_64 Apple targets always support CMPXCHG16B:
                 // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L8
@@ -190,7 +190,7 @@ fn main() {
                 // https://github.com/llvm/llvm-project/commit/7fea6f2e0e606e5339c3359568f680eaf64aa306
                 lse |= target_feature_fallback("lse128", false);
                 rcpc |= target_feature_fallback("rcpc3", false);
-                // aarch64_target_feature stabilized in Rust 1.61.
+                // aarch64_target_feature stabilized in Rust 1.61. (for arch_legacy)
                 if needs_target_feature_fallback(&version, Some(61)) {
                     target_feature_fallback("lse", lse);
                     target_feature_fallback("rcpc", rcpc);

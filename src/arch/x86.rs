@@ -27,7 +27,7 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 use crate::utils::{MaybeUninit64, Pair};
 #[cfg(target_arch = "x86_64")]
-#[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+#[cfg(target_feature = "cmpxchg16b")]
 use crate::utils::{MaybeUninit128, Pair};
 
 #[cfg(target_pointer_width = "32")]
@@ -503,7 +503,7 @@ atomic64!(i64);
 atomic64!(u64);
 
 #[cfg(target_arch = "x86_64")]
-#[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+#[cfg(target_feature = "cmpxchg16b")]
 macro_rules! atomic128 {
     ($ty:ident) => {
         #[cfg(target_pointer_width = "32")]
@@ -678,10 +678,10 @@ macro_rules! atomic128 {
 }
 
 #[cfg(target_arch = "x86_64")]
-#[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+#[cfg(target_feature = "cmpxchg16b")]
 atomic128!(i128);
 #[cfg(target_arch = "x86_64")]
-#[cfg(any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"))]
+#[cfg(target_feature = "cmpxchg16b")]
 atomic128!(u128);
 
 // -----------------------------------------------------------------------------
@@ -731,34 +731,22 @@ macro_rules! cfg_has_atomic_64 {
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(not(all(
-    target_arch = "x86_64",
-    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
-)))]
+#[cfg(not(all(target_arch = "x86_64", target_feature = "cmpxchg16b")))]
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {
     ($($tt:tt)*) => {};
 }
-#[cfg(not(all(
-    target_arch = "x86_64",
-    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
-)))]
+#[cfg(not(all(target_arch = "x86_64", target_feature = "cmpxchg16b")))]
 #[macro_export]
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(all(
-    target_arch = "x86_64",
-    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
-))]
+#[cfg(all(target_arch = "x86_64", target_feature = "cmpxchg16b"))]
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(all(
-    target_arch = "x86_64",
-    any(target_feature = "cmpxchg16b", atomic_maybe_uninit_target_feature = "cmpxchg16b"),
-))]
+#[cfg(all(target_arch = "x86_64", target_feature = "cmpxchg16b"))]
 #[macro_export]
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => {};
