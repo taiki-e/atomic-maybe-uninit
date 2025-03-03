@@ -377,7 +377,7 @@ fn main() {
                     && (target.ends_with("spe")
                         || env::var("CARGO_CFG_TARGET_ABI")
                             .unwrap_or_default()
-                            .split(",")
+                            .split(',')
                             .any(|abi| abi == "spe"));
             }
             // target_feature "partword-atomics"/"quadword-atomics" is unstable and available on rustc side since nightly-2024-09-28: https://github.com/rust-lang/rust/pull/130873
