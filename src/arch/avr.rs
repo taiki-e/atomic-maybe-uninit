@@ -16,9 +16,6 @@ Generated asm:
 - avr https://godbolt.org/z/5TYW8x6T9
 */
 
-#[path = "cfgs/avr.rs"]
-mod cfgs;
-
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
@@ -231,3 +228,55 @@ atomic16!(i16);
 atomic16!(u16);
 atomic16!(isize);
 atomic16!(usize);
+
+// -----------------------------------------------------------------------------
+// cfg macros
+
+#[macro_export]
+macro_rules! cfg_has_atomic_8 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_8 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_16 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_16 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_32 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_32 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_64 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_64 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}

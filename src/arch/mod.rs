@@ -9,6 +9,8 @@
 // - LLVM LangRef: https://llvm.org/docs/LangRef.html#inline-assembler-expressions
 // - inline assembly related issues in rust-lang/rust: https://github.com/rust-lang/rust/labels/A-inline-assembly
 
+#![allow(missing_docs)] // For cfg_* macros.
+
 #[cfg(not(any(
     target_arch = "x86",
     target_arch = "x86_64",
@@ -53,7 +55,7 @@
         atomic_maybe_uninit_unstable_asm_experimental_arch,
     ),
 )))]
-#[path = "cfgs/unsupported.rs"]
+#[path = "unsupported.rs"]
 mod unsupported;
 
 #[cfg(any(target_arch = "aarch64", all(target_arch = "arm64ec", not(atomic_maybe_uninit_no_asm))))]

@@ -4,6 +4,8 @@
 //
 // The implementation is based on the code just before we started using MaybeUninit registers.
 
+#![allow(missing_docs)] // For cfg_* macros.
+
 #[cfg(not(any(
     target_arch = "x86",
     target_arch = "x86_64",
@@ -21,7 +23,7 @@
     target_arch = "riscv64",
     all(target_arch = "loongarch64", not(atomic_maybe_uninit_no_asm)),
 )))]
-#[path = "../arch/cfgs/unsupported.rs"]
+#[path = "../arch/unsupported.rs"]
 mod unsupported;
 
 #[cfg(target_arch = "aarch64")]
