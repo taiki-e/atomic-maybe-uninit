@@ -208,6 +208,7 @@ rustc_minor_version="${rustc_version#*.}"
 rustc_minor_version="${rustc_minor_version%%.*}"
 llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | { grep -E '^LLVM version:' || true; } | cut -d' ' -f3)
 llvm_version="${llvm_version%%.*}"
+host=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^host:' | cut -d' ' -f2)
 target_dir=$(pwd)/target
 # Do not use check here because it misses some errors such as invalid inline asm operands and LLVM codegen errors.
 subcmd=build
@@ -250,19 +251,19 @@ build() {
       return 0
     fi
     local target_flags=(--target "$(pwd)/target-specs/${target}.json")
-  else
+  elif [[ "${target}" != "${host}" ]]; then
     local target_flags=(--target "${target}")
   fi
-  args+=("${target_flags[@]}")
+  args+=(${target_flags[@]+"${target_flags[@]}"})
   local cfgs
   if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
-    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg "${target_flags[@]}")
+    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${target_flags[@]+"${target_flags[@]}"})
     retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
     # core/alloc/std sets feature(strict_provenance_lints), so we cannot use
     # -Z crate-attr=feature(strict_provenance_lints) when -Z build-std is needed.
     target_rustflags+="${strict_provenance_lints}"
   elif [[ -n "${nightly}" ]]; then
-    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg "${target_flags[@]}")
+    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${target_flags[@]+"${target_flags[@]}"})
     if [[ -n "${TESTS:-}" ]]; then
       if is_no_std "${target}"; then
         args+=(-Z build-std="core,alloc")
