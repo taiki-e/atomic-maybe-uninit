@@ -66,7 +66,7 @@ default_targets=(
 
   # avr
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "avr" then .key else empty end'
-  avr-unknown-gnu-atmega2560 # custom target
+  avr-none
 
   # hexagon
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
@@ -242,6 +242,9 @@ build() {
   local args=("${base_args[@]}")
   local target_rustflags="${base_rustflags}"
   if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
+    if [[ "${target}" == "avr-none" ]]; then
+      target=avr-unknown-gnu-atmega2560 # custom target
+    fi
     if [[ ! -f "target-specs/${target}.json" ]]; then
       printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped all checks)"
       return 0
@@ -287,7 +290,7 @@ build() {
       fi
       if [[ "${target}" == "avr-none" ]]; then
         # "error: target requires explicitly specifying a cpu with `-C target-cpu`"
-        target_rustflags+=" -C target-cpu=atmega328p"
+        target_rustflags+=" -C target-cpu=atmega2560"
       fi
       ;;
     mips-*-linux-* | mipsel-*-linux-*)
@@ -314,7 +317,7 @@ build() {
         # NB: sync with tools/no-std.sh
         case "${target}" in
           arm* | thumb* | riscv*) test_dir=tests/no-std-qemu ;;
-          avr-unknown-gnu-atmega2560) test_dir=tests/avr ;; # tests/avr is for atmega2560 not atmega328
+          avr*) test_dir=tests/avr ;;
           msp430*) test_dir=tests/msp430 ;;
           sparc-*) test_dir=tests/sparc ;;
           xtensa*) test_dir=tests/xtensa ;;
