@@ -32,6 +32,7 @@ default_targets=(
   armv4t-unknown-linux-gnueabi
   # v5TE
   armv5te-unknown-linux-gnueabi
+  armv5te-none-eabi # no atomic
   # v6
   arm-unknown-linux-gnueabi
   arm-unknown-linux-gnueabihf
@@ -78,11 +79,12 @@ default_targets=(
 
   # m68k
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "m68k" then .key else empty end'
-  # TODO(m68k): LLVM bug: https://github.com/rust-lang/rust/issues/89498
-  # m68k-unknown-linux-gnu
+  m68k-unknown-linux-gnu
 
   # mips
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "mips" or .value.arch == "mips32r6" or .value.arch == "mips64" or .value.arch == "mips64r6" then .key else empty end'
+  # mips1 (no atomic)
+  mipsel-sony-psx
   # mips32r2
   mips-unknown-linux-gnu
   mipsel-unknown-linux-gnu
@@ -178,7 +180,7 @@ is_no_std() {
     # https://github.com/rust-lang/rust/blob/1.84.0/library/std/build.rs#L65
     # ESP-IDF supports std, but it is often broken.
     # TODO(aarch64_be): https://github.com/BurntSushi/memchr/pull/162
-    *-none* | *-psp* | *-psx* | *-cuda* | avr* | *-espidf | aarch64_be*) return 0 ;;
+    *-none* | *-psp* | *-psx* | *-cuda* | avr* | *-espidf | m68k* | aarch64_be*) return 0 ;;
   esac
   return 1
 }
@@ -294,6 +296,12 @@ build() {
         target_rustflags+=" -C target-cpu=atmega2560"
       fi
       ;;
+    m68k*)
+      if [[ "${llvm_version}" -lt 20 ]]; then
+        printf '%s\n' "target '${target}' requires LLVM 20+ (skipped all checks)"
+        return 0
+      fi
+      ;;
     mips-*-linux-* | mipsel-*-linux-*)
       if ! grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
         # TODO: LLVM bug: Undefined temporary symbol error when building std.
@@ -317,6 +325,7 @@ build() {
         local test_dir=''
         # NB: sync with tools/no-std.sh
         case "${target}" in
+          armv[45]* | thumbv[45]*) ;; # no atomic
           arm* | thumb* | riscv*) test_dir=tests/no-std-qemu ;;
           avr*) test_dir=tests/avr ;;
           msp430*) test_dir=tests/msp430 ;;
