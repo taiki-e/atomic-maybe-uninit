@@ -381,9 +381,9 @@ macro_rules! atomic64 {
                     asm!(
                         "2:", // 'retry:
                             "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.add(4) }
+                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.byte_add(4) }
                             "str r0, [r1]",            // *r1 = r0
-                            "str r3, [r1, #4]",        // *r1.add(4) = r3
+                            "str r3, [r1, #4]",        // *r1.byte_add(4) = r3
                             "mov r0, r1",              // r0 = r1
                             blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
                             "bcc 2b",                  // if C == 0 { jump 'retry }
@@ -418,9 +418,9 @@ macro_rules! atomic64 {
                     asm!(
                         "2:", // 'retry:
                             "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.add(4) }
+                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.byte_add(4) }
                             "str r0, [{out}]",         // *out = r0
-                            "str r3, [{out}, #4]",     // *out.add(4) = r3
+                            "str r3, [{out}, #4]",     // *out.byte_add(4) = r3
                             "mov r0, {out}",           // r0 = out
                             blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
                             "bcc 2b",                  // if C == 0 { jump 'retry }
@@ -456,9 +456,9 @@ macro_rules! atomic64 {
                     asm!(
                         "2:", // 'retry:
                             "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.add(4) }
+                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.byte_add(4) }
                             "str r0, [{out}]",         // *out = r0
-                            "str r3, [{out}, #4]",     // *out.add(4) = r3
+                            "str r3, [{out}, #4]",     // *out.byte_add(4) = r3
                             "mov r0, {out}",           // r0 = out
                             blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
                             "bcc 2b",                  // if C == 0 { jump 'retry }
@@ -499,9 +499,9 @@ macro_rules! atomic64 {
                     asm!(
                         "2:", // 'retry:
                             "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.add(4) }
+                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.byte_add(4) }
                             "str r0, [{out}]",         // *out = r0
-                            "str r3, [{out}, #4]",     // *out.add(4) = r3
+                            "str r3, [{out}, #4]",     // *out.byte_add(4) = r3
                             "eor r0, r0, {old_lo}",    // r0 ^= old_lo
                             "eor r3, r3, {old_hi}",    // r3 ^= old_hi
                             "orrs r0, r0, r3",         // r0 |= r3; if r0 == 0 { Z = 1 } else { Z = 0 }

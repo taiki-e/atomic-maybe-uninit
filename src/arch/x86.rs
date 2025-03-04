@@ -398,7 +398,7 @@ macro_rules! atomic64 {
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
                         "mov eax, dword ptr [edi]",           // atomic { eax = *edi }
-                        "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.add(4) }
+                        "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.byte_add(4) }
                         "2:", // 'retry:
                             "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
                             "jne 2b",                         // if ZF == 0 { jump 'retry }
@@ -436,7 +436,7 @@ macro_rules! atomic64 {
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
                         "mov eax, dword ptr [edi]",           // atomic { eax = *edi }
-                        "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.add(4) }
+                        "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.byte_add(4) }
                         "2:", // 'retry:
                             "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
                             "jne 2b",                         // if ZF == 0 { jump 'retry }
@@ -571,7 +571,7 @@ macro_rules! atomic128 {
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
                         concat!("mov rax, qword ptr [", $rdi, "]"),              // atomic { rax = *$rdi }
-                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),          // atomic { rdx = *$rdi.add(8) }
+                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),          // atomic { rdx = *$rdi.byte_add(8) }
                         "2:", // 'retry:
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                             "jne 2b",                                            // if ZF == 0 { jump 'retry }
@@ -613,7 +613,7 @@ macro_rules! atomic128 {
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
                         concat!("mov rax, qword ptr [", $rdi, "]"),              // atomic { rax = *$rdi }
-                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),          // atomic { rdx = *$rdi.add(8) }
+                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),          // atomic { rdx = *$rdi.byte_add(8) }
                         "2:", // 'retry:
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                             "jne 2b",                                            // if ZF == 0 { jump 'retry }

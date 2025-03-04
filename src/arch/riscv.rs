@@ -890,7 +890,7 @@ macro_rules! atomic_dw {
                                 // This is not single-copy atomic reads, but this is ok because subsequent
                                 // CAS will check for consistency.
                                 concat!("l", $reg_size, " a4, ({dst})"),                        // atomic { a4 = *dst }
-                                concat!("l", $reg_size, " a5, ", $reg_size_offset, "({dst})"),  // atomic { a5 = *dst.add($reg_size_offset) }
+                                concat!("l", $reg_size, " a5, ", $reg_size_offset, "({dst})"),  // atomic { a5 = *dst.byte_add($reg_size_offset) }
                                 "2:", // 'retry:
                                     // tmp_lo:tmp_hi will be used for later comparison.
                                     "mv {tmp_lo}, a4",                                          // tmp_lo = a4
