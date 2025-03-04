@@ -33,7 +33,7 @@
             target_arch = "avr",
             target_arch = "hexagon",
             target_arch = "m68k",
-            target_arch = "mips",
+            all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
             target_arch = "mips32r6",
             target_arch = "mips64",
             target_arch = "mips64r6",
@@ -97,7 +97,7 @@ mod loongarch;
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod m68k;
 #[cfg(any(
-    target_arch = "mips",
+    all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
     target_arch = "mips32r6",
     target_arch = "mips64",
     target_arch = "mips64r6",

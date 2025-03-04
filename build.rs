@@ -34,7 +34,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -441,6 +441,27 @@ fn main() {
                 }
                 target_feature_fallback("leoncasa", leoncasa);
                 target_feature_fallback("v9", v9);
+            }
+        }
+        "mips" => {
+            let mut mips1 = false;
+            if let Some(cpu) = target_cpu() {
+                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0-rc1/llvm/lib/Target/Mips/Mips.td#L245
+                match &*cpu {
+                    "mips1" => mips1 = true,
+                    _ => {}
+                }
+            } else {
+                // https://github.com/rust-lang/rust/blob/1.85.0/compiler/rustc_target/src/spec/targets/mipsel_sony_psx.rs#L24
+                // (old rustc uses target_env instead of target_os: https://github.com/rust-lang/rust/commit/111f2e8a39fce63c6daac7eae88023f1e87c15d4)
+                mips1 = target_os == "psx"
+                    || env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default() == "psx";
+            }
+            if mips1 {
+                // MIPS-I has no SYNC and LL/SC.
+                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0-rc1/llvm/lib/Target/Mips/MipsInstrInfo.td#L2160
+                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0-rc1/llvm/lib/Target/Mips/MipsInstrInfo.td#L2216
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_sync");
             }
         }
         "m68k" => {
