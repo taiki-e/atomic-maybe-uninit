@@ -751,11 +751,23 @@ macro_rules! cfg_has_atomic_128 {
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => {};
 }
+#[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 #[macro_export]
 macro_rules! cfg_has_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => {};
+}
+#[cfg(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg))]
+#[macro_export]
+macro_rules! cfg_has_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[cfg(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg))]
+#[macro_export]
+macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
 }

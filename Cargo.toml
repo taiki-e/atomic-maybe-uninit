@@ -85,6 +85,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(atomic_maybe_uninit_no_cmpxchg8b)',
     # x86: Assume CPU does not have CMPXCHG instruction.
     # This is a cfg for compatibility with 80386.
+    # When setting this cfg you also need to set atomic_maybe_uninit_no_cmpxchg8b.
     # See atomic_maybe_uninit_no_cmpxchg8b for details.
     'cfg(atomic_maybe_uninit_no_cmpxchg)',
 ] }
