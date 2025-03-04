@@ -10,6 +10,7 @@ beqz
 Bicc
 bnez
 boundedly
+bswap
 casp
 cbnz
 ccmp
@@ -130,6 +131,7 @@ uxtb
 uxth
 virt
 wokwi
+xadd
 xchg
 xmegau
 xmmword

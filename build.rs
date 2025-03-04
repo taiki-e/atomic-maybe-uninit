@@ -34,7 +34,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -149,6 +149,27 @@ fn main() {
                 // However, custom bare metal targets tend to disable x87 and do not use floats.
                 let x87 = target_os != "none";
                 target_feature_fallback("x87", x87);
+            }
+            // i486 doesn't have CMPXCHG8B.
+            // i386 is additionally missing BSWAP, CMPXCHG, and XADD.
+            // See also https://reviews.llvm.org/D18802.
+            let mut no_cmpxchg8b = false;
+            let mut no_cmpxchg = false;
+            if let Some(cpu) = target_cpu() {
+                match &*cpu {
+                    "i486" => no_cmpxchg8b = true,
+                    "i386" => no_cmpxchg = true,
+                    _ => {}
+                }
+            }
+            if no_cmpxchg {
+                no_cmpxchg8b = true;
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg");
+            }
+            // LLVM recognizes this also as cx8 target feature: https://godbolt.org/z/Trx1x6odK
+            // However, it is unlikely that rustc will support that name, so we will ignore it for now.
+            if no_cmpxchg8b {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg8b");
             }
         }
         "x86_64" => {
