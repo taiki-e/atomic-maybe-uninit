@@ -12,6 +12,20 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Improve RISC-V support
+  - Support 64-bit atomics on riscv32 when Zacas extension is available. ([f32463f](https://github.com/taiki-e/atomic-maybe-uninit/commit/f32463f92c35c9ee902e07c08e3952698db5b2a8))
+  - Support 128-bit atomics on riscv64 when Zacas extension is available. ([f32463f](https://github.com/taiki-e/atomic-maybe-uninit/commit/f32463f92c35c9ee902e07c08e3952698db5b2a8))
+  - Provide all operations when Zalrsc or Zacas extension is available even if A extension is not available. ([2668665](https://github.com/taiki-e/atomic-maybe-uninit/commit/26686651192aea4d7380b162c4b60c1772f70903), [7069c98](https://github.com/taiki-e/atomic-maybe-uninit/commit/7069c98f15a393b5dfdbcae2cffe6f2a20157197))
+  - Optimize atomic CAS when Zacas extension is available. ([0d7dc48](https://github.com/taiki-e/atomic-maybe-uninit/commit/0d7dc48172b3cab61b9a4a9b3a957b9a40bf20c3), [ed74261](https://github.com/taiki-e/atomic-maybe-uninit/commit/ed7426182f2f4bc04166a918c44cc20b599d34e6))
+
+- Support PowerPC CPUs without `lwsync` instruction such as e500. ([91812c2](https://github.com/taiki-e/atomic-maybe-uninit/commit/91812c2ebabd24de38294627fff3eeec0f04d46d), [79f7479](https://github.com/taiki-e/atomic-maybe-uninit/commit/79f7479e60adca8da1f2c10d2c4598553475a8e1))
+
+- Improve support for very legacy CPUs on x86 and MIPS. ([02627e2](https://github.com/taiki-e/atomic-maybe-uninit/commit/02627e29c6997bbfecd52876dec5aec32b74d6b0), [2877324](https://github.com/taiki-e/atomic-maybe-uninit/commit/2877324dd82c67b14dee34b83fc5b81c630dee65), [292f6b3](https://github.com/taiki-e/atomic-maybe-uninit/commit/292f6b314eb335c4ba4a9b25de61c091ca6663aa))
+
+- Optimize Arm/AArch64 atomic store/RMWs. ([fdea51f](https://github.com/taiki-e/atomic-maybe-uninit/commit/fdea51fd020eb5769b58e8a0e189bd92559e3f7e))
+
+- Optimize MSP430 atomic RMWs. ([e76c112](https://github.com/taiki-e/atomic-maybe-uninit/commit/e76c11237f9a708e9952e03f40653c2cf142c30e))
+
 ## [0.3.6] - 2025-01-05
 
 - Optimize Hexagon atomic RMWs. ([cd12f7b](https://github.com/taiki-e/atomic-maybe-uninit/commit/cd12f7b60fb41796528fe351e6d5b8ad1bb3dedf))
