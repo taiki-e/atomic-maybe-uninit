@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.7] - 2025-03-04
+
 - Improve RISC-V support
   - Support 64-bit atomics on riscv32 when Zacas extension is available. ([f32463f](https://github.com/taiki-e/atomic-maybe-uninit/commit/f32463f92c35c9ee902e07c08e3952698db5b2a8))
   - Support 128-bit atomics on riscv64 when Zacas extension is available. ([f32463f](https://github.com/taiki-e/atomic-maybe-uninit/commit/f32463f92c35c9ee902e07c08e3952698db5b2a8))
@@ -306,7 +308,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.6...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.7...HEAD
+[0.3.7]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.3...v0.3.4
