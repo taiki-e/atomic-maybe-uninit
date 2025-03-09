@@ -286,7 +286,7 @@ jobs:
           # hexagon-unknown-linux-musl
           - rust: nightly-2024-11-29 # Rust 1.85, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
             target: hexagon-unknown-linux-musl
-          - rust: nightly
+          - rust: nightly-2025-03-07 # TODO: error: symbol 'fma' is already defined
             target: hexagon-unknown-linux-musl
           # ------------------------------------------------------------
           # loongarch64-unknown-linux-gnu
