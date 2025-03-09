@@ -41,7 +41,6 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 use crate::utils::{MaybeUninit128, Pair};
 
 // https://gcc.gnu.org/legacy-ml/gcc-patches/2006-11/msg01238.html
-// https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L140
 #[cfg(any(target_feature = "msync", atomic_maybe_uninit_target_feature = "msync"))]
 macro_rules! lwsync {
     () => {
