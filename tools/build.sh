@@ -302,6 +302,8 @@ build() {
         printf '%s\n' "target '${target}' requires LLVM 20+ (skipped all checks)"
         return 0
       fi
+      # Workaround for compiler SIGSEGV.
+      target_rustflags+=" -C opt-level=s"
       ;;
     mips-*-linux-* | mipsel-*-linux-*)
       if ! grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
