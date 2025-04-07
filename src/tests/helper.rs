@@ -22,6 +22,8 @@ macro_rules! test_common {
                     mem::{self, MaybeUninit},
                 };
 
+                #[cfg(atomic_maybe_uninit_no_strict_provenance)]
+                use crate::utils::ptr::MutPtrExt as _;
                 use crate::{tests::helper::*, AtomicMaybeUninit};
 
                 #[test]
@@ -64,9 +66,7 @@ macro_rules! test_common {
 
                         let ptr: *mut Align16<MaybeUninit<$ty>>
                             = Box::into_raw(Box::new(Align16(MaybeUninit::new(0))));
-                        assert!(
-                            ptr as usize % mem::align_of::<AtomicMaybeUninit<$ty>>() == 0
-                        );
+                        assert!(ptr.addr() % mem::align_of::<AtomicMaybeUninit<$ty>>() == 0);
                         {
                             let a = AtomicMaybeUninit::<$ty>::from_ptr(
                                 ptr.cast::<MaybeUninit<$ty>>()

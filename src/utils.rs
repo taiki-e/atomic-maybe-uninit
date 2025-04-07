@@ -148,10 +148,13 @@ pub(crate) fn assert_compare_exchange_ordering(success: Ordering, failure: Order
 #[allow(unused_macros)]
 macro_rules! debug_assert_atomic_unsafe_precondition {
     ($ptr:ident, $ty:ident) => {{
+        #[cfg(atomic_maybe_uninit_no_strict_provenance)]
+        #[allow(unused_imports)]
+        use crate::utils::ptr::{ConstPtrExt as _, MutPtrExt as _};
         #[allow(clippy::arithmetic_side_effects)]
         {
             // Using const block here improves codegen on opt-level=0 https://godbolt.org/z/vrrvTqGda
-            debug_assert!($ptr as usize & const_hint!({ core::mem::size_of::<$ty>() - 1 }) == 0);
+            debug_assert!($ptr.addr() & const_hint!({ core::mem::size_of::<$ty>() - 1 }) == 0);
         }
     }};
 }
@@ -287,7 +290,7 @@ type RetInt = RegSize;
 #[inline]
 pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetInt, RetInt) {
     #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    use self::ptr::PtrExt as _;
+    use self::ptr::MutPtrExt as _;
     // RISC-V, MIPS, SPARC, LoongArch, Xtensa, BPF: shift amount of 32-bit shift instructions is 5 bits unsigned (0-31).
     // PowerPC, C-SKY: shift amount of 32-bit shift instructions is 6 bits unsigned (0-63) and shift amount 32-63 means "clear".
     // Arm: shift amount of 32-bit shift instructions is 8 bits unsigned (0-255).
@@ -349,7 +352,12 @@ pub(crate) mod ptr {
     }
 
     #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    pub(crate) trait PtrExt<T: ?Sized>: Copy {
+    pub(crate) trait ConstPtrExt<T: ?Sized>: Copy {
+        #[must_use]
+        fn addr(self) -> usize;
+    }
+    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
+    pub(crate) trait MutPtrExt<T: ?Sized>: Copy {
         #[must_use]
         fn addr(self) -> usize;
         #[must_use]
@@ -358,7 +366,23 @@ pub(crate) mod ptr {
             T: Sized;
     }
     #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    impl<T: ?Sized> PtrExt<T> for *mut T {
+    impl<T: ?Sized> ConstPtrExt<T> for *const T {
+        #[inline(always)]
+        #[must_use]
+        fn addr(self) -> usize {
+            // A pointer-to-integer transmute currently has exactly the right semantics: it returns the
+            // address without exposing the provenance. Note that this is *not* a stable guarantee about
+            // transmute semantics, it relies on sysroot crates having special status.
+            // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
+            // provenance).
+            #[allow(clippy::transmutes_expressible_as_ptr_casts)]
+            unsafe {
+                mem::transmute(self.cast::<()>())
+            }
+        }
+    }
+    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
+    impl<T: ?Sized> MutPtrExt<T> for *mut T {
         #[inline(always)]
         #[must_use]
         fn addr(self) -> usize {

@@ -234,7 +234,7 @@ if [[ "${rustc_version}" =~ nightly|dev ]]; then
     retry rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
     base_args=(hack "${subcmd}")
     base_rustflags+=' -Z crate-attr=feature(unqualified_local_imports) -W unqualified_local_imports'
-    strict_provenance_lints=' -Z crate-attr=feature(strict_provenance_lints) -W fuzzy_provenance_casts'
+    strict_provenance_lints=' -Z crate-attr=feature(strict_provenance_lints) -W fuzzy_provenance_casts -W lossy_provenance_casts'
   fi
 fi
 export CARGO_TARGET_DIR="${target_dir}"
