@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 /*
-LoongArch
+LoongArch64
 
 Refs:
 - https://github.com/torvalds/linux/blob/v6.13/Documentation/arch/loongarch/introduction.rst#references

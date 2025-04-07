@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 /*
-SPARC
+SPARC and SPARC64
 
 See "Atomic operation overview by architecture" for atomic operations in this architecture:
 https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#sparc
