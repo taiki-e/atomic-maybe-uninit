@@ -9,11 +9,7 @@ Generated asm:
 - loongarch64 https://godbolt.org/z/vTxfajT14
 */
 
-use core::{
-    arch::asm,
-    mem::{self, MaybeUninit},
-    sync::atomic::Ordering,
-};
+use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
@@ -26,7 +22,7 @@ macro_rules! atomic_load {
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
 
@@ -70,7 +66,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -112,7 +108,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let val = val.as_ptr();
@@ -148,7 +144,7 @@ macro_rules! atomic {
                 _success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let old = old.as_ptr();
@@ -214,7 +210,7 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -251,7 +247,7 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
@@ -301,7 +297,7 @@ macro_rules! atomic_sub_word {
                 _success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();

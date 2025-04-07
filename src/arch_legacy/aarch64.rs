@@ -17,11 +17,7 @@ Generated asm:
 - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/WdbsccKcz
 */
 
-use core::{
-    arch::asm,
-    mem::{self, MaybeUninit},
-    sync::atomic::Ordering,
-};
+use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
@@ -54,7 +50,7 @@ macro_rules! atomic {
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
 
@@ -106,7 +102,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -148,7 +144,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let val = val.as_ptr();
@@ -219,7 +215,7 @@ macro_rules! atomic {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
@@ -316,7 +312,7 @@ macro_rules! atomic {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
@@ -422,7 +418,7 @@ macro_rules! atomic128 {
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
 
@@ -555,7 +551,7 @@ macro_rules! atomic128 {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let val = val.as_ptr();
 
                 #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
@@ -671,7 +667,7 @@ macro_rules! atomic128 {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let val = val.as_ptr();
@@ -741,7 +737,7 @@ macro_rules! atomic128 {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();

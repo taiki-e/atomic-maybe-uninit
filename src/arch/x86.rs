@@ -16,11 +16,7 @@ Generated asm:
 - x86 (i586,-x87) https://godbolt.org/z/P8cdjY7h1
 */
 
-use core::{
-    arch::asm,
-    mem::{self, MaybeUninit},
-    sync::atomic::Ordering,
-};
+use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 #[cfg(target_arch = "x86")]
@@ -54,7 +50,7 @@ macro_rules! atomic {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -77,7 +73,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -112,7 +108,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -138,7 +134,7 @@ macro_rules! atomic {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -196,7 +192,7 @@ macro_rules! atomic64 {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
 
                 #[cfg(target_feature = "sse2")]
                 // SAFETY: the caller must uphold the safety contract.
@@ -294,7 +290,7 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
 
                 #[cfg(target_feature = "sse")]
                 // SAFETY: the caller must uphold the safety contract.
@@ -420,7 +416,7 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let val = MaybeUninit64 { $ty: val };
                 let (mut prev_lo, mut prev_hi);
 
@@ -461,7 +457,7 @@ macro_rules! atomic64 {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let old = MaybeUninit64 { $ty: old };
                 let new = MaybeUninit64 { $ty: new };
                 let (prev_lo, prev_hi);
@@ -518,7 +514,7 @@ macro_rules! atomic128 {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must guarantee that `src` is valid for both writes and
@@ -553,7 +549,7 @@ macro_rules! atomic128 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let val = MaybeUninit128 { $ty: val };
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
@@ -594,7 +590,7 @@ macro_rules! atomic128 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let val = MaybeUninit128 { $ty: val };
                 let (mut prev_lo, mut prev_hi);
 
@@ -639,7 +635,7 @@ macro_rules! atomic128 {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let old = MaybeUninit128 { $ty: old };
                 let new = MaybeUninit128 { $ty: new };
                 let (prev_lo, prev_hi);

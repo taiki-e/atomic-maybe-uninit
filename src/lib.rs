@@ -93,6 +93,8 @@ Feel free to submit an issue if your target is not supported yet.
     clippy::std_instead_of_core,
     // Code outside of cfg(test) shouldn't use float.
     clippy::float_arithmetic,
+    // Code outside of cfg(test) shouldn't use code that can panic except for assertions. (overflow also cause panic if overflow check is enabled)
+    clippy::arithmetic_side_effects,
 )]
 #![cfg_attr(atomic_maybe_uninit_no_strict_provenance, allow(unstable_name_collisions))]
 #![allow(clippy::inline_always)]

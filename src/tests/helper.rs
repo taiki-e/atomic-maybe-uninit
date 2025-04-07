@@ -11,6 +11,7 @@ macro_rules! test_common {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
+                clippy::arithmetic_side_effects,
                 clippy::std_instead_of_alloc,
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks,
@@ -98,6 +99,7 @@ macro_rules! test_atomic_load_store {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
+                clippy::arithmetic_side_effects,
                 clippy::std_instead_of_alloc,
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks,
@@ -113,6 +115,7 @@ macro_rules! test_atomic_load_store_swap {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
+                clippy::arithmetic_side_effects,
                 clippy::std_instead_of_alloc,
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks,
@@ -129,6 +132,7 @@ macro_rules! test_atomic {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
+                clippy::arithmetic_side_effects,
                 clippy::std_instead_of_alloc,
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks,
@@ -1153,6 +1157,7 @@ macro_rules! stress_test_load_store {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
+                clippy::arithmetic_side_effects,
                 clippy::std_instead_of_alloc,
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks
@@ -1171,6 +1176,7 @@ macro_rules! stress_test_load_store {
             }
             #[allow(
                 clippy::alloc_instead_of_core,
+                clippy::arithmetic_side_effects,
                 clippy::std_instead_of_alloc,
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks
@@ -1196,6 +1202,7 @@ macro_rules! stress_test {
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
+                clippy::arithmetic_side_effects,
                 clippy::std_instead_of_alloc,
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks
@@ -1220,6 +1227,7 @@ macro_rules! stress_test {
             }
             #[allow(
                 clippy::alloc_instead_of_core,
+                clippy::arithmetic_side_effects,
                 clippy::std_instead_of_alloc,
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks

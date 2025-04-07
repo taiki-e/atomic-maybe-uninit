@@ -2,6 +2,7 @@
 
 #![allow(
     clippy::alloc_instead_of_core,
+    clippy::arithmetic_side_effects,
     clippy::std_instead_of_alloc,
     clippy::std_instead_of_core,
     clippy::undocumented_unsafe_blocks,

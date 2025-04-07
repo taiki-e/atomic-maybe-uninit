@@ -25,11 +25,7 @@ Generated asm:
 - riscv32i (+zacas) https://godbolt.org/z/qvcEddac6
 */
 
-use core::{
-    arch::asm,
-    mem::{self, MaybeUninit},
-    sync::atomic::Ordering,
-};
+use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 #[cfg(any(
     target_feature = "a",
@@ -171,7 +167,7 @@ macro_rules! atomic_load_store {
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -205,7 +201,7 @@ macro_rules! atomic_load_store {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -253,7 +249,7 @@ macro_rules! atomic_zaamo {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract,
@@ -316,7 +312,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract,
@@ -354,7 +350,7 @@ macro_rules! atomic {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self>;
 
@@ -402,7 +398,7 @@ macro_rules! atomic {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self>;
 
@@ -472,7 +468,7 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
@@ -533,7 +529,7 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
 
@@ -588,7 +584,7 @@ macro_rules! atomic_sub_word {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self>;
 
@@ -647,7 +643,7 @@ macro_rules! atomic_sub_word {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
@@ -722,7 +718,7 @@ macro_rules! atomic_sub_word {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
@@ -831,7 +827,7 @@ macro_rules! atomic_dw {
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
                 let (out_lo, out_hi);
 
                 // SAFETY: the caller must uphold the safety contract,
@@ -876,7 +872,7 @@ macro_rules! atomic_dw {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let val = MaybeUninitDw { $ty: val };
                 let (mut prev_lo, mut prev_hi);
 
@@ -928,7 +924,7 @@ macro_rules! atomic_dw {
                 success: Ordering,
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let old = MaybeUninitDw { $ty: old };
                 let new = MaybeUninitDw { $ty: new };

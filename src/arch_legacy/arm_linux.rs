@@ -10,11 +10,7 @@ Generated asm:
 - armv4t https://godbolt.org/z/xrxfKx1rc
 */
 
-use core::{
-    arch::asm,
-    mem::{self, MaybeUninit},
-    sync::atomic::Ordering,
-};
+use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
@@ -55,7 +51,7 @@ macro_rules! atomic_load_store {
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
 
@@ -104,7 +100,7 @@ macro_rules! atomic_load_store {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -161,7 +157,7 @@ macro_rules! atomic {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 debug_assert!(kuser_helper_version() >= 2);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
@@ -203,7 +199,7 @@ macro_rules! atomic {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 debug_assert!(kuser_helper_version() >= 2);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
@@ -268,7 +264,7 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 debug_assert!(kuser_helper_version() >= 2);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
@@ -322,7 +318,7 @@ macro_rules! atomic_sub_word {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 debug_assert!(kuser_helper_version() >= 2);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
@@ -408,7 +404,7 @@ macro_rules! atomic64 {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
                 assert_has_kuser_cmpxchg64();
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
@@ -445,7 +441,7 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 assert_has_kuser_cmpxchg64();
                 let val = val.as_ptr();
 
@@ -482,7 +478,7 @@ macro_rules! atomic64 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 assert_has_kuser_cmpxchg64();
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
@@ -523,7 +519,7 @@ macro_rules! atomic64 {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert!(dst as usize % mem::size_of::<$ty>() == 0);
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 assert_has_kuser_cmpxchg64();
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();

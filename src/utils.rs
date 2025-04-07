@@ -11,10 +11,30 @@ use core::{
     sync::atomic::Ordering,
 };
 
+/// Static assertion without depending on const block which requires Rust 1.79.
 macro_rules! static_assert {
     ($($tt:tt)*) => {
         const _: () = assert!($($tt)*);
     };
+}
+
+/// Uses inline const if available.
+///
+/// As the name implies, this is intended as a hint. Do not use this for use case
+/// that relies on this being computed in a const context (use static_assert instead).
+#[cfg(not(atomic_maybe_uninit_no_inline_const))]
+#[allow(unused_macros)]
+macro_rules! const_hint {
+    ({$($tt:tt)*}) => {
+        const { $($tt)* }
+    }
+}
+#[cfg(atomic_maybe_uninit_no_inline_const)]
+#[allow(unused_macros)]
+macro_rules! const_hint {
+    ({$($tt:tt)*}) => {
+        { $($tt)* }
+    }
 }
 
 /// Make the given function const if the given condition is true.
@@ -119,6 +139,17 @@ pub(crate) fn assert_compare_exchange_ordering(success: Ordering, failure: Order
         Ordering::AcqRel => panic!("there is no such thing as an acquire-release failure ordering"),
         _ => unreachable!(),
     }
+}
+
+#[allow(unused_macros)]
+macro_rules! debug_assert_atomic_unsafe_precondition {
+    ($ptr:ident, $ty:ident) => {{
+        #[allow(clippy::arithmetic_side_effects)]
+        {
+            // Using const block here improves codegen on opt-level=0 https://godbolt.org/z/vrrvTqGda
+            debug_assert!($ptr as usize & const_hint!({ core::mem::size_of::<$ty>() - 1 }) == 0);
+        }
+    }};
 }
 
 // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0418r2.html
@@ -273,7 +304,8 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
         target_arch = "sparc64",
         target_arch = "xtensa",
     ));
-    let ptr_mask = mem::size_of::<MinWord>() - 1;
+    #[allow(clippy::arithmetic_side_effects)]
+    let ptr_mask = const_hint!({ mem::size_of::<MinWord>() - 1 });
     let aligned_ptr = ptr.with_addr(ptr.addr() & !ptr_mask).cast::<MinWord>();
     let ptr_lsb = if SHIFT_MASK {
         ptr.addr() & ptr_mask
@@ -281,12 +313,14 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
         // We use 32-bit wrapping shift instructions in asm on these platforms.
         ptr.addr()
     };
+    #[allow(clippy::arithmetic_side_effects)]
     let shift = if cfg!(any(target_endian = "little", target_arch = "s390x")) {
-        ptr_lsb.wrapping_mul(8)
+        ptr_lsb << 3
     } else {
-        (ptr_lsb ^ (mem::size_of::<MinWord>() - mem::size_of::<T>())).wrapping_mul(8)
+        (ptr_lsb ^ const_hint!({ mem::size_of::<MinWord>() - mem::size_of::<T>() })) << 3
     };
-    let mut mask: RetInt = (1 << (mem::size_of::<T>() * 8)) - 1; // !(0 as T) as RetInt
+    #[allow(clippy::arithmetic_side_effects)]
+    let mut mask: RetInt = const_hint!({ (1 << (mem::size_of::<T>() << 3)) - 1 }); // !(0 as T) as RetInt
     if SHIFT_MASK {
         mask <<= shift;
     }

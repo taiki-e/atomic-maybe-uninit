@@ -34,7 +34,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_fn_trait_bound,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_inline_const,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -74,6 +74,10 @@ fn main() {
     // #[diagnostic] stabilized in Rust 1.78 (nightly-2024-03-09): https://github.com/rust-lang/rust/pull/119888
     if !version.probe(78, 2024, 3, 8) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_diagnostic_namespace");
+    }
+    // inline_const stabilized in Rust 1.79 (nightly-2024-04-25): https://github.com/rust-lang/rust/pull/104087
+    if !version.probe(79, 2024, 4, 24) {
+        println!("cargo:rustc-cfg=atomic_maybe_uninit_no_inline_const");
     }
     // const_mut_refs/const_refs_to_cell stabilized in Rust 1.83 (nightly-2024-09-16): https://github.com/rust-lang/rust/pull/129195
     if !version.probe(83, 2024, 9, 15) {
