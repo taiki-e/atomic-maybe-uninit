@@ -153,10 +153,10 @@ jobs:
           # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
           #   target: aarch64_be-unknown-linux-gnu
           #   os: ubuntu-22.04
-          # - rust: nightly-2024-11-07 # Rust 1.84, LLVM 19 (broken on nightly-2025-02-17 due to https://github.com/BurntSushi/memchr/pull/162)
+          # - rust: nightly-2024-11-07 # Rust 1.84, LLVM 19 (broken on nightly-2025-02-17 due to https://github.com/rust-lang/stdarch/issues/1484)
           #   target: aarch64_be-unknown-linux-gnu
           #   os: ubuntu-22.04
-          - rust: nightly-2024-11-07 # TODO: https://github.com/BurntSushi/memchr/pull/162
+          - rust: nightly
             target: aarch64_be-unknown-linux-gnu
             os: ubuntu-22.04
           # ------------------------------------------------------------

@@ -180,8 +180,7 @@ is_no_std() {
     *-linux-none*) ;;
     # https://github.com/rust-lang/rust/blob/1.84.0/library/std/build.rs#L65
     # ESP-IDF supports std, but it is often broken.
-    # TODO(aarch64_be): https://github.com/BurntSushi/memchr/pull/162
-    *-none* | *-psp* | *-psx* | *-cuda* | avr* | *-espidf | m68k* | aarch64_be*) return 0 ;;
+    *-none* | *-psp* | *-psx* | *-cuda* | avr* | *-espidf | m68k*) return 0 ;;
   esac
   return 1
 }
