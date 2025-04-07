@@ -35,9 +35,12 @@ use core::{
     not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
 ))]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
-use crate::raw::{AtomicLoad, AtomicStore};
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 use crate::utils::{MaybeUninit64, Pair};
+use crate::{
+    consume::Dependent,
+    raw::{AtomicLoad, AtomicStore},
+};
 
 #[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
@@ -196,6 +199,27 @@ macro_rules! atomic {
                     }
                 }
                 out
+            }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                let out: MaybeUninit<Self>;
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        concat!("ldr", $suffix, " {out}, [{src}]"), // atomic { out = *src }
+                        "eor {dep}, {out}, {out}",                  // dep = out ^ out
+                        src = in(reg) src,
+                        out = lateout(reg) out,
+                        dep = lateout(reg) dep,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                Dependent::from_parts(out, dep)
             }
         }
         impl AtomicStore for $ty {
@@ -571,6 +595,33 @@ macro_rules! atomic64 {
                         _ => unreachable!(),
                     }
                     MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                }
+            }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert!(src as usize % mem::size_of::<$ty>() == 0);
+                let (prev_lo, prev_hi);
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        "ldrexd r0, r1, [{src}]", // atomic { r0:r1 = *src; EXCLUSIVE = src }
+                        clrex!(),                 // EXCLUSIVE = None
+                        "eor {dep}, r0, r0",      // dep = r0 ^ r0
+                        src = in(reg) src,
+                        dep = lateout(reg) dep,
+                        // prev pair - must be even-numbered and not R14
+                        lateout("r0") prev_lo,
+                        lateout("r1") prev_hi,
+                        options(nostack, preserves_flags),
+                    );
+                    Dependent::from_parts(
+                        MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
+                        dep,
+                    )
                 }
             }
         }
@@ -1049,4 +1100,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_fast_consume {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_fast_consume {
+    ($($tt:tt)*) => {};
 }
