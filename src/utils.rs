@@ -13,6 +13,14 @@ use core::{
 
 /// Static assertion without depending on const block which requires Rust 1.79.
 macro_rules! static_assert {
+    ($($ty:ident),+ => $($tt:tt)*) => {{
+        // Inspired by https://github.com/nvzqz/static-assertions/issues/40#issuecomment-1458897730.
+        struct _Assert<$($ty),+>($($ty),+);
+        impl<$($ty),+> _Assert<$($ty,)*> {
+            const _CHECK: () = assert!($($tt)*);
+        }
+        _Assert::<$($ty,)*>::_CHECK
+    }};
     ($($tt:tt)*) => {
         const _: () = assert!($($tt)*);
     };
@@ -67,17 +75,13 @@ macro_rules! const_fn {
 /// into the destination value, then forgets the original, as with the [`core::mem::transmute`].
 #[inline]
 #[must_use]
-#[cfg_attr(debug_assertions, track_caller)]
 pub(crate) const unsafe fn transmute_copy_by_val<Src, Dst>(src: Src) -> Dst {
     #[repr(C)]
     union ConstHack<Src, Dst> {
         src: ManuallyDrop<Src>,
         dst: ManuallyDrop<Dst>,
     }
-    assert!(
-        mem::size_of::<Src>() >= mem::size_of::<Dst>(), // assertion copied from transmute_copy
-        "cannot transmute_copy if Dst is larger than Src"
-    );
+    static_assert!(Src, Dst => mem::size_of::<Src>() >= mem::size_of::<Dst>()); // assertion copied from transmute_copy (but evaluated at compile time)
     // SAFETY: ConstHack is #[repr(C)] union, and the caller must guarantee that
     // transmuting Src to Dst is safe.
     ManuallyDrop::into_inner(unsafe { ConstHack::<Src, Dst> { src: ManuallyDrop::new(src) }.dst })
