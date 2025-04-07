@@ -67,8 +67,6 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(target_feature,values("msync"))', # 1.87+ https://github.com/rust-lang/rust/pull/137860
     'cfg(target_pointer_width,values("128"))',
     # Known custom cfgs, excluding those that may be set by build script.
-    # Not public API.
-    'cfg(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,qemu,valgrind)',
     # Public APIs, considered unstable unless documented in readme.
     # arm: Use cp15_barrier instead of __kuser_memory_barrier on Armv6 Linux/Android.
     # Armv6 binaries compiled with this cfg may cause problems when run on Armv7+ chips:
@@ -83,15 +81,17 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # x86: Assume CPU does not have CMPXCHG8B instruction.
     # This is a cfg for compatibility with 80486/80386, but note that
     # LLVM does not support those CPUs well: https://reviews.llvm.org/D18802
-    'cfg(atomic_maybe_uninit_no_cmpxchg8b)',
+    # 'cfg(atomic_maybe_uninit_no_cmpxchg8b)', // check-cfg is already set by build script
     # x86: Assume CPU does not have CMPXCHG instruction.
     # This is a cfg for compatibility with 80386, but note that
     # LLVM does not support those CPUs well: https://reviews.llvm.org/D18802
     # When setting this cfg you also need to set atomic_maybe_uninit_no_cmpxchg8b.
-    'cfg(atomic_maybe_uninit_no_cmpxchg)',
+    # 'cfg(atomic_maybe_uninit_no_cmpxchg)', // check-cfg is already set by build script
     # mips: Assume CPU does not have SYNC instruction.
     # This is a cfg for compatibility with MIPS I.
-    'cfg(atomic_maybe_uninit_no_sync)',
+    # 'cfg(atomic_maybe_uninit_no_sync)', // check-cfg is already set by build script
+    # Not public API.
+    'cfg(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,qemu,valgrind)',
 ] }
 unnameable_types = "warn"
 unreachable_pub = "warn"
