@@ -143,6 +143,11 @@ jobs:
             target: aarch64-apple-darwin
             os: macos-latest
           # ------------------------------------------------------------
+          # aarch64-pc-windows-msvc
+          - rust: nightly
+            target: aarch64-pc-windows-msvc
+            os: windows-11-arm
+          # ------------------------------------------------------------
           # aarch64_be-unknown-linux-gnu
           - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use stable asm on this target)
             target: aarch64_be-unknown-linux-gnu
@@ -159,6 +164,26 @@ jobs:
           - rust: nightly
             target: aarch64_be-unknown-linux-gnu
             os: ubuntu-22.04
+          # ------------------------------------------------------------
+          # arm64ec-pc-windows-msvc
+          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
+            target: arm64ec-pc-windows-msvc
+            os: windows-11-arm
+          # - rust: nightly-2024-07-31 # Rust 1.82, LLVM 18
+          #   target: arm64ec-pc-windows-msvc
+          #   os: windows-11-arm
+          - rust: '1.84' # LLVM 19 (inline asm for arm64ec has been stabilized in Rust 1.84)
+            target: arm64ec-pc-windows-msvc
+            os: windows-11-arm
+          - rust: stable
+            target: arm64ec-pc-windows-msvc
+            os: windows-11-arm
+          # - rust: beta
+          #   target: arm64ec-pc-windows-msvc
+          #   os: windows-11-arm
+          - rust: nightly
+            target: arm64ec-pc-windows-msvc
+            os: windows-11-arm
           # ------------------------------------------------------------
           # armv5te-unknown-linux-gnueabi
           - rust: '1.59' # LLVM 13
