@@ -968,7 +968,7 @@ macro_rules! __stress_test_acquire_release {
     (should_pass, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             #[test]
-            #[cfg_attr(debug_assertions, ignore)] // debug mode is slow.
+            #[cfg_attr(debug_assertions, ignore = "slow in some environments")] // debug mode is slow.
             #[allow(clippy::cast_possible_truncation)]
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
                 __stress_test_acquire_release!(
@@ -978,11 +978,11 @@ macro_rules! __stress_test_acquire_release {
     };
     (can_panic, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
+            #[test]
             // Currently, to make this test work well enough outside of Miri, tens of thousands
             // of iterations are needed, but this test is slow in some environments.
             // So, ignore by default. See also catch_unwind_on_weak_memory_arch.
-            #[test]
-            #[ignore]
+            #[ignore = "slow in some environments"]
             #[allow(clippy::cast_possible_truncation)]
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
                 can_panic("a=", || __stress_test_acquire_release!(
@@ -1030,12 +1030,12 @@ macro_rules! __stress_test_acquire_release {
 macro_rules! __stress_test_seqcst {
     (should_pass, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
+            #[test]
             // Currently, to make this test work well enough outside of Miri, tens of thousands
             // of iterations are needed, but this test is very slow in some environments because
             // it creates two threads for each iteration.
             // So, ignore on QEMU by default.
-            #[test]
-            #[cfg_attr(any(debug_assertions, qemu), ignore)] // debug mode is slow.
+            #[cfg_attr(any(debug_assertions, qemu), ignore = "slow in some environments")] // debug mode is slow.
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
                 __stress_test_seqcst!(
                     $ty, $write, $load_order, $store_order);
@@ -1044,12 +1044,12 @@ macro_rules! __stress_test_seqcst {
     };
     (can_panic, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
+            #[test]
             // Currently, to make this test work well enough outside of Miri, tens of thousands
             // of iterations are needed, but this test is very slow in some environments because
             // it creates two threads for each iteration.
             // So, ignore by default. See also catch_unwind_on_non_seqcst_arch.
-            #[test]
-            #[ignore]
+            #[ignore = "slow in some environments"]
             fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
                 can_panic("c=2", || __stress_test_seqcst!(
                     $ty, $write, $load_order, $store_order));
