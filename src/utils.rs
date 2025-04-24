@@ -331,7 +331,11 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
     if SHIFT_MASK {
         mask <<= shift;
     }
-    (aligned_ptr, shift as RetInt, mask)
+    // ptr_lsb << 3 will never overflow u32
+    #[cfg_attr(target_arch = "s390x", allow(clippy::cast_possible_truncation))]
+    {
+        (aligned_ptr, shift as RetInt, mask)
+    }
 }
 
 // This module provides core::ptr strict_provenance/exposed_provenance polyfill for pre-1.84 rustc.
