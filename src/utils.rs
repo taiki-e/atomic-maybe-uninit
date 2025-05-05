@@ -277,6 +277,9 @@ pub(crate) struct Pair<T: Copy> {
     pub(crate) lo: MaybeUninit<T>,
 }
 
+#[cfg(target_arch = "bpf")]
+type MinWord = u64;
+#[cfg(not(target_arch = "bpf"))]
 type MinWord = u32;
 #[cfg(target_arch = "s390x")]
 type RetInt = u32;
