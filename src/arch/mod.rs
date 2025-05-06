@@ -31,6 +31,7 @@
     all(
         any(
             target_arch = "avr",
+            target_arch = "csky",
             target_arch = "hexagon",
             target_arch = "m68k",
             all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
@@ -88,6 +89,9 @@ mod armv8;
 #[cfg(target_arch = "avr")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod avr;
+#[cfg(target_arch = "csky")]
+#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+mod csky;
 #[cfg(target_arch = "hexagon")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod hexagon;
