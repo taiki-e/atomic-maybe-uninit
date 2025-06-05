@@ -194,6 +194,7 @@ pub(crate) trait ZeroExtend: Copy {
     /// otherwise, return the given value as-is.
     fn zero_extend(v: MaybeUninit<Self>) -> Self::Out;
 }
+#[allow(dead_code)]
 #[repr(C)]
 struct ZeroExtended<T: Copy, const N: usize> {
     #[cfg(target_endian = "big")]
