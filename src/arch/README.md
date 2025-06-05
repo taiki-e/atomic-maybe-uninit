@@ -8,6 +8,7 @@ This document describes the operations that are considered atomic by architectur
 - [AArch64](#aarch64)
 - [Arm](#arm)
 - [AVR](#avr)
+- [BPF](#bpf)
 - [Hexagon](#hexagon)
 - [LoongArch](#loongarch)
 - [M68k](#m68k)
@@ -54,6 +55,13 @@ This architecture is always single-core and the following operations are atomic:
   However, pure operations that are not affected by compiler fences (note: the correct interrupt
   disabling and restoring implementation must imply compiler fences, e.g., asm without nomem/readonly)
   may be moved out of the critical section by compiler optimizations.
+
+## BPF
+
+target_arch: bpf<br>
+Implementation: [bpf.rs](bpf.rs)<br>
+
+TODO
 
 ## Hexagon
 
