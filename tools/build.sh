@@ -69,6 +69,10 @@ default_targets=(
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "avr" then .key else empty end'
   avr-none
 
+  # csky
+  # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "csky" then .key else empty end'
+  csky-unknown-linux-gnuabiv2
+
   # hexagon
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
   # TODO: error: symbol 'fma' is already defined
