@@ -7,8 +7,8 @@ See "Atomic operation overview by architecture" for atomic operations in this ar
 https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#s390x
 
 Refs:
-- z/Architecture Principles of Operation, Fourteenth Edition (SA22-7832-13)
-  https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf
+- z/Architecture Principles of Operation, Fifteenth Edition (SA22-7832-14)
+  https://www.ibm.com/docs/en/module_1678991624569/pdf/SA22-7832-14.pdf
 - portable-atomic
   https://github.com/taiki-e/portable-atomic
 

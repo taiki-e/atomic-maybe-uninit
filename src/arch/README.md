@@ -253,7 +253,7 @@ Zabha and Zacas extensions depends upon Zaamo extension.
 
 target_arch: s390x<br>
 Implementation: [s390x.rs](s390x.rs)<br>
-Refs: z/Architecture Principles of Operation ([Fourteenth Edition](https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf))
+Refs: z/Architecture Principles of Operation ([Fifteenth Edition](https://www.ibm.com/docs/en/module_1678991624569/pdf/SA22-7832-14.pdf))
 
 The following instructions are atomic if the address is properly aligned and the specified storage meets the requirements:
 
@@ -275,6 +275,7 @@ The following instructions are atomic if the address is properly aligned and the
   - NI{,Y}, OI{,Y}, XI{,Y}: 8-bit {and,or,xor} with immediate (interlocked-access facility 2 added in arch10)<br>
     <!-- (Storage-and-immediate formats of AND, OR, and EXCLUSIVE OR) -->
   <!-- - (Others: COMPARE AND REPLACE DAT TABLE ENTRY, COMPARE AND SWAP AND PURGE, COMPARE AND SWAP AND STORE, STORE CHARACTERS UNDER MASK (conditional)) -->
+  <!-- - (Others: COMPARE AND LOAD (concurrent-functions facility added in arch15)) -->
 
   (Refs: Section "Storage-Operand Update References" of z/Architecture Principles of Operation, Fourteenth Edition)
 

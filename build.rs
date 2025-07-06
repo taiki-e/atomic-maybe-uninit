@@ -422,7 +422,7 @@ fn main() {
             let mut arch9_features = false; // z196+
             if let Some(cpu) = target_cpu() {
                 // LLVM and GCC recognize the same names:
-                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/SystemZ/SystemZProcessors.td
+                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.6/llvm/lib/Target/SystemZ/SystemZProcessors.td
                 // https://github.com/gcc-mirror/gcc/blob/releases/gcc-14.2.0/gcc/config/s390/s390.opt#L58-L125
                 if let Some(arch_version) = cpu.strip_prefix("arch") {
                     if let Ok(arch_version) = arch_version.parse::<u32>() {
@@ -430,7 +430,9 @@ fn main() {
                     }
                 } else {
                     match &*cpu {
-                        "z196" | "zEC12" | "z13" | "z14" | "z15" | "z16" => arch9_features = true,
+                        "z196" | "zEC12" | "z13" | "z14" | "z15" | "z16" | "z17" => {
+                            arch9_features = true;
+                        }
                         _ => {}
                     }
                 }
