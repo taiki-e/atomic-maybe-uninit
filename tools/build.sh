@@ -102,7 +102,8 @@ default_targets=(
 
   # msp430
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "msp430" then .key else empty end'
-  msp430-none-elf
+  # TODO: https://github.com/rust-lang/rust/issues/143072
+  # msp430-none-elf
 
   # powerpc
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "powerpc" or .value.arch == "powerpc64" then .key else empty end'
