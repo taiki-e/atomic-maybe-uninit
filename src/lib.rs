@@ -15,7 +15,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, and Xtensa are supported.
+Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, and Xtensa are supported.
 
 | target_arch                     | primitives                                          | load/store | swap/CAS |
 | ------------------------------- | --------------------------------------------------- |:----------:|:--------:|
