@@ -64,7 +64,7 @@ TODO
 
 ## LoongArch
 
-target_arch: loongarch64<br>
+target_arch: loongarch32, loongarch64<br>
 Implementation: [loongarch.rs](loongarch.rs)<br>
 
 TODO

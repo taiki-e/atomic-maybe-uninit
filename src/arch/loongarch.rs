@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 /*
-LoongArch64
+LoongArch32 and LoongArch64
 
 Refs:
 - https://github.com/torvalds/linux/blob/v6.13/Documentation/arch/loongarch/introduction.rst#references
@@ -349,13 +349,25 @@ macro_rules! cfg_has_atomic_32 {
 macro_rules! cfg_no_atomic_32 {
     ($($tt:tt)*) => {};
 }
+#[cfg(target_arch = "loongarch64")]
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(target_arch = "loongarch64")]
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => {};
+}
+#[cfg(not(target_arch = "loongarch64"))]
+#[macro_export]
+macro_rules! cfg_has_atomic_64 {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(target_arch = "loongarch64"))]
+#[macro_export]
+macro_rules! cfg_no_atomic_64 {
+    ($($tt:tt)*) => { $($tt)* };
 }
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {

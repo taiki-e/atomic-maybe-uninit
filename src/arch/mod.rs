@@ -32,6 +32,7 @@
         any(
             target_arch = "avr",
             target_arch = "hexagon",
+            target_arch = "loongarch32",
             target_arch = "m68k",
             all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
             target_arch = "mips32r6",
@@ -91,7 +92,10 @@ mod avr;
 #[cfg(target_arch = "hexagon")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod hexagon;
-#[cfg(target_arch = "loongarch64")]
+#[cfg(any(
+    all(target_arch = "loongarch32", atomic_maybe_uninit_unstable_asm_experimental_arch),
+    target_arch = "loongarch64",
+))]
 mod loongarch;
 #[cfg(target_arch = "m68k")]
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]

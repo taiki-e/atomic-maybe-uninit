@@ -75,7 +75,8 @@ default_targets=(
   # hexagon-unknown-linux-musl
 
   # loongarch
-  # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "loongarch64" then .key else empty end'
+  # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "loongarch32" or .value.arch == "loongarch64" then .key else empty end'
+  loongarch32-unknown-none
   loongarch64-unknown-linux-gnu
 
   # m68k

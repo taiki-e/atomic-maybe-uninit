@@ -57,6 +57,7 @@ single_use_lifetimes = "warn"
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(target_arch,values("xtensa"))', # 1.81+ https://github.com/rust-lang/rust/pull/125141
     'cfg(target_arch,values("amdgpu"))', # 1.86+ https://github.com/rust-lang/rust/pull/134740
+    'cfg(target_arch,values("loongarch32"))', # 1.89+ https://github.com/rust-lang/rust/pull/142053
     'cfg(target_feature,values("lse2","lse128","rcpc3"))', # 1.82+ https://github.com/rust-lang/rust/pull/128192
     'cfg(target_feature,values("partword-atomics","quadword-atomics"))', # 1.83+ https://github.com/rust-lang/rust/pull/130873
     'cfg(target_feature,values("zaamo","zabha","zalrsc"))', # 1.83+ https://github.com/rust-lang/rust/pull/130877

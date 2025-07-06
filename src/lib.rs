@@ -39,6 +39,7 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch64, Arm64EC, s390x, MIPS,
 | powerpc64 (+quadword-atomics) \[5] \[9]| i128,u128                                    | ✓          | ✓        |
 | msp430 \[9] (experimental)      | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
 | avr \[9] (experimental)         | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| loongarch32 \[9] (experimental) | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | sparc \[6] \[9] (experimental)  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | sparc64 \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | hexagon \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |

@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support LoongArch32 (experimental).
+
 ## [0.3.7] - 2025-03-04
 
 - Improve RISC-V support
