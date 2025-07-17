@@ -11,7 +11,7 @@ atomic-maybe-uninit = { path = "../.." }
 paste = "1"
 
 [target.xtensa-esp32-none-elf.dependencies]
-esp-println = { version = "0.14", default-features = false, features = ["uart", "esp32"] }
+esp-println = { version = "0.15", default-features = false, features = ["uart", "esp32"] }
 esp-hal = { version = "0.23", features = ["esp32"] }
 [target.xtensa-esp32s2-none-elf.dependencies]
 esp-println = { version = "0.14", default-features = false, features = ["uart", "esp32s2"] }
