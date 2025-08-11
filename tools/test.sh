@@ -189,7 +189,7 @@ esac
 cranelift=''
 if [[ "${RUSTFLAGS:-}" =~ -Z\ *codegen-backend=cranelift ]]; then
   cranelift=1
-  retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rustc-codegen-cranelift-preview &>/dev/null
+  retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rustc-codegen-cranelift-preview
 else
   case "$(basename -- "${cargo%.exe}")" in
     cargo-clif) cranelift=1 ;;

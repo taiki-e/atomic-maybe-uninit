@@ -73,9 +73,10 @@ jobs:
           - rust: nightly
             target: x86_64-unknown-linux-gnu
             flags: -C panic=abort -Z panic_abort_tests
-          - rust: nightly
-            target: x86_64-unknown-linux-gnu
-            flags: -Z codegen-backend=cranelift
+          # TODO: error: couldn't load codegen backend
+          # - rust: nightly
+          #   target: x86_64-unknown-linux-gnu
+          #   flags: -Z codegen-backend=cranelift
           # ------------------------------------------------------------
           # x86_64-apple-darwin
           - rust: nightly
@@ -115,10 +116,11 @@ jobs:
           - rust: nightly
             target: aarch64-unknown-linux-gnu
             os: ubuntu-latest # QEMU on x86_64
-          - rust: nightly
-            target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
-            flags: -Z codegen-backend=cranelift
+          # TODO: error: couldn't load codegen backend
+          # - rust: nightly
+          #   target: aarch64-unknown-linux-gnu
+          #   os: ubuntu-24.04-arm
+          #   flags: -Z codegen-backend=cranelift
           # ------------------------------------------------------------
           # aarch64-apple-darwin
           - rust: '1.59' # LLVM 13
