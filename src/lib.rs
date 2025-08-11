@@ -30,6 +30,7 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, P
 | riscv64                         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
 | riscv64 (+zacas) \[4]           | i128,u128                                           | ✓          | ✓        |
 | loongarch64 \[7]                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| loongarch32 \[10] (experimental) | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | arm64ec \[8]                    | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | s390x \[8]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | mips / mips32r6 \[9]            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
@@ -39,7 +40,6 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, P
 | powerpc64 (+quadword-atomics) \[5] \[9]| i128,u128                                    | ✓          | ✓        |
 | msp430 \[9] (experimental)      | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
 | avr \[9] (experimental)         | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| loongarch32 \[9] (experimental) | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | sparc \[6] \[9] (experimental)  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | sparc64 \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | hexagon \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
@@ -54,6 +54,7 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, P
 \[6] Requires `v9` or `leoncasa` target feature (enabled by default on Linux).<br>
 \[7] Requires Rust 1.72+.<br>
 \[8] Requires Rust 1.84+.<br>
+\[10] Requires Rust 1.91+.<br>
 \[9] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 
 See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md) for more information about atomic operations in these architectures.

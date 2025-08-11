@@ -27,12 +27,14 @@
     target_arch = "riscv32",
     target_arch = "riscv64",
     target_arch = "loongarch64",
-    all(any(target_arch = "arm64ec", target_arch = "s390x"), not(atomic_maybe_uninit_no_asm)),
+    all(
+        any(target_arch = "arm64ec", target_arch = "s390x", target_arch = "loongarch32"),
+        not(atomic_maybe_uninit_no_asm),
+    ),
     all(
         any(
             target_arch = "avr",
             target_arch = "hexagon",
-            target_arch = "loongarch32",
             target_arch = "m68k",
             all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
             target_arch = "mips32r6",
@@ -93,7 +95,7 @@ mod avr;
 #[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod hexagon;
 #[cfg(any(
-    all(target_arch = "loongarch32", atomic_maybe_uninit_unstable_asm_experimental_arch),
+    all(target_arch = "loongarch32", not(atomic_maybe_uninit_no_asm)),
     target_arch = "loongarch64",
 ))]
 mod loongarch;

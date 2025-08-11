@@ -115,8 +115,18 @@ fn main() {
                 }
             }
         }
-        "avr" | "loongarch32" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430"
-        | "powerpc" | "powerpc64" | "xtensa" => {
+        "loongarch32" => {
+            // asm! on loongarch32 stabilized in Rust 1.91 (nightly-2025-08-11): https://github.com/rust-lang/rust/pull/144402
+            if !version.probe(91, 2025, 8, 10) {
+                if version.nightly && is_allowed_feature("asm_experimental_arch") {
+                    println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
+                } else {
+                    println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm");
+                }
+            }
+        }
+        "avr" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430" | "powerpc"
+        | "powerpc64" | "xtensa" => {
             if version.nightly && is_allowed_feature("asm_experimental_arch") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
