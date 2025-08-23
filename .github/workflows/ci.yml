@@ -319,8 +319,9 @@ jobs:
           #   target: loongarch64-unknown-linux-gnu
           # - rust: '1.86' # LLVM 19
           #   target: loongarch64-unknown-linux-gnu
-          - rust: stable
-            target: loongarch64-unknown-linux-gnu
+          # TODO: SIGILL
+          # - rust: stable
+          #   target: loongarch64-unknown-linux-gnu
           # - rust: beta
           #   target: loongarch64-unknown-linux-gnu
           - rust: nightly
