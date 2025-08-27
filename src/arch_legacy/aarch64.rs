@@ -159,9 +159,9 @@ macro_rules! atomic {
                                 concat!("ldr", $asm_suffix, " {tmp", $val_modifier, "}, [{val}]"),
                                 // (atomic) swap
                                 // Refs:
-                                // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/SWP--SWPA--SWPAL--SWPL--Swap-word-or-doubleword-in-memory-
-                                // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/SWPB--SWPAB--SWPALB--SWPLB--Swap-byte-in-memory-
-                                // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/SWPH--SWPAH--SWPALH--SWPLH--Swap-halfword-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWP--SWPA--SWPAL--SWPL--Swap-word-or-doubleword-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWPB--SWPAB--SWPALB--SWPLB--Swap-byte-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWPH--SWPAH--SWPALH--SWPLH--Swap-halfword-in-memory-
                                 concat!("swp", $acquire, $release, $asm_suffix, " {tmp", $val_modifier, "}, {tmp", $val_modifier, "}, [{dst}]"),
                                 $fence,
                                 // store tmp to out
@@ -237,9 +237,9 @@ macro_rules! atomic {
                                 concat!("mov {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
                                 // (atomic) CAS
                                 // Refs:
-                                // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-
-                                // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASB--CASAB--CASALB--CASLB--Compare-and-swap-byte-in-memory-
-                                // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASH--CASAH--CASALH--CASLH--Compare-and-swap-halfword-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASB--CASAB--CASALB--CASLB--Compare-and-swap-byte-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASH--CASAH--CASALH--CASLH--Compare-and-swap-halfword-in-memory-
                                 concat!("cas", $acquire, $release, $asm_suffix, " {out_tmp", $val_modifier, "}, {new_tmp", $val_modifier, "}, [{dst}]"),
                                 $fence,
                                 concat!("cmp {out_tmp", $val_modifier, "}, {old_tmp", $val_modifier, "}"),
@@ -400,10 +400,10 @@ atomic!(usize, "", "");
 // Note: FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2.
 //
 // Refs:
-// - LDXP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDXP--Load-exclusive-pair-of-registers-
-// - LDAXP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDAXP--Load-acquire-exclusive-pair-of-registers-
-// - STXP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/STXP--Store-exclusive-pair-of-registers-
-// - STLXP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/STLXP--Store-release-exclusive-pair-of-registers-
+// - LDXP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDXP--Load-exclusive-pair-of-registers-
+// - LDAXP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDAXP--Load-acquire-exclusive-pair-of-registers-
+// - STXP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STXP--Store-exclusive-pair-of-registers-
+// - STLXP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STLXP--Store-release-exclusive-pair-of-registers-
 //
 // Note: Load-Exclusive pair (by itself) does not guarantee atomicity; to complete an atomic
 // operation (even load/store), a corresponding Store-Exclusive pair must succeed.
@@ -428,8 +428,8 @@ macro_rules! atomic128 {
                 // the above cfg guarantee that the CPU supports FEAT_LSE2.
                 //
                 // Refs:
-                // - LDP https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDP--Load-pair-of-registers-
-                // - LDIAPP https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
+                // - LDP https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDP--Load-pair-of-registers-
+                // - LDIAPP https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
                 unsafe {
                     macro_rules! atomic_load_relaxed {
                         ($acquire:tt) => {
@@ -452,7 +452,7 @@ macro_rules! atomic128 {
                         #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
                         Ordering::Acquire => {
                             // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
-                            // Refs: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
+                            // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
                             asm!(
                                 // (atomic) load from src to tmp pair
                                 "ldiapp {tmp_lo}, {tmp_hi}, [{src}]",
@@ -497,7 +497,7 @@ macro_rules! atomic128 {
                             asm!(
                                 // (atomic) load (CAS)
                                 // Refs:
-                                // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
+                                // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
                                 // - https://github.com/taiki-e/portable-atomic/pull/20
                                 concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"),
                                 // store out pair to out
@@ -560,8 +560,8 @@ macro_rules! atomic128 {
                 // the above cfg guarantee that the CPU supports FEAT_LSE2.
                 //
                 // Refs:
-                // - STP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/STP--Store-pair-of-registers-
-                // - STILP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
+                // - STP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STP--Store-pair-of-registers-
+                // - STILP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
                 unsafe {
                     macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
@@ -604,7 +604,7 @@ macro_rules! atomic128 {
                         #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
                         Ordering::Release => {
                             // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
-                            // Refs: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
+                            // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
                             asm!(
                                 // load from val to val pair
                                 "ldp {val_lo}, {val_hi}, [{val}]",
@@ -759,7 +759,7 @@ macro_rules! atomic128 {
                                 "mov x8, {old_lo}",
                                 "mov x9, {old_hi}",
                                 // (atomic) CAS
-                                // Refs: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
+                                // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
                                 concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"),
                                 $fence,
                                 // compare old pair and out pair

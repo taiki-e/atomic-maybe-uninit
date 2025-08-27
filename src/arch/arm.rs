@@ -11,9 +11,9 @@ Refs:
 - ARM11 MPCore Processor Technical Reference Manual
   https://developer.arm.com/documentation/ddi0360/f
 - ARMv7-M Architecture Reference Manual
-  https://developer.arm.com/documentation/ddi0403/latest (PDF)
+  https://developer.arm.com/documentation/ddi0403/d
 - Armv6-M Architecture Reference Manual
-  https://developer.arm.com/documentation/ddi0419/latest (PDF)
+  https://developer.arm.com/documentation/ddi0419/c
 - Instruction Set Assembly Guide for Armv7 and earlier Arm architectures Reference Guide
   https://developer.arm.com/documentation/100076/0200
 
@@ -153,7 +153,7 @@ macro_rules! asm_use_dmb {
         core::arch::asm!(
             $($asm)*
             // __kuser_memory_barrier (see also arm_linux.rs)
-            // https://github.com/torvalds/linux/blob/v6.13/Documentation/arch/arm/kernel_user_helpers.rst
+            // https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/arm/kernel_user_helpers.rst
             kuser_memory_barrier = inout(reg) 0xFFFF0FA0_usize => _,
             out("lr") _,
         )

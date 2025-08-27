@@ -10,7 +10,7 @@ Refs:
 - RISC-V Instruction Set Manual
   https://github.com/riscv/riscv-isa-manual
 - RISC-V Atomics ABI Specification
-  https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/draft-20240829-13bfa9f54634cb60d86b9b333e109f077805b4b3/riscv-atomic.adoc
+  https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/draft-20250812-301374e92976e298e676e7129a6212926b2299ce/riscv-atomic.adoc
 - portable-atomic
   https://github.com/taiki-e/portable-atomic
 

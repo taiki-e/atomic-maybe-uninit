@@ -5,7 +5,9 @@ AArch64
 
 Refs:
 - Arm A-profile A64 Instruction Set Architecture
-  https://developer.arm.com/documentation/ddi0602/2024-12
+  https://developer.arm.com/documentation/ddi0602/2025-06
+- C/C++ Atomics Application Binary Interface Standard for the Arm® 64-bit Architecture
+  https://github.com/ARM-software/abi-aa/blob/2025Q1/atomicsabi64/atomicsabi64.rst
 - Arm Compiler armasm User Guide
   https://developer.arm.com/documentation/dui0801/latest
 - Arm Architecture Reference Manual for A-profile architecture
@@ -145,9 +147,9 @@ macro_rules! atomic {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             // Refs:
-                            // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/SWP--SWPA--SWPAL--SWPL--Swap-word-or-doubleword-in-memory-
-                            // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/SWPB--SWPAB--SWPALB--SWPLB--Swap-byte-in-memory-
-                            // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/SWPH--SWPAH--SWPALH--SWPLH--Swap-halfword-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWP--SWPA--SWPAL--SWPL--Swap-word-or-doubleword-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWPB--SWPAB--SWPALB--SWPLB--Swap-byte-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWPH--SWPAH--SWPALH--SWPLH--Swap-halfword-in-memory-
                             asm!(
                                 concat!("swp", $acquire, $release, $suffix, " {val", $val_modifier, "}, {out", $val_modifier, "}, [{dst}]"), // atomic { _x = *dst; *dst = val; out = _x }
                                 $fence,                                                                                                      // fence
@@ -200,9 +202,9 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             // Refs:
-                            // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-
-                            // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASB--CASAB--CASALB--CASLB--Compare-and-swap-byte-in-memory-
-                            // - https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASH--CASAH--CASALH--CASLH--Compare-and-swap-halfword-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASB--CASAB--CASALB--CASLB--Compare-and-swap-byte-in-memory-
+                            // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASH--CASAH--CASALH--CASLH--Compare-and-swap-halfword-in-memory-
                             asm!(
                                 // cas writes the current value to the first register,
                                 // so copy the `old`'s value for later comparison.
@@ -339,10 +341,10 @@ atomic!(usize, "", "", "");
 // Note: FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2.
 //
 // Refs:
-// - LDXP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDXP--Load-exclusive-pair-of-registers-
-// - LDAXP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDAXP--Load-acquire-exclusive-pair-of-registers-
-// - STXP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/STXP--Store-exclusive-pair-of-registers-
-// - STLXP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/STLXP--Store-release-exclusive-pair-of-registers-
+// - LDXP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDXP--Load-exclusive-pair-of-registers-
+// - LDAXP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDAXP--Load-acquire-exclusive-pair-of-registers-
+// - STXP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STXP--Store-exclusive-pair-of-registers-
+// - STLXP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STLXP--Store-release-exclusive-pair-of-registers-
 //
 // Note: Load-Exclusive pair (by itself) does not guarantee atomicity; to complete an atomic
 // operation (even load/store), a corresponding Store-Exclusive pair must succeed.
@@ -366,8 +368,8 @@ macro_rules! atomic128 {
                 // the above cfg guarantee that the CPU supports FEAT_LSE2.
                 //
                 // Refs:
-                // - LDP https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDP--Load-pair-of-registers-
-                // - LDIAPP https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
+                // - LDP https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDP--Load-pair-of-registers-
+                // - LDIAPP https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
                 unsafe {
                     macro_rules! atomic_load_relaxed {
                         ($iap:tt, $dmb_ishld:tt) => {
@@ -431,7 +433,7 @@ macro_rules! atomic128 {
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                // Refs: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
+                                // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
                                 concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"), // atomic { if *src == x2:x3 { *dst = x2:x3 } else { x2:x3 = *dst } }
                                 src = in(reg) ptr_reg!(src),
                                 // must be allocated to even/odd register pair
@@ -483,8 +485,8 @@ macro_rules! atomic128 {
                 // the above cfg guarantee that the CPU supports FEAT_LSE2.
                 //
                 // Refs:
-                // - STP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/STP--Store-pair-of-registers-
-                // - STILP: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
+                // - STP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STP--Store-pair-of-registers-
+                // - STILP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
                 unsafe {
                     macro_rules! atomic_store {
                         ($il:tt, $acquire:tt, $release:tt) => {
@@ -641,7 +643,7 @@ macro_rules! atomic128 {
                     #[cfg(target_feature = "lse")]
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
-                            // Refs: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
+                            // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
                             asm!(
                                 // casp writes the current value to the first register pair,
                                 // so copy the `old`'s value for later comparison.

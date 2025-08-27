@@ -221,7 +221,7 @@ The following instructions are atomic if the address is properly aligned and the
 - Load/Store Instructions (relaxed load/store)
   - All {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) load/store instructions<br>
     Note: Currently, there is no guaranteed 128-bit atomic load/store even on RV128.<br>
-    (Refs: [Section "Memory Model Primitives" of RVWMO Memory Consistency Model, Version 2.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/rvwmo.adoc#memory-model-primitives))
+    (Refs: [Section "Memory Model Primitives" of RVWMO Memory Consistency Model, Version 2.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/rvwmo.adoc#memory-model-primitives))
 
 - Load-Acquire and Store-Release Instructions
   - (experimental) Zalasr extension: {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) acquire/seqcst load, release/seqcst store<br>
@@ -229,22 +229,22 @@ The following instructions are atomic if the address is properly aligned and the
 
 - Load-Reserved/Store-Conditional (LR/SC) Instructions (aka LL/SC)
   - Zalrsc extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64)<br>
-    (Refs: ["Zalrsc" Extension for Load-Reserved/Store-Conditional Instructions](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/a-st-ext.adoc#zalrsc-extension-for-load-reservedstore-conditional-instructions))
+    (Refs: ["Zalrsc" Extension for Load-Reserved/Store-Conditional Instructions](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/a-st-ext.adoc#zalrsc-extension-for-load-reservedstore-conditional-instructions))
 
 - Atomic Memory Operation (AMO) Instructions
   - Zaamo extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64) swap,fetch_{add,and,or,xor,max,min}<br>
-    (Refs: ["Zaamo" Extension for Atomic Memory Operations](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/a-st-ext.adoc#zaamo-extension-for-atomic-memory-operations))
+    (Refs: ["Zaamo" Extension for Atomic Memory Operations](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/a-st-ext.adoc#zaamo-extension-for-atomic-memory-operations))
   - Zabha extension: {8,16}-bit swap,fetch_{add,and,or,xor,max,min}<br>
-    (Refs: ["Zabha" Extension for Byte and Halfword Atomic Memory Operations, Version 1.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zabha.adoc))
+    (Refs: ["Zabha" Extension for Byte and Halfword Atomic Memory Operations, Version 1.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/zabha.adoc))
 
 - Atomic Compare-and-Swap (CAS) Instructions
   - Zacas extension: {32,64}-bit (for RV32 & RV64) and 128-bit (for RV64)<br>
-    (Refs: ["Zacas" Extension for Atomic Compare-and-Swap (CAS) Instructions, Version 1.0.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zacas.adoc))
+    (Refs: ["Zacas" Extension for Atomic Compare-and-Swap (CAS) Instructions, Version 1.0.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/zacas.adoc))
   - Zacas and Zabha extensions: {8,16}-bit<br>
-    (Refs: ["Zabha" Extension for Byte and Halfword Atomic Memory Operations, Version 1.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-8b9dc50-2024-08-30/src/zabha.adoc))
+    (Refs: ["Zabha" Extension for Byte and Halfword Atomic Memory Operations, Version 1.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/zabha.adoc))
 
 Of the above instructions, instructions other than relaxed load/store, can specify the memory ordering.<br>
-The mappings from the C/C++ atomic operations are described in the [RISC-V Atomics ABI Specification](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/draft-20240829-13bfa9f54634cb60d86b9b333e109f077805b4b3/riscv-atomic.adoc).
+The mappings from the C/C++ atomic operations are described in the [RISC-V Atomics ABI Specification](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/draft-20250812-301374e92976e298e676e7129a6212926b2299ce/riscv-atomic.adoc).
 
 Note: "A" extension comprises instructions provided by Zalrsc and Zaamo extensions,
 Zabha and Zacas extensions depends upon Zaamo extension.

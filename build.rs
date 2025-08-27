@@ -208,8 +208,8 @@ fn main() {
             if !version.probe(82, 2024, 8, 29) || needs_target_feature_fallback(&version, None) {
                 // FEAT_LSE2 doesn't imply FEAT_LSE. FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2. FEAT_LRCPC3 implies FEAT_LRCPC.
                 // AArch64 macOS always supports FEAT_LSE/FEAT_LSE2/FEAT_LRCPC because M1 is Armv8.4 with all features of Armv8.5 except FEAT_BTI:
-                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/AArch64/AArch64Processors.td#L1230
-                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/AArch64/AArch64Processors.td#L891
+                // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/AArch64/AArch64Processors.td#L1289
+                // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/AArch64/AArch64Processors.td#L941
                 // Script to get builtin targets that support FEAT_LSE/FEAT_LSE2/FEAT_LRCPC by default:
                 // $ (for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "aarch64" or .value.arch == "arm64ec" then .key else empty end'); do rustc --print cfg --target "${target}" | grep -Fq '"lse"' && printf '%s\n' "${target}"; done)
                 // $ (for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "aarch64" or .value.arch == "arm64ec" then .key else empty end'); do rustc --print cfg --target "${target}" | grep -Fq '"lse2"' && printf '%s\n' "${target}"; done)
@@ -330,9 +330,10 @@ fn main() {
             // zabha and zacas imply zaamo in GCC, LLVM 20+, and Rust, but do not in LLVM 19.
             // However, enabling them without zaamo or a is not allowed in LLVM 19, so we can assume
             // zaamo is available when zabha is enabled).
-            // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/RISCV/RISCVFeatures.td#L233-L247
+            // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/RISCV/RISCVFeatures.td#L245-L259
             // https://github.com/llvm/llvm-project/commit/956361ca080a689a96b6552d28681aaf0ad2f494
-            // https://github.com/gcc-mirror/gcc/blob/08693e29ec186fd7941d0b73d4d466388971fe2f/gcc/config/riscv/arch-canonicalize#L45-L46
+            // https://github.com/gcc-mirror/gcc/commit/7b2b2e3d660edc8ef3a8cfbdfc2b0fd499459601
+            // https://github.com/gcc-mirror/gcc/commit/11c2453a16b725b7fb67778e1ab4636a51a1217d
             // https://github.com/rust-lang/rust/pull/130877
             let mut zaamo = false;
             // target_feature "zacas" is unstable and available on rustc side since nightly-2025-02-26: https://github.com/rust-lang/rust/pull/137417
@@ -391,19 +392,19 @@ fn main() {
                         }
                     } else {
                         match &*cpu {
-                            // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/PowerPC/PPC.td#L714
-                            // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/PowerPC/PPC.td#L483
+                            // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/PowerPC/PPC.td#L714
+                            // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/PowerPC/PPC.td#L483
                             // On the minimum external LLVM version of the oldest rustc version which we can use asm_experimental_arch
                             // on this target (see CI config for more), "future" is based on pwr10 features.
                             // https://github.com/llvm/llvm-project/blob/llvmorg-12.0.0/llvm/lib/Target/PowerPC/PPC.td#L370
                             "future" | "ppc64le" => pwr8_features = true,
-                            // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/PowerPC/PPC.td#L140
+                            // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/PowerPC/PPC.td#L140
                             "440" | "450" | "e500" => msync = true,
                             _ => {}
                         }
                     }
                 } else {
-                    // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/PowerPC/PPC.td#L714
+                    // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/PowerPC/PPC.td#L714
                     // See also https://github.com/rust-lang/rust/issues/59932
                     pwr8_features = target_arch == "powerpc64"
                         && env::var("CARGO_CFG_TARGET_ENDIAN")
@@ -419,7 +420,7 @@ fn main() {
                 // target_feature "partword-atomics"/"quadword-atomics" is unstable and available on rustc side since nightly-2024-09-28: https://github.com/rust-lang/rust/pull/130873
                 if !version.probe(83, 2024, 9, 27) || needs_target_feature_fallback(&version, None)
                 {
-                    // power8 features: https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/PowerPC/PPC.td#L409
+                    // power8 features: https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/PowerPC/PPC.td#L409
                     // l[bh]arx and st[bh]cx.
                     target_feature_fallback("partword-atomics", pwr8_features);
                     // lqarx and stqcx.
@@ -432,8 +433,8 @@ fn main() {
             let mut arch9_features = false; // z196+
             if let Some(cpu) = target_cpu() {
                 // LLVM and GCC recognize the same names:
-                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.6/llvm/lib/Target/SystemZ/SystemZProcessors.td
-                // https://github.com/gcc-mirror/gcc/blob/releases/gcc-14.2.0/gcc/config/s390/s390.opt#L58-L125
+                // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/SystemZ/SystemZProcessors.td
+                // https://github.com/gcc-mirror/gcc/blob/releases/gcc-15.2.0/gcc/config/s390/s390.opt#L58-L128
                 if let Some(arch_version) = cpu.strip_prefix("arch") {
                     if let Ok(arch_version) = arch_version.parse::<u32>() {
                         arch9_features = arch_version >= 9;
@@ -449,7 +450,7 @@ fn main() {
             }
             // As of rustc 1.84, target_feature "fast-serialization" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.84.0/compiler/rustc_target/src/target_features.rs#L547
-            // arch9 features: https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/SystemZ/SystemZFeatures.td#L103
+            // arch9 features: https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/SystemZ/SystemZFeatures.td#L103
             // bcr 14,0
             target_feature_fallback("fast-serialization", arch9_features);
         }
@@ -460,7 +461,7 @@ fn main() {
                 let mut leoncasa = false;
                 let mut v9 = false;
                 if let Some(cpu) = target_cpu() {
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/Sparc/Sparc.td
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/Sparc/Sparc.td
                     match &*cpu {
                         "myriad2" | "myriad2.1" | "myriad2.2" | "myriad2.3" | "ma2100"
                         | "ma2150" | "ma2155" | "ma2450" | "ma2455" | "ma2x5x" | "ma2080"
@@ -484,7 +485,7 @@ fn main() {
         "mips" => {
             let mut mips1 = false;
             if let Some(cpu) = target_cpu() {
-                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0-rc1/llvm/lib/Target/Mips/Mips.td#L245
+                // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/Mips/Mips.td#L256
                 match &*cpu {
                     "mips1" => mips1 = true,
                     _ => {}
@@ -497,8 +498,8 @@ fn main() {
             }
             if mips1 {
                 // MIPS-I has no SYNC and LL/SC.
-                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/Mips/MipsInstrInfo.td#L2160
-                // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/Mips/MipsInstrInfo.td#L2216
+                // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/Mips/MipsInstrInfo.td#L2160
+                // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/Mips/MipsInstrInfo.td#L2216
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_sync");
             }
         }
@@ -507,7 +508,7 @@ fn main() {
             if !version.probe(85, 2024, 12, 15) || needs_target_feature_fallback(&version, None) {
                 let mut isa_68020 = false;
                 if let Some(cpu) = target_cpu() {
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-20.1.0/llvm/lib/Target/M68k/M68k.td
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/M68k/M68k.td
                     match &*cpu {
                         "M68020" | "M68030" | "M68040" | "M68060" => isa_68020 = true,
                         _ => {}
