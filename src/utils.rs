@@ -381,10 +381,7 @@ pub(crate) mod ptr {
             // transmute semantics, it relies on sysroot crates having special status.
             // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
             // provenance).
-            #[allow(clippy::transmutes_expressible_as_ptr_casts)]
-            unsafe {
-                mem::transmute(self.cast::<()>())
-            }
+            unsafe { mem::transmute(self.cast::<()>()) }
         }
     }
     #[cfg(atomic_maybe_uninit_no_strict_provenance)]
@@ -397,12 +394,8 @@ pub(crate) mod ptr {
             // transmute semantics, it relies on sysroot crates having special status.
             // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
             // provenance).
-            #[allow(clippy::transmutes_expressible_as_ptr_casts)]
-            unsafe {
-                mem::transmute(self.cast::<()>())
-            }
+            unsafe { mem::transmute(self.cast::<()>()) }
         }
-        #[allow(clippy::cast_possible_wrap)]
         #[inline]
         #[must_use]
         fn with_addr(self, addr: usize) -> Self
