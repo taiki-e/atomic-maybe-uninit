@@ -28,6 +28,8 @@ Generated asm:
 - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/9beasofnd
 */
 
+// https://godbolt.org/z/MPx5Kabe8
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::{
@@ -58,10 +60,10 @@ macro_rules! atomic_rmw {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
+    ($ty:ident, $val_size:tt, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
         impl AtomicLoad for $ty {
             #[inline]
-            unsafe fn atomic_load(
+            unsafe fn atomic_load<const OFFSET: usize>(
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
@@ -73,9 +75,10 @@ macro_rules! atomic {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                concat!("ld", $acquire, "r", $suffix, " {out", $val_modifier, "}, [{src}]"), // atomic { out = *src }
+                                concat!("ld", $acquire, "r", $suffix, " {out", $val_modifier, "}, [{src}, {offset} * ", $val_size, "]"), // atomic { out = *src.add(offset) }
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
+                                offset = const OFFSET,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -96,7 +99,7 @@ macro_rules! atomic {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn atomic_store<const OFFSET: usize>(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -108,10 +111,11 @@ macro_rules! atomic {
                     macro_rules! atomic_store {
                         ($release:tt, $fence:tt) => {
                             asm!(
-                                concat!("st", $release, "r", $suffix, " {val", $val_modifier, "}, [{dst}]"), // atomic { *dst = val }
+                                concat!("st", $release, "r", $suffix, " {val", $val_modifier, "}, [{dst}, {offset} * ", $val_size, "]"), // atomic { *dst.add(offset) = val }
                                 $fence,                                                                      // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
+                                offset = const OFFSET,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -308,22 +312,22 @@ macro_rules! atomic {
     };
 }
 
-atomic!(i8, "b", ":w", ", uxtb");
-atomic!(u8, "b", ":w", ", uxtb");
-atomic!(i16, "h", ":w", ", uxth");
-atomic!(u16, "h", ":w", ", uxth");
-atomic!(i32, "", ":w", "");
-atomic!(u32, "", ":w", "");
-atomic!(i64, "", "", "");
-atomic!(u64, "", "", "");
+atomic!(i8, "1", "b", ":w", ", uxtb");
+atomic!(u8, "1", "b", ":w", ", uxtb");
+atomic!(i16, "2", "h", ":w", ", uxth");
+atomic!(u16, "2", "h", ":w", ", uxth");
+atomic!(i32, "4", "", ":w", "");
+atomic!(u32, "4", "", ":w", "");
+atomic!(i64, "8", "", "", "");
+atomic!(u64, "8", "", "", "");
 #[cfg(target_pointer_width = "32")]
-atomic!(isize, "", ":w", "");
+atomic!(isize, "4", "", ":w", "");
 #[cfg(target_pointer_width = "32")]
-atomic!(usize, "", ":w", "");
+atomic!(usize, "4", "", ":w", "");
 #[cfg(target_pointer_width = "64")]
-atomic!(isize, "", "", "");
+atomic!(isize, "4", "", "", "");
 #[cfg(target_pointer_width = "64")]
-atomic!(usize, "", "", "");
+atomic!(usize, "4", "", "", "");
 
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //
@@ -355,11 +359,12 @@ macro_rules! atomic128 {
     ($ty:ident) => {
         impl AtomicLoad for $ty {
             #[inline]
-            unsafe fn atomic_load(
+            unsafe fn atomic_load<const OFFSET: usize>(
                 src: *const MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(src, $ty);
+                assert!(OFFSET == 0);
                 let (mut prev_lo, mut prev_hi);
 
                 #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
@@ -471,12 +476,13 @@ macro_rules! atomic128 {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn atomic_store<const OFFSET: usize>(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
+                assert!(OFFSET == 0);
                 let val = MaybeUninit128 { $ty: val };
 
                 #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]

@@ -51,7 +51,10 @@ pub trait AtomicLoad: Primitive {
     /// pointer go through [`UnsafeCell::get`].
     ///
     /// [validity]: core::ptr#safety
-    unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self>;
+    unsafe fn atomic_load<const OFFSET: usize>(
+        src: *const MaybeUninit<Self>,
+        order: Ordering,
+    ) -> MaybeUninit<Self>;
 }
 
 /// Atomic store.
@@ -87,7 +90,11 @@ pub trait AtomicStore: Primitive {
     /// pointer go through [`UnsafeCell::get`].
     ///
     /// [validity]: core::ptr#safety
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering);
+    unsafe fn atomic_store<const OFFSET: usize>(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    );
 }
 
 /// Atomic swap.
