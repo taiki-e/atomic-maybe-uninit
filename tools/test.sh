@@ -246,6 +246,8 @@ run() {
   case "${target}" in
     # TODO: segmentation fault (also happen without this crate)
     hexagon-unknown-linux-musl) ;;
+    # TODO: "error adding symbols: file format not recognized" error since nightly-2025-08-29
+    aarch64_be-unknown-linux-gnu | armv4t-unknown-linux-gnueabi | mips64-unknown-linux-gnuabi64 | mips-unknown-linux-gnu | mipsisa64r6-unknown-linux-gnuabi64 | mipsisa32r6-unknown-linux-gnu | armv5te-unknown-linux-gnueabi | mipsisa32r6el-unknown-linux-gnu | riscv32gc-unknown-linux-gnu | mipsel-unknown-linux-gnu | mipsisa64r6el-unknown-linux-gnuabi64 | powerpc-unknown-linux-gnu | mips64el-unknown-linux-gnuabi64) ;;
     *)
       # LTO + doctests is very slow on some platforms (probably related to the fact that they compile binaries for each example)
       CARGO_TARGET_DIR="${target_dir}/fat-lto" \
