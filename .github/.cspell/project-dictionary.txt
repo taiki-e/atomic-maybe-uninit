@@ -52,6 +52,7 @@ ldstub
 ldxp
 leoncasa
 lgcc
+libatomic
 libnspr
 linkall
 LLDP
