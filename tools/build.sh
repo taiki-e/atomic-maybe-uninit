@@ -212,7 +212,8 @@ rustc_minor_version="${rustc_minor_version%%.*}"
 llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | { grep -E '^LLVM version:' || true; } | cut -d' ' -f3)
 llvm_version="${llvm_version%%.*}"
 host=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^host:' | cut -d' ' -f2)
-target_dir=$(pwd)/target
+workspace_dir=$(pwd)
+target_dir="${workspace_dir}/target"
 # Do not use check here because it misses some errors such as invalid inline asm operands and LLVM codegen errors.
 subcmd=build
 if [[ -n "${TESTS:-}" ]]; then
@@ -253,7 +254,12 @@ build() {
       printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped all checks)"
       return 0
     fi
-    local target_flags=(--target "$(pwd)/target-specs/${target}.json")
+    if [[ "${rustc_minor_version}" -lt 91 ]] && [[ "${target}" != "avr"* ]]; then
+      # Skip pre-1.91 because target-pointer-width change
+      printf '%s\n' "target '${target}' requires 1.91-nightly or later (skipped)"
+      return 0
+    fi
+    local target_flags=(--target "${workspace_dir}/target-specs/${target}.json")
   elif [[ "${target}" != "${host}" ]]; then
     local target_flags=(--target "${target}")
   fi

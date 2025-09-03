@@ -620,7 +620,8 @@ jobs:
         env:
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_LINKER: armeb-unknown-linux-gnueabi-gcc
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
-        if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi'
+        # Skip pre-1.91 because target-pointer-width change
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2022') && !startsWith(matrix.rust, 'nightly-2023') && !startsWith(matrix.rust, 'nightly-2025-02')
       # arm v4t
       - run: tools/test.sh -vv --tests --target armv4t-unknown-linux-gnueabi -Z build-std ${RELEASE:-}
         env:
