@@ -29,10 +29,10 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, P
 | riscv32 (+zacas) \[4]           | i64,u64                                             | ✓          | ✓        |
 | riscv64                         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
 | riscv64 (+zacas) \[4]           | i128,u128                                           | ✓          | ✓        |
-| loongarch64 \[7]                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| loongarch32 \[10] (experimental) | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| arm64ec \[8]                    | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| s390x \[8]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| loongarch64                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| loongarch32 \[8] (experimental) | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| arm64ec \[7]                    | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| s390x \[7]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | mips / mips32r6 \[9]            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | mips64 / mips64r6 \[9]          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | powerpc \[9]                    | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
@@ -52,9 +52,8 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, P
 \[4] Requires `zacas` target feature.<br>
 \[5] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
 \[6] Requires `v9` or `leoncasa` target feature (enabled by default on Linux).<br>
-\[7] Requires Rust 1.72+.<br>
-\[8] Requires Rust 1.84+.<br>
-\[10] Requires Rust 1.91+.<br>
+\[7] Requires Rust 1.84+.<br>
+\[8] Requires Rust 1.91+.<br>
 \[9] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 
 See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md) for more information about atomic operations in these architectures.
@@ -81,7 +80,6 @@ Feel free to submit an issue if your target is not supported yet.
         allow(dead_code, unused_variables)
     )
 ))]
-#![warn(unsafe_op_in_unsafe_fn)]
 #![warn(
     // Lints that may help when writing public library.
     missing_debug_implementations,
@@ -112,7 +110,6 @@ mod utils;
 #[macro_use]
 mod tests;
 
-#[cfg_attr(atomic_maybe_uninit_no_asm_maybe_uninit, path = "arch_legacy/mod.rs")]
 mod arch;
 
 pub mod raw;
@@ -334,7 +331,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     {
         utils::assert_store_ordering(order);
         // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(all(atomic_maybe_uninit_pre_llvm_20, not(atomic_maybe_uninit_no_asm_maybe_uninit)))]
+        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
         let val = core::hint::black_box(val);
         // SAFETY: any data races are prevented by atomic intrinsics, the raw
         // pointer passed in is valid because we got it from a reference,
@@ -370,7 +367,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         T: AtomicSwap,
     {
         // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(all(atomic_maybe_uninit_pre_llvm_20, not(atomic_maybe_uninit_no_asm_maybe_uninit)))]
+        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
         let val = core::hint::black_box(val);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
@@ -547,9 +544,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     {
         utils::assert_compare_exchange_ordering(success, failure);
         // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(all(atomic_maybe_uninit_pre_llvm_20, not(atomic_maybe_uninit_no_asm_maybe_uninit)))]
+        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
         let current = core::hint::black_box(current);
-        #[cfg(all(atomic_maybe_uninit_pre_llvm_20, not(atomic_maybe_uninit_no_asm_maybe_uninit)))]
+        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
         let new = core::hint::black_box(new);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
@@ -630,9 +627,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     {
         utils::assert_compare_exchange_ordering(success, failure);
         // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(all(atomic_maybe_uninit_pre_llvm_20, not(atomic_maybe_uninit_no_asm_maybe_uninit)))]
+        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
         let current = core::hint::black_box(current);
-        #[cfg(all(atomic_maybe_uninit_pre_llvm_20, not(atomic_maybe_uninit_no_asm_maybe_uninit)))]
+        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
         let new = core::hint::black_box(new);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.

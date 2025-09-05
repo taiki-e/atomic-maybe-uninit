@@ -291,13 +291,8 @@ build() {
   fi
   case "${target}" in
     avr*)
-      if [[ "${llvm_version}" -eq 16 ]]; then
-        # https://github.com/rust-lang/compiler-builtins/issues/523
-        target_rustflags+=" -C linker-plugin-lto -C codegen-units=1"
-      elif [[ "${llvm_version}" -ge 17 ]]; then
-        # https://github.com/rust-lang/rust/issues/88252
-        target_rustflags+=" -C opt-level=s"
-      fi
+      # https://github.com/rust-lang/rust/issues/88252
+      target_rustflags+=" -C opt-level=s"
       if [[ "${target}" == "avr-none" ]]; then
         # "error: target requires explicitly specifying a cpu with `-C target-cpu`"
         target_rustflags+=" -C target-cpu=atmega2560"
@@ -401,19 +396,16 @@ build() {
             x_cargo "${args[@]}" "$@"
           ;;
       esac
-      # Support for FEAT_LRCPC3 and FEAT_LSE128 requires LLVM 16+.
-      if [[ "${llvm_version}" -ge 16 ]]; then
-        CARGO_TARGET_DIR="${target_dir}/rcpc3" \
-          RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2,+rcpc3" \
-          x_cargo "${args[@]}" "$@"
-        # FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2.
-        CARGO_TARGET_DIR="${target_dir}/lse128" \
-          RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128" \
-          x_cargo "${args[@]}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/lse128-rcpc3" \
-          RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128,+rcpc3" \
-          x_cargo "${args[@]}" "$@"
-      fi
+      CARGO_TARGET_DIR="${target_dir}/rcpc3" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lse,+lse2,+rcpc3" \
+        x_cargo "${args[@]}" "$@"
+      # FEAT_LSE128 implies FEAT_LSE but not FEAT_LSE2.
+      CARGO_TARGET_DIR="${target_dir}/lse128" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/lse128-rcpc3" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128,+rcpc3" \
+        x_cargo "${args[@]}" "$@"
       ;;
     powerpc-*)
       CARGO_TARGET_DIR="${target_dir}/msync" \

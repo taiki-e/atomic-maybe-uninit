@@ -1,4 +1,3 @@
-addi
 amocas
 amoswap
 amswap
@@ -38,13 +37,11 @@ isync
 kuser
 LAAL
 lclang
-ldapr
 ldar
 ldarx
 ldaxp
 ldclrp
 ldiapp
-ldrd
 ldrex
 ldrexd
 ldsetp
@@ -70,12 +67,9 @@ memw
 mfcr
 mfence
 mgba
-movd
 movi
 movlps
 movq
-movsd
-movss
 mspdebug
 msync
 muldi
@@ -84,7 +78,6 @@ nostartfiles
 opensbi
 orrs
 partword
-pshufd
 pstq
 qbsp
 quadword
@@ -99,13 +92,11 @@ SCWP
 SCWPE
 seqz
 sete
-shufps
 signedness
 simavr
 simio
 slli
 sllv
-sltui
 srai
 sreg
 srlv
@@ -115,7 +106,6 @@ stilp
 stlxp
 stpq
 stqcx
-strd
 strex
 strexd
 stwcx
@@ -136,7 +126,6 @@ xadd
 xchg
 xmegau
 xmmword
-xorps
 zaamo
 zabha
 zacas

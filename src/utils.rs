@@ -64,9 +64,10 @@ macro_rules! const_fn {
 // HACK: This is equivalent to transmute_copy by value, but available in const
 // context even on older rustc (const transmute_copy requires Rust 1.74), and
 // can work around "cannot borrow here, since the borrowed element may contain
-// interior mutability" error occurs when using transmute_copy with generic type
-// in const context (because this is a by-value transmutation that doesn't
-// create a reference to the source value).
+// interior mutability" error occurs (until const_refs_to_cell stabilized, i.e.,
+// Rust 1.83) when using transmute_copy with generic type in const context
+// (because this is a by-value transmutation that doesn't create a reference to
+// the source value).
 /// # Safety
 ///
 /// This function has the same safety requirements as [`core::mem::transmute_copy`].
