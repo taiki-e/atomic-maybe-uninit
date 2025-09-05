@@ -56,7 +56,7 @@ jobs:
         include:
           # ------------------------------------------------------------
           # x86_64-unknown-linux-gnu
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: x86_64-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: x86_64-unknown-linux-gnu
@@ -89,7 +89,7 @@ jobs:
             os: windows-latest
           # ------------------------------------------------------------
           # aarch64-unknown-linux-gnu
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: aarch64-unknown-linux-gnu
             os: ubuntu-24.04-arm
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
@@ -120,7 +120,7 @@ jobs:
           #   flags: -Z codegen-backend=cranelift
           # ------------------------------------------------------------
           # aarch64-apple-darwin
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: aarch64-apple-darwin
             os: macos-latest
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
@@ -148,7 +148,7 @@ jobs:
             os: windows-11-arm
           # ------------------------------------------------------------
           # aarch64_be-unknown-linux-gnu
-          - rust: nightly-2021-12-16 # Rust 1.59, LLVM 13 (oldest version we can use stable asm on this target)
+          - rust: nightly-2022-03-08 # Rust 1.61, LLVM 14 (oldest version we can use stable asm on this target)
             target: aarch64_be-unknown-linux-gnu
           - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
             target: aarch64_be-unknown-linux-gnu
@@ -175,7 +175,7 @@ jobs:
             os: windows-11-arm
           # ------------------------------------------------------------
           # armv5te-unknown-linux-gnueabi
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: armv5te-unknown-linux-gnueabi
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv5te-unknown-linux-gnueabi
@@ -191,7 +191,7 @@ jobs:
             target: armv5te-unknown-linux-gnueabi
           # ------------------------------------------------------------
           # arm-unknown-linux-gnueabi
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: arm-unknown-linux-gnueabi
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: arm-unknown-linux-gnueabi
@@ -208,7 +208,7 @@ jobs:
             target: arm-unknown-linux-gnueabi
           # ------------------------------------------------------------
           # armv7-unknown-linux-gnueabi
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: armv7-unknown-linux-gnueabi
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: armv7-unknown-linux-gnueabi
@@ -225,7 +225,7 @@ jobs:
             target: armv7-unknown-linux-gnueabi
           # ------------------------------------------------------------
           # armv7-unknown-linux-gnueabihf
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: armv7-unknown-linux-gnueabihf
             os: ubuntu-24.04-arm
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
@@ -268,7 +268,7 @@ jobs:
             os: ubuntu-22.04
           # ------------------------------------------------------------
           # i586-unknown-linux-gnu
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: i586-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: i586-unknown-linux-gnu
@@ -284,7 +284,7 @@ jobs:
             target: i586-unknown-linux-gnu
           # ------------------------------------------------------------
           # i686-unknown-linux-gnu
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: i686-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: i686-unknown-linux-gnu
@@ -443,7 +443,7 @@ jobs:
             target: riscv32gc-unknown-linux-gnu
           # ------------------------------------------------------------
           # riscv64gc-unknown-linux-gnu
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: riscv64gc-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: riscv64gc-unknown-linux-gnu
@@ -483,7 +483,7 @@ jobs:
             target: sparc64-unknown-linux-gnu
           # ------------------------------------------------------------
           # thumbv7neon-unknown-linux-gnueabihf
-          - rust: '1.59' # LLVM 13
+          - rust: '1.61' # LLVM 14
             target: thumbv7neon-unknown-linux-gnueabihf
             os: ubuntu-24.04-arm
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
@@ -677,7 +677,7 @@ jobs:
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-} --direct
         # -Z direct-minimal-versions requires Cargo 1.70.
-        if: (!(startsWith(matrix.rust, '1.5') || startsWith(matrix.rust, '1.6') || startsWith(matrix.rust, 'nightly-2021') || startsWith(matrix.rust, 'nightly-2022') || startsWith(matrix.rust, 'nightly-2023')))
+        if: (!(startsWith(matrix.rust, '1.6') || startsWith(matrix.rust, 'nightly-2021') || startsWith(matrix.rust, 'nightly-2022') || startsWith(matrix.rust, 'nightly-2023')))
 
   build:
     needs: tidy
@@ -686,7 +686,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - rust: '1.59'
+          - rust: '1.61'
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
           - rust: stable
           - rust: beta

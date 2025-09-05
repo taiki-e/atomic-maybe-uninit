@@ -169,29 +169,24 @@ unsafe impl<T: Primitive> Sync for AtomicMaybeUninit<T> {}
 impl<T: Primitive> core::panic::RefUnwindSafe for AtomicMaybeUninit<T> {}
 
 impl<T: Primitive> AtomicMaybeUninit<T> {
-    const_fn! {
-        const_if: #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))];
-        /// Creates a new atomic value from a potentially uninitialized value.
-        ///
-        /// This is `const fn` on Rust 1.61+. See also `const_new` function, which is always `const fn`.
-        ///
-        /// # Examples
-        ///
-        /// ```
-        /// use std::mem::MaybeUninit;
-        ///
-        /// use atomic_maybe_uninit::AtomicMaybeUninit;
-        ///
-        /// let v = AtomicMaybeUninit::new(MaybeUninit::new(5_i32));
-        ///
-        /// // Equivalent to:
-        /// let v = AtomicMaybeUninit::from(5_i32);
-        /// ```
-        #[inline]
-        #[must_use]
-        pub const fn new(v: MaybeUninit<T>) -> Self {
-            Self { v: UnsafeCell::new(v), _align: [] }
-        }
+    /// Creates a new atomic value from a potentially uninitialized value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    ///
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// let v = AtomicMaybeUninit::new(MaybeUninit::new(5_i32));
+    ///
+    /// // Equivalent to:
+    /// let v = AtomicMaybeUninit::from(5_i32);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn new(v: MaybeUninit<T>) -> Self {
+        Self { v: UnsafeCell::new(v), _align: [] }
     }
 
     // TODO: update docs based on https://github.com/rust-lang/rust/pull/116762
@@ -256,30 +251,25 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         }
     }
 
-    const_fn! {
-        const_if: #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))];
-        /// Consumes the atomic and returns the contained value.
-        ///
-        /// This is safe because passing `self` by value guarantees that no other threads are
-        /// concurrently accessing the atomic data.
-        ///
-        /// This is `const fn` on Rust 1.61+.
-        ///
-        /// # Examples
-        ///
-        /// ```
-        /// use atomic_maybe_uninit::AtomicMaybeUninit;
-        ///
-        /// let v = AtomicMaybeUninit::from(5_i32);
-        /// unsafe { assert_eq!(v.into_inner().assume_init(), 5) }
-        /// ```
-        #[inline]
-        pub const fn into_inner(self) -> MaybeUninit<T> {
-            // SAFETY: AtomicMaybeUninit<T> and MaybeUninit<T> have the same size
-            // and in-memory representations, so they can be safely transmuted.
-            // (Equivalent to UnsafeCell::into_inner which is unstable in const context.)
-            unsafe { utils::transmute_copy_by_val::<Self, MaybeUninit<T>>(self) }
-        }
+    /// Consumes the atomic and returns the contained value.
+    ///
+    /// This is safe because passing `self` by value guarantees that no other threads are
+    /// concurrently accessing the atomic data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// let v = AtomicMaybeUninit::from(5_i32);
+    /// unsafe { assert_eq!(v.into_inner().assume_init(), 5) }
+    /// ```
+    #[inline]
+    pub const fn into_inner(self) -> MaybeUninit<T> {
+        // SAFETY: AtomicMaybeUninit<T> and MaybeUninit<T> have the same size
+        // and in-memory representations, so they can be safely transmuted.
+        // (Equivalent to UnsafeCell::into_inner which is unstable in const context.)
+        unsafe { utils::transmute_copy_by_val::<Self, MaybeUninit<T>>(self) }
     }
 
     /// Loads a value from the atomic value.
@@ -731,21 +721,16 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         Err(prev)
     }
 
-    const_fn! {
-        const_if: #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))];
-        /// Returns a mutable pointer to the underlying value.
-        ///
-        /// Returning an `*mut` pointer from a shared reference to this atomic is safe because the
-        /// atomic types work with interior mutability. All modifications of an atomic change the value
-        /// through a shared reference, and can do so safely as long as they use atomic operations. Any
-        /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the same
-        /// restriction: operations on it must be atomic.
-        ///
-        /// This is `const fn` on Rust 1.61+.
-        #[inline]
-        pub const fn as_ptr(&self) -> *mut MaybeUninit<T> {
-            self.v.get()
-        }
+    /// Returns a mutable pointer to the underlying value.
+    ///
+    /// Returning an `*mut` pointer from a shared reference to this atomic is safe because the
+    /// atomic types work with interior mutability. All modifications of an atomic change the value
+    /// through a shared reference, and can do so safely as long as they use atomic operations. Any
+    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the same
+    /// restriction: operations on it must be atomic.
+    #[inline]
+    pub const fn as_ptr(&self) -> *mut MaybeUninit<T> {
+        self.v.get()
     }
 }
 
@@ -759,15 +744,6 @@ macro_rules! int {
         // SAFETY: the static assertion above ensures safety requirement.
         unsafe impl crate::private::PrimitivePriv for $ty {
             type Align = crate::private::$align;
-        }
-        impl AtomicMaybeUninit<$ty> {
-            /// Creates a new atomic value from a potentially uninitialized value.
-            /// Unlike [`new`](Self::new), this is always `const fn`.
-            #[inline]
-            #[must_use]
-            pub const fn const_new(v: MaybeUninit<$ty>) -> Self {
-                Self { v: UnsafeCell::new(v), _align: [] }
-            }
         }
     };
 }

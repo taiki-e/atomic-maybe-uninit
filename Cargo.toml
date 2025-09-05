@@ -2,7 +2,7 @@
 name = "atomic-maybe-uninit"
 version = "0.3.9" #publish:version
 edition = "2021"
-rust-version = "1.59" # For asm!
+rust-version = "1.61" # For const_fn_trait_bound
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/atomic-maybe-uninit"
 keywords = ["atomic"]
@@ -30,8 +30,7 @@ allowed_external_types = [
 doc-scrape-examples = false
 
 [dev-dependencies]
-build-context = "0.1"
-crossbeam-utils = { version = "0.8", git = "https://github.com/crossbeam-rs/crossbeam.git", rev = "17fb841" } # The latest released crossbeam-utils requires Rust 1.60
+crossbeam-utils = "0.8"
 fastrand = "2"
 paste = "1"
 quickcheck = { version = "1", default-features = false, git = "https://github.com/taiki-e/quickcheck.git", rev = "83b1d59" } # https://github.com/BurntSushi/quickcheck/pull/304 + https://github.com/BurntSushi/quickcheck/pull/282 + https://github.com/BurntSushi/quickcheck/pull/296 + f16/f128 support + lower MSRV

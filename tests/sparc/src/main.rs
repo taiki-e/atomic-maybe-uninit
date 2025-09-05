@@ -28,7 +28,7 @@ macro_rules! __test_atomic {
         fn load_store() {
             unsafe {
                 static VAR: AtomicMaybeUninit<$ty> =
-                    AtomicMaybeUninit::<$ty>::const_new(MaybeUninit::new(10));
+                    AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(10));
                 for (load_order, store_order) in LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS) {
                     assert_eq!(VAR.load(load_order).assume_init(), 10);
                     VAR.store(MaybeUninit::new(5), store_order);
