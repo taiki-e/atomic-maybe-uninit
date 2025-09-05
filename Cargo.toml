@@ -1,6 +1,6 @@
 [package]
 name = "atomic-maybe-uninit"
-version = "0.3.8" #publish:version
+version = "0.3.9" #publish:version
 edition = "2021"
 rust-version = "1.59" # For asm!
 license = "Apache-2.0 OR MIT"

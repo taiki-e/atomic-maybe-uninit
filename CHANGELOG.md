@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.9] - 2025-09-05
+
 - Update to stabilized [LoongArch32](https://github.com/rust-lang/rust/pull/144402) inline assembly. ([803b062](https://github.com/taiki-e/atomic-maybe-uninit/commit/803b06263c8a3e38596eb48aec88d2dce77d60e6))
 
 ## [0.3.8] - 2025-07-06
@@ -314,7 +316,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.8...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.9...HEAD
+[0.3.9]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.5...v0.3.6
