@@ -34,12 +34,12 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_asm_maybe_uninit,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_inline_const,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_inline_const,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","cmpxchg16b","fast-serialization","isa-68020","leoncasa","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
         );
     }
 
@@ -63,10 +63,6 @@ fn main() {
     // stable rustc is used when the build script doesn't run. This is useful
     // for non-cargo build systems that don't run the build script.
 
-    // https://github.com/rust-lang/rust/pull/114790 merged in nightly-2023-08-24
-    if !version.probe(74, 2023, 8, 23) {
-        println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm_maybe_uninit");
-    }
     // #[diagnostic] stabilized in Rust 1.78 (nightly-2024-03-09): https://github.com/rust-lang/rust/pull/119888
     if !version.probe(78, 2024, 3, 8) {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_diagnostic_namespace");
@@ -89,12 +85,6 @@ fn main() {
     }
 
     match target_arch {
-        "loongarch64" => {
-            // asm! on LoongArch64 stabilized in Rust 1.72
-            if version.minor < 72 {
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm");
-            }
-        }
         "arm64ec" | "s390x" => {
             // asm! on Arm64EC and s390x stabilized in Rust 1.84 (nightly-2024-11-11): https://github.com/rust-lang/rust/pull/131781, https://github.com/rust-lang/rust/pull/131258
             if !version.probe(84, 2024, 11, 10) {
@@ -182,23 +172,6 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_cmpxchg8b");
             }
         }
-        "x86_64" => {
-            // cmpxchg16b_target_feature stabilized in Rust 1.69. (for arch_legacy)
-            if needs_target_feature_fallback(&version, Some(69)) {
-                // x86_64 Apple targets always support CMPXCHG16B:
-                // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/x86_64_apple_darwin.rs#L8
-                // https://github.com/rust-lang/rust/blob/1.68.0/compiler/rustc_target/src/spec/apple_base.rs#L69-L70
-                // (Since Rust 1.78, Windows (except Windows 7) targets also enable CMPXCHG16B, but
-                // this branch is only used on pre-1.69 that cmpxchg16b_target_feature is unstable.)
-                // Script to get builtin targets that support CMPXCHG16B by default:
-                // $ (for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "x86_64" then .key else empty end'); do rustc --print cfg --target "${target}" | grep -Fq '"cmpxchg16b"' && printf '%s\n' "${target}"; done)
-                let is_apple = env::var("CARGO_CFG_TARGET_VENDOR").unwrap_or_default() == "apple";
-                let cmpxchg16b = is_apple;
-                // LLVM recognizes this also as cx16 target feature: https://godbolt.org/z/KM3jz616j
-                // However, it is unlikely that rustc will support that name, so we ignore it.
-                target_feature_fallback("cmpxchg16b", cmpxchg16b);
-            }
-        }
         "aarch64" | "arm64ec" => {
             // target_feature "lse2"/"lse128"/"rcpc3" is unstable and available on rustc side since nightly-2024-08-30: https://github.com/rust-lang/rust/pull/128192
             if !version.probe(82, 2024, 8, 29) || needs_target_feature_fallback(&version, None) {
@@ -209,9 +182,6 @@ fn main() {
                 // $ (for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "aarch64" or .value.arch == "arm64ec" then .key else empty end'); do rustc --print cfg --target "${target}" | grep -Fq '"lse2"' && printf '%s\n' "${target}"; done)
                 let is_macos = target_os == "macos";
                 target_feature_fallback("lse2", is_macos);
-                // LLVM supports FEAT_LRCPC3 and FEAT_LSE128 on LLVM 16+:
-                // https://github.com/llvm/llvm-project/commit/a6aaa969f7caec58a994142f8d855861cf3a1463
-                // https://github.com/llvm/llvm-project/commit/7fea6f2e0e606e5339c3359568f680eaf64aa306
                 target_feature_fallback("lse128", false);
                 target_feature_fallback("rcpc3", false);
             }

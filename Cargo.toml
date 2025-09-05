@@ -2,7 +2,7 @@
 name = "atomic-maybe-uninit"
 version = "0.3.9" #publish:version
 edition = "2021"
-rust-version = "1.61" # For const_fn_trait_bound
+rust-version = "1.74" # For MaybeUninit registers in asm!: https://github.com/rust-lang/rust/pull/114790
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/taiki-e/atomic-maybe-uninit"
 keywords = ["atomic"]
@@ -36,7 +36,7 @@ paste = "1"
 quickcheck = { version = "1", default-features = false, git = "https://github.com/taiki-e/quickcheck.git", rev = "83b1d59" } # https://github.com/BurntSushi/quickcheck/pull/304 + https://github.com/BurntSushi/quickcheck/pull/282 + https://github.com/BurntSushi/quickcheck/pull/296 + f16/f128 support + lower MSRV
 
 [target.'cfg(unix)'.dev-dependencies]
-libc = "=0.2.163" # newer libc requires Rust 1.63
+libc = "0.2"
 
 [lints]
 workspace = true
@@ -95,7 +95,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 ] }
 unnameable_types = "warn"
 unreachable_pub = "warn"
-# unsafe_op_in_unsafe_fn = "warn" # Set at crate-level instead since https://github.com/rust-lang/rust/pull/100081 merged in Rust 1.65 is not available on MSRV
+unsafe_op_in_unsafe_fn = "warn"
 [workspace.lints.clippy]
 all = "warn" # Downgrade deny-by-default lints
 pedantic = "warn"

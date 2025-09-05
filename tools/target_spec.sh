@@ -57,19 +57,11 @@ mod imp {
     macro_rules! ptr_reg {
         (\$ptr:ident) => {{
             let _: *const _ = \$ptr; // ensure \$ptr is a pointer (*mut _ or *const _)
-            #[cfg(not(atomic_maybe_uninit_no_asm_maybe_uninit))]
             #[allow(clippy::ptr_as_ptr)]
             {
                 // If we cast to u64 here, the provenance will be lost,
                 // so we convert to MaybeUninit<u64> via zero extend helper.
                 crate::utils::zero_extend64_ptr(\$ptr as *mut ())
-            }
-            #[cfg(atomic_maybe_uninit_no_asm_maybe_uninit)]
-            {
-                // Use cast on old rustc because it does not support MaybeUninit
-                // registers. This is still permissive-provenance compatible and
-                // is sound.
-                \$ptr as u64
             }
         }};
     }

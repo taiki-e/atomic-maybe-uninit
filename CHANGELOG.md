@@ -12,9 +12,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Increase the minimum supported Rust version (MSRV) from Rust 1.59 to Rust 1.61.
+- Increase the minimum supported Rust version (MSRV) from Rust 1.59 to Rust 1.74.
 
 - Remove `AtomicMaybeUninit::const_new` because `AtomicMaybeUninit::new` is now always `const fn` because of the MSRV bump.
+
+- Remove legacy [inefficient](https://github.com/crossbeam-rs/crossbeam/pull/1015#issuecomment-1676549870) implementation for pre-1.74 Rust which doesn't support `MaybeUninit` registers in `asm!`.
 
 ## [0.3.9] - 2025-09-05
 
