@@ -12,6 +12,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Increase the minimum supported Rust version (MSRV) from Rust 1.59 to Rust 1.61.
+
+- Remove `AtomicMaybeUninit::const_new` because `AtomicMaybeUninit::new` is now always `const fn` because of the MSRV bump.
+
 ## [0.3.9] - 2025-09-05
 
 - Update to stabilized [LoongArch32](https://github.com/rust-lang/rust/pull/144402) inline assembly. ([803b062](https://github.com/taiki-e/atomic-maybe-uninit/commit/803b06263c8a3e38596eb48aec88d2dce77d60e6))

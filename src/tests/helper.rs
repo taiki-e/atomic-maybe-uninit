@@ -36,7 +36,6 @@ macro_rules! test_common {
                 }
                 #[test]
                 fn accessor() {
-                    #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
                     const INTO_INNER: MaybeUninit<$ty> = {
                         let a = AtomicMaybeUninit::new(MaybeUninit::new(10));
                         a.into_inner()
@@ -50,10 +49,7 @@ macro_rules! test_common {
                     };
                     #[allow(clippy::ptr_as_ptr)]
                     unsafe {
-                        #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
-                        {
-                            assert_eq!(INTO_INNER.assume_init(), 10);
-                        }
+                        assert_eq!(INTO_INNER.assume_init(), 10);
                         #[cfg(not(atomic_maybe_uninit_no_const_mut_refs))]
                         {
                             assert_eq!(GET_MUT.into_inner().assume_init(), 5);
@@ -157,11 +153,8 @@ macro_rules! __test_atomic {
         #[test]
         fn load_store() {
             static VAR_RO: Align16<$ty> = Align16(10);
-            static VAR: AtomicMaybeUninit<$ty> =
-                AtomicMaybeUninit::<$ty>::const_new(MaybeUninit::new(10));
-            #[cfg(not(atomic_maybe_uninit_no_const_fn_trait_bound))]
-            static _VAR: AtomicMaybeUninit<$ty> = AtomicMaybeUninit::new(MaybeUninit::new(10));
-            let var = AtomicMaybeUninit::<$ty>::const_new(MaybeUninit::new(10));
+            static VAR: AtomicMaybeUninit<$ty> = AtomicMaybeUninit::new(MaybeUninit::new(10));
+            let var = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(10));
             unsafe {
                 assert_eq!(
                     VAR.load(Ordering::Relaxed).assume_init(),
@@ -910,7 +903,7 @@ fn skip_should_panic_test() -> bool {
 
 // For -C panic=abort -Z panic_abort_tests: https://github.com/rust-lang/rust/issues/67650
 fn is_panic_abort() -> bool {
-    build_context::PANIC.contains("abort")
+    cfg!(panic = "abort")
 }
 
 #[repr(C, align(16))]
