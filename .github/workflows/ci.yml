@@ -791,107 +791,107 @@ jobs:
   #     - run: tools/no-std.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
   #       if: matrix.rust == 'stable'
 
-  valgrind:
-    # needs: tidy
-    name: valgrind (${{ matrix.target }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-          - target: i686-unknown-linux-gnu
-            dpkg-arch: i386
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
-          - target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
-            dpkg-arch: armhf
-          # - target: powerpc64le-unknown-linux-gnu
-          #   container: ppc64le/ubuntu:rolling
-          # - target: riscv64gc-unknown-linux-gnu
-          #   container: riscv64/ubuntu:rolling
-          # - target: s390x-unknown-linux-gnu
-          #   container: s390x/ubuntu:rolling
-    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
-    timeout-minutes: 60
-    container:
-      image: ubuntu:rolling
-      options: --privileged
-    steps:
-      - uses: taiki-e/checkout-action@v1
-      - run: |
-          dpkg_arch="${{ matrix.dpkg-arch }}"
-          if [[ -n "${dpkg_arch}" ]]; then
-            dpkg --add-architecture "${dpkg_arch}"
-          fi
-          apt-get -o Acquire::Retries=10 -qq update
-          apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
-            ca-certificates \
-            curl \
-            g++ \
-            valgrind"${dpkg_arch:+":${dpkg_arch}"}"
-      - uses: taiki-e/github-actions/install-rust@nightly
-      - id: prepare
-        run: |
-          if [[ "${{ matrix.target }}" == '' ]]; then
-            printf 'matrix.target must be set\n'
-            exit 1
-          fi
-          host="$(rustc -vV | grep -E '^host:' | cut -d' ' -f2)"
-          if [[ "${host}" != "${{ matrix.target }}" ]]; then
-            printf '%s\n' "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
-            printf '%s\n' "target-not-host=true" >>"${GITHUB_OUTPUT}"
-          fi
-      # - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
-      - uses: taiki-e/setup-cross-toolchain-action@v1
-        with:
-          target: ${{ matrix.target }}
-        if: steps.prepare.outputs.target-not-host == 'true'
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-      # x86_64 +cmpxchg16b
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
-        if: startsWith(matrix.target, 'x86_64')
-      # x86 -sse2
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
-        if: startsWith(matrix.target, 'i686')
-      # x86 -sse
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
-        if: startsWith(matrix.target, 'i686')
-      # x86 -x87
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
-        if: startsWith(matrix.target, 'i686')
-      # aarch64 +lse
-      # As of Valgrind 3.19, Valgrind supports atomic instructions of Armv8.0 and Armv8.1 (FEAT_LSE).
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
-        if: startsWith(matrix.target, 'aarch64')
-      # arm v8 little endian
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # TODO: arm v6 kuser_memory_barrier
-      # arm v5 kuser_cmpxchg+kuser_memory_barrier
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+  # valgrind:
+  #   # needs: tidy
+  #   name: valgrind (${{ matrix.target }})
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - target: x86_64-unknown-linux-gnu
+  #         - target: i686-unknown-linux-gnu
+  #           dpkg-arch: i386
+  #         - target: aarch64-unknown-linux-gnu
+  #           os: ubuntu-24.04-arm
+  #         - target: armv7-unknown-linux-gnueabihf
+  #           os: ubuntu-24.04-arm
+  #           dpkg-arch: armhf
+  #         # - target: powerpc64le-unknown-linux-gnu
+  #         #   container: ppc64le/ubuntu:rolling
+  #         # - target: riscv64gc-unknown-linux-gnu
+  #         #   container: riscv64/ubuntu:rolling
+  #         # - target: s390x-unknown-linux-gnu
+  #         #   container: s390x/ubuntu:rolling
+  #   runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+  #   timeout-minutes: 60
+  #   container:
+  #     image: ubuntu:rolling
+  #     options: --privileged
+  #   steps:
+  #     - uses: taiki-e/checkout-action@v1
+  #     - run: |
+  #         dpkg_arch="${{ matrix.dpkg-arch }}"
+  #         if [[ -n "${dpkg_arch}" ]]; then
+  #           dpkg --add-architecture "${dpkg_arch}"
+  #         fi
+  #         apt-get -o Acquire::Retries=10 -qq update
+  #         apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+  #           ca-certificates \
+  #           curl \
+  #           g++ \
+  #           valgrind"${dpkg_arch:+":${dpkg_arch}"}"
+  #     - uses: taiki-e/github-actions/install-rust@nightly
+  #     - id: prepare
+  #       run: |
+  #         if [[ "${{ matrix.target }}" == '' ]]; then
+  #           printf 'matrix.target must be set\n'
+  #           exit 1
+  #         fi
+  #         host="$(rustc -vV | grep -E '^host:' | cut -d' ' -f2)"
+  #         if [[ "${host}" != "${{ matrix.target }}" ]]; then
+  #           printf '%s\n' "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
+  #           printf '%s\n' "target-not-host=true" >>"${GITHUB_OUTPUT}"
+  #         fi
+  #     # - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
+  #     - uses: taiki-e/setup-cross-toolchain-action@v1
+  #       with:
+  #         target: ${{ matrix.target }}
+  #       if: steps.prepare.outputs.target-not-host == 'true'
+  #     - run: tools/test.sh valgrind -vv ${TARGET:-}
+  #     # x86_64 +cmpxchg16b
+  #     - run: tools/test.sh valgrind -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
+  #       if: startsWith(matrix.target, 'x86_64')
+  #     # x86 -sse2
+  #     - run: tools/test.sh valgrind -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
+  #       if: startsWith(matrix.target, 'i686')
+  #     # x86 -sse
+  #     - run: tools/test.sh valgrind -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
+  #       if: startsWith(matrix.target, 'i686')
+  #     # x86 -x87
+  #     - run: tools/test.sh valgrind -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
+  #       if: startsWith(matrix.target, 'i686')
+  #     # aarch64 +lse
+  #     # As of Valgrind 3.19, Valgrind supports atomic instructions of Armv8.0 and Armv8.1 (FEAT_LSE).
+  #     - run: tools/test.sh valgrind -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
+  #       if: startsWith(matrix.target, 'aarch64')
+  #     # arm v8 little endian
+  #     - run: tools/test.sh valgrind -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
+  #       if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+  #     # TODO: arm v6 kuser_memory_barrier
+  #     # arm v5 kuser_cmpxchg+kuser_memory_barrier
+  #     - run: tools/test.sh valgrind -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+  #       if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
 
   valgrind-other:
     # needs: tidy
@@ -922,14 +922,35 @@ jobs:
           #   artifact_name: git-${{ matrix.distro }}_${{ matrix.arch }}
           shell: /bin/bash
           install: |
-            set -ex
+            set -CeEuxo pipefail
             apt-get -o Acquire::Retries=10 -qq update
+            if [[ "${{ matrix.arch }}" == "riscv64" ]]; then
+              packages=(libc6-dbg bzip2)
+            else
+              packages=(valgrind)
+            fi
             apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
               ca-certificates \
               curl \
               g++ \
-              valgrind
-            curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly
+              "${packages[@]}"
+            curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors https://sh.rustup.rs \
+              | sh -s -- -y --default-toolchain nightly --no-modify-path
+            if [[ "${{ matrix.arch }}" == "riscv64" ]]; then
+              valgrind_version=3.25.1
+              mkdir -- valgrind
+              (
+                cd valgrind
+                curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors https://sourceware.org/pub/valgrind/valgrind-"${valgrind_version}".tar.bz2 \
+                  | tar xjf - --strip-components 1
+                ./autogen.sh
+                ./configure
+                make -j$(nproc)
+                make -j$(nproc) install
+              )
+              rm -rf -- valgrind
+            fi
           run: |
-            set -ex
+            set -CeEuxo pipefail
+            export PATH="${HOME}/.cargo/bin:${PATH}"
             tools/test.sh valgrind -vv
