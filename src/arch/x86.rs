@@ -194,7 +194,10 @@ macro_rules! atomic64 {
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(src, $ty);
 
-                #[cfg(target_feature = "sse2")]
+                #[cfg(all(
+                    target_feature = "sse2",
+                    not(atomic_maybe_uninit_test_prefer_x87_over_sse),
+                ))]
                 // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
                 //
@@ -213,8 +216,11 @@ macro_rules! atomic64 {
                     #[allow(clippy::missing_transmute_annotations)] // false positive: out is already type annotated
                     core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
                 }
-                #[cfg(not(target_feature = "sse2"))]
-                #[cfg(target_feature = "sse")]
+                #[cfg(all(
+                    not(target_feature = "sse2"),
+                    target_feature = "sse",
+                    not(atomic_maybe_uninit_test_prefer_x87_over_sse),
+                ))]
                 // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
                 //
@@ -232,8 +238,16 @@ macro_rules! atomic64 {
                     #[allow(clippy::missing_transmute_annotations)] // false positive: out is already type annotated
                     core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
                 }
-                #[cfg(not(target_feature = "sse"))]
-                #[cfg(any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"))]
+                #[cfg(all(
+                    any(
+                        not(target_feature = "sse"),
+                        atomic_maybe_uninit_test_prefer_x87_over_sse,
+                    ),
+                    all(
+                        any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
+                        not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
+                    ),
+                ))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs:
@@ -260,8 +274,16 @@ macro_rules! atomic64 {
                     );
                     out
                 }
-                #[cfg(not(target_feature = "sse"))]
-                #[cfg(not(any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87")))]
+                #[cfg(all(
+                    any(
+                        not(target_feature = "sse"),
+                        atomic_maybe_uninit_test_prefer_x87_over_sse,
+                    ),
+                    not(all(
+                        any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
+                        not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
+                    )),
+                ))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
@@ -292,7 +314,10 @@ macro_rules! atomic64 {
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
 
-                #[cfg(target_feature = "sse")]
+                #[cfg(all(
+                    target_feature = "sse",
+                    not(atomic_maybe_uninit_test_prefer_x87_over_sse),
+                ))]
                 // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
                 //
@@ -327,8 +352,16 @@ macro_rules! atomic64 {
                         _ => unreachable!(),
                     }
                 }
-                #[cfg(not(target_feature = "sse"))]
-                #[cfg(any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"))]
+                #[cfg(all(
+                    any(
+                        not(target_feature = "sse"),
+                        atomic_maybe_uninit_test_prefer_x87_over_sse,
+                    ),
+                    all(
+                        any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
+                        not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
+                    ),
+                ))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs:
@@ -378,8 +411,16 @@ macro_rules! atomic64 {
                         _ => unreachable!(),
                     }
                 }
-                #[cfg(not(target_feature = "sse"))]
-                #[cfg(not(any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87")))]
+                #[cfg(all(
+                    any(
+                        not(target_feature = "sse"),
+                        atomic_maybe_uninit_test_prefer_x87_over_sse,
+                    ),
+                    not(all(
+                        any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
+                        not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
+                    )),
+                ))]
                 // SAFETY: the caller must uphold the safety contract.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b

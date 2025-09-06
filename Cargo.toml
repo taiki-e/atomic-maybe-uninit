@@ -91,7 +91,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # This is a cfg for compatibility with MIPS I.
     # 'cfg(atomic_maybe_uninit_no_sync)', // check-cfg is already set by build script
     # Not public API.
-    'cfg(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,qemu,valgrind)',
+    'cfg(atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,qemu,valgrind)',
 ] }
 unnameable_types = "warn"
 unreachable_pub = "warn"

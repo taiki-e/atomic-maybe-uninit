@@ -282,6 +282,10 @@ macro_rules! __test_atomic {
     (swap, $ty:ident) => {
         #[test]
         fn swap() {
+            // unhandled instruction: 0xE1A62F92
+            if cfg!(all(valgrind, target_arch = "arm")) && mem::size_of::<$ty>() == 8 {
+                return;
+            }
             unsafe {
                 let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                 test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
@@ -290,7 +294,19 @@ macro_rules! __test_atomic {
                     assert_eq!(a.swap(MaybeUninit::new($ty::MIN), order).assume_init(), 5);
                     assert_eq!(a.swap(MaybeUninit::new($ty::MAX), order).assume_init(), $ty::MIN);
                     assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), $ty::MAX);
-                    if !cfg!(all(valgrind, target_arch = "aarch64")) {
+                    if !cfg!(all(
+                        valgrind,
+                        any(
+                            target_arch = "aarch64",
+                            all(
+                                target_arch = "arm",
+                                any(
+                                    target_feature = "v8",
+                                    atomic_maybe_uninit_target_feature = "v8",
+                                ),
+                            ),
+                        ),
+                    )) {
                         assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
                         let _v = a.swap(MaybeUninit::new(15), order);
                         let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
@@ -302,6 +318,10 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_swap(x: $ty, y: $ty) -> bool {
+                // unhandled instruction: 0xE1A62F92
+                if cfg!(all(valgrind, target_arch = "arm")) && mem::size_of::<$ty>() == 8 {
+                    return true;
+                }
                 let mut rng = fastrand::Rng::new();
                 unsafe {
                     for order in SWAP_ORDERINGS {
