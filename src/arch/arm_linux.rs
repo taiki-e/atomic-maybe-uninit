@@ -362,7 +362,7 @@ atomic!(usize);
 macro_rules! atomic64 {
     ($ty:ident) => {
         impl AtomicLoad for $ty {
-            #[inline]
+            #[inline(never)] // TODO
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
@@ -398,7 +398,7 @@ macro_rules! atomic64 {
             }
         }
         impl AtomicStore for $ty {
-            #[inline]
+            #[inline(never)] // TODO
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
@@ -435,7 +435,7 @@ macro_rules! atomic64 {
             }
         }
         impl AtomicSwap for $ty {
-            #[inline]
+            #[inline(never)] // TODO
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
@@ -474,7 +474,7 @@ macro_rules! atomic64 {
             }
         }
         impl AtomicCompareExchange for $ty {
-            #[inline]
+            #[inline(never)] // TODO
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,

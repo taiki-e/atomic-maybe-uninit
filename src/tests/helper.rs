@@ -206,12 +206,33 @@ macro_rules! __test_atomic {
                     assert_eq!(a.load(load_order).assume_init(), $ty::MIN);
                     a.store(MaybeUninit::new($ty::MAX), store_order);
                     assert_eq!(a.load(load_order).assume_init(), $ty::MAX);
-                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
-                    let _v = a.load(load_order);
-                    a.store(MaybeUninit::new(2), store_order);
-                    assert_eq!(a.load(load_order).assume_init(), 2);
-                    a.store(MaybeUninit::uninit(), store_order);
-                    let _v = a.load(load_order);
+                    if cfg!(all(
+                        valgrind,
+                        target_arch = "arm",
+                        any(target_os = "linux", target_os = "android"),
+                        any(
+                            not(any(
+                                target_feature = "v6",
+                                atomic_maybe_uninit_target_feature = "v6"
+                            )),
+                            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                        ),
+                        not(any(
+                            target_feature = "v8",
+                            atomic_maybe_uninit_target_feature = "v8",
+                            target_feature = "v8m",
+                            atomic_maybe_uninit_target_feature = "v8m",
+                        )),
+                    )) && mem::size_of::<$ty>() == 8
+                    {
+                    } else {
+                        let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
+                        let _v = a.load(load_order);
+                        a.store(MaybeUninit::new(2), store_order);
+                        assert_eq!(a.load(load_order).assume_init(), 2);
+                        a.store(MaybeUninit::uninit(), store_order);
+                        let _v = a.load(load_order);
+                    }
                 }
             }
         }
@@ -286,6 +307,24 @@ macro_rules! __test_atomic {
             if cfg!(all(valgrind, target_arch = "arm")) && mem::size_of::<$ty>() == 8 {
                 return;
             }
+            if cfg!(all(
+                valgrind,
+                target_arch = "arm",
+                any(target_os = "linux", target_os = "android"),
+                any(
+                    not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                    atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                ),
+                not(any(
+                    target_feature = "v8",
+                    atomic_maybe_uninit_target_feature = "v8",
+                    target_feature = "v8m",
+                    atomic_maybe_uninit_target_feature = "v8m",
+                )),
+            )) && mem::size_of::<$ty>() <= 2
+            {
+                return;
+            }
             unsafe {
                 let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                 test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
@@ -310,6 +349,24 @@ macro_rules! __test_atomic {
                 if cfg!(all(valgrind, target_arch = "arm")) && mem::size_of::<$ty>() == 8 {
                     return true;
                 }
+                if cfg!(all(
+                    valgrind,
+                    target_arch = "arm",
+                    any(target_os = "linux", target_os = "android"),
+                    any(
+                        not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                        atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                    ),
+                    not(any(
+                        target_feature = "v8",
+                        atomic_maybe_uninit_target_feature = "v8",
+                        target_feature = "v8m",
+                        atomic_maybe_uninit_target_feature = "v8m",
+                    )),
+                )) && mem::size_of::<$ty>() <= 2
+                {
+                    return true;
+                }
                 let mut rng = fastrand::Rng::new();
                 unsafe {
                     for order in SWAP_ORDERINGS {
@@ -331,6 +388,24 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_swap() {
+            if cfg!(all(
+                valgrind,
+                target_arch = "arm",
+                any(target_os = "linux", target_os = "android"),
+                any(
+                    not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                    atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                ),
+                not(any(
+                    target_feature = "v8",
+                    atomic_maybe_uninit_target_feature = "v8",
+                    target_feature = "v8m",
+                    atomic_maybe_uninit_target_feature = "v8m",
+                )),
+            )) && mem::size_of::<$ty>() <= 2
+            {
+                return;
+            }
             unsafe {
                 let mut rng = fastrand::Rng::new();
                 let (iterations, threads) = stress_test_config(&mut rng);
@@ -401,6 +476,24 @@ macro_rules! __test_atomic {
     (cas, $ty:ident) => {
         #[test]
         fn compare_exchange() {
+            if cfg!(all(
+                valgrind,
+                target_arch = "arm",
+                any(target_os = "linux", target_os = "android"),
+                any(
+                    not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                    atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                ),
+                not(any(
+                    target_feature = "v8",
+                    atomic_maybe_uninit_target_feature = "v8",
+                    target_feature = "v8m",
+                    atomic_maybe_uninit_target_feature = "v8m",
+                )),
+            )) && mem::size_of::<$ty>() <= 2
+            {
+                return;
+            }
             unsafe {
                 let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                 test_compare_exchange_ordering(|success, failure| {
@@ -462,6 +555,24 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn compare_exchange_weak() {
+            if cfg!(all(
+                valgrind,
+                target_arch = "arm",
+                any(target_os = "linux", target_os = "android"),
+                any(
+                    not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                    atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                ),
+                not(any(
+                    target_feature = "v8",
+                    atomic_maybe_uninit_target_feature = "v8",
+                    target_feature = "v8m",
+                    atomic_maybe_uninit_target_feature = "v8m",
+                )),
+            )) && mem::size_of::<$ty>() <= 2
+            {
+                return;
+            }
             unsafe {
                 let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                 test_compare_exchange_ordering(|success, failure| {
@@ -501,6 +612,24 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn fetch_update() {
+            if cfg!(all(
+                valgrind,
+                target_arch = "arm",
+                any(target_os = "linux", target_os = "android"),
+                any(
+                    not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                    atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                ),
+                not(any(
+                    target_feature = "v8",
+                    atomic_maybe_uninit_target_feature = "v8",
+                    target_feature = "v8m",
+                    atomic_maybe_uninit_target_feature = "v8m",
+                )),
+            )) && mem::size_of::<$ty>() <= 2
+            {
+                return;
+            }
             unsafe {
                 let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(7));
                 test_compare_exchange_ordering(|set, fetch| {
@@ -534,6 +663,24 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_compare_exchange(x: $ty, y: $ty) -> bool {
+                if cfg!(all(
+                    valgrind,
+                    target_arch = "arm",
+                    any(target_os = "linux", target_os = "android"),
+                    any(
+                        not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                        atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                    ),
+                    not(any(
+                        target_feature = "v8",
+                        atomic_maybe_uninit_target_feature = "v8",
+                        target_feature = "v8m",
+                        atomic_maybe_uninit_target_feature = "v8m",
+                    )),
+                )) && mem::size_of::<$ty>() <= 2
+                {
+                    return true;
+                }
                 let mut rng = fastrand::Rng::new();
                 unsafe {
                     let z = loop {
@@ -592,6 +739,24 @@ macro_rules! __test_atomic {
                 true
             }
             fn quickcheck_fetch_update(x: $ty, y: $ty) -> bool {
+                if cfg!(all(
+                    valgrind,
+                    target_arch = "arm",
+                    any(target_os = "linux", target_os = "android"),
+                    any(
+                        not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                        atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                    ),
+                    not(any(
+                        target_feature = "v8",
+                        atomic_maybe_uninit_target_feature = "v8",
+                        target_feature = "v8m",
+                        atomic_maybe_uninit_target_feature = "v8m",
+                    )),
+                )) && mem::size_of::<$ty>() <= 2
+                {
+                    return true;
+                }
                 let mut rng = fastrand::Rng::new();
                 unsafe {
                     let z = loop {
@@ -638,6 +803,24 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_compare_exchange() {
+            if cfg!(all(
+                valgrind,
+                target_arch = "arm",
+                any(target_os = "linux", target_os = "android"),
+                any(
+                    not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                    atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                ),
+                not(any(
+                    target_feature = "v8",
+                    atomic_maybe_uninit_target_feature = "v8",
+                    target_feature = "v8m",
+                    atomic_maybe_uninit_target_feature = "v8m",
+                )),
+            )) && mem::size_of::<$ty>() <= 2
+            {
+                return;
+            }
             unsafe {
                 let mut rng = fastrand::Rng::new();
                 let (iterations, threads) = stress_test_config(&mut rng);
@@ -711,6 +894,24 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_fetch_update() {
+            if cfg!(all(
+                valgrind,
+                target_arch = "arm",
+                any(target_os = "linux", target_os = "android"),
+                any(
+                    not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                    atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                ),
+                not(any(
+                    target_feature = "v8",
+                    atomic_maybe_uninit_target_feature = "v8",
+                    target_feature = "v8m",
+                    atomic_maybe_uninit_target_feature = "v8m",
+                )),
+            )) && mem::size_of::<$ty>() <= 2
+            {
+                return;
+            }
             unsafe {
                 let mut rng = fastrand::Rng::new();
                 let (iterations, threads) = stress_test_config(&mut rng);
@@ -1006,6 +1207,26 @@ macro_rules! __stress_test_acquire_release {
 
         use crate::AtomicMaybeUninit;
 
+        if cfg!(all(
+            valgrind,
+            target_arch = "arm",
+            any(target_os = "linux", target_os = "android"),
+            any(
+                not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+            ),
+            not(any(
+                target_feature = "v8",
+                atomic_maybe_uninit_target_feature = "v8",
+                target_feature = "v8m",
+                atomic_maybe_uninit_target_feature = "v8m",
+            )),
+        )) && core::mem::size_of::<$ty>() <= 2
+            && stringify!($write) == "swap"
+        {
+            return;
+        }
+
         let mut n: usize = 50_000;
         // This test is relatively fast because it spawns only one thread, but
         // the iterations are limited to a maximum value of integers.
@@ -1073,6 +1294,27 @@ macro_rules! __stress_test_seqcst {
         use crate::AtomicMaybeUninit;
 
         const N: usize = if cfg!(valgrind) { 50 } else { 50_000 };
+
+        if cfg!(all(
+            valgrind,
+            target_arch = "arm",
+            any(target_os = "linux", target_os = "android"),
+            any(
+                not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+                atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+            ),
+            not(any(
+                target_feature = "v8",
+                atomic_maybe_uninit_target_feature = "v8",
+                target_feature = "v8m",
+                atomic_maybe_uninit_target_feature = "v8m",
+            )),
+        )) && core::mem::size_of::<$ty>() <= 2
+            && stringify!($write) == "swap"
+        {
+            return;
+        }
+
         let a = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
         let b = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
         let c = &AtomicUsize::new(0);

@@ -595,6 +595,12 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
         if: matrix.target == 'arm-unknown-linux-gnueabi'
+      # arm v5 kuser_cmpxchg+kuser_memory_barrier
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
       # arm v4t
       - run: tools/test.sh -vv --tests --target armv4t-unknown-linux-gnueabi -Z build-std ${RELEASE:-}
         env:
@@ -865,4 +871,11 @@ jobs:
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # TODO: arm v6 kuser_memory_barrier
+      # arm v5 kuser_cmpxchg+kuser_memory_barrier
+      - run: tools/test.sh valgrind -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
         if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
