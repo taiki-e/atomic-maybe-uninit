@@ -207,25 +207,25 @@ macro_rules! __test_atomic {
                     a.store(MaybeUninit::new($ty::MAX), store_order);
                     assert_eq!(a.load(load_order).assume_init(), $ty::MAX);
                     let v = MaybeUninit::uninit();
-                    if mem::size_of::<$ty>() == 8 {
-                        #[cfg(all(
-                            valgrind,
-                            target_arch = "arm",
-                            any(target_os = "linux", target_os = "android"),
-                            any(
-                                not(any(
-                                    target_feature = "v6",
-                                    atomic_maybe_uninit_target_feature = "v6"
-                                )),
-                                atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
-                            ),
+                    #[cfg(all(
+                        valgrind,
+                        target_arch = "arm",
+                        any(target_os = "linux", target_os = "android"),
+                        any(
                             not(any(
-                                target_feature = "v8",
-                                atomic_maybe_uninit_target_feature = "v8",
-                                target_feature = "v8m",
-                                atomic_maybe_uninit_target_feature = "v8m",
+                                target_feature = "v6",
+                                atomic_maybe_uninit_target_feature = "v6"
                             )),
-                        ))]
+                            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                        ),
+                        not(any(
+                            target_feature = "v8",
+                            atomic_maybe_uninit_target_feature = "v8",
+                            target_feature = "v8m",
+                            atomic_maybe_uninit_target_feature = "v8m",
+                        )),
+                    ))]
+                    if mem::size_of::<$ty>() == 8 {
                         mark_defined(&v);
                     }
                     let a = AtomicMaybeUninit::<$ty>::new(v);
@@ -233,25 +233,25 @@ macro_rules! __test_atomic {
                     a.store(MaybeUninit::new(2), store_order);
                     assert_eq!(a.load(load_order).assume_init(), 2);
                     let v = MaybeUninit::uninit();
-                    if mem::size_of::<$ty>() == 8 {
-                        #[cfg(all(
-                            valgrind,
-                            target_arch = "arm",
-                            any(target_os = "linux", target_os = "android"),
-                            any(
-                                not(any(
-                                    target_feature = "v6",
-                                    atomic_maybe_uninit_target_feature = "v6"
-                                )),
-                                atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
-                            ),
+                    #[cfg(all(
+                        valgrind,
+                        target_arch = "arm",
+                        any(target_os = "linux", target_os = "android"),
+                        any(
                             not(any(
-                                target_feature = "v8",
-                                atomic_maybe_uninit_target_feature = "v8",
-                                target_feature = "v8m",
-                                atomic_maybe_uninit_target_feature = "v8m",
+                                target_feature = "v6",
+                                atomic_maybe_uninit_target_feature = "v6"
                             )),
-                        ))]
+                            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                        ),
+                        not(any(
+                            target_feature = "v8",
+                            atomic_maybe_uninit_target_feature = "v8",
+                            target_feature = "v8m",
+                            atomic_maybe_uninit_target_feature = "v8m",
+                        )),
+                    ))]
+                    if mem::size_of::<$ty>() == 8 {
                         mark_defined(&v);
                     }
                     a.store(v, store_order);
@@ -360,15 +360,27 @@ macro_rules! __test_atomic {
                     let v = MaybeUninit::uninit();
                     #[cfg(all(valgrind, any(target_arch = "aarch64", target_arch = "arm")))]
                     mark_defined(&v);
+                    #[cfg(all(valgrind, target_arch = "s390x"))]
+                    if mem::size_of::<$ty>() == 16 {
+                        mark_defined(&v);
+                    }
                     assert_eq!(a.swap(v, order).assume_init(), 10);
                     let _v = a.swap(MaybeUninit::new(15), order);
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
                     #[cfg(all(valgrind, any(target_arch = "aarch64", target_arch = "arm")))]
                     mark_defined(&a);
+                    #[cfg(all(valgrind, target_arch = "s390x"))]
+                    if mem::size_of::<$ty>() == 16 {
+                        mark_defined(&a);
+                    }
                     let _v = a.swap(MaybeUninit::new(10), order);
                     let v = MaybeUninit::uninit();
                     #[cfg(all(valgrind, any(target_arch = "aarch64", target_arch = "arm")))]
                     mark_defined(&v);
+                    #[cfg(all(valgrind, target_arch = "s390x"))]
+                    if mem::size_of::<$ty>() == 16 {
+                        mark_defined(&v);
+                    }
                     assert_eq!(a.swap(v, order).assume_init(), 10);
                 }
             }

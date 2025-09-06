@@ -900,12 +900,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - target: powerpc64le-unknown-linux-gnu
-          #   arch: ppc64le
+          - target: powerpc64le-unknown-linux-gnu
+            arch: ppc64le
           - target: riscv64gc-unknown-linux-gnu
             arch: riscv64
-          # - target: s390x-unknown-linux-gnu
-          #   arch: s390x
+          - target: s390x-unknown-linux-gnu
+            arch: s390x
           # TODO: valgrind: fatal error: unsupported CPU.
           # - target: mips64el-unknown-linux-gnu
           #   arch: none
@@ -932,7 +932,7 @@ jobs:
             apt-get -o Acquire::Retries=10 -qq update
             packages=(valgrind)
             if [[ "${{ matrix.target }}" == "riscv64"* ]]; then
-              packages=(libc6-dbg make automake bzip2)
+              packages=(libc6-dbg make automake git)
             fi
             if [[ "${{ matrix.target }}" == "mips"* ]]; then
               packages+=(cargo)
@@ -947,12 +947,13 @@ jobs:
                 | sh -s -- -y --default-toolchain nightly --no-modify-path
             fi
             if [[ "${{ matrix.target }}" == "riscv64"* ]]; then
-              valgrind_version=3.25.1
-              mkdir -- valgrind
+              # valgrind_version=3.25.1
+              # mkdir -- valgrind
+              git clone git://sourceware.org/git/valgrind.git
               (
                 cd valgrind
-                curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors https://sourceware.org/pub/valgrind/valgrind-"${valgrind_version}".tar.bz2 \
-                  | tar xjf - --strip-components 1
+                # curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors https://sourceware.org/pub/valgrind/valgrind-"${valgrind_version}".tar.bz2 \
+                #   | tar xjf - --strip-components 1
                 ./autogen.sh
                 ./configure
                 make -j$(nproc)
@@ -963,8 +964,9 @@ jobs:
           run: |
             set -CeEuxo pipefail
             export PATH="${HOME}/.cargo/bin:${PATH}"
+            printf '%s\n' "debug-assertions = true" >>./Cargo.toml
             if [[ "${{ matrix.target }}" == "mips"* ]]; then
               export RUSTC_BOOTSTRAP=1
               export RUSTFLAGS="--cfg atomic_maybe_uninit_unstable_asm_experimental_arch"
             fi
-            tools/test.sh valgrind -vv
+            tools/test.sh valgrind -vv --release
