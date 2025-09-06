@@ -173,13 +173,18 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
     }
 }
 
+#[cfg(target_pointer_width = "32")]
+// SAFETY: MaybeUninit returned by zero_extend64_ptr is always initialized.
+static_assert!(unsafe {
+    zero_extend64_ptr(ptr::without_provenance_mut(!0)).assume_init() == !0_u32 as u64
+});
 /// Zero-extends the given 32-bit pointer to `MaybeUninit<u64>`.
 /// This is used for 64-bit architecture's 32-bit ABI (e.g., AArch64 ILP32 ABI).
 /// See ptr_reg! macro in src/gen/utils.rs for details.
 #[cfg(target_pointer_width = "32")]
 #[allow(dead_code)]
 #[inline]
-pub(crate) fn zero_extend64_ptr(v: *mut ()) -> MaybeUninit<u64> {
+pub(crate) const fn zero_extend64_ptr(v: *mut ()) -> MaybeUninit<u64> {
     // SAFETY: we can safely transmute any 64-bit value to MaybeUninit<u64>.
     unsafe {
         mem::transmute(ZeroExtended::<*mut (), 1> {
@@ -348,8 +353,19 @@ pub(crate) mod ptr {
     use core::mem;
     #[cfg(not(atomic_maybe_uninit_no_strict_provenance))]
     #[allow(unused_imports)]
-    pub(crate) use core::ptr::with_exposed_provenance;
+    pub(crate) use core::ptr::{with_exposed_provenance, without_provenance_mut};
 
+    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
+    #[inline(always)]
+    #[must_use]
+    pub(crate) const fn without_provenance_mut<T>(addr: usize) -> *mut T {
+        // An int-to-pointer transmute currently has exactly the intended semantics: it creates a
+        // pointer without provenance. Note that this is *not* a stable guarantee about transmute
+        // semantics, it relies on sysroot crates having special status.
+        // SAFETY: every valid integer is also a valid pointer (as long as you don't dereference that
+        // pointer).
+        unsafe { mem::transmute(addr) }
+    }
     #[cfg(atomic_maybe_uninit_no_strict_provenance)]
     #[inline(always)]
     #[must_use]
