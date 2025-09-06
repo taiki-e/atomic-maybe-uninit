@@ -806,10 +806,30 @@ jobs:
           - target: armv7-unknown-linux-gnueabihf
             os: ubuntu-24.04-arm
             dpkg-arch: armhf
+          # - target: powerpc64le-unknown-linux-gnu
+          #   container: ppc64le/ubuntu:rolling
+          # - target: riscv64gc-unknown-linux-gnu
+          #   container: riscv64/ubuntu:rolling
+          # - target: s390x-unknown-linux-gnu
+          #   container: s390x/ubuntu:rolling
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     timeout-minutes: 60
+    container:
+      image: ubuntu:rolling
+      options: --privileged
     steps:
       - uses: taiki-e/checkout-action@v1
+      - run: |
+          dpkg_arch="${{ matrix.dpkg-arch }}"
+          if [[ -n "${dpkg_arch}" ]]; then
+            dpkg --add-architecture "${dpkg_arch}"
+          fi
+          apt-get -o Acquire::Retries=10 -qq update
+          apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+            ca-certificates \
+            curl \
+            g++ \
+            valgrind"${dpkg_arch:+":${dpkg_arch}"}"
       - uses: taiki-e/github-actions/install-rust@nightly
       - id: prepare
         run: |
@@ -827,13 +847,6 @@ jobs:
         with:
           target: ${{ matrix.target }}
         if: steps.prepare.outputs.target-not-host == 'true'
-      - run: |
-          dpkg_arch="${{ matrix.dpkg-arch }}"
-          if [[ -n "${dpkg_arch}" ]]; then
-            sudo dpkg --add-architecture "${dpkg_arch}"
-          fi
-          sudo apt-get -o Acquire::Retries=10 -qq update
-          sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends valgrind"${dpkg_arch:+":${dpkg_arch}"}"
       - run: tools/test.sh valgrind -vv ${TARGET:-}
       # x86_64 +cmpxchg16b
       - run: tools/test.sh valgrind -vv ${TARGET:-}
@@ -879,3 +892,44 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
         if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+
+  valgrind-other:
+    # needs: tidy
+    name: valgrind (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: powerpc64le-unknown-linux-gnu
+            arch: ppc64le
+          - target: riscv64gc-unknown-linux-gnu
+            arch: riscv64
+          - target: s390x-unknown-linux-gnu
+            arch: s390x
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: taiki-e/checkout-action@v1
+      - uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ubuntu_rolling
+          # githubToken: ${{ github.token }}
+          # setup: |
+          # dockerRunArgs: |
+          #   --volume "${PWD}/artifacts:/artifacts"
+          # env: | # YAML, but pipe character is necessary
+          #   artifact_name: git-${{ matrix.distro }}_${{ matrix.arch }}
+          shell: /bin/bash
+          install: |
+            set -ex
+            apt-get -o Acquire::Retries=10 -qq update
+            apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+              ca-certificates \
+              curl \
+              g++ \
+              valgrind
+            curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly
+          run: |
+            set -ex
+            tools/test.sh valgrind -vv
