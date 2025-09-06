@@ -189,7 +189,7 @@ pub(crate) const fn zero_extend64_ptr(v: *mut ()) -> MaybeUninit<u64> {
     unsafe {
         mem::transmute(ZeroExtended::<*mut (), 1> {
             v: MaybeUninit::new(v),
-            pad: [core::ptr::null_mut(); 1],
+            pad: const_hint!({ [core::ptr::null_mut(); 1] }),
         })
     }
 }
@@ -219,7 +219,10 @@ macro_rules! zero_extend {
                     = (mem::size_of::<$out>() - mem::size_of::<$ty>()) / mem::size_of::<$ty>();
                 // SAFETY: we can safely transmute any same-size value to MaybeUninit<$out>.
                 unsafe {
-                    mem::transmute(ZeroExtended::<$ty, LEN> { v, pad: [0; LEN] })
+                    mem::transmute(ZeroExtended::<$ty, LEN> {
+                        v,
+                        pad: const_hint!({ [0; LEN] }),
+                    })
                 }
             }
         }
@@ -319,11 +322,10 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
         target_arch = "sparc64",
         target_arch = "xtensa",
     ));
-    #[allow(clippy::arithmetic_side_effects)]
-    let ptr_mask = const_hint!({ mem::size_of::<MinWord>() - 1 });
-    let aligned_ptr = ptr.with_addr(ptr.addr() & !ptr_mask).cast::<MinWord>();
+    const PTR_MASK: usize = mem::size_of::<MinWord>() - 1;
+    let aligned_ptr = ptr.with_addr(ptr.addr() & const_hint!({ !PTR_MASK })).cast::<MinWord>();
     let ptr_lsb = if SHIFT_MASK {
-        ptr.addr() & ptr_mask
+        ptr.addr() & PTR_MASK
     } else {
         // We use 32-bit wrapping shift instructions in asm on these platforms.
         ptr.addr()

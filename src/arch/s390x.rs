@@ -47,7 +47,7 @@ macro_rules! serialization {
 // Extracts and checks condition code.
 #[inline]
 fn extract_cc(r: i64) -> bool {
-    r.wrapping_add(-268435456) & (1 << 31) != 0
+    r.wrapping_add(-268435456) & const_hint!({ 1 << 31 }) != 0
 }
 
 macro_rules! atomic_load_store {
