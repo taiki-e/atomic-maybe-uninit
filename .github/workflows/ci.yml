@@ -902,10 +902,10 @@ jobs:
         include:
           # - target: powerpc64le-unknown-linux-gnu
           #   arch: ppc64le
-          - target: riscv64gc-unknown-linux-gnu
-            arch: riscv64
-          # - target: s390x-unknown-linux-gnu
-          #   arch: s390x
+          # - target: riscv64gc-unknown-linux-gnu
+          #   arch: riscv64
+          - target: s390x-unknown-linux-gnu
+            arch: s390x
           # TODO: valgrind: fatal error: unsupported CPU.
           # - target: mips64el-unknown-linux-gnu
           #   arch: none
@@ -920,12 +920,7 @@ jobs:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro || 'ubuntu_rolling' }}
           base_image: ${{ matrix.base_image }}
-          # githubToken: ${{ github.token }}
-          # setup: |
-          # dockerRunArgs: |
-          #   --volume "${PWD}/artifacts:/artifacts"
-          # env: | # YAML, but pipe character is necessary
-          #   artifact_name: git-${{ matrix.distro }}_${{ matrix.arch }}
+          githubToken: ${{ github.token }}
           shell: /bin/bash
           install: |
             set -CeEuxo pipefail
@@ -952,6 +947,7 @@ jobs:
               git clone git://sourceware.org/git/valgrind.git
               (
                 cd valgrind
+                git checkout 68f06cbe97ba4d36ab94ad5f3a199d91c2298e5c
                 # curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors https://sourceware.org/pub/valgrind/valgrind-"${valgrind_version}".tar.bz2 \
                 #   | tar xjf - --strip-components 1
                 ./autogen.sh

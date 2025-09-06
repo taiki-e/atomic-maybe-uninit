@@ -219,7 +219,11 @@ case "${cmd}" in
     ;;
   valgrind)
     # TODO: use --errors-for-leak-kinds=definite,indirect due to upstream bug (https://github.com/rust-lang/rust/issues/135608)
-    export "CARGO_TARGET_${target_upper}_RUNNER"="${VALGRIND:-valgrind} -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=definite,indirect --track-origins=yes --fair-sched=yes --gen-suppressions=all"
+    valgrind="${VALGRIND:-valgrind} -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=definite,indirect --track-origins=yes --fair-sched=yes --gen-suppressions=all"
+    case "${target}" in
+      s390x*) valgrind+=" --suppressions=${workspace_dir}/tools/valgrind/s390x.supp" ;;
+    esac
+    export "CARGO_TARGET_${target_upper}_RUNNER"="${valgrind}"
     # TODO: always pass randomize-layout
     export RUSTFLAGS="${RUSTFLAGS:-} --cfg valgrind"
     export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} --cfg valgrind"
