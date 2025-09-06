@@ -144,11 +144,16 @@ macro_rules! test_atomic {
 
 macro_rules! __test_atomic {
     (load_store, $ty:ident) => {
-        use std::{collections::BTreeSet, mem::MaybeUninit, vec, vec::Vec};
+        use std::{
+            collections::BTreeSet,
+            mem::{self, MaybeUninit},
+            vec,
+            vec::Vec,
+        };
 
         use crossbeam_utils::thread;
 
-        use crate::{AtomicMaybeUninit, tests::helper::*};
+        use crate::{AtomicMaybeUninit, tests::helper::*, utils::RegSize};
 
         #[test]
         fn load_store() {
@@ -161,7 +166,7 @@ macro_rules! __test_atomic {
                     var.load(Ordering::Relaxed).assume_init()
                 );
                 #[allow(clippy::ptr_as_ptr)]
-                if core::mem::size_of::<$ty>() <= core::mem::size_of::<usize>()
+                if mem::size_of::<$ty>() <= mem::size_of::<RegSize>()
                     || cfg!(all(
                         any(target_arch = "aarch64", target_arch = "arm64ec"),
                         any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"),
