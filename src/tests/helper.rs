@@ -294,19 +294,7 @@ macro_rules! __test_atomic {
                     assert_eq!(a.swap(MaybeUninit::new($ty::MIN), order).assume_init(), 5);
                     assert_eq!(a.swap(MaybeUninit::new($ty::MAX), order).assume_init(), $ty::MIN);
                     assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), $ty::MAX);
-                    if !cfg!(all(
-                        valgrind,
-                        any(
-                            target_arch = "aarch64",
-                            all(
-                                target_arch = "arm",
-                                any(
-                                    target_feature = "v8",
-                                    atomic_maybe_uninit_target_feature = "v8",
-                                ),
-                            ),
-                        ),
-                    )) {
+                    if !cfg!(all(valgrind, any(target_arch = "aarch64", target_arch = "arm"))) {
                         assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
                         let _v = a.swap(MaybeUninit::new(15), order);
                         let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
