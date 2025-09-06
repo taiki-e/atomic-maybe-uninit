@@ -1,0 +1,8 @@
+--error-exitcode=1
+--error-limit=no
+--leak-check=full
+--show-leak-kinds=all
+--errors-for-leak-kinds=definite,indirect
+--track-origins=yes
+--fair-sched=yes
+--gen-suppressions=all

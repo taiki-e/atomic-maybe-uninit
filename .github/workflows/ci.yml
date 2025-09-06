@@ -905,8 +905,8 @@ jobs:
             arch: ppc64le
           - target: riscv64gc-unknown-linux-gnu
             arch: riscv64
-          # - target: s390x-unknown-linux-gnu
-          #   arch: s390x
+          - target: s390x-unknown-linux-gnu
+            arch: s390x
           # TODO: valgrind: fatal error: unsupported CPU.
           # - target: mips64el-unknown-linux-gnu
           #   arch: none
@@ -914,8 +914,22 @@ jobs:
           #   base_image: --platform=linux/mips64le mips64le/debian:unstable
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    # container:
+    #   image: ubuntu:rolling
+    #   options: --privileged
     steps:
       - uses: taiki-e/checkout-action@v1
+      - uses: taiki-e/github-actions/install-rust@nightly
+      # - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
+      - uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+      - run: |
+          printf '%s\n' "debug-assertions = true" >>./Cargo.toml
+          binary_path=$(
+            ./tools/test.sh build-valgrind --target "${{ matrix.target }}" --release
+          )
+          cp "${binary_path}" ./test
       - uses: uraimo/run-on-arch-action@v3
         with:
           arch: ${{ matrix.arch }}
@@ -930,18 +944,10 @@ jobs:
             if [[ "${{ matrix.target }}" == "riscv64"* ]]; then
               packages=(libc6-dbg make automake git)
             fi
-            if [[ "${{ matrix.target }}" == "mips"* ]]; then
-              packages+=(cargo)
-            fi
             apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
               ca-certificates \
               curl \
-              g++ \
               "${packages[@]}"
-            if [[ "${{ matrix.target }}" != "mips"* ]]; then
-              curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors https://sh.rustup.rs \
-                | sh -s -- -y --default-toolchain nightly --no-modify-path
-            fi
             if [[ "${{ matrix.target }}" == "riscv64"* ]]; then
               # valgrind_version=3.25.1
               # mkdir -- valgrind
@@ -960,10 +966,9 @@ jobs:
             fi
           run: |
             set -CeEuxo pipefail
-            export PATH="${HOME}/.cargo/bin:${PATH}"
-            printf '%s\n' "debug-assertions = true" >>./Cargo.toml
-            if [[ "${{ matrix.target }}" == "mips"* ]]; then
-              export RUSTC_BOOTSTRAP=1
-              export RUSTFLAGS="--cfg atomic_maybe_uninit_unstable_asm_experimental_arch"
-            fi
-            tools/test.sh valgrind -vv --release
+            export RUST_BACKTRACE=1
+            args=(-v)
+            case "${target}" in
+              s390x*) args+=(--suppressions=$(pwd)/tools/valgrind/s390x.supp) ;;
+            esac
+            valgrind "${args[@]}" ./test

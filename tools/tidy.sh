@@ -853,8 +853,13 @@ EOF
             job_default_shell="${default_shell}"
           fi
           for step in $(jq -c '.steps[]' <<<"${job}"); do
+            # https://github.com/vmactions: prepare, run, usesh
+            # https://github.com/cross-platform-actions/action: run, shell
+            # https://github.com/uraimo/run-on-arch-action: setup, install, run, shell
             prepare=''
-            eval "$(jq -r 'if .run then @sh "RUN=\(.run) shell=\(.shell)" else @sh "RUN=\(.with.run) prepare=\(.with.prepare) shell=\(.with.shell)" end' <<<"${step}")"
+            setup=''
+            install=''
+            eval "$(jq -r 'if .run then @sh "RUN=\(.run) shell=\(.shell)" else @sh "RUN=\(.with.run) prepare=\(.with.prepare) setup=\(.with.setup) install=\(.with.install) shell=\(.with.shell)" end' <<<"${step}")"
             if [[ "${RUN}" == 'null' ]]; then
               _=$((n++))
               continue
@@ -869,7 +874,9 @@ EOF
               fi
             fi
             shellcheck_for_gha "${RUN}" "${shell}" "${workflow_path} ${name}.steps[${n}].run"
-            shellcheck_for_gha "${prepare:-null}" 'sh' "${workflow_path} ${name}.steps[${n}].run"
+            shellcheck_for_gha "${prepare:-null}" 'sh' "${workflow_path} ${name}.steps[${n}].with.prepare"
+            shellcheck_for_gha "${setup:-null}" 'sh' "${workflow_path} ${name}.steps[${n}].with.setup"
+            shellcheck_for_gha "${install:-null}" 'sh' "${workflow_path} ${name}.steps[${n}].with.install"
             _=$((n++))
           done
         done
