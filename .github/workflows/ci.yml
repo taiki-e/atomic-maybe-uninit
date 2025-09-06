@@ -245,6 +245,13 @@ jobs:
             target: armeb-unknown-linux-gnueabi
             os: ubuntu-22.04
           # ------------------------------------------------------------
+          # csky-unknown-linux-gnuabiv2
+          # TODO
+          # - rust: nightly-2025-02-14 # Rust 1.86, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
+          #   target: csky-unknown-linux-gnuabiv2
+          # - rust: nightly
+          #   target: csky-unknown-linux-gnuabiv2
+          # ------------------------------------------------------------
           # i586-unknown-linux-gnu
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
             target: i586-unknown-linux-gnu

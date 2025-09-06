@@ -117,6 +117,15 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
         }
+        "csky" => {
+            // https://github.com/rust-lang/rust/pull/136217 merged in Rust 1.86 (nightly-2025-02-14).
+            if version.nightly
+                && version.probe(86, 2025, 2, 13)
+                && is_allowed_feature("asm_experimental_arch")
+            {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
+            }
+        }
         "hexagon" => {
             // https://github.com/rust-lang/rust/pull/133452 merged in Rust 1.85 (nightly-2024-11-29).
             if version.nightly
