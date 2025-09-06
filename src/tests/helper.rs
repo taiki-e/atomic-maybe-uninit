@@ -206,33 +206,56 @@ macro_rules! __test_atomic {
                     assert_eq!(a.load(load_order).assume_init(), $ty::MIN);
                     a.store(MaybeUninit::new($ty::MAX), store_order);
                     assert_eq!(a.load(load_order).assume_init(), $ty::MAX);
-                    if cfg!(all(
-                        valgrind,
-                        target_arch = "arm",
-                        any(target_os = "linux", target_os = "android"),
-                        any(
+                    let v = MaybeUninit::uninit();
+                    if mem::size_of::<$ty>() == 8 {
+                        #[cfg(all(
+                            valgrind,
+                            target_arch = "arm",
+                            any(target_os = "linux", target_os = "android"),
+                            any(
+                                not(any(
+                                    target_feature = "v6",
+                                    atomic_maybe_uninit_target_feature = "v6"
+                                )),
+                                atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                            ),
                             not(any(
-                                target_feature = "v6",
-                                atomic_maybe_uninit_target_feature = "v6"
+                                target_feature = "v8",
+                                atomic_maybe_uninit_target_feature = "v8",
+                                target_feature = "v8m",
+                                atomic_maybe_uninit_target_feature = "v8m",
                             )),
-                            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
-                        ),
-                        not(any(
-                            target_feature = "v8",
-                            atomic_maybe_uninit_target_feature = "v8",
-                            target_feature = "v8m",
-                            atomic_maybe_uninit_target_feature = "v8m",
-                        )),
-                    )) && mem::size_of::<$ty>() == 8
-                    {
-                    } else {
-                        let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
-                        let _v = a.load(load_order);
-                        a.store(MaybeUninit::new(2), store_order);
-                        assert_eq!(a.load(load_order).assume_init(), 2);
-                        a.store(MaybeUninit::uninit(), store_order);
-                        let _v = a.load(load_order);
+                        ))]
+                        mark_defined(&v);
                     }
+                    let a = AtomicMaybeUninit::<$ty>::new(v);
+                    let _v = a.load(load_order);
+                    a.store(MaybeUninit::new(2), store_order);
+                    assert_eq!(a.load(load_order).assume_init(), 2);
+                    let v = MaybeUninit::uninit();
+                    if mem::size_of::<$ty>() == 8 {
+                        #[cfg(all(
+                            valgrind,
+                            target_arch = "arm",
+                            any(target_os = "linux", target_os = "android"),
+                            any(
+                                not(any(
+                                    target_feature = "v6",
+                                    atomic_maybe_uninit_target_feature = "v6"
+                                )),
+                                atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+                            ),
+                            not(any(
+                                target_feature = "v8",
+                                atomic_maybe_uninit_target_feature = "v8",
+                                target_feature = "v8m",
+                                atomic_maybe_uninit_target_feature = "v8m",
+                            )),
+                        ))]
+                        mark_defined(&v);
+                    }
+                    a.store(v, store_order);
+                    let _v = a.load(load_order);
                 }
             }
         }
@@ -252,10 +275,11 @@ macro_rules! __test_atomic {
                             assert_eq!(a.load(load_order).assume_init(), y);
                             a.store(MaybeUninit::new(x), store_order);
                             assert_eq!(a.load(load_order).assume_init(), x);
-                            if !cfg!(all(valgrind, target_arch = "aarch64")) {
-                                a.store(MaybeUninit::uninit(), store_order);
-                                let _v = a.load(load_order);
-                            }
+                            let v = MaybeUninit::uninit();
+                            #[cfg(all(valgrind, target_arch = "aarch64"))]
+                            mark_defined(&v);
+                            a.store(v, store_order);
+                            let _v = a.load(load_order);
                             arr.assert();
                         }
                     }
@@ -333,13 +357,19 @@ macro_rules! __test_atomic {
                     assert_eq!(a.swap(MaybeUninit::new($ty::MIN), order).assume_init(), 5);
                     assert_eq!(a.swap(MaybeUninit::new($ty::MAX), order).assume_init(), $ty::MIN);
                     assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), $ty::MAX);
-                    if !cfg!(all(valgrind, any(target_arch = "aarch64", target_arch = "arm"))) {
-                        assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
-                        let _v = a.swap(MaybeUninit::new(15), order);
-                        let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
-                        let _v = a.swap(MaybeUninit::new(10), order);
-                        assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
-                    }
+                    let v = MaybeUninit::uninit();
+                    #[cfg(all(valgrind, any(target_arch = "aarch64", target_arch = "arm")))]
+                    mark_defined(&v);
+                    assert_eq!(a.swap(v, order).assume_init(), 10);
+                    let _v = a.swap(MaybeUninit::new(15), order);
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
+                    #[cfg(all(valgrind, any(target_arch = "aarch64", target_arch = "arm")))]
+                    mark_defined(&a);
+                    let _v = a.swap(MaybeUninit::new(10), order);
+                    let v = MaybeUninit::uninit();
+                    #[cfg(all(valgrind, any(target_arch = "aarch64", target_arch = "arm")))]
+                    mark_defined(&v);
+                    assert_eq!(a.swap(v, order).assume_init(), 10);
                 }
             }
         }
@@ -376,9 +406,10 @@ macro_rules! __test_atomic {
                             let a = arr.get();
                             assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
                             assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
-                            if !cfg!(all(valgrind, target_arch = "aarch64")) {
-                                assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
-                            }
+                            let v = MaybeUninit::uninit();
+                            #[cfg(all(valgrind, target_arch = "aarch64"))]
+                            mark_defined(&v);
+                            assert_eq!(a.swap(v, order).assume_init(), x);
                             arr.assert();
                         }
                     }
@@ -528,28 +559,25 @@ macro_rules! __test_atomic {
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
                     }
 
-                    if !cfg!(valgrind) {
-                        let mut u = MaybeUninit::uninit();
-                        let a = AtomicMaybeUninit::<$ty>::new(u);
-                        while let Err(e) =
-                            a.compare_exchange(u, MaybeUninit::new(10), success, failure)
-                        {
-                            u = e;
-                        }
-                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
-                        assert_eq!(
-                            a.compare_exchange(
-                                MaybeUninit::new(10),
-                                MaybeUninit::uninit(),
-                                success,
-                                failure
-                            )
+                    let mut u = MaybeUninit::uninit();
+                    #[cfg(valgrind)]
+                    mark_defined(&u);
+                    let a = AtomicMaybeUninit::<$ty>::new(u);
+                    while let Err(e) = a.compare_exchange(u, MaybeUninit::new(10), success, failure)
+                    {
+                        u = e;
+                    }
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
+                    let v = MaybeUninit::uninit();
+                    #[cfg(valgrind)]
+                    mark_defined(&v);
+                    assert_eq!(
+                        a.compare_exchange(MaybeUninit::new(10), v, success, failure)
                             .unwrap()
                             .assume_init(),
-                            10
-                        );
-                        let _v = a.load(Ordering::Relaxed);
-                    }
+                        10
+                    );
+                    let _v = a.load(Ordering::Relaxed);
                 }
             }
         }
@@ -718,20 +746,21 @@ macro_rules! __test_atomic {
                                 y
                             );
                             assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
-                            if !cfg!(all(valgrind, target_arch = "aarch64")) {
-                                assert_eq!(
-                                    a.compare_exchange(
-                                        MaybeUninit::new(y),
-                                        MaybeUninit::uninit(),
-                                        success,
-                                        failure
-                                    )
-                                    .unwrap()
-                                    .assume_init(),
-                                    y
-                                );
-                                let _v = a.load(Ordering::Relaxed);
-                            }
+                            let v = MaybeUninit::uninit();
+                            #[cfg(all(valgrind, target_arch = "aarch64"))]
+                            mark_defined(&v);
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(y),
+                                    v,
+                                    success,
+                                    failure
+                                )
+                                .unwrap()
+                                .assume_init(),
+                                y
+                            );
+                            let _v = a.load(Ordering::Relaxed);
                             arr.assert();
                         }
                     }
@@ -1109,6 +1138,18 @@ pub(crate) fn stress_test_config(rng: &mut fastrand::Rng) -> (usize, usize) {
     let threads = if cfg!(debug_assertions) { 2 } else { rng.usize(2..=8) };
     std::eprintln!("threads={threads}");
     (iterations, threads)
+}
+
+#[cfg(valgrind)]
+#[inline(always)]
+pub(crate) fn mark_defined<T: ?Sized>(a: &T) {
+    use crabgrind::memcheck;
+    memcheck::mark_mem(
+        a as *const T as *mut core::ffi::c_void,
+        size_of_val(a),
+        memcheck::MemState::Defined,
+    )
+    .unwrap()
 }
 
 fn skip_should_panic_test() -> bool {
