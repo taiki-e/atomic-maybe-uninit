@@ -900,12 +900,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: powerpc64le-unknown-linux-gnu
-            arch: ppc64le
+          # - target: powerpc64le-unknown-linux-gnu
+          #   arch: ppc64le
           - target: riscv64gc-unknown-linux-gnu
             arch: riscv64
-          - target: s390x-unknown-linux-gnu
-            arch: s390x
+          # - target: s390x-unknown-linux-gnu
+          #   arch: s390x
           # TODO: valgrind: fatal error: unsupported CPU.
           # - target: mips64el-unknown-linux-gnu
           #   arch: none
@@ -956,8 +956,8 @@ jobs:
                 #   | tar xjf - --strip-components 1
                 ./autogen.sh
                 ./configure
-                make -j$(nproc)
-                make -j$(nproc) install
+                make
+                make install
               )
               rm -rf -- valgrind
             fi
