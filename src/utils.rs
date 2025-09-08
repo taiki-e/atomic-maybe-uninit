@@ -21,9 +21,6 @@ macro_rules! static_assert {
         }
         _Assert::<$($ty,)*>::_CHECK
     }};
-    ($($tt:tt)*) => {
-        const _: () = assert!($($tt)*);
-    };
 }
 
 /// Uses inline const if available.
@@ -175,7 +172,7 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
 
 #[cfg(target_pointer_width = "32")]
 // SAFETY: MaybeUninit returned by zero_extend64_ptr is always initialized.
-static_assert!(unsafe {
+const _: () = assert!(unsafe {
     zero_extend64_ptr(ptr::without_provenance_mut(!0)).assume_init() == !0_u32 as u64
 });
 /// Zero-extends the given 32-bit pointer to `MaybeUninit<u64>`.

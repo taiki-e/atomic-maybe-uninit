@@ -116,7 +116,12 @@ pub mod raw;
 
 #[cfg(doc)]
 use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
-use core::{cell::UnsafeCell, fmt, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    cell::UnsafeCell,
+    fmt,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Primitive};
 
@@ -734,10 +739,10 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
 macro_rules! int {
     ($ty:ident, $align:ident) => {
         impl crate::raw::Primitive for $ty {}
-        static_assert!(
-            core::mem::size_of::<AtomicMaybeUninit<$ty>>() == core::mem::size_of::<$ty>()
-                && core::mem::align_of::<AtomicMaybeUninit<$ty>>() == core::mem::size_of::<$ty>()
-        );
+        const _: () = {
+            assert!(mem::size_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
+            assert!(mem::align_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
+        };
         // SAFETY: the static assertion above ensures safety requirement.
         unsafe impl crate::private::PrimitivePriv for $ty {
             type Align = crate::private::$align;
