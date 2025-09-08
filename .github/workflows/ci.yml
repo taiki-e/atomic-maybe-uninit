@@ -71,17 +71,20 @@ jobs:
           - rust: nightly
             target: x86_64-unknown-linux-gnu
             flags: -C panic=abort -Z panic_abort_tests
-          # TODO: error: couldn't load codegen backend
-          # - rust: nightly
-          #   target: x86_64-unknown-linux-gnu
-          #   flags: -Z codegen-backend=cranelift
+          - rust: nightly
+            target: x86_64-unknown-linux-gnu
+            flags: -Z codegen-backend=cranelift
           # ------------------------------------------------------------
           # x86_64-apple-darwin
+          # We test only one version because we do not have macOS-specific code and
+          # x86_64-specific code is also tested on Linux using multiple versions.
           - rust: nightly
             target: x86_64-apple-darwin
             os: macos-latest # Rosetta on AArch64
           # ------------------------------------------------------------
           # x86_64-pc-windows-msvc
+          # We test only one version because we do not have Windows-specific code and
+          # x86_64-specific code is also tested on Linux using multiple versions.
           - rust: nightly
             target: x86_64-pc-windows-msvc
             os: windows-latest
@@ -136,11 +139,10 @@ jobs:
           - rust: nightly
             target: aarch64-unknown-linux-gnu
             os: ubuntu-latest # QEMU on x86_64
-          # TODO: error: couldn't load codegen backend
-          # - rust: nightly
-          #   target: aarch64-unknown-linux-gnu
-          #   os: ubuntu-24.04-arm
-          #   flags: -Z codegen-backend=cranelift
+          - rust: nightly
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+            flags: -Z codegen-backend=cranelift
           # ------------------------------------------------------------
           # aarch64-apple-darwin
           - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
@@ -163,6 +165,8 @@ jobs:
             os: macos-latest
           # ------------------------------------------------------------
           # aarch64-pc-windows-msvc
+          # We test only one version because we do not have Windows-specific code and
+          # AArch64-specific code is also tested on Linux using multiple versions.
           - rust: nightly
             target: aarch64-pc-windows-msvc
             os: windows-11-arm
@@ -213,27 +217,18 @@ jobs:
           #   target: arm-unknown-linux-gnueabi
           # - rust: '1.86' # LLVM 19
           #   target: arm-unknown-linux-gnueabi
-          # TODO: SIGILL on QEMU with LLVM 20
+          # TODO: SIGILL on QEMU with LLVM 20-21
           # - rust: stable
           #   target: arm-unknown-linux-gnueabi
           # - rust: beta
           #   target: arm-unknown-linux-gnueabi
-          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20-21
             target: arm-unknown-linux-gnueabi
           # ------------------------------------------------------------
           # armv7-unknown-linux-gnueabi
-          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
-            target: armv7-unknown-linux-gnueabi
-          # - rust: '1.81' # LLVM 18
-          #   target: armv7-unknown-linux-gnueabi
-          # - rust: '1.86' # LLVM 19
-          #   target: armv7-unknown-linux-gnueabi
-          # TODO: SIGILL on QEMU with LLVM 20
-          # - rust: stable
-          #   target: armv7-unknown-linux-gnueabi
-          # - rust: beta
-          #   target: armv7-unknown-linux-gnueabi
-          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
+          # We test only one version because we do not have soft-float-specific code and
+          # Armv7-specific code is also tested on hard-float target using multiple versions.
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20-21
             target: armv7-unknown-linux-gnueabi
           # ------------------------------------------------------------
           # armv7-unknown-linux-gnueabihf
@@ -255,8 +250,31 @@ jobs:
           - rust: nightly
             target: armv7-unknown-linux-gnueabihf
             os: ubuntu-24.04-arm
-          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20-21
             target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest # QEMU on x86_64
+          # ------------------------------------------------------------
+          # thumbv7neon-unknown-linux-gnueabihf
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
+            target: thumbv7neon-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
+          # - rust: '1.81' # LLVM 18
+          #   target: thumbv7neon-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
+          # - rust: '1.86' # LLVM 19
+          #   target: thumbv7neon-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
+          - rust: stable
+            target: thumbv7neon-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
+          # - rust: beta
+          #   target: thumbv7neon-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
+          - rust: nightly
+            target: thumbv7neon-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20-21
+            target: thumbv7neon-unknown-linux-gnueabihf
             os: ubuntu-latest # QEMU on x86_64
           # ------------------------------------------------------------
           # armeb-unknown-linux-gnueabi
@@ -269,7 +287,7 @@ jobs:
           # - rust: nightly-2025-02-17 # Rust 1.87, LLVM 19
           #   target: armeb-unknown-linux-gnueabi
           #   os: ubuntu-22.04
-          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
+          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20-21
             target: armeb-unknown-linux-gnueabi
             os: ubuntu-22.04
           # ------------------------------------------------------------
@@ -449,31 +467,8 @@ jobs:
           # sparc64-unknown-linux-gnu
           - rust: nightly-2024-11-08 # Rust 1.84, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
             target: sparc64-unknown-linux-gnu
-          - rust: nightly-2025-02-17 # TODO: "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20
+          - rust: nightly-2025-02-17 # TODO: "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-21
             target: sparc64-unknown-linux-gnu
-          # ------------------------------------------------------------
-          # thumbv7neon-unknown-linux-gnueabihf
-          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
-            target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
-          # - rust: '1.81' # LLVM 18
-          #   target: thumbv7neon-unknown-linux-gnueabihf
-          #   os: ubuntu-24.04-arm
-          # - rust: '1.86' # LLVM 19
-          #   target: thumbv7neon-unknown-linux-gnueabihf
-          #   os: ubuntu-24.04-arm
-          - rust: stable
-            target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
-          # - rust: beta
-          #   target: thumbv7neon-unknown-linux-gnueabihf
-          #   os: ubuntu-24.04-arm
-          - rust: nightly
-            target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
-          - rust: nightly-2025-02-17 # TODO: SIGILL on QEMU with LLVM 20
-            target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-latest # QEMU on x86_64
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     timeout-minutes: 60
     steps:
@@ -486,6 +481,9 @@ jobs:
           sysctl hw.optional machdep.cpu
           # brew install moreutils
         if: startsWith(matrix.os, 'macos')
+      # - run: |
+      #     C:/msys64/usr/bin/pacman -S --noconfirm moreutils
+      #   if: startsWith(matrix.os, 'windows')
       - uses: taiki-e/github-actions/install-rust@main
         with:
           toolchain: ${{ matrix.rust }}
@@ -549,12 +547,18 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
         if: startsWith(matrix.target, 'i686')
+      # x86 -sse
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
+        if: startsWith(matrix.target, 'i686')
       # x86 -x87
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
-        if: startsWith(matrix.target, 'i586')
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
+        if: startsWith(matrix.target, 'i586') || startsWith(matrix.target, 'i686')
       # aarch64 +lse
       # macOS is skipped because it is +rcpc,+lse,+lse2 by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
@@ -575,12 +579,6 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
         if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v6 with legacy cp15_barrier
-      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
-        if: matrix.target == 'arm-unknown-linux-gnueabi'
       # arm v7 big endian
       # armeb-unknown-linux-gnueabi is v8 by default, use custom target instead
       - run: tools/test.sh -vv --tests --target armebv7-unknown-linux-gnueabi -Z build-std ${RELEASE:-}
@@ -589,6 +587,12 @@ jobs:
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
         # Skip pre-1.91 because target-pointer-width change
         if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2022') && !startsWith(matrix.rust, 'nightly-2023') && !startsWith(matrix.rust, 'nightly-2025-02')
+      # arm v6 with legacy cp15_barrier
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
+        if: matrix.target == 'arm-unknown-linux-gnueabi'
       # arm v4t
       - run: tools/test.sh -vv --tests --target armv4t-unknown-linux-gnueabi -Z build-std ${RELEASE:-}
         env:
