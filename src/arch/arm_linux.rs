@@ -41,13 +41,20 @@ fn kuser_helper_version() -> i32 {
     unsafe { crate::utils::ptr::with_exposed_provenance::<i32>(KUSER_HELPER_VERSION).read() }
 }
 
-#[cfg(any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"))]
+// blx requires Armv5t
+#[cfg(all(
+    any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"),
+    not(atomic_maybe_uninit_test_prefer_bx),
+))]
 macro_rules! blx {
     ($addr:tt) => {
         concat!("blx ", $addr)
     };
 }
-#[cfg(not(any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te")))]
+#[cfg(not(all(
+    any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"),
+    not(atomic_maybe_uninit_test_prefer_bx),
+)))]
 macro_rules! blx {
     ($addr:tt) => {
         concat!("mov lr, pc", "\n", "bx ", $addr)

@@ -8,7 +8,7 @@ cd -- "$(dirname -- "$0")"/..
 
 # USAGE:
 #    ./tools/test.sh [+toolchain] [cargo_options]...
-#    ./tools/test.sh [+toolchain] build|valgrind [cargo_options]...
+#    ./tools/test.sh [+toolchain] build|build-valgrind|valgrind [cargo_options]...
 
 x() {
   (
@@ -58,7 +58,7 @@ if [[ "${1:-}" == "+"* ]]; then
 fi
 cmd='test'
 case "${1:-}" in
-  build | valgrind)
+  build | build-valgrind | valgrind)
     cmd="$1"
     shift
     ;;
@@ -170,7 +170,7 @@ if [[ -n "${target}" ]]; then
 fi
 args+=(--all-features)
 case "${cmd}" in
-  build) ;;
+  build*) ;;
   *) args+=(--workspace) ;;
 esac
 target="${target:-"${host}"}"
@@ -205,7 +205,14 @@ if [[ -n "${cranelift}" ]]; then
 fi
 
 case "${cmd}" in
-  build)
+  *valgrind)
+    # TODO: always pass randomize-layout
+    export RUSTFLAGS="${RUSTFLAGS:-} --cfg valgrind"
+    export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} --cfg valgrind"
+    ;;
+esac
+case "${cmd}" in
+  build*)
     TS=''
     args+=(--no-run ${release[@]+"${release[@]}"})
     x_cargo test ${build_std[@]+"${build_std[@]}"} ${cargo_options[@]+"${cargo_options[@]}"} "${args[@]}" >&2
@@ -219,10 +226,13 @@ case "${cmd}" in
     ;;
   valgrind)
     # TODO: use --errors-for-leak-kinds=definite,indirect due to upstream bug (https://github.com/rust-lang/rust/issues/135608)
-    export "CARGO_TARGET_${target_upper}_RUNNER"="valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=definite,indirect --track-origins=yes --fair-sched=yes"
-    # TODO: always pass randomize-layout
-    export RUSTFLAGS="${RUSTFLAGS:-} --cfg valgrind"
-    export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} --cfg valgrind"
+    # NB: Sync with arguments in valgrind-other job in .github/workflows/ci.yml.
+    valgrind="valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=definite,indirect --errors-for-leak-kinds=definite,indirect --track-origins=yes --fair-sched=yes --gen-suppressions=all"
+    # See https://wiki.wxwidgets.org/Valgrind_Suppression_File_Howto for suppression file.
+    case "${target}" in
+      s390x*) valgrind+=" --suppressions=${workspace_dir}/tools/valgrind/s390x.supp" ;;
+    esac
+    export "CARGO_TARGET_${target_upper}_RUNNER"="${valgrind}"
     # doctest on Valgrind is very slow
     if [[ ${#tests[@]} -eq 0 ]]; then
       tests=(--tests)

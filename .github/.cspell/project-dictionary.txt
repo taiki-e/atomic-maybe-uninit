@@ -21,6 +21,7 @@ cmpw
 cmpxchg
 cset
 dbar
+distro
 DWCAS
 espup
 fild
@@ -62,6 +63,7 @@ lwarx
 lwsync
 mcpu
 membar
+memcheck
 memd
 memw
 mfcr

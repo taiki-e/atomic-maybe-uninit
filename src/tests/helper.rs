@@ -206,11 +206,21 @@ macro_rules! __test_atomic {
                     assert_eq!(a.load(load_order).assume_init(), $ty::MIN);
                     a.store(MaybeUninit::new($ty::MAX), store_order);
                     assert_eq!(a.load(load_order).assume_init(), $ty::MAX);
-                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
+                    let v = MaybeUninit::uninit();
+                    #[cfg(valgrind)]
+                    if IMP_ARM_LINUX && mem::size_of::<$ty>() == 8 {
+                        mark_defined(&v);
+                    }
+                    let a = AtomicMaybeUninit::<$ty>::new(v);
                     let _v = a.load(load_order);
                     a.store(MaybeUninit::new(2), store_order);
                     assert_eq!(a.load(load_order).assume_init(), 2);
-                    a.store(MaybeUninit::uninit(), store_order);
+                    let v = MaybeUninit::uninit();
+                    #[cfg(valgrind)]
+                    if IMP_ARM_LINUX && mem::size_of::<$ty>() == 8 {
+                        mark_defined(&v);
+                    }
+                    a.store(v, store_order);
                     let _v = a.load(load_order);
                 }
             }
@@ -231,10 +241,11 @@ macro_rules! __test_atomic {
                             assert_eq!(a.load(load_order).assume_init(), y);
                             a.store(MaybeUninit::new(x), store_order);
                             assert_eq!(a.load(load_order).assume_init(), x);
-                            if !cfg!(all(valgrind, target_arch = "aarch64")) {
-                                a.store(MaybeUninit::uninit(), store_order);
-                                let _v = a.load(load_order);
-                            }
+                            let v = MaybeUninit::uninit();
+                            #[cfg(all(valgrind, target_arch = "aarch64"))]
+                            mark_defined(&v);
+                            a.store(v, store_order);
+                            let _v = a.load(load_order);
                             arr.assert();
                         }
                     }
@@ -282,44 +293,68 @@ macro_rules! __test_atomic {
     (swap, $ty:ident) => {
         #[test]
         fn swap() {
-            // unhandled instruction: 0xE1A62F92
+            // TODO: unhandled instruction: 0xE1A62F92 (as of Valgrind 3.25)
             if cfg!(all(valgrind, target_arch = "arm")) && mem::size_of::<$ty>() == 8 {
+                return;
+            }
+            if cfg!(all(valgrind, target_arch = "riscv64")) && mem::size_of::<$ty>() <= 2 {
                 return;
             }
             unsafe {
                 let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
+                #[cfg(valgrind)]
+                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                    mark_aligned_defined(&a);
+                }
                 test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
                 for order in SWAP_ORDERINGS {
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
+                    #[cfg(valgrind)]
+                    if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                        mark_aligned_defined(&a);
+                    }
                     assert_eq!(a.swap(MaybeUninit::new($ty::MIN), order).assume_init(), 5);
                     assert_eq!(a.swap(MaybeUninit::new($ty::MAX), order).assume_init(), $ty::MIN);
                     assert_eq!(a.swap(MaybeUninit::new(10), order).assume_init(), $ty::MAX);
-                    if !cfg!(all(
-                        valgrind,
-                        any(
-                            target_arch = "aarch64",
-                            all(
-                                target_arch = "arm",
-                                any(
-                                    target_feature = "v8",
-                                    atomic_maybe_uninit_target_feature = "v8",
-                                ),
-                            ),
-                        ),
-                    )) {
-                        assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
-                        let _v = a.swap(MaybeUninit::new(15), order);
-                        let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
-                        let _v = a.swap(MaybeUninit::new(10), order);
-                        assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), 10);
+                    let v = MaybeUninit::uninit();
+                    #[cfg(all(valgrind, any(target_arch = "aarch64", target_arch = "arm")))]
+                    mark_defined(&v);
+                    #[cfg(all(valgrind, target_arch = "s390x"))]
+                    if mem::size_of::<$ty>() == 16 {
+                        mark_defined(&v);
                     }
+                    assert_eq!(a.swap(v, order).assume_init(), 10);
+                    let _v = a.swap(MaybeUninit::new(15), order);
+                    let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
+                    #[cfg(valgrind)]
+                    if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                        mark_aligned_defined(&a);
+                    }
+                    #[cfg(all(valgrind, any(target_arch = "aarch64", target_arch = "arm")))]
+                    mark_defined(&a);
+                    #[cfg(all(valgrind, target_arch = "s390x"))]
+                    if mem::size_of::<$ty>() == 16 {
+                        mark_defined(&a);
+                    }
+                    let _v = a.swap(MaybeUninit::new(10), order);
+                    let v = MaybeUninit::uninit();
+                    #[cfg(all(valgrind, any(target_arch = "aarch64", target_arch = "arm")))]
+                    mark_defined(&v);
+                    #[cfg(all(valgrind, target_arch = "s390x"))]
+                    if mem::size_of::<$ty>() == 16 {
+                        mark_defined(&v);
+                    }
+                    assert_eq!(a.swap(v, order).assume_init(), 10);
                 }
             }
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_swap(x: $ty, y: $ty) -> bool {
-                // unhandled instruction: 0xE1A62F92
+                // TODO: unhandled instruction: 0xE1A62F92 (as of Valgrind 3.25)
                 if cfg!(all(valgrind, target_arch = "arm")) && mem::size_of::<$ty>() == 8 {
+                    return true;
+                }
+                if cfg!(all(valgrind, target_arch = "riscv64")) && mem::size_of::<$ty>() <= 2 {
                     return true;
                 }
                 let mut rng = fastrand::Rng::new();
@@ -331,9 +366,10 @@ macro_rules! __test_atomic {
                             let a = arr.get();
                             assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
                             assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
-                            if !cfg!(all(valgrind, target_arch = "aarch64")) {
-                                assert_eq!(a.swap(MaybeUninit::uninit(), order).assume_init(), x);
-                            }
+                            let v = MaybeUninit::uninit();
+                            #[cfg(all(valgrind, target_arch = "aarch64"))]
+                            mark_defined(&v);
+                            assert_eq!(a.swap(v, order).assume_init(), x);
                             arr.assert();
                         }
                     }
@@ -343,6 +379,9 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_swap() {
+            if cfg!(all(valgrind, target_arch = "riscv64")) && mem::size_of::<$ty>() <= 2 {
+                return;
+            }
             unsafe {
                 let mut rng = fastrand::Rng::new();
                 let (iterations, threads) = stress_test_config(&mut rng);
@@ -358,6 +397,10 @@ macro_rules! __test_atomic {
                     .chain(data2.iter().flat_map(|v| v.iter().copied()))
                     .collect::<BTreeSet<_>>();
                 let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
+                #[cfg(valgrind)]
+                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                    mark_aligned_defined(a);
+                }
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
@@ -413,14 +456,25 @@ macro_rules! __test_atomic {
     (cas, $ty:ident) => {
         #[test]
         fn compare_exchange() {
+            if cfg!(all(valgrind, target_arch = "riscv64")) && mem::size_of::<$ty>() <= 2 {
+                return;
+            }
             unsafe {
                 let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
+                #[cfg(valgrind)]
+                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                    mark_aligned_defined(&a);
+                }
                 test_compare_exchange_ordering(|success, failure| {
                     a.compare_exchange(MaybeUninit::new(5), MaybeUninit::new(5), success, failure)
                 });
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                     for (x, y) in [(5, 10), ($ty::MAX, $ty::MIN), ($ty::MIN, $ty::MAX)] {
                         let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(x));
+                        #[cfg(valgrind)]
+                        if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                            mark_aligned_defined(&a);
+                        }
                         assert_eq!(
                             a.compare_exchange(
                                 MaybeUninit::new(x),
@@ -447,35 +501,43 @@ macro_rules! __test_atomic {
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
                     }
 
-                    if !cfg!(valgrind) {
-                        let mut u = MaybeUninit::uninit();
-                        let a = AtomicMaybeUninit::<$ty>::new(u);
-                        while let Err(e) =
-                            a.compare_exchange(u, MaybeUninit::new(10), success, failure)
-                        {
-                            u = e;
-                        }
-                        assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
-                        assert_eq!(
-                            a.compare_exchange(
-                                MaybeUninit::new(10),
-                                MaybeUninit::uninit(),
-                                success,
-                                failure
-                            )
+                    let mut u = MaybeUninit::uninit();
+                    #[cfg(valgrind)]
+                    mark_defined(&u);
+                    let a = AtomicMaybeUninit::<$ty>::new(u);
+                    #[cfg(valgrind)]
+                    if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                        mark_aligned_defined(&a);
+                    }
+                    while let Err(e) = a.compare_exchange(u, MaybeUninit::new(10), success, failure)
+                    {
+                        u = e;
+                    }
+                    assert_eq!(a.load(Ordering::Relaxed).assume_init(), 10);
+                    let v = MaybeUninit::uninit();
+                    #[cfg(valgrind)]
+                    mark_defined(&v);
+                    assert_eq!(
+                        a.compare_exchange(MaybeUninit::new(10), v, success, failure)
                             .unwrap()
                             .assume_init(),
-                            10
-                        );
-                        let _v = a.load(Ordering::Relaxed);
-                    }
+                        10
+                    );
+                    let _v = a.load(Ordering::Relaxed);
                 }
             }
         }
         #[test]
         fn compare_exchange_weak() {
+            if cfg!(all(valgrind, target_arch = "riscv64")) && mem::size_of::<$ty>() <= 2 {
+                return;
+            }
             unsafe {
                 let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
+                #[cfg(valgrind)]
+                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                    mark_aligned_defined(&a);
+                }
                 test_compare_exchange_ordering(|success, failure| {
                     a.compare_exchange_weak(
                         MaybeUninit::new(5),
@@ -487,6 +549,10 @@ macro_rules! __test_atomic {
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                     for x in [4, $ty::MAX, $ty::MIN] {
                         let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(x));
+                        #[cfg(valgrind)]
+                        if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                            mark_aligned_defined(&a);
+                        }
                         assert_eq!(
                             a.compare_exchange_weak(
                                 MaybeUninit::new(6),
@@ -513,13 +579,24 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn fetch_update() {
+            if cfg!(all(valgrind, target_arch = "riscv64")) && mem::size_of::<$ty>() <= 2 {
+                return;
+            }
             unsafe {
                 let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(7));
+                #[cfg(valgrind)]
+                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                    mark_aligned_defined(&a);
+                }
                 test_compare_exchange_ordering(|set, fetch| {
                     a.fetch_update(set, fetch, |x| Some(x))
                 });
                 for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(7));
+                    #[cfg(valgrind)]
+                    if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                        mark_aligned_defined(&a);
+                    }
                     assert_eq!(
                         a.fetch_update(success, failure, |_| None).unwrap_err().assume_init(),
                         7
@@ -546,6 +623,9 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_compare_exchange(x: $ty, y: $ty) -> bool {
+                if cfg!(all(valgrind, target_arch = "riscv64")) && mem::size_of::<$ty>() <= 2 {
+                    return true;
+                }
                 let mut rng = fastrand::Rng::new();
                 unsafe {
                     let z = loop {
@@ -583,20 +663,21 @@ macro_rules! __test_atomic {
                                 y
                             );
                             assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
-                            if !cfg!(all(valgrind, target_arch = "aarch64")) {
-                                assert_eq!(
-                                    a.compare_exchange(
-                                        MaybeUninit::new(y),
-                                        MaybeUninit::uninit(),
-                                        success,
-                                        failure
-                                    )
-                                    .unwrap()
-                                    .assume_init(),
-                                    y
-                                );
-                                let _v = a.load(Ordering::Relaxed);
-                            }
+                            let v = MaybeUninit::uninit();
+                            #[cfg(all(valgrind, target_arch = "aarch64"))]
+                            mark_defined(&v);
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(y),
+                                    v,
+                                    success,
+                                    failure
+                                )
+                                .unwrap()
+                                .assume_init(),
+                                y
+                            );
+                            let _v = a.load(Ordering::Relaxed);
                             arr.assert();
                         }
                     }
@@ -604,6 +685,9 @@ macro_rules! __test_atomic {
                 true
             }
             fn quickcheck_fetch_update(x: $ty, y: $ty) -> bool {
+                if cfg!(all(valgrind, target_arch = "riscv64")) && mem::size_of::<$ty>() <= 2 {
+                    return true;
+                }
                 let mut rng = fastrand::Rng::new();
                 unsafe {
                     let z = loop {
@@ -650,6 +734,9 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_compare_exchange() {
+            if cfg!(all(valgrind, target_arch = "riscv64")) && mem::size_of::<$ty>() <= 2 {
+                return;
+            }
             unsafe {
                 let mut rng = fastrand::Rng::new();
                 let (iterations, threads) = stress_test_config(&mut rng);
@@ -665,6 +752,10 @@ macro_rules! __test_atomic {
                     .chain(data2.iter().flat_map(|v| v.iter().copied()))
                     .collect::<BTreeSet<_>>();
                 let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
+                #[cfg(valgrind)]
+                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                    mark_aligned_defined(a);
+                }
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
@@ -723,6 +814,9 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_fetch_update() {
+            if cfg!(all(valgrind, target_arch = "riscv64")) && core::mem::size_of::<$ty>() <= 2 {
+                return;
+            }
             unsafe {
                 let mut rng = fastrand::Rng::new();
                 let (iterations, threads) = stress_test_config(&mut rng);
@@ -738,6 +832,10 @@ macro_rules! __test_atomic {
                     .chain(data2.iter().flat_map(|v| v.iter().copied()))
                     .collect::<BTreeSet<_>>();
                 let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
+                #[cfg(valgrind)]
+                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                    mark_aligned_defined(a);
+                }
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for thread in 0..threads {
@@ -922,13 +1020,56 @@ pub(crate) fn stress_test_config(rng: &mut fastrand::Rng) -> (usize, usize) {
     (iterations, threads)
 }
 
+// true if the current implementation is arch/arm_linux.rs.
+pub(crate) const IMP_ARM_LINUX: bool = cfg!(all(
+    target_arch = "arm",
+    any(target_os = "linux", target_os = "android"),
+    any(
+        not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+        atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+    ),
+    not(any(
+        target_feature = "v8",
+        atomic_maybe_uninit_target_feature = "v8",
+        target_feature = "v8m",
+        atomic_maybe_uninit_target_feature = "v8m",
+    )),
+));
+// true if the current implementation implements sub-word atomics using word-size CAS.
+#[cfg(valgrind)]
+pub(crate) const IMP_EMU_SUB_WORD_CAS: bool = cfg!(target_arch = "s390x") || IMP_ARM_LINUX;
+
+#[cfg(valgrind)]
+#[inline(always)]
+pub(crate) fn mark_defined<T: ?Sized>(a: &T) {
+    use crabgrind::memcheck;
+    memcheck::mark_mem(
+        a as *const T as *mut core::ffi::c_void,
+        size_of_val(a),
+        memcheck::MemState::Defined,
+    )
+    .unwrap()
+}
+#[cfg(valgrind)]
+#[inline(always)]
+pub(crate) fn mark_aligned_defined<T: ?Sized>(a: &T) {
+    assert!(size_of_val(a) <= 2);
+    use crabgrind::memcheck;
+    memcheck::mark_mem(
+        (a as *const T as *mut core::ffi::c_void).map_addr(|a| a & !3),
+        4,
+        memcheck::MemState::Defined,
+    )
+    .unwrap()
+}
+
 fn skip_should_panic_test() -> bool {
     is_panic_abort()
 }
 
 // For -C panic=abort -Z panic_abort_tests: https://github.com/rust-lang/rust/issues/67650
 fn is_panic_abort() -> bool {
-    cfg!(panic = "abort")
+    !cfg!(panic = "unwind")
 }
 
 #[repr(C, align(16))]
@@ -1017,7 +1158,15 @@ macro_rules! __stress_test_acquire_release {
         use crossbeam_utils::thread;
 
         use crate::AtomicMaybeUninit;
+        #[cfg(valgrind)]
+        use crate::tests::helper::*;
 
+        if cfg!(all(valgrind, target_arch = "riscv64"))
+            && core::mem::size_of::<$ty>() <= 2
+            && stringify!($write) == "swap"
+        {
+            return;
+        }
         let mut n: usize = 50_000;
         // This test is relatively fast because it spawns only one thread, but
         // the iterations are limited to a maximum value of integers.
@@ -1025,6 +1174,11 @@ macro_rules! __stress_test_acquire_release {
             n = $ty::MAX as usize;
         }
         let a = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
+        #[cfg(valgrind)]
+        if IMP_EMU_SUB_WORD_CAS && core::mem::size_of::<$ty>() <= 2 && stringify!($write) == "swap"
+        {
+            mark_aligned_defined(a);
+        }
         let b = &AtomicUsize::new(0);
         thread::scope(|s| unsafe {
             s.spawn(|_| {
@@ -1083,10 +1237,29 @@ macro_rules! __stress_test_seqcst {
         use crossbeam_utils::thread;
 
         use crate::AtomicMaybeUninit;
+        #[cfg(valgrind)]
+        use crate::tests::helper::*;
 
         const N: usize = if cfg!(valgrind) { 50 } else { 50_000 };
+
+        if cfg!(all(valgrind, target_arch = "riscv64"))
+            && core::mem::size_of::<$ty>() <= 2
+            && stringify!($write) == "swap"
+        {
+            return;
+        }
         let a = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
+        #[cfg(valgrind)]
+        if IMP_EMU_SUB_WORD_CAS && core::mem::size_of::<$ty>() <= 2 && stringify!($write) == "swap"
+        {
+            mark_aligned_defined(a);
+        }
         let b = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
+        #[cfg(valgrind)]
+        if IMP_EMU_SUB_WORD_CAS && core::mem::size_of::<$ty>() <= 2 && stringify!($write) == "swap"
+        {
+            mark_aligned_defined(b);
+        }
         let c = &AtomicUsize::new(0);
         let ready = &AtomicUsize::new(0);
         thread::scope(|s| unsafe {

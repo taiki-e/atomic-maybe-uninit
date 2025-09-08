@@ -48,5 +48,5 @@
       "dictionaries": ["bash", "cpp-refined", "rust"]
     }
   ],
-  "ignorePaths": ["target-specs/**"]
+  "ignorePaths": ["target-specs/**", "tools/valgrind/**"]
 }

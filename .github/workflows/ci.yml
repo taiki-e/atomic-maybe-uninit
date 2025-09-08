@@ -587,12 +587,49 @@ jobs:
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
         # Skip pre-1.91 because target-pointer-width change
         if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2022') && !startsWith(matrix.rust, 'nightly-2023') && !startsWith(matrix.rust, 'nightly-2025-02')
-      # arm v6 with legacy cp15_barrier
+      # arm v6 kuser_memory_barrier
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
+      # arm v6 legacy cp15_barrier
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
         if: matrix.target == 'arm-unknown-linux-gnueabi'
+      # arm v6 legacy cp15_barrier
+      - run: |
+          if [[ "${RUSTFLAGS:-}" != *qemu* ]]; then
+            # abi.cp15_barrier is set to 1 by default on AArch64 Linux.
+            # https://github.com/rust-lang/rust/issues/60605
+            prev_cp15_barrier=$(</proc/sys/abi/cp15_barrier)
+            sudo tee -- /proc/sys/abi/cp15_barrier <<<"2"
+          fi
+          tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+          if [[ "${RUSTFLAGS:-}" != *qemu* ]]; then
+            case "${prev_cp15_barrier}" in
+              '') sudo rm -- /proc/sys/abi/cp15_barrier ;;
+              *) sudo tee -- /proc/sys/abi/cp15_barrier <<<"${prev_cp15_barrier}" ;;
+            esac
+          fi
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier --cfg atomic_maybe_uninit_use_cp15_barrier
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier --cfg atomic_maybe_uninit_use_cp15_barrier
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
+      # arm v5 kuser_cmpxchg+kuser_memory_barrier
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
+      # arm v4 kuser_cmpxchg+kuser_memory_barrier+bx
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
       # arm v4t
       - run: tools/test.sh -vv --tests --target armv4t-unknown-linux-gnueabi -Z build-std ${RELEASE:-}
         env:
@@ -800,8 +837,23 @@ jobs:
             dpkg-arch: armhf
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     timeout-minutes: 60
+    container:
+      image: ubuntu:devel
+      options: --privileged
     steps:
       - uses: taiki-e/checkout-action@v1
+      - run: |
+          dpkg_arch="${{ matrix.dpkg-arch }}"
+          if [[ -n "${dpkg_arch}" ]]; then
+            dpkg --add-architecture "${dpkg_arch}"
+          fi
+          apt-get -o Acquire::Retries=10 -qq update
+          apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+            ca-certificates \
+            curl \
+            gcc \
+            libc6-dev \
+            valgrind"${dpkg_arch:+":${dpkg_arch}"}"
       - uses: taiki-e/github-actions/install-rust@nightly
       - id: prepare
         run: |
@@ -814,18 +866,11 @@ jobs:
             printf '%s\n' "TARGET=--target=${{ matrix.target }}" >>"${GITHUB_ENV}"
             printf '%s\n' "target-not-host=true" >>"${GITHUB_OUTPUT}"
           fi
-      # - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
+      # - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
       - uses: taiki-e/setup-cross-toolchain-action@v1
         with:
           target: ${{ matrix.target }}
         if: steps.prepare.outputs.target-not-host == 'true'
-      - uses: taiki-e/install-action@valgrind
-        if: startsWith(matrix.target, 'x86_64') || startsWith(matrix.target, 'aarch64')
-      - run: |
-          sudo dpkg --add-architecture "${{ matrix.dpkg-arch }}"
-          sudo apt-get -o Acquire::Retries=10 -qq update
-          sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends valgrind:"${{ matrix.dpkg-arch }}"
-        if: startsWith(matrix.target, 'i686') || startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
       - run: tools/test.sh valgrind -vv ${TARGET:-}
       # x86_64 +cmpxchg16b
       - run: tools/test.sh valgrind -vv ${TARGET:-}
@@ -864,3 +909,152 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
         if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # arm v6 kuser_memory_barrier
+      - run: tools/test.sh valgrind -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # arm v6 cp15_barrier
+      - run: tools/test.sh valgrind -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier --cfg atomic_maybe_uninit_use_cp15_barrier
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier --cfg atomic_maybe_uninit_use_cp15_barrier
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # arm v5 kuser_cmpxchg+kuser_memory_barrier
+      - run: tools/test.sh valgrind -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # arm v4 kuser_cmpxchg+kuser_memory_barrier+bx
+      - run: tools/test.sh valgrind -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+
+  valgrind-other:
+    needs: tidy
+    name: valgrind (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: powerpc64le-unknown-linux-gnu
+            dpkg-arch: ppc64el
+            arch: ppc64le
+          - target: riscv64gc-unknown-linux-gnu
+            dpkg-arch: riscv64
+            arch: riscv64
+            distro: ubuntu_rolling # TODO: "unhandled instruction 0x0C0777D7" error on ubuntu_devel (25.10)
+          - target: s390x-unknown-linux-gnu
+            dpkg-arch: s390x
+            arch: s390x
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: taiki-e/checkout-action@v1
+      - uses: taiki-e/github-actions/install-rust@nightly
+      # - run: sudo apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
+      - uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+      - run: |
+          dpkg_arch="${{ matrix.dpkg-arch }}"
+          codename=$(grep -E '^VERSION_CODENAME=' /etc/os-release | cut -d= -f2)
+          sudo dpkg --add-architecture "${dpkg_arch}"
+          sudo tee -- /etc/apt/sources.list.d/"${{ matrix.dpkg-arch }}"-ports.list <<EOF
+          deb [arch=${{ matrix.dpkg-arch }}] http://ports.ubuntu.com/ubuntu-ports/ ${codename} main universe
+          deb [arch=${{ matrix.dpkg-arch }}] http://ports.ubuntu.com/ubuntu-ports/ ${codename}-updates main universe
+          deb [arch=${{ matrix.dpkg-arch }}] http://ports.ubuntu.com/ubuntu-ports/ ${codename}-security main universe
+          deb [arch=${{ matrix.dpkg-arch }}] http://ports.ubuntu.com/ubuntu-ports/ ${codename}-backports main universe
+          EOF
+          # Ignore "Failed to fetch https://security.ubuntu.com/ubuntu/dists/*/main/binary-*/Packages" error
+          sudo apt-get -o Acquire::Retries=10 -qq update || true
+          if [[ "${{ matrix.target }}" == "riscv64"* ]]; then
+            sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+              libc6-dbg:"${dpkg_arch}"
+            # https://bugs.launchpad.net/ubuntu/+source/valgrind/+bug/2120873
+            curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors -o valgrind-riscv64.deb https://launchpad.net/~jchittum/+archive/ubuntu/valgrind-riscv-2120873/+build/31091443/+files/valgrind_3.25.1-0ubuntu2~ppa1_riscv64.deb
+            sudo dpkg -i valgrind-riscv64.deb
+            rm -- valgrind-riscv64.deb
+          else
+            sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+              valgrind:"${dpkg_arch}"
+          fi
+      - run: |
+          printf '%s\n' "debug-assertions = true" >>./Cargo.toml
+          # Skip debug mode because it's slow.
+          binary_path=$(
+            ./tools/test.sh build-valgrind --target "${{ matrix.target }}" --release
+          )
+          mv -- "${binary_path}" ./release
+          binary_path=$(
+            CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
+              CARGO_PROFILE_RELEASE_LTO=fat \
+              ./tools/test.sh build-valgrind --target "${{ matrix.target }}" --release
+          )
+          mv -- "${binary_path}" ./release-fat-lto
+          case "${{ matrix.target }}" in
+            powerpc64le-*)
+              # powerpc64 pwr7
+              binary_path=$(
+                RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=pwr7" \
+                  ./tools/test.sh build-valgrind --target "${{ matrix.target }}" --release
+              )
+              mv -- "${binary_path}" ./release-pwr7
+              binary_path=$(
+                RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=pwr7" \
+                  CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
+                  CARGO_PROFILE_RELEASE_LTO=fat \
+                  ./tools/test.sh build-valgrind --target "${{ matrix.target }}" --release
+              )
+              mv -- "${binary_path}" ./release-pwr7-fat-lto
+              ;;
+            s390x*)
+              # s390x z196 (arch9)
+              binary_path=$(
+                RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=z196" \
+                  ./tools/test.sh build-valgrind --target "${{ matrix.target }}" --release
+              )
+              mv -- "${binary_path}" ./release-z196
+              binary_path=$(
+                RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=z196" \
+                  CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
+                  CARGO_PROFILE_RELEASE_LTO=fat \
+                  ./tools/test.sh build-valgrind --target "${{ matrix.target }}" --release
+              )
+              mv -- "${binary_path}" ./release-z196-fat-lto
+              ;;
+          esac
+      - uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro || 'ubuntu_devel' }}
+          shell: /bin/bash
+          install: |
+            set -CeEuxo pipefail
+            apt-get -o Acquire::Retries=10 -qq update
+            if [[ "${{ matrix.target }}" == "riscv64"* ]]; then
+              apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends ca-certificates curl libc6-dbg
+              # https://bugs.launchpad.net/ubuntu/+source/valgrind/+bug/2120873
+              curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors -o valgrind-riscv64.deb https://launchpad.net/~jchittum/+archive/ubuntu/valgrind-riscv-2120873/+build/31091443/+files/valgrind_3.25.1-0ubuntu2~ppa1_riscv64.deb
+              dpkg -i valgrind-riscv64.deb
+              rm -- valgrind-riscv64.deb
+            else
+              apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends valgrind
+            fi
+          run: |
+            set -CeEuxo pipefail
+            export RUST_BACKTRACE=1
+            export RUST_TEST_THREADS=1
+            export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
+            # NB: Sync with arguments in tools/test.sh.
+            args=(-v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=definite,indirect --errors-for-leak-kinds=definite,indirect --track-origins=yes --fair-sched=yes --gen-suppressions=all)
+            case "${{ matrix.target }}" in
+              s390x*) args+=(--suppressions=$(pwd)/tools/valgrind/s390x.supp) ;;
+            esac
+            for bin in ./release*; do
+              valgrind "${args[@]}" "${bin}"
+            done

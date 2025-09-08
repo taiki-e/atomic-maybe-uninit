@@ -63,9 +63,25 @@ mod unsupported;
 
 #[cfg(any(target_arch = "aarch64", all(target_arch = "arm64ec", not(atomic_maybe_uninit_no_asm))))]
 mod aarch64;
-#[cfg(target_arch = "arm")]
 #[cfg(all(
+    target_arch = "arm",
     any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+    not(any(
+        target_feature = "v8",
+        atomic_maybe_uninit_target_feature = "v8",
+        target_feature = "v8m",
+        atomic_maybe_uninit_target_feature = "v8m",
+        atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+    )),
+))]
+mod arm;
+#[cfg(all(
+    target_arch = "arm",
+    any(target_os = "linux", target_os = "android"),
+    any(
+        not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+        atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+    ),
     not(any(
         target_feature = "v8",
         atomic_maybe_uninit_target_feature = "v8",
@@ -73,70 +89,66 @@ mod aarch64;
         atomic_maybe_uninit_target_feature = "v8m",
     )),
 ))]
-mod arm;
-#[cfg(target_arch = "arm")]
-#[cfg(all(
-    any(target_os = "linux", target_os = "android"),
-    not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
-))]
 mod arm_linux;
-#[cfg(target_arch = "arm")]
-#[cfg(any(
-    target_feature = "v8",
-    atomic_maybe_uninit_target_feature = "v8",
-    target_feature = "v8m",
-    atomic_maybe_uninit_target_feature = "v8m",
+#[cfg(all(
+    target_arch = "arm",
+    any(
+        target_feature = "v8",
+        atomic_maybe_uninit_target_feature = "v8",
+        target_feature = "v8m",
+        atomic_maybe_uninit_target_feature = "v8m",
+    ),
 ))]
 mod armv8;
-#[cfg(target_arch = "avr")]
-#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+#[cfg(all(target_arch = "avr", atomic_maybe_uninit_unstable_asm_experimental_arch))]
 mod avr;
-#[cfg(target_arch = "hexagon")]
-#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+#[cfg(all(target_arch = "hexagon", atomic_maybe_uninit_unstable_asm_experimental_arch))]
 mod hexagon;
 #[cfg(any(
     all(target_arch = "loongarch32", not(atomic_maybe_uninit_no_asm)),
     target_arch = "loongarch64",
 ))]
 mod loongarch;
-#[cfg(target_arch = "m68k")]
-#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+#[cfg(all(target_arch = "m68k", atomic_maybe_uninit_unstable_asm_experimental_arch))]
 mod m68k;
-#[cfg(any(
-    all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
-    target_arch = "mips32r6",
-    target_arch = "mips64",
-    target_arch = "mips64r6",
+#[cfg(all(
+    any(
+        all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
+        target_arch = "mips32r6",
+        target_arch = "mips64",
+        target_arch = "mips64r6",
+    ),
+    atomic_maybe_uninit_unstable_asm_experimental_arch,
 ))]
-#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod mips;
-#[cfg(target_arch = "msp430")]
-#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+#[cfg(all(target_arch = "msp430", atomic_maybe_uninit_unstable_asm_experimental_arch))]
 mod msp430;
-#[cfg(any(target_arch = "powerpc", target_arch = "powerpc64"))]
-#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+#[cfg(all(
+    any(target_arch = "powerpc", target_arch = "powerpc64"),
+    atomic_maybe_uninit_unstable_asm_experimental_arch,
+))]
 mod powerpc;
 #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
 mod riscv;
-#[cfg(target_arch = "s390x")]
-#[cfg(not(atomic_maybe_uninit_no_asm))]
+#[cfg(all(target_arch = "s390x", not(atomic_maybe_uninit_no_asm)))]
 mod s390x;
-#[cfg(any(
-    all(
-        target_arch = "sparc",
-        any(
-            target_feature = "leoncasa",
-            atomic_maybe_uninit_target_feature = "leoncasa",
-            target_feature = "v9",
-            atomic_maybe_uninit_target_feature = "v9",
+#[cfg(all(
+    any(
+        all(
+            target_arch = "sparc",
+            any(
+                target_feature = "leoncasa",
+                atomic_maybe_uninit_target_feature = "leoncasa",
+                target_feature = "v9",
+                atomic_maybe_uninit_target_feature = "v9",
+            ),
         ),
+        target_arch = "sparc64",
     ),
-    target_arch = "sparc64",
+    atomic_maybe_uninit_unstable_asm_experimental_arch,
 ))]
-#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
 mod sparc;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86;
-#[cfg(target_arch = "xtensa")]
-#[cfg(atomic_maybe_uninit_unstable_asm_experimental_arch)]
+#[cfg(all(target_arch = "xtensa", atomic_maybe_uninit_unstable_asm_experimental_arch))]
 mod xtensa;

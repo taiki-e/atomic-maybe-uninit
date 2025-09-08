@@ -1,0 +1,58 @@
+ {
+    <test_term_release>
+    Memcheck:Cond
+    fun:clone<std::path::Prefix>
+    fun:clone
+    fun:*std*path*Components*as_path*
+    fun:{closure*}
+    fun:and_then<std::path::Component, &std::path::Path, std::path::*::parent::*>
+    fun:*std*path*Path*parent*
+    fun:*std*path*PathBuf*pop*
+    fun:get_dbpath_for_term
+    fun:from_name
+    fun:*test*term*terminfo*TermInfo*from_env*
+    fun:new<std::io::stdio::Stdout>
+    fun:*test*term*stdout*
+    fun:*test*console*get_formatter*
+    fun:*test*console*run_tests_console*
+    fun:test_main_with_exit_callback<test::test_main::{closure*}>
+    fun:*test*test_main*
+    fun:*test*test_main_static*
+    fun:call_once<fn(), ()>
+    fun:*std*sys*backtrace*__rust_begin_short_backtrace*
+    fun:*std*rt*lang_start*
+    fun:call_once<(), (dyn core::ops::function::Fn<(), Output=i32> + core::marker::Sync + core::panic::unwind_safe::RefUnwindSafe)>
+    fun:do_call<&(dyn core::ops::function::Fn<(), Output=i32> + core::marker::Sync + core::panic::unwind_safe::RefUnwindSafe), i32>
+    fun:catch_unwind<i32, &(dyn core::ops::function::Fn<(), Output=i32> + core::marker::Sync + core::panic::unwind_safe::RefUnwindSafe)>
+    fun:catch_unwind<&(dyn core::ops::function::Fn<(), Output=i32> + core::marker::Sync + core::panic::unwind_safe::RefUnwindSafe), i32>
+    fun:{closure*}
+    fun:do_call<std::rt::lang_start_internal::{closure*}, isize>
+    fun:catch_unwind<isize, std::rt::lang_start_internal::{closure*}>
+    fun:catch_unwind<std::rt::lang_start_internal::{closure*}, isize>
+    fun:*std*rt*lang_start_internal*
+}
+{
+    <test_term_release_fat_lto>
+    Memcheck:Cond
+    fun:clone<std::path::Prefix>
+    fun:clone
+    fun:*std*path*Components*as_path*
+    fun:{closure*}
+    fun:and_then<std::path::Component, &std::path::Path, std::path::*::parent::*>
+    fun:*std*path*Path*parent*
+    fun:UnknownInlinedFun
+    fun:get_dbpath_for_term
+    fun:from_name
+    fun:*test*term*terminfo*TermInfo*from_env*
+    fun:new<std::io::stdio::Stdout>
+    fun:*test*term*stdout*
+    fun:get_formatter
+    fun:*test*console*run_tests_console*
+    fun:UnknownInlinedFun
+    fun:UnknownInlinedFun
+    fun:UnknownInlinedFun
+    fun:*atomic_maybe_uninit*main*
+    fun:call_once<fn(), ()>
+    fun:*std*sys*backtrace*__rust_begin_short_backtrace*
+    fun:main
+}

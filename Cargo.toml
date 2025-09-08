@@ -38,6 +38,9 @@ quickcheck = { version = "1", default-features = false, git = "https://github.co
 [target.'cfg(unix)'.dev-dependencies]
 libc = "0.2"
 
+[target.'cfg(valgrind)'.dev-dependencies]
+crabgrind = "0.1"
+
 [lints]
 workspace = true
 
@@ -91,7 +94,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # This is a cfg for compatibility with MIPS I.
     # 'cfg(atomic_maybe_uninit_no_sync)', // check-cfg is already set by build script
     # Not public API.
-    'cfg(atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,qemu,valgrind)',
+    'cfg(atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_kuser_memory_barrier,atomic_maybe_uninit_test_prefer_kuser_cmpxchg,atomic_maybe_uninit_test_prefer_bx,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,qemu,valgrind)',
 ] }
 unnameable_types = "warn"
 unreachable_pub = "warn"
@@ -132,3 +135,6 @@ too_many_arguments = { level = "allow", priority = 1 }
 too_many_lines = { level = "allow", priority = 1 }
 type_complexity = { level = "allow", priority = 1 }
 unreadable_literal = { level = "allow", priority = 1 }
+
+[profile.release]
+debug = true

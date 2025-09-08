@@ -36,7 +36,10 @@ use crate::raw::{AtomicLoad, AtomicStore};
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 use crate::utils::{MaybeUninit64, Pair};
 
-#[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
+#[cfg(all(
+    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
+))]
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! dmb {
     () => {
@@ -59,7 +62,10 @@ macro_rules! dmb {
     any(target_os = "linux", target_os = "android"),
     not(atomic_maybe_uninit_use_cp15_barrier),
 )))]
-#[cfg(not(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")))]
+#[cfg(not(all(
+    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
+)))]
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! dmb {
     () => {
@@ -73,7 +79,10 @@ macro_rules! dmb {
     any(target_os = "linux", target_os = "android"),
     not(atomic_maybe_uninit_use_cp15_barrier),
 ))]
-#[cfg(not(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")))]
+#[cfg(not(all(
+    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
+)))]
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 macro_rules! dmb {
     () => {
@@ -107,11 +116,14 @@ macro_rules! asm_no_dmb {
         core::arch::asm!($($asm)*)
     };
 }
-#[cfg(any(
-    target_feature = "v7",
-    atomic_maybe_uninit_target_feature = "v7",
-    target_feature = "mclass",
-    atomic_maybe_uninit_target_feature = "mclass",
+#[cfg(all(
+    any(
+        target_feature = "v7",
+        atomic_maybe_uninit_target_feature = "v7",
+        target_feature = "mclass",
+        atomic_maybe_uninit_target_feature = "mclass",
+    ),
+    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
 ))]
 macro_rules! asm_use_dmb {
     ($($asm:tt)*) => {
@@ -122,11 +134,14 @@ macro_rules! asm_use_dmb {
     any(target_os = "linux", target_os = "android"),
     not(atomic_maybe_uninit_use_cp15_barrier),
 )))]
-#[cfg(not(any(
-    target_feature = "v7",
-    atomic_maybe_uninit_target_feature = "v7",
-    target_feature = "mclass",
-    atomic_maybe_uninit_target_feature = "mclass",
+#[cfg(not(all(
+    any(
+        target_feature = "v7",
+        atomic_maybe_uninit_target_feature = "v7",
+        target_feature = "mclass",
+        atomic_maybe_uninit_target_feature = "mclass",
+    ),
+    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
 )))]
 macro_rules! asm_use_dmb {
     ($($asm:tt)*) => {
@@ -141,11 +156,14 @@ macro_rules! asm_use_dmb {
     any(target_os = "linux", target_os = "android"),
     not(atomic_maybe_uninit_use_cp15_barrier),
 ))]
-#[cfg(not(any(
-    target_feature = "v7",
-    atomic_maybe_uninit_target_feature = "v7",
-    target_feature = "mclass",
-    atomic_maybe_uninit_target_feature = "mclass",
+#[cfg(not(all(
+    any(
+        target_feature = "v7",
+        atomic_maybe_uninit_target_feature = "v7",
+        target_feature = "mclass",
+        atomic_maybe_uninit_target_feature = "mclass",
+    ),
+    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
 )))]
 macro_rules! asm_use_dmb {
     ($($asm:tt)*) => {
