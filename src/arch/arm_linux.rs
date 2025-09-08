@@ -9,10 +9,6 @@ Refs:
 - ARMv4 and ARMv5 Differences
   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences
 
-Note: __kuser_cmpxchg and __kuser_cmpxchg64 are always SeqCst.
-https://github.com/torvalds/linux/blob/v6.16/arch/arm/kernel/entry-armv.S#L814-L822
-https://github.com/torvalds/linux/blob/v6.16/arch/arm/kernel/entry-armv.S#L700-L707
-
 Generated asm:
 - armv5te https://godbolt.org/z/jqMMv6c3K
 - armv4t https://godbolt.org/z/qMYe5qsTb
@@ -26,12 +22,28 @@ use crate::{
 };
 
 // https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/arm/kernel_user_helpers.rst
+// __kuser_helper_version
 const KUSER_HELPER_VERSION: usize = 0xFFFF0FFC;
+// __kuser_cmpxchg
 // __kuser_helper_version >= 2 (kernel version 2.6.12+)
+// https://github.com/torvalds/linux/blob/v2.6.12/arch/arm/kernel/entry-armv.S#L617-L660
+// https://github.com/torvalds/linux/blob/v6.16/arch/arm/kernel/entry-armv.S#L769-L827
+// Note:
+// - always SeqCst (smp_dmb arm)
+// - push to the stack when kuser_cmpxchg32_fixup called
+// - inout: r0, in: r1, r2, lr, clobbered: r3, ip, flags
 const KUSER_CMPXCHG: usize = 0xFFFF0FC0;
+// __kuser_memory_barrier
 // __kuser_helper_version >= 3 (kernel version 2.6.15+)
 const KUSER_MEMORY_BARRIER: usize = 0xFFFF0FA0;
+// __kuser_cmpxchg64
 // __kuser_helper_version >= 5 (kernel version 3.1+)
+// https://github.com/torvalds/linux/blob/v3.1/arch/arm/kernel/entry-armv.S#L730-L814
+// https://github.com/torvalds/linux/blob/v6.16/arch/arm/kernel/entry-armv.S#L693-L761
+// Note:
+// - always SeqCst (smp_dmb arm)
+// - push to the stack in both cases
+// - inout: r0, r1, lr, in: r2, clobbered: r3, flags
 const KUSER_CMPXCHG64: usize = 0xFFFF0F60;
 
 #[inline]
@@ -55,9 +67,31 @@ macro_rules! blx {
     any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"),
     not(atomic_maybe_uninit_test_prefer_bx),
 )))]
+#[cfg(not(any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode")))]
+#[rustfmt::skip]
 macro_rules! blx {
     ($addr:tt) => {
-        concat!("mov lr, pc", "\n", "bx ", $addr)
+        concat!(
+            "mov lr, pc", "\n",
+            "bx ", $addr
+        )
+    };
+}
+#[cfg(not(all(
+    any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"),
+    not(atomic_maybe_uninit_test_prefer_bx),
+)))]
+#[cfg(any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"))]
+#[rustfmt::skip]
+macro_rules! blx {
+    ($addr:tt) => {
+        concat!(
+            "bl 120f", "\n",
+            "b 121f", "\n",
+            "120:", "\n",
+            "bx ", $addr, "\n",
+            "121:",
+        )
     };
 }
 
@@ -179,7 +213,7 @@ macro_rules! atomic {
                         out("ip") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because __kuser_cmpxchg modifies the condition flags.
-                        options(nostack),
+                        // Do not use `nostack` because __kuser_cmpxchg may push to stack.
                     );
                 }
                 out
@@ -230,7 +264,7 @@ macro_rules! atomic {
                         out("ip") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because CMP and __kuser_cmpxchg modify the condition flags.
-                        options(nostack),
+                        // Do not use `nostack` because __kuser_cmpxchg may push to stack.
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
@@ -283,7 +317,7 @@ macro_rules! atomic_sub_word {
                         out("ip") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because __kuser_cmpxchg modifies the condition flags.
-                        options(nostack),
+                        // Do not use `nostack` because __kuser_cmpxchg may push to stack.
                     );
                 }
                 out
@@ -346,7 +380,7 @@ macro_rules! atomic_sub_word {
                         out("ip") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because CMP and __kuser_cmpxchg modify the condition flags.
-                        options(nostack),
+                        // Do not use `nostack` because __kuser_cmpxchg may push to stack.
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
@@ -377,28 +411,29 @@ macro_rules! atomic64 {
                 debug_assert_atomic_unsafe_precondition!(src, $ty);
                 assert_has_kuser_cmpxchg64();
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
                             "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.byte_add(4) }
-                            "str r0, [r1]",            // *r1 = r0
-                            "str r3, [r1, #4]",        // *r1.byte_add(4) = r3
-                            "mov r0, r1",              // r0 = r1
+                            "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
+                            "str r0, [{out}]",         // *out = r0
+                            "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
+                            "mov r0, {out}",           // r0 = out
+                            "mov r1, {out}",           // r1 = out
                             blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
                             "bcc 2b",                  // if C == 0 { jump 'retry }
+                        out = in(reg) out.as_mut_ptr(),
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
                         out("r0") _, // old_val
-                        in("r1") out_ptr, // new_val
+                        out("r1") _, // new_val
                         in("r2") src, // ptr
                         // __kuser_cmpxchg64 clobbers r3, lr, and flags.
                         out("r3") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because __kuser_cmpxchg64 modifies the condition flags.
-                        options(nostack),
+                        // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
                     );
                 }
                 out
@@ -413,30 +448,31 @@ macro_rules! atomic64 {
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 assert_has_kuser_cmpxchg64();
-                let val = val.as_ptr();
+                let mut out_tmp = MaybeUninit::<Self>::uninit();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut out_tmp = MaybeUninit::<Self>::uninit();
                     asm!(
                         "2:", // 'retry:
                             "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.byte_add(4) }
+                            "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
                             "str r0, [{out}]",         // *out = r0
-                            "str r3, [{out}, #4]",     // *out.byte_add(4) = r3
+                            "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
                             "mov r0, {out}",           // r0 = out
+                            "mov r1, {val}",           // r1 = val
                             blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
                             "bcc 2b",                  // if C == 0 { jump 'retry }
                         out = in(reg) out_tmp.as_mut_ptr(),
+                        val = in(reg) val.as_ptr(),
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
                         out("r0") _, // old_val
-                        in("r1") val, // new_val
+                        out("r1") _, // new_val
                         in("r2") dst, // ptr
                         // __kuser_cmpxchg64 clobbers r3, lr, and flags.
                         out("r3") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because __kuser_cmpxchg64 modifies the condition flags.
-                        options(nostack),
+                        // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
                     );
                 }
             }
@@ -451,30 +487,30 @@ macro_rules! atomic64 {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 assert_has_kuser_cmpxchg64();
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                let out_ptr = out.as_mut_ptr();
-                let val = val.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
                             "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.byte_add(4) }
+                            "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
                             "str r0, [{out}]",         // *out = r0
-                            "str r3, [{out}, #4]",     // *out.byte_add(4) = r3
+                            "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
                             "mov r0, {out}",           // r0 = out
+                            "mov r1, {val}",           // r1 = val
                             blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
                             "bcc 2b",                  // if C == 0 { jump 'retry }
-                        out = in(reg) out_ptr,
+                        out = in(reg) out.as_mut_ptr(),
+                        val = in(reg) val.as_ptr(),
                         kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
                         out("r0") _, // old_val
-                        in("r1") val, // new_val
+                        out("r1") _, // new_val
                         in("r2") dst, // ptr
                         // __kuser_cmpxchg64 clobbers r3, lr, and flags.
                         out("r3") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because __kuser_cmpxchg64 modifies the condition flags.
-                        options(nostack),
+                        // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
                     );
                 }
                 out
@@ -502,21 +538,20 @@ macro_rules! atomic64 {
                     asm!(
                         "2:", // 'retry:
                             "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r3, [r2, #4]",        // atomic { r3 = *r2.byte_add(4) }
+                            "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
                             "str r0, [{out}]",         // *out = r0
-                            "str r3, [{out}, #4]",     // *out.byte_add(4) = r3
+                            "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
                             "eor r0, r0, {old_lo}",    // r0 ^= old_lo
-                            "eor r3, r3, {old_hi}",    // r3 ^= old_hi
-                            "orrs r0, r0, r3",         // r0 |= r3; if r0 == 0 { Z = 1 } else { Z = 0 }
-                            "bne 3f",                  // if Z == 0 { jump 'cmp-fail }
+                            "eor r1, r1, {old_hi}",    // r1 ^= old_hi
+                            "orrs r0, r0, r1",         // r0 |= r1; if r0 == 0 { Z = 1 } else { Z = 0 }
                             "mov r0, {out}",           // r0 = out
+                            "bne 3f",                  // if Z == 0 { jump 'cmp-fail }
                             "mov r1, {new}",           // r1 = new
                             blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
                             "bcc 2b",                  // if C == 0 { jump 'retry }
                             "b 4f",                    // jump 'success
                         "3:", // 'cmp-fail:
                             // write back to ensure atomicity
-                            "mov r0, {out}",           // r0 = out
                             "mov r1, {out}",           // r1 = out
                             blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
                             "bcc 2b",                  // if C == 0 { jump 'retry }
@@ -534,7 +569,7 @@ macro_rules! atomic64 {
                         out("r3") _,
                         out("lr") _,
                         // Do not use `preserves_flags` because CMP, ORRS, and __kuser_cmpxchg64 modify the condition flags.
-                        options(nostack),
+                        // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
@@ -550,7 +585,7 @@ atomic64!(u64);
 
 // TODO: Since Rust 1.64, the Linux kernel requirement for Rust when using std is 3.2+, so it
 // should be possible to convert this to debug_assert if the std feature is enabled on Rust 1.64+.
-// https://blog.rust-lang.org/2022/08/01/Increasing-glibc-kernel-requirements.html
+// https://blog.rust-lang.org/2022/08/01/Increasing-glibc-kernel-requirements
 #[inline]
 fn assert_has_kuser_cmpxchg64() {
     if kuser_helper_version() < 5 {

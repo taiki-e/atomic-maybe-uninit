@@ -4,6 +4,9 @@
 
 #![allow(clippy::match_same_arms)] // https://github.com/rust-lang/rust-clippy/issues/12044
 
+#[path = "src/gen/build.rs"]
+mod generated;
+
 use std::{env, str};
 
 fn main() {
@@ -39,7 +42,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","thumb-mode","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
         );
     }
 
@@ -280,6 +283,11 @@ fn main() {
                 v5te |= target_feature_fallback("v6", v6);
                 target_feature_fallback("v5te", v5te);
                 target_feature_fallback("mclass", mclass);
+                // All builtin targets that start with "thumb" enable thumb-mode, and
+                // some builtin targets that start with "arm" are also enable thumb-mode.
+                let thumb_mode =
+                    target.starts_with("thumb") || generated::ARM_BUT_THUMB_MODE.contains(&target);
+                target_feature_fallback("thumb-mode", thumb_mode);
             }
         }
         "riscv32" | "riscv64" => {
