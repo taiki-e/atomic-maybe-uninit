@@ -18,6 +18,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Remove legacy [inefficient](https://github.com/crossbeam-rs/crossbeam/pull/1015#issuecomment-1676549870) implementation for pre-1.74 Rust which doesn't support `MaybeUninit` registers in `asm!`.
 
+- Optimize AArch64 128-bit CAS when FEAT_LSE is not enabled.
+
 ## [0.3.9] - 2025-09-05
 
 - Update to stabilized [LoongArch32](https://github.com/rust-lang/rust/pull/144402) inline assembly. ([803b062](https://github.com/taiki-e/atomic-maybe-uninit/commit/803b06263c8a3e38596eb48aec88d2dce77d60e6))

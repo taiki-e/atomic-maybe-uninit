@@ -647,7 +647,7 @@ macro_rules! atomic128 {
                     let mut r: i32;
                     #[cfg(target_feature = "lse")]
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt, $fence:tt) => {{
+                        ($acquire:tt, $release:tt, $fence:tt) => {
                             // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
                             asm!(
                                 // casp writes the current value to the first register pair,
@@ -671,36 +671,23 @@ macro_rules! atomic128 {
                                 out("x9") prev_hi,
                                 // Do not use `preserves_flags` because CMP and CCMP modify the condition flags.
                                 options(nostack),
-                            );
-                            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            (
-                                MaybeUninit128 {
-                                    pair: Pair { lo: prev_lo, hi: prev_hi }
-                                }.$ty,
-                                r != 0
                             )
-                        }};
+                        };
                     }
                     #[cfg(not(target_feature = "lse"))]
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt, $fence:tt) => {{
+                        ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),        // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
-                                    "cmp {prev_lo}, {old_lo}",                                          // if prev_lo == old_lo { Z = 1 } else { Z = 0 }
-                                    "cset {r:w}, ne",                                                   // r = !Z
-                                    "cmp {prev_hi}, {old_hi}",                                          // if prev_hi == old_hi { Z = 1 } else { Z = 0 }
-                                    "cinc {r:w}, {r:w}, ne",                                            // if Z == 0 { r += 1 }
-                                    "cbz {r:w}, 3f",                                                    // if r == 0 { jump 'success }
+                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),      // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
+                                    "cmp {prev_lo}, {old_lo}",                                        // if prev_lo == old_lo { Z = 1 } else { Z = 0 }
+                                    "ccmp {prev_hi}, {old_hi}, #0, eq",                               // if Z == 1 { if prev_hi == old_hi { Z = 1 } else { Z = 0 } } else { Z = 0 }
                                     // write back to ensure atomicity
-                                    concat!("st", $release, "xp {r:w}, {prev_lo}, {prev_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = prev_lo:prev_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
-                                    "mov {r:w}, #1",                                                    // r = 1
-                                    "b 4f",                                                             // jump 'cmp-fail
-                                "3:", // 'success:
-                                    concat!("st", $release, "xp {r:w}, {new_lo}, {new_hi}, [{dst}]"),   // atomic { if EXCLUSIVE == dst { *dst = new_lo:new_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
-                                "4:", // 'cmp-fail:
+                                    "csel {tmp_lo}, {new_lo}, {prev_lo}, eq",                         // if Z == 1 { tmp_lo = new_lo } else { tmp_lo = prev_lo }
+                                    "csel {tmp_hi}, {new_hi}, {prev_hi}, eq",                         // if Z == 1 { tmp_hi = new_hi } else { tmp_hi = prev_hi }
+                                    concat!("st", $release, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = tmp_lo:tmp_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                    "cbnz {r:w}, 2b",                                                 // if r != 0 { jump 'retry }
+                                "cset {r:w}, eq",                                                     // r = Z
                                 $fence,
                                 dst = in(reg) ptr_reg!(dst),
                                 old_lo = in(reg) old.pair.lo,
@@ -710,20 +697,21 @@ macro_rules! atomic128 {
                                 prev_lo = out(reg) prev_lo,
                                 prev_hi = out(reg) prev_hi,
                                 r = out(reg) r,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
+                                tmp_lo = out(reg) _,
+                                tmp_hi = out(reg) _,
+                                // Do not use `preserves_flags` because CMP and CCMP modify the condition flags.
                                 options(nostack),
-                            );
-                            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            // 0 if the store was successful, 1 if no store was performed
-                            (
-                                MaybeUninit128 {
-                                    pair: Pair { lo: prev_lo, hi: prev_hi }
-                                }.$ty,
-                                r == 0
                             )
-                        }};
+                        };
                     }
-                    atomic_rmw!(cmpxchg, order, write = success)
+                    atomic_rmw!(cmpxchg, order, write = success);
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+                    (
+                        MaybeUninit128 {
+                            pair: Pair { lo: prev_lo, hi: prev_hi }
+                        }.$ty,
+                        r != 0
+                    )
                 }
             }
         }
