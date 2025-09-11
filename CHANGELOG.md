@@ -102,6 +102,8 @@ This release includes improvements to platform support, various optimizations, [
 
 ## [0.3.2] - 2024-07-10
 
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
+
 - Support Arm64EC (experimental). ([4d94b3c](https://github.com/taiki-e/atomic-maybe-uninit/commit/4d94b3c0fe4c51f061abb33196821c0e32fa3f21))
 
 - Support swap/CAS on AVR (experimental). ([71b9a5f](https://github.com/taiki-e/atomic-maybe-uninit/commit/71b9a5fa905f59c0c285c78157ed2165bf974fa5))
@@ -124,6 +126,8 @@ This release includes improvements to platform support, various optimizations, [
 
 ## [0.3.1] - 2023-10-14
 
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
+
 - Add `as_ptr` and `from_ptr`.
 
 - Optimize weak CAS on PowerPC.
@@ -132,9 +136,13 @@ This release includes improvements to platform support, various optimizations, [
 
 ## [0.3.0] - 2023-10-01
 
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
+
 - Optimize inline assemblies using `MaybeUninit` input/output of inline assembly implemented by [rust-lang/rust#114790](https://github.com/rust-lang/rust/pull/114790), where it is available. This greatly improves performance and is almost equivalent to std atomic types. ([#19](https://github.com/taiki-e/atomic-maybe-uninit/pull/19))
 
 ## [0.2.22] - 2023-08-15
+
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
 - Add `cfg_{has,no}_atomic_{8,16,32,64,128,ptr}` macros to enable code when the corresponding atomic implementation is available/unavailable. ([#9](https://github.com/taiki-e/atomic-maybe-uninit/pull/9))
 
@@ -144,6 +152,8 @@ This release includes improvements to platform support, various optimizations, [
 
 ## [0.2.21] - 2023-08-10
 
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
+
 - Fix AVR 16-bit atomic load/store.
 
 - Optimize AArch64 128-bit atomic store/swap when the `lse128` target feature is enabled at compile-time.
@@ -151,6 +161,8 @@ This release includes improvements to platform support, various optimizations, [
 - Optimize AArch64 128-bit atomic load/store when the `rcpc3` target feature is enabled at compile-time.
 
 ## [0.2.20] - 2023-08-02
+
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
 - Support pre-v6 Arm Linux/Android (e.g., armv5te-unknown-linux-gnueabi, arm-linux-androideabi, etc.).
 
@@ -161,6 +173,8 @@ This release includes improvements to platform support, various optimizations, [
 - Improve {8,16}-bit atomic implementations on RISC-V, PowerPC, MIPS, s390x, LoongArch64.
 
 ## [0.2.19] - 2023-07-27
+
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
 - Support LoongArch64.
 
@@ -178,11 +192,15 @@ This release includes improvements to platform support, various optimizations, [
 
 ## [0.2.18] - 2023-05-31
 
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
+
 - Fix build error on AArch64 ILP32 ABI targets (tier 3).
 
 - Optimize inline assemblies on PowerPC and s390x.
 
 ## [0.2.17] - 2023-05-09
+
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
 - Fix bug in s390x atomic RMWs on old nightly.
 
@@ -292,11 +310,15 @@ This release includes improvements to platform support, various optimizations, [
 
 ## [0.2.4] - 2022-03-20
 
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
+
 - Implement MIPS32r2 32-bit swap.
 
 - Implement MIPS64r2 32-bit and 64-bit swap.
 
 ## [0.2.3] - 2022-03-19
+
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
 - Support MIPS32r2 and MIPS64r2.
 
@@ -304,15 +326,21 @@ This release includes improvements to platform support, various optimizations, [
 
 ## [0.2.2] - 2022-03-16
 
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
+
 - Support Armv7-A, Armv7-R, Armv7-M, and Armv8-M.
 
 ## [0.2.1] - 2022-03-14
+
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
 - Optimize AArch64 atomic swap when the `lse` target feature is enabled at compile-time.
 
 - Document safety requirements of functions in `raw` module.
 
 ## [0.2.0] - 2022-03-13
+
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
 - Support AArch64.
 
@@ -321,6 +349,8 @@ This release includes improvements to platform support, various optimizations, [
 - Remove `raw` feature and always expose `raw` module.
 
 ## [0.1.0] - 2022-03-12
+
+**Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
 Initial release
 
