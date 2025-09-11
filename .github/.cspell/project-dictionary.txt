@@ -15,7 +15,6 @@ cbnz
 ccmp
 cdsg
 CDSY
-cinc
 clrex
 cmpw
 cmpxchg
