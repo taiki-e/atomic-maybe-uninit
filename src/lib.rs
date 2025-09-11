@@ -9,13 +9,15 @@ Atomic operations on potentially uninitialized integers.
 
 ## Motivation
 
-Copying types containing uninitialized bytes (e.g., padding), via the standard library's atomic types is [undefined behavior because the copy goes through integers][undefined-behavior].
+Copying types containing uninitialized bytes (e.g., padding), via the standard library's atomic types
+is [undefined behavior because the copy goes through integers][undefined-behavior].
 
 This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
 Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, and Xtensa are supported.
+(You can use `cfg_{has,no}_*` macros to write code based on whether or not which size of primitives is available.)
 
 | target_arch                     | primitives                                          | load/store | swap/CAS |
 | ------------------------------- | --------------------------------------------------- |:----------:|:--------:|
@@ -56,7 +58,8 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, P
 \[8] Requires Rust 1.91+.<br>
 \[9] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
 
-See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md) for more information about atomic operations in these architectures.
+See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md)
+for more information about atomic operations in these architectures.
 
 Feel free to submit an issue if your target is not supported yet.
 
