@@ -159,6 +159,9 @@ macro_rules! __test_atomic {
         fn load_store() {
             static VAR_RO: Align16<$ty> = Align16(10);
             static VAR: AtomicMaybeUninit<$ty> = AtomicMaybeUninit::new(MaybeUninit::new(10));
+            #[allow(deprecated)]
+            static _VAR: AtomicMaybeUninit<$ty> =
+                AtomicMaybeUninit::<$ty>::const_new(MaybeUninit::new(10));
             let var = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(10));
             unsafe {
                 assert_eq!(

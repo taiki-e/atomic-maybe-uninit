@@ -747,6 +747,18 @@ macro_rules! int {
         unsafe impl crate::private::PrimitivePriv for $ty {
             type Align = crate::private::$align;
         }
+        impl AtomicMaybeUninit<$ty> {
+            /// Creates a new atomic value from a potentially uninitialized value.
+            #[inline]
+            #[must_use]
+            #[deprecated(
+                since = "0.3.10",
+                note = "use `new` instead because it is now always `const fn`"
+            )]
+            pub const fn const_new(v: MaybeUninit<$ty>) -> Self {
+                Self { v: UnsafeCell::new(v), _align: [] }
+            }
+        }
     };
 }
 int!(i8, Align1);
