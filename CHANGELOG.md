@@ -12,13 +12,14 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Increase the minimum supported Rust version (MSRV) from Rust 1.59 to Rust 1.74.
+- Increase the minimum supported Rust version (MSRV) from Rust 1.59 to Rust 1.74. ([#48](https://github.com/taiki-e/atomic-maybe-uninit/pull/48))
+  This removes legacy [inefficient](https://github.com/crossbeam-rs/crossbeam/pull/1015#issuecomment-1676549870) implementation for pre-1.74 Rust which doesn't support `MaybeUninit` registers in `asm!`. ([#48](https://github.com/taiki-e/atomic-maybe-uninit/pull/48))
 
-- Deprecate `AtomicMaybeUninit::const_new` because `AtomicMaybeUninit::new` is now always `const fn` because of the MSRV bump.
+- Deprecate `AtomicMaybeUninit::const_new` because `AtomicMaybeUninit::new` is now always `const fn` because of the MSRV bump. ([#48](https://github.com/taiki-e/atomic-maybe-uninit/pull/48), [d428f97](https://github.com/taiki-e/atomic-maybe-uninit/commit/d428f975f88f4bfeffd2e31656bc18200722deff))
 
-- Remove legacy [inefficient](https://github.com/crossbeam-rs/crossbeam/pull/1015#issuecomment-1676549870) implementation for pre-1.74 Rust which doesn't support `MaybeUninit` registers in `asm!`.
+- Fix bug in 64-bit atomics on pre-v6 Arm Linux/Android. ([075494c](https://github.com/taiki-e/atomic-maybe-uninit/commit/075494c1d7c6ab6db6c12c2adc149a1e16b9c5ae))
 
-- Optimize AArch64 128-bit CAS when FEAT_LSE is not enabled.
+- Optimize AArch64 128-bit CAS when FEAT_LSE is not enabled. ([0015d1a](https://github.com/taiki-e/atomic-maybe-uninit/commit/0015d1ae76c8d79285d482c999f250386c5fb142))
 
 ## [0.3.9] - 2025-09-05
 
@@ -26,7 +27,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [0.3.8] - 2025-07-06
 
-- Support LoongArch32 (experimental).
+- Support LoongArch32 (experimental). ([a4a93e7](https://github.com/taiki-e/atomic-maybe-uninit/commit/a4a93e7fd76b6f3827f41f0a1cbee9c2bcf673d8))
 
 ## [0.3.7] - 2025-03-04
 
@@ -128,11 +129,13 @@ This release includes improvements to platform support, various optimizations, [
 
 **Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
-- Add `as_ptr` and `from_ptr`.
+- Add `as_ptr`. ([d9f0cf5](https://github.com/taiki-e/atomic-maybe-uninit/commit/d9f0cf581f3d39ddb2b2928809771dba7f6c582a))
 
-- Optimize weak CAS on PowerPC.
+- Add `from_ptr`. ([6338985](https://github.com/taiki-e/atomic-maybe-uninit/commit/63389851db9a2616f8a093ace2d0f32e4606142e))
 
-- Optimize {8,16}-bit CAS on AArch64.
+- Optimize weak CAS on PowerPC. ([6f14f20](https://github.com/taiki-e/atomic-maybe-uninit/commit/6f14f20ebffd1c9f3f842997e67ff696d53a79fb))
+
+- Optimize {8,16}-bit CAS on AArch64. ([29aae39](https://github.com/taiki-e/atomic-maybe-uninit/commit/29aae3976ae858bc39c03b229f747ac44fe26521))
 
 ## [0.3.0] - 2023-10-01
 
@@ -154,29 +157,29 @@ This release includes improvements to platform support, various optimizations, [
 
 **Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
-- Fix AVR 16-bit atomic load/store.
+- Fix AVR 16-bit atomic load/store. ([b2fcc0d](https://github.com/taiki-e/atomic-maybe-uninit/commit/b2fcc0d8b523166a9d92b6e41f58d435785d0f90))
 
-- Optimize AArch64 128-bit atomic store/swap when the `lse128` target feature is enabled at compile-time.
+- Optimize AArch64 128-bit atomic store/swap when the `lse128` target feature is enabled at compile-time. ([9a114a7](https://github.com/taiki-e/atomic-maybe-uninit/commit/9a114a746a7f265e33b07d566f498586893c7266))
 
-- Optimize AArch64 128-bit atomic load/store when the `rcpc3` target feature is enabled at compile-time.
+- Optimize AArch64 128-bit atomic load/store when the `rcpc3` target feature is enabled at compile-time. ([85d9ef3](https://github.com/taiki-e/atomic-maybe-uninit/commit/85d9ef3622345f9b85700ffa7181dde1731b1a5c))
 
 ## [0.2.20] - 2023-08-02
 
 **Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
-- Support pre-v6 Arm Linux/Android (e.g., armv5te-unknown-linux-gnueabi, arm-linux-androideabi, etc.).
+- Support pre-v6 Arm Linux/Android (e.g., armv5te-unknown-linux-gnueabi, arm-linux-androideabi, etc.). ([#10](https://github.com/taiki-e/atomic-maybe-uninit/pull/10))
 
-- Support Hexagon (experimental).
+- Support Hexagon (experimental). ([#15](https://github.com/taiki-e/atomic-maybe-uninit/pull/15))
 
-- Support AVR atomic load/store (experimental).
+- Support AVR atomic load/store (experimental). ([6491450](https://github.com/taiki-e/atomic-maybe-uninit/commit/649145078abd23d9e3495e81fb828e02aeff947d))
 
-- Improve {8,16}-bit atomic implementations on RISC-V, PowerPC, MIPS, s390x, LoongArch64.
+- Improve {8,16}-bit atomic implementations on RISC-V, PowerPC, MIPS, s390x, LoongArch64. ([d82c47f](https://github.com/taiki-e/atomic-maybe-uninit/commit/d82c47f2079cccfa5fb36514e13b34132b7afdfa))
 
 ## [0.2.19] - 2023-07-27
 
 **Note:** This release has been yanked due to pre-20 LLVM's bug (we implemented a workaround in 0.3.3).
 
-- Support LoongArch64.
+- Support LoongArch64. ([#14](https://github.com/taiki-e/atomic-maybe-uninit/pull/14))
 
 - Fix build error on MIPS32r6 and MIPS64r6 (both tier 3) since [nightly-2023-07-19's target_arch change](https://github.com/rust-lang/rust/pull/112374).
 
@@ -290,9 +293,9 @@ This release includes improvements to platform support, various optimizations, [
 
 **Note:** This release has been yanked due to a bug fixed in 0.2.7.
 
-- Support PowerPC.
+- Support PowerPC. ([#5](https://github.com/taiki-e/atomic-maybe-uninit/pull/5))
 
-- Support s390x.
+- Support s390x. ([#6](https://github.com/taiki-e/atomic-maybe-uninit/pull/6))
 
 - Implement RISC-V 8-bit and 16-bit swap.
 
@@ -304,7 +307,7 @@ This release includes improvements to platform support, various optimizations, [
 
 **Note:** This release has been yanked due to a bug fixed in 0.2.16.
 
-- Support Armv6-M.
+- Support Armv6-M. ([#4](https://github.com/taiki-e/atomic-maybe-uninit/pull/4))
 
 - Optimize AArch64 128-bit atomic load/store when the `lse2` target feature is enabled at compile-time.
 
