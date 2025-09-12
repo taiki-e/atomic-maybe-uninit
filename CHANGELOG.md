@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.10] - 2025-09-12
+
 - Increase the minimum supported Rust version (MSRV) from Rust 1.59 to Rust 1.74. ([#48](https://github.com/taiki-e/atomic-maybe-uninit/pull/48))
   This removes legacy [inefficient](https://github.com/crossbeam-rs/crossbeam/pull/1015#issuecomment-1676549870) implementation for pre-1.74 Rust which doesn't support `MaybeUninit` registers in `asm!`. ([#48](https://github.com/taiki-e/atomic-maybe-uninit/pull/48))
 
@@ -357,7 +359,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.9...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.10...HEAD
+[0.3.10]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.6...v0.3.7
