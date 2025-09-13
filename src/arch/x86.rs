@@ -227,7 +227,7 @@ macro_rules! atomic64 {
                 // Refs:
                 // - https://www.felixcloutier.com/x86/movlps (SSE)
                 unsafe {
-                    let mut out = MaybeUninit::<core::arch::x86::__m128>::zeroed();
+                    let mut out = MaybeUninit::<core::arch::x86::__m128>::uninit();
                     // atomic load is always SeqCst.
                     asm!(
                         "movlps {out}, qword ptr [{src}]", // atomic { out[:] = *src }
@@ -806,5 +806,14 @@ macro_rules! cfg_has_atomic_cas {
 #[cfg(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg))]
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
+}
+// TODO
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => { $($tt)* };
 }

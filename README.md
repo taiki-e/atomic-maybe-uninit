@@ -17,39 +17,41 @@ is [undefined behavior because the copy goes through integers][undefined-behavio
 
 This crate provides a way to soundly perform such operations.
 
+This crate also provides byte-wise atomic memcpy which is sound for the type being copied contains uninitialized bytes.
+
 ## Platform Support
 
 Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, and Xtensa are supported.
 (You can use `cfg_{has,no}_*` macros to write code based on whether or not which size of primitives is available.)
 
-| target_arch                     | primitives                                          | load/store | swap/CAS |
-| ------------------------------- | --------------------------------------------------- |:----------:|:--------:|
-| x86                             | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| x86_64                          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| x86_64 (+cmpxchg16b) \[2]       | i128,u128                                           | ✓          | ✓        |
-| arm (v6+ or Linux/Android)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| arm (except for M-profile) \[3] | i64,u64                                             | ✓          | ✓        |
-| aarch64                         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| riscv32                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| riscv32 (+zacas) \[4]           | i64,u64                                             | ✓          | ✓        |
-| riscv64                         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
-| riscv64 (+zacas) \[4]           | i128,u128                                           | ✓          | ✓        |
-| loongarch64                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| loongarch32 \[8] (experimental) | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| arm64ec \[7]                    | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| s390x \[7]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| mips / mips32r6 \[9]            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| mips64 / mips64r6 \[9]          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| powerpc \[9]                    | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| powerpc64 \[9]                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| powerpc64 (+quadword-atomics) \[5] \[9]| i128,u128                                    | ✓          | ✓        |
-| msp430 \[9] (experimental)      | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| avr \[9] (experimental)         | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| sparc \[6] \[9] (experimental)  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| sparc64 \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| hexagon \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| m68k \[9] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| xtensa \[9] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| target_arch                     | primitives                                          | load/store | swap/CAS | memcpy |
+| ------------------------------- | --------------------------------------------------- |:----------:|:--------:|:------:|
+| x86                             | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        | ✓      |
+| x86_64                          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        | ✓      |
+| x86_64 (+cmpxchg16b) \[2]       | i128,u128                                           | ✓          | ✓        | ✓      |
+| arm (v6+ or Linux/Android)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    | ✓      |
+| arm (except for M-profile) \[3] | i64,u64                                             | ✓          | ✓        | ✓      |
+| aarch64                         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        | ✓      |
+| riscv32                         | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    | ✓      |
+| riscv32 (+zacas) \[4]           | i64,u64                                             | ✓          | ✓        | ✓      |
+| riscv64                         | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    | ✓      |
+| riscv64 (+zacas) \[4]           | i128,u128                                           | ✓          | ✓        | ✓      |
+| loongarch64                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        | ✓      |
+| loongarch32 \[8] (experimental) | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        | ✓      |
+| arm64ec \[7]                    | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        | ✓      |
+| s390x \[7]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        | ✓      |
+| mips / mips32r6 \[9]            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        | ✓      |
+| mips64 / mips64r6 \[9]          | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        | ✓      |
+| powerpc \[9]                    | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        | ✓      |
+| powerpc64 \[9]                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        | ✓      |
+| powerpc64 (+quadword-atomics) \[5] \[9]| i128,u128                                    | ✓          | ✓        | ✓      |
+| msp430 \[9] (experimental)      | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        | ✓      |
+| avr \[9] (experimental)         | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        | ✓      |
+| sparc \[6] \[9] (experimental)  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        | ✓      |
+| sparc64 \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        | ✓      |
+| hexagon \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        | ✓      |
+| m68k \[9] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    | ✓      |
+| xtensa \[9] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    | ✓      |
 
 \[1] Arm's atomic RMW operations are not available on Armv6-M (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (Linux is M68020 by default). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
@@ -69,7 +71,7 @@ Feel free to submit an issue if your target is not supported yet.
 ## Related Projects
 
 - [portable-atomic]: Portable atomic types including support for 128-bit atomics, atomic float, etc.
-- [atomic-memcpy]: Byte-wise atomic memcpy.
+- [atomic-memcpy]: Byte-wise atomic memcpy. Since 0.3, `atomic-memcpy` provides high-level interface of `atomic_maybe_uninit::raw::atomic_{load,store}_memcpy`.
 
 [atomic-memcpy]: https://github.com/taiki-e/atomic-memcpy
 [portable-atomic]: https://github.com/taiki-e/portable-atomic

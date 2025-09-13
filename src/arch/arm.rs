@@ -978,6 +978,8 @@ macro_rules! atomic64 {
 atomic64!(i64);
 atomic64!(u64);
 
+include!("arm_common.rs");
+
 // -----------------------------------------------------------------------------
 // cfg macros
 
@@ -1064,4 +1066,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }
