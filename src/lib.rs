@@ -167,7 +167,7 @@ impl<T: Primitive> fmt::Debug for AtomicMaybeUninit<T> {
 }
 
 // Send is implicitly implemented.
-// SAFETY: `T` is `Sync` and any data races are prevented by atomic intrinsics.
+// SAFETY: `T` is `Send` and any data races are prevented by atomic intrinsics.
 unsafe impl<T: Primitive> Sync for AtomicMaybeUninit<T> {}
 
 // UnwindSafe is implicitly implemented.
