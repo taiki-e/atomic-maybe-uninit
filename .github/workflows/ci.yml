@@ -524,7 +524,8 @@ jobs:
           printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS} ${{ matrix.flags }}" >>"${GITHUB_ENV}"
         if: matrix.flags != ''
       - run: printf '%s\n' "RUSTFLAGS=${RUSTFLAGS} -D linker_messages" >>"${GITHUB_ENV}"
-        if: matrix.rust == 'nightly'
+        # TODO(macos): error: linker stderr: ld: ignoring duplicate libraries: '-lc', '-lm'
+        if: matrix.rust == 'nightly' && !contains(matrix.target, '-darwin')
       # TODO: LLVM bug: Undefined temporary symbol error when building std.
       - name: Workaround for LLVM bug about MIPS32
         run: printf 'RELEASE=--release\n' >>"${GITHUB_ENV}"

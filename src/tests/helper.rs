@@ -153,9 +153,8 @@ macro_rules! __test_atomic {
             mem::{self, MaybeUninit},
             vec,
             vec::Vec,
+            thread
         };
-
-        use crossbeam_utils::thread;
 
         use crate::{AtomicMaybeUninit, tests::helper::*, utils::RegSize};
 
@@ -283,7 +282,7 @@ macro_rules! __test_atomic {
                 let now = &std::time::Instant::now();
                 thread::scope(|s| {
                     for _ in 0..threads {
-                        s.spawn(|_| {
+                        s.spawn(|| {
                             let mut rng = fastrand::Rng::new();
                             let now = *now;
                             for i in 0..iterations {
@@ -291,7 +290,7 @@ macro_rules! __test_atomic {
                             }
                             std::eprintln!("store end={:?}", now.elapsed());
                         });
-                        s.spawn(|_| {
+                        s.spawn(|| {
                             let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![0; iterations];
@@ -304,8 +303,7 @@ macro_rules! __test_atomic {
                             }
                         });
                     }
-                })
-                .unwrap();
+                });
             }
         }
     };
@@ -438,7 +436,7 @@ macro_rules! __test_atomic {
                 thread::scope(|s| {
                     for thread in 0..threads {
                         if thread % 2 == 0 {
-                            s.spawn(move |_| {
+                            s.spawn(move || {
                                 let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 for i in 0..iterations {
@@ -450,7 +448,7 @@ macro_rules! __test_atomic {
                                 std::eprintln!("store end={:?}", now.elapsed());
                             });
                         } else {
-                            s.spawn(|_| {
+                            s.spawn(|| {
                                 let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 let mut v = vec![0; iterations];
@@ -463,7 +461,7 @@ macro_rules! __test_atomic {
                                 }
                             });
                         }
-                        s.spawn(move |_| {
+                        s.spawn(move || {
                             let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![0; iterations];
@@ -481,8 +479,7 @@ macro_rules! __test_atomic {
                             }
                         });
                     }
-                })
-                .unwrap();
+                });
             }
         }
     };
@@ -807,7 +804,7 @@ macro_rules! __test_atomic {
                 thread::scope(|s| {
                     for thread in 0..threads {
                         if thread % 2 == 0 {
-                            s.spawn(move |_| {
+                            s.spawn(move || {
                                 let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 for i in 0..iterations {
@@ -819,7 +816,7 @@ macro_rules! __test_atomic {
                                 std::eprintln!("store end={:?}", now.elapsed());
                             });
                         } else {
-                            s.spawn(|_| {
+                            s.spawn(|| {
                                 let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 let mut v = vec![0; iterations];
@@ -832,7 +829,7 @@ macro_rules! __test_atomic {
                                 }
                             });
                         }
-                        s.spawn(move |_| {
+                        s.spawn(move || {
                             let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![data2[0][0]; iterations];
@@ -855,8 +852,7 @@ macro_rules! __test_atomic {
                             }
                         });
                     }
-                })
-                .unwrap();
+                });
             }
         }
         #[test]
@@ -888,7 +884,7 @@ macro_rules! __test_atomic {
                 thread::scope(|s| {
                     for thread in 0..threads {
                         if thread % 2 == 0 {
-                            s.spawn(move |_| {
+                            s.spawn(move || {
                                 let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 for i in 0..iterations {
@@ -900,7 +896,7 @@ macro_rules! __test_atomic {
                                 std::eprintln!("store end={:?}", now.elapsed());
                             });
                         } else {
-                            s.spawn(|_| {
+                            s.spawn(|| {
                                 let mut rng = fastrand::Rng::new();
                                 let now = *now;
                                 let mut v = vec![0; iterations];
@@ -913,7 +909,7 @@ macro_rules! __test_atomic {
                                 }
                             });
                         }
-                        s.spawn(move |_| {
+                        s.spawn(move || {
                             let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![0; iterations];
@@ -933,8 +929,7 @@ macro_rules! __test_atomic {
                             }
                         });
                     }
-                })
-                .unwrap();
+                });
             }
         }
     };
@@ -1242,9 +1237,8 @@ macro_rules! __stress_test_acquire_release {
         use std::{
             mem::MaybeUninit,
             sync::atomic::{AtomicUsize, Ordering},
+            thread,
         };
-
-        use crossbeam_utils::thread;
 
         use crate::AtomicMaybeUninit;
         #[cfg(valgrind)]
@@ -1270,7 +1264,7 @@ macro_rules! __stress_test_acquire_release {
         }
         let b = &AtomicUsize::new(0);
         thread::scope(|s| unsafe {
-            s.spawn(|_| {
+            s.spawn(|| {
                 for i in 0..n {
                     b.store(i, Ordering::Relaxed);
                     a.$write(MaybeUninit::new(i as $ty), Ordering::$store_order);
@@ -1284,8 +1278,7 @@ macro_rules! __stress_test_acquire_release {
                     break;
                 }
             }
-        })
-        .unwrap();
+        });
     }};
 }
 macro_rules! __stress_test_seqcst {
@@ -1323,9 +1316,8 @@ macro_rules! __stress_test_seqcst {
         use std::{
             mem::MaybeUninit,
             sync::atomic::{AtomicUsize, Ordering},
+            thread,
         };
-
-        use crossbeam_utils::thread;
 
         use crate::AtomicMaybeUninit;
         #[cfg(valgrind)]
@@ -1357,14 +1349,14 @@ macro_rules! __stress_test_seqcst {
                 a.store(MaybeUninit::new(0), Ordering::Relaxed);
                 b.store(MaybeUninit::new(0), Ordering::Relaxed);
                 c.store(0, Ordering::Relaxed);
-                let h_a = s.spawn(|_| {
+                let h_a = s.spawn(|| {
                     while ready.load(Ordering::Relaxed) == 0 {}
                     a.$write(MaybeUninit::new(1), Ordering::$store_order);
                     if b.load(Ordering::$load_order).assume_init() == 0 {
                         c.fetch_add(1, Ordering::Relaxed);
                     }
                 });
-                let h_b = s.spawn(|_| {
+                let h_b = s.spawn(|| {
                     while ready.load(Ordering::Relaxed) == 0 {}
                     b.$write(MaybeUninit::new(1), Ordering::$store_order);
                     if a.load(Ordering::$load_order).assume_init() == 0 {
@@ -1377,8 +1369,7 @@ macro_rules! __stress_test_seqcst {
                 let c = c.load(Ordering::Relaxed);
                 assert!(c == 0 || c == 1, "c={},n={}", c, n);
             }
-        })
-        .unwrap();
+        });
     }};
 }
 // Catches unwinding panic on architectures with weak memory models.
