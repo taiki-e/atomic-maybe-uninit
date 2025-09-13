@@ -1051,8 +1051,10 @@ jobs:
             export RUST_TEST_THREADS=1
             export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
             # NB: Sync with arguments in tools/test.sh.
-            args=(-v --error-exitcode=1 --error-limit=no --leak-check=full --show-leak-kinds=definite,indirect --errors-for-leak-kinds=definite,indirect --track-origins=yes --fair-sched=yes --gen-suppressions=all)
+            args=(-v --error-exitcode=1 --error-limit=no --leak-check=full --track-origins=yes --fair-sched=yes --gen-suppressions=all)
             case "${{ matrix.target }}" in
+              powerpc64*) args+=(--suppressions=$(pwd)/tools/valgrind/powerpc64.supp) ;;
+              riscv64*) args+=(--suppressions=$(pwd)/tools/valgrind/riscv64.supp) ;;
               s390x*) args+=(--suppressions=$(pwd)/tools/valgrind/s390x.supp) ;;
             esac
             for bin in ./release*; do
