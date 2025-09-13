@@ -285,6 +285,10 @@ pub(crate) struct Pair<T: Copy> {
 }
 
 #[cfg(not(target_pointer_width = "16"))]
+#[cfg(target_arch = "bpf")]
+type MinWord = u64;
+#[cfg(not(target_pointer_width = "16"))]
+#[cfg(not(target_arch = "bpf"))]
 type MinWord = u32;
 #[cfg(not(target_pointer_width = "16"))]
 #[cfg(target_arch = "s390x")]
