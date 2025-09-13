@@ -481,9 +481,10 @@ jobs:
           sysctl hw.optional machdep.cpu
           # brew install moreutils
         if: startsWith(matrix.os, 'macos')
-      # - run: |
-      #     C:/msys64/usr/bin/pacman -S --noconfirm moreutils
-      #   if: startsWith(matrix.os, 'windows')
+      - run: |
+          systeminfo
+          # C:/msys64/usr/bin/pacman -S --noconfirm moreutils
+        if: startsWith(matrix.os, 'windows')
       - uses: taiki-e/github-actions/install-rust@main
         with:
           toolchain: ${{ matrix.rust }}
