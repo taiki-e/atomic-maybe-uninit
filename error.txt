@@ -1,0 +1,1317 @@
+warning: bpf-test@0.1.0:     Updating crates.io index
+warning: bpf-test@0.1.0:  Downloading crates ...
+warning: bpf-test@0.1.0:   Downloaded rustc-literal-escaper v0.0.5
+warning: bpf-test@0.1.0:   Downloaded getopts v0.2.23
+warning: bpf-test@0.1.0:   Downloaded adler2 v2.0.1
+warning: bpf-test@0.1.0:   Downloaded miniz_oxide v0.8.9
+warning: bpf-test@0.1.0:   Downloaded addr2line v0.25.0
+warning: bpf-test@0.1.0:   Downloaded gimli v0.32.0
+warning: bpf-test@0.1.0:   Downloaded object v0.37.3
+warning: bpf-test@0.1.0:    Compiling proc-macro2 v1.0.101
+warning: bpf-test@0.1.0:    Compiling unicode-ident v1.0.19
+warning: bpf-test@0.1.0:    Compiling compiler_builtins v0.1.160 (/home/taiki/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/compiler-builtins/compiler-builtins)
+warning: bpf-test@0.1.0:    Compiling rustversion v1.0.22
+warning: bpf-test@0.1.0:    Compiling core v0.0.0 (/home/taiki/.rustup/toolchains/nightly-aarch64-unknown-linux-gnu/lib/rustlib/src/rust/library/core)
+warning: bpf-test@0.1.0:    Compiling version_check v0.9.5
+warning: bpf-test@0.1.0:    Compiling aya-ebpf-cty v0.2.2
+warning: bpf-test@0.1.0:    Compiling rustix v0.38.44
+warning: bpf-test@0.1.0:    Compiling linux-raw-sys v0.4.15
+warning: bpf-test@0.1.0:    Compiling bitflags v2.9.4
+warning: bpf-test@0.1.0:    Compiling aya-ebpf-bindings v0.1.1
+warning: bpf-test@0.1.0:    Compiling home v0.5.11
+warning: bpf-test@0.1.0:    Compiling either v1.15.0
+warning: bpf-test@0.1.0:    Compiling paste v1.0.15
+warning: bpf-test@0.1.0:    Compiling atomic-maybe-uninit v0.3.10 (/Users/taiki/projects/sources/taiki-e/atomic-maybe-uninit)
+warning: bpf-test@0.1.0:    Compiling proc-macro-error-attr v1.0.4
+warning: bpf-test@0.1.0:    Compiling proc-macro-error v1.0.4
+warning: bpf-test@0.1.0:    Compiling quote v1.0.40
+warning: bpf-test@0.1.0:    Compiling aya-ebpf v0.1.1
+warning: bpf-test@0.1.0:    Compiling syn v2.0.106
+warning: bpf-test@0.1.0:    Compiling which v6.0.3
+warning: bpf-test@0.1.0:    Compiling bpf-test-ebpf v0.1.0 (/Users/taiki/projects/sources/taiki-e/atomic-maybe-uninit/tests/bpf/bpf-test-ebpf)
+warning: bpf-test@0.1.0:    Compiling num_enum_derive v0.7.4
+warning: bpf-test@0.1.0:    Compiling aya-ebpf-macros v0.1.1
+warning: bpf-test@0.1.0:    Compiling num_enum v0.7.4
+warning: bpf-test@0.1.0:    Compiling aya-log-common v0.1.15
+warning: bpf-test@0.1.0:    Compiling aya-log-parser v0.1.13
+warning: bpf-test@0.1.0:    Compiling aya-log-ebpf-macros v0.1.0
+warning: bpf-test@0.1.0:    Compiling bpf-test-common v0.1.0 (/Users/taiki/projects/sources/taiki-e/atomic-maybe-uninit/tests/bpf/bpf-test-common)
+warning: bpf-test@0.1.0:    Compiling aya-log-ebpf v0.1.1
+warning: bpf-test@0.1.0: warning: constant `SWAP_ORDERINGS` is never used
+warning: bpf-test@0.1.0:    --> bpf-test-ebpf/src/main.rs:241:7
+warning: bpf-test@0.1.0:     |
+warning: bpf-test@0.1.0: 241 | const SWAP_ORDERINGS: [Ordering; 5] =
+warning: bpf-test@0.1.0:     |       ^^^^^^^^^^^^^^
+warning: bpf-test@0.1.0:     |
+warning: bpf-test@0.1.0:     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+warning: bpf-test@0.1.0: 
+warning: bpf-test@0.1.0: 
+warning: bpf-test@0.1.0:     Finished `release` profile [optimized] target(s) in 4.35s
+    Finished `release` profile [optimized] target(s) in 0.05s
+     Running `sudo -E target/release/bpf-test`
+Error: the BPF_PROG_LOAD syscall failed. Verifier output: 0: R1=ctx() R10=fp0
+0: (85) call pc+3
+caller:
+ R10=fp0
+callee:
+ frame1: R1=ctx() R10=fp0
+4: frame1: R1=ctx() R10=fp0
+4: (bf) r9 = r1                       ; frame1: R1=ctx() R9_w=ctx()
+5: (b7) r6 = 0                        ; frame1: R6_w=0
+6: (63) *(u32 *)(r10 -16) = r6        ; frame1: R6_w=0 R10=fp0 fp-16=????0
+7: (bf) r2 = r10                      ; frame1: R2_w=fp0 R10=fp0
+8: (07) r2 += -16                     ; frame1: R2_w=fp-16
+9: (18) r1 = 0xffff44edf12b3800       ; frame1: R1_w=map_ptr(map=AYA_LOG_BUF,ks=4,vs=8192)
+11: (85) call bpf_map_lookup_elem#1   ; frame1: R0=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+12: (bf) r7 = r0                      ; frame1: R0=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+13: (15) if r7 == 0x0 goto pc+210     ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+14: (b7) r1 = 25                      ; frame1: R1_w=25
+15: (73) *(u8 *)(r7 +27) = r1         ; frame1: R1_w=25 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+16: (b7) r1 = 115                     ; frame1: R1_w=115
+17: (73) *(u8 *)(r7 +24) = r1         ; frame1: R1_w=115 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+18: (73) *(u8 *)(r7 +9) = r1          ; frame1: R1_w=115 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+19: (b7) r1 = 101                     ; frame1: R1_w=101
+20: (73) *(u8 *)(r7 +23) = r1         ; frame1: R1_w=101 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+21: (73) *(u8 *)(r7 +8) = r1          ; frame1: R1_w=101 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+22: (b7) r1 = 116                     ; frame1: R1_w=116
+23: (73) *(u8 *)(r7 +25) = r1         ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+24: (73) *(u8 *)(r7 +22) = r1         ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+25: (73) *(u8 *)(r7 +10) = r1         ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+26: (73) *(u8 *)(r7 +7) = r1          ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+27: (b7) r1 = 95                      ; frame1: R1_w=95
+28: (73) *(u8 *)(r7 +21) = r1         ; frame1: R1_w=95 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+29: (73) *(u8 *)(r7 +6) = r1          ; frame1: R1_w=95 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+30: (b7) r1 = 102                     ; frame1: R1_w=102
+31: (73) *(u8 *)(r7 +20) = r1         ; frame1: R1_w=102 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+32: (73) *(u8 *)(r7 +5) = r1          ; frame1: R1_w=102 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+33: (b7) r1 = 112                     ; frame1: R1_w=112
+34: (73) *(u8 *)(r7 +19) = r1         ; frame1: R1_w=112 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+35: (73) *(u8 *)(r7 +4) = r1          ; frame1: R1_w=112 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+36: (b7) r1 = 98                      ; frame1: R1_w=98
+37: (73) *(u8 *)(r7 +18) = r1         ; frame1: R1_w=98 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+38: (73) *(u8 *)(r7 +3) = r1          ; frame1: R1_w=98 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+39: (b7) r1 = 3                       ; frame1: R1_w=3
+40: (73) *(u8 *)(r7 +15) = r1         ; frame1: R1_w=3 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+41: (73) *(u8 *)(r7 +14) = r1         ; frame1: R1_w=3 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+42: (b7) r1 = 2                       ; frame1: R1_w=2
+43: (73) *(u8 *)(r7 +11) = r1         ; frame1: R1_w=2 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+44: (b7) r1 = 1                       ; frame1: R1_w=1
+45: (73) *(u8 *)(r7 +12) = r1         ; frame1: R1_w=1 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+46: (73) *(u8 *)(r7 +0) = r1          ; frame1: R1_w=1 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+47: (73) *(u8 *)(r7 +28) = r6         ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+48: (73) *(u8 *)(r7 +17) = r6         ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+49: (b7) r2 = 8                       ; frame1: R2_w=8
+50: (73) *(u8 *)(r7 +16) = r2         ; frame1: R2_w=8 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+51: (73) *(u8 *)(r7 +13) = r6         ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+52: (73) *(u8 *)(r7 +2) = r6          ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+53: (73) *(u8 *)(r7 +1) = r2          ; frame1: R2_w=8 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+54: (b7) r1 = 4                       ; frame1: R1_w=4
+55: (73) *(u8 *)(r7 +26) = r1         ; frame1: R1_w=4 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+56: (bf) r3 = r7                      ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+57: (07) r3 += 29                     ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29)
+58: (18) r4 = 0xffff44edf12b1f1e      ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22)
+60: (71) r5 = *(u8 *)(r4 +0)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=98
+61: (73) *(u8 *)(r3 +0) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=98
+62: (71) r5 = *(u8 *)(r4 +1)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=112
+63: (73) *(u8 *)(r3 +1) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=112
+64: (71) r5 = *(u8 *)(r4 +2)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=102
+65: (73) *(u8 *)(r3 +2) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=102
+66: (71) r5 = *(u8 *)(r4 +3)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=45
+67: (73) *(u8 *)(r3 +3) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=45
+68: (71) r5 = *(u8 *)(r4 +4)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=116
+69: (73) *(u8 *)(r3 +4) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=116
+70: (71) r5 = *(u8 *)(r4 +5)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=101
+71: (73) *(u8 *)(r3 +5) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=101
+72: (71) r5 = *(u8 *)(r4 +6)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115
+73: (73) *(u8 *)(r3 +6) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=115
+74: (71) r5 = *(u8 *)(r4 +7)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=116
+75: (73) *(u8 *)(r3 +7) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=116
+76: (71) r5 = *(u8 *)(r4 +8)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=45
+77: (73) *(u8 *)(r3 +8) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=45
+78: (71) r5 = *(u8 *)(r4 +9)          ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=101
+79: (73) *(u8 *)(r3 +9) = r5          ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=101
+80: (71) r5 = *(u8 *)(r4 +10)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=98
+81: (73) *(u8 *)(r3 +10) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=98
+82: (71) r5 = *(u8 *)(r4 +11)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=112
+83: (73) *(u8 *)(r3 +11) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=112
+84: (71) r5 = *(u8 *)(r4 +12)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=102
+85: (73) *(u8 *)(r3 +12) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=102
+86: (71) r5 = *(u8 *)(r4 +13)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=47
+87: (73) *(u8 *)(r3 +13) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=47
+88: (71) r5 = *(u8 *)(r4 +14)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115
+89: (73) *(u8 *)(r3 +14) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=115
+90: (71) r5 = *(u8 *)(r4 +15)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=114
+91: (73) *(u8 *)(r3 +15) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=114
+92: (71) r5 = *(u8 *)(r4 +16)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=99
+93: (73) *(u8 *)(r3 +16) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=99
+94: (71) r5 = *(u8 *)(r4 +17)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=47
+95: (73) *(u8 *)(r3 +17) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=47
+96: (71) r5 = *(u8 *)(r4 +18)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=109
+97: (73) *(u8 *)(r3 +18) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=109
+98: (71) r5 = *(u8 *)(r4 +19)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=97
+99: (73) *(u8 *)(r3 +19) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=97
+100: (71) r5 = *(u8 *)(r4 +20)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=105
+101: (73) *(u8 *)(r3 +20) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=105
+102: (71) r5 = *(u8 *)(r4 +21)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=110
+103: (73) *(u8 *)(r3 +21) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=110
+104: (71) r5 = *(u8 *)(r4 +22)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=46
+105: (73) *(u8 *)(r3 +22) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=46
+106: (71) r5 = *(u8 *)(r4 +23)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=114
+107: (73) *(u8 *)(r3 +23) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=114
+108: (71) r5 = *(u8 *)(r4 +24)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115
+109: (73) *(u8 *)(r3 +24) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=115
+110: (b7) r3 = 17                     ; frame1: R3_w=17
+111: (73) *(u8 *)(r7 +73) = r3        ; frame1: R3_w=17 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+112: (73) *(u8 *)(r7 +62) = r2        ; frame1: R2_w=8 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+113: (b7) r2 = 224                    ; frame1: R2_w=224
+114: (73) *(u8 *)(r7 +57) = r2        ; frame1: R2_w=224 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+115: (73) *(u8 *)(r7 +74) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+116: (73) *(u8 *)(r7 +71) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+117: (73) *(u8 *)(r7 +70) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+118: (73) *(u8 *)(r7 +69) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+119: (73) *(u8 *)(r7 +68) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+120: (73) *(u8 *)(r7 +67) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+121: (73) *(u8 *)(r7 +66) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+122: (73) *(u8 *)(r7 +65) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+123: (73) *(u8 *)(r7 +63) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+124: (73) *(u8 *)(r7 +60) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+125: (73) *(u8 *)(r7 +59) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+126: (73) *(u8 *)(r7 +58) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+127: (73) *(u8 *)(r7 +56) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+128: (73) *(u8 *)(r7 +64) = r1        ; frame1: R1_w=4 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+129: (73) *(u8 *)(r7 +55) = r1        ; frame1: R1_w=4 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+130: (b7) r6 = 20                     ; frame1: R6_w=20
+131: (73) *(u8 *)(r7 +72) = r6        ; frame1: R6_w=20 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+132: (b7) r1 = 6                      ; frame1: R1_w=6
+133: (73) *(u8 *)(r7 +61) = r1        ; frame1: R1_w=6 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+134: (b7) r8 = 5                      ; frame1: R8_w=5
+135: (73) *(u8 *)(r7 +54) = r8        ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=5
+136: (bf) r1 = r7                     ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+137: (07) r1 += 75                    ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75)
+138: (18) r2 = 0xffff44edf12b1f08     ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132)
+140: (71) r3 = *(u8 *)(r2 +0)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+141: (73) *(u8 *)(r1 +0) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+142: (71) r3 = *(u8 *)(r2 +1)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=101
+143: (73) *(u8 *)(r1 +1) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=101
+144: (71) r3 = *(u8 *)(r2 +2)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=115
+145: (73) *(u8 *)(r1 +2) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=115
+146: (71) r3 = *(u8 *)(r2 +3)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+147: (73) *(u8 *)(r1 +3) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+148: (71) r3 = *(u8 *)(r2 +4)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=32
+149: (73) *(u8 *)(r1 +4) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=32
+150: (71) r3 = *(u8 *)(r2 +5)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+151: (73) *(u8 *)(r1 +5) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+152: (71) r3 = *(u8 *)(r2 +6)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=101
+153: (73) *(u8 *)(r1 +6) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=101
+154: (71) r3 = *(u8 *)(r2 +7)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=115
+155: (73) *(u8 *)(r1 +7) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=115
+156: (71) r3 = *(u8 *)(r2 +8)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+157: (73) *(u8 *)(r1 +8) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+158: (71) r3 = *(u8 *)(r2 +9)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=95
+159: (73) *(u8 *)(r1 +9) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=95
+160: (71) r3 = *(u8 *)(r2 +10)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=97
+161: (73) *(u8 *)(r1 +10) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=97
+162: (71) r3 = *(u8 *)(r2 +11)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+163: (73) *(u8 *)(r1 +11) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+164: (71) r3 = *(u8 *)(r2 +12)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=111
+165: (73) *(u8 *)(r1 +12) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=111
+166: (71) r3 = *(u8 *)(r2 +13)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=109
+167: (73) *(u8 *)(r1 +13) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=109
+168: (71) r3 = *(u8 *)(r2 +14)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=105
+169: (73) *(u8 *)(r1 +14) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=105
+170: (71) r3 = *(u8 *)(r2 +15)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=99
+171: (73) *(u8 *)(r1 +15) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=99
+172: (71) r3 = *(u8 *)(r2 +16)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=95
+173: (73) *(u8 *)(r1 +16) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=95
+174: (bf) r1 = r7                     ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+175: (07) r1 += 92                    ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92)
+176: (b7) r2 = 8100                   ; frame1: R2_w=8100
+177: (85) call pc+18264
+caller:
+ frame1: R6_w=20 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=5 R9=ctx() R10=fp0 fp-16=????0
+callee:
+ frame2: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R2_w=8100 R3_w=95 R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115 R10=fp0
+18442: frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R2=8100 R3=95 R4=map_value(map=.rodata,ks=4,vs=132,off=22) R5=115 R10=fp0
+18442: (b7) r0 = 0                    ; frame2: R0_w=0
+18443: (15) if r2 == 0x0 goto pc+9    ; frame2: R2=8100
+18444: (73) *(u8 *)(r1 +0) = r0       ; frame2: R0_w=0 R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92)
+18445: (b7) r3 = 3                    ; frame2: R3_w=3
+18446: (2d) if r3 > r2 goto pc+6      ; frame2: R2=8100 R3_w=3
+18447: (b7) r3 = 1                    ; frame2: R3_w=1
+18448: (73) *(u8 *)(r1 +1) = r3       ; frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R3_w=1
+18449: (73) *(u8 *)(r1 +2) = r0       ; frame2: R0=0 R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92)
+18450: (15) if r2 == 0x3 goto pc+2    ; frame2: R2=8100
+18451: (73) *(u8 *)(r1 +3) = r3       ; frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R3=1
+18452: (b7) r0 = 4                    ; frame2: R0_w=4
+18453: (95) exit
+returning from callee:
+ frame2: R0_w=4 R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R2=8100 R3=1 R4=map_value(map=.rodata,ks=4,vs=132,off=22) R5=115 R10=fp0
+to caller at 178:
+ frame1: R0_w=4 R6=20 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=5 R9=ctx() R10=fp0 fp-16=????0
+178: (15) if r0 == 0x0 goto pc+45     ; frame1: R0_w=4
+179: (bf) r1 = r7                     ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+180: (0f) r1 += r0                    ; frame1: R0_w=4 R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4)
+181: (b7) r2 = 0                      ; frame1: R2_w=0
+182: (73) *(u8 *)(r1 +94) = r2        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R2_w=0
+183: (73) *(u8 *)(r1 +93) = r8        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R8=5
+184: (73) *(u8 *)(r1 +92) = r6        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R6=20
+185: (bf) r3 = r1                     ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4)
+186: (07) r3 += 95                    ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99)
+187: (18) r4 = 0xffff44edf12b1f79     ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=113)
+189: (71) r5 = *(u8 *)(r4 +0)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=113) R5_w=105
+190: (73) *(u8 *)(r3 +0) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R5_w=105
+191: (71) r5 = *(u8 *)(r4 +1)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=113) R5_w=115
+192: (73) *(u8 *)(r3 +1) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R5_w=115
+193: (71) r5 = *(u8 *)(r4 +2)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=113) R5_w=105
+194: (73) *(u8 *)(r3 +2) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R5_w=105
+195: (71) r5 = *(u8 *)(r4 +3)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=113) R5_w=122
+196: (73) *(u8 *)(r3 +3) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R5_w=122
+197: (71) r5 = *(u8 *)(r4 +4)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=113) R5_w=101
+198: (73) *(u8 *)(r3 +4) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R5_w=101
+199: (73) *(u8 *)(r1 +102) = r2       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R2_w=0
+200: (73) *(u8 *)(r1 +101) = r8       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R8=5
+201: (73) *(u8 *)(r1 +100) = r6       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R6=20
+202: (07) r1 += 103                   ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107)
+203: (18) r2 = 0xffff44edf12b1f19     ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17)
+205: (71) r3 = *(u8 *)(r2 +0)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=32
+206: (73) *(u8 *)(r1 +0) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=32
+207: (71) r3 = *(u8 *)(r2 +1)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=46
+208: (73) *(u8 *)(r1 +1) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=46
+209: (71) r3 = *(u8 *)(r2 +2)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=46
+210: (73) *(u8 *)(r1 +2) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=46
+211: (71) r3 = *(u8 *)(r2 +3)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=46
+212: (73) *(u8 *)(r1 +3) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=46
+213: (71) r3 = *(u8 *)(r2 +4)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=32
+214: (73) *(u8 *)(r1 +4) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=32
+215: (07) r0 += 108                   ; frame1: R0_w=112
+216: (bf) r1 = r9                     ; frame1: R1_w=ctx() R9=ctx()
+217: (18) r2 = 0xffff44edf12b0400     ; frame1: R2_w=map_ptr(map=AYA_LOGS,ks=4,vs=4)
+219: (18) r3 = 0xffffffff             ; frame1: R3_w=0xffffffff
+221: (bf) r4 = r7                     ; frame1: R4_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+222: (bf) r5 = r0                     ; frame1: R0_w=112 R5_w=112
+223: (85) call bpf_perf_event_output#25       ; frame1: R0=scalar()
+224: (b7) r1 = 1                      ; frame1: R1_w=1
+225: (7b) *(u64 *)(r10 -24) = r1      ; frame1: R1_w=1 R10=fp0 fp-24_w=1
+226: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+227: (07) r1 += -24                   ; frame1: R1_w=fp-24
+228: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-24 R8_w=1 fp-24_w=1
+229: (7b) *(u64 *)(r10 -32) = r9      ; frame1: R9=ctx() R10=fp0 fp-32_w=ctx()
+230: (15) if r8 == 0x1 goto pc+1      ; frame1: R8_w=1
+232: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+233: (07) r1 += -24                   ; frame1: R1_w=fp-24
+234: (18) r2 = 0x8000000000000000     ; frame1: R2_w=0x8000000000000000
+236: (7b) *(u64 *)(r1 +0) = r2        ; frame1: R1_w=fp-24 R2_w=0x8000000000000000 fp-24_w=0x8000000000000000
+237: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-24 R8_w=0x8000000000000000 fp-24_w=0x8000000000000000
+238: (1d) if r8 == r2 goto pc+1       ; frame1: R2_w=0x8000000000000000 R8_w=0x8000000000000000
+240: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+241: (07) r1 += -24                   ; frame1: R1_w=fp-24
+242: (18) r2 = 0x7fffffffffffffff     ; frame1: R2_w=0x7fffffffffffffff
+244: (7b) *(u64 *)(r1 +0) = r2        ; frame1: R1_w=fp-24 R2_w=0x7fffffffffffffff fp-24_w=0x7fffffffffffffff
+245: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-24 R8_w=0x7fffffffffffffff fp-24_w=0x7fffffffffffffff
+246: (1d) if r8 == r2 goto pc+1       ; frame1: R2_w=0x7fffffffffffffff R8_w=0x7fffffffffffffff
+248: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+249: (07) r1 += -16                   ; frame1: R1_w=fp-16
+250: (79) r2 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-16 R2_w=scalar() fp-16=????0
+251: (b7) r2 = 2                      ; frame1: R2_w=2
+252: (7b) *(u64 *)(r1 +0) = r2        ; frame1: R1_w=fp-16 R2_w=2 fp-16_w=2
+253: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-16 R8_w=2 fp-16_w=2
+254: (15) if r8 == 0x2 goto pc+1      ; frame1: R8_w=2
+256: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+257: (07) r1 += -16                   ; frame1: R1_w=fp-16
+258: (7b) *(u64 *)(r1 +0) = r1        ; frame1: R1_w=fp-16 fp-16_w=fp-16
+259: (79) r1 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-16 fp-16_w=fp-16
+260: (b7) r1 = 1                      ; frame1: R1_w=1
+261: (7b) *(u64 *)(r10 -24) = r1      ; frame1: R1_w=1 R10=fp0 fp-24_w=1
+262: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+263: (07) r1 += -24                   ; frame1: R1_w=fp-24
+264: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-24 R8_w=1 fp-24_w=1
+265: (55) if r8 != 0x1 goto pc+703    ; frame1: R8_w=1
+266: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+267: (07) r1 += -24                   ; frame1: R1_w=fp-24
+268: (18) r2 = 0x8000000000000000     ; frame1: R2_w=0x8000000000000000
+270: (7b) *(u64 *)(r1 +0) = r2        ; frame1: R1_w=fp-24 R2_w=0x8000000000000000 fp-24_w=0x8000000000000000
+271: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-24 R8_w=0x8000000000000000 fp-24_w=0x8000000000000000
+272: (5d) if r8 != r2 goto pc+936     ; frame1: R2_w=0x8000000000000000 R8_w=0x8000000000000000
+273: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+274: (07) r1 += -24                   ; frame1: R1_w=fp-24
+275: (18) r2 = 0x7fffffffffffffff     ; frame1: R2_w=0x7fffffffffffffff
+277: (7b) *(u64 *)(r1 +0) = r2        ; frame1: R1_w=fp-24 R2_w=0x7fffffffffffffff fp-24_w=0x7fffffffffffffff
+278: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1=fp-24 R8=0x7fffffffffffffff fp-24=0x7fffffffffffffff
+279: (5d) if r8 != r2 goto pc+1170    ; frame1: R2=0x7fffffffffffffff R8=0x7fffffffffffffff
+280: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+281: (07) r1 += -16                   ; frame1: R1_w=fp-16
+282: (79) r2 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-16 R2_w=fp-16 fp-16=fp-16
+283: (b7) r2 = 2                      ; frame1: R2_w=2
+284: (7b) *(u64 *)(r1 +0) = r2        ; frame1: R1_w=fp-16 R2_w=2 fp-16_w=2
+285: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-16 R8_w=2 fp-16_w=2
+286: (55) if r8 != 0x2 goto pc+2365   ; frame1: R8_w=2
+287: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+288: (07) r1 += -16                   ; frame1: R1_w=fp-16
+289: (7b) *(u64 *)(r1 +0) = r1        ; frame1: R1_w=fp-16 fp-16_w=fp-16
+290: (79) r1 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-16 fp-16_w=fp-16
+291: (b7) r1 = 1                      ; frame1: R1_w=1
+292: (7b) *(u64 *)(r10 -24) = r1      ; frame1: R1_w=1 R10=fp0 fp-24_w=1
+293: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+294: (07) r1 += -24                   ; frame1: R1_w=fp-24
+295: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1=fp-24 R8=1 fp-24=1
+296: (55) if r8 != 0x1 goto pc+672    ; frame1: R8=1
+297: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+298: (07) r1 += -24                   ; frame1: R1_w=fp-24
+299: (18) r2 = 0x8000000000000000     ; frame1: R2_w=0x8000000000000000
+301: (7b) *(u64 *)(r1 +0) = r2        ; frame1: R1_w=fp-24 R2_w=0x8000000000000000 fp-24_w=0x8000000000000000
+302: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-24 R8_w=0x8000000000000000 fp-24_w=0x8000000000000000
+303: (5d) if r8 != r2 goto pc+905     ; frame1: R2_w=0x8000000000000000 R8_w=0x8000000000000000
+304: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+305: (07) r1 += -24                   ; frame1: R1_w=fp-24
+306: (18) r2 = 0x7fffffffffffffff     ; frame1: R2_w=0x7fffffffffffffff
+308: (7b) *(u64 *)(r1 +0) = r2        ; frame1: R1_w=fp-24 R2_w=0x7fffffffffffffff fp-24_w=0x7fffffffffffffff
+309: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1=fp-24 R8=0x7fffffffffffffff fp-24=0x7fffffffffffffff
+310: (5d) if r8 != r2 goto pc+1139    ; frame1: R2=0x7fffffffffffffff R8=0x7fffffffffffffff
+311: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+312: (07) r1 += -16                   ; frame1: R1_w=fp-16
+313: (79) r2 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-16 R2_w=fp-16 fp-16=fp-16
+314: (b7) r2 = 2                      ; frame1: R2_w=2
+315: (7b) *(u64 *)(r1 +0) = r2        ; frame1: R1_w=fp-16 R2_w=2 fp-16_w=2
+316: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-16 R8_w=2 fp-16_w=2
+317: (55) if r8 != 0x2 goto pc+2334   ; frame1: R8_w=2
+318: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+319: (07) r1 += -16                   ; frame1: R1_w=fp-16
+320: (7b) *(u64 *)(r1 +0) = r1        ; frame1: R1_w=fp-16 fp-16_w=fp-16
+321: (79) r1 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-16 fp-16_w=fp-16
+322: (b7) r1 = 5                      ; frame1: R1_w=5
+323: (7b) *(u64 *)(r10 -16) = r1      ; frame1: R1_w=5 R10=fp0 fp-16_w=5
+324: (bf) r2 = r10                    ; frame1: R2_w=fp0 R10=fp0
+325: (07) r2 += -16                   ; frame1: R2_w=fp-16
+326: (b7) r3 = 10                     ; frame1: R3_w=10
+327: (b7) r4 = 1                      ; frame1: R4_w=1
+328: (b7) r0 = 5                      ; frame1: R0_w=5
+329: (db) r0 = atomic64_cmpxchg((u64 *)(r2 +0), r0, r3)       ; frame1: R0=5 R2=fp-16 R3=10 fp-16=mmmmmmmm
+330: (1d) if r0 == r1 goto pc+1       ; frame1: R0=5 R1=5
+332: (15) if r0 == 0x5 goto pc+1      ; frame1: R0=5
+334: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+335: (07) r1 += -16                   ; frame1: R1_w=fp-16
+336: (79) r1 = *(u64 *)(r1 +0)        ; frame1: R1_w=scalar() fp-16=mmmmmmmm
+337: (7b) *(u64 *)(r10 -40) = r1      ; frame1: R1_w=scalar(id=1) R10=fp0 fp-40_w=scalar(id=1)
+338: (15) if r1 == 0xa goto pc+1 340: frame1: R0=5 R1_w=10 R2=fp-16 R3=10 R4=1 R6=20 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=2 R9=ctx() R10=fp0 fp-16=mmmmmmmm fp-24=0x7fffffffffffffff fp-32=ctx() fp-40_w=10
+340: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+341: (07) r1 += -16                   ; frame1: R1_w=fp-16
+342: (b7) r2 = 12                     ; frame1: R2_w=12
+343: (b7) r3 = 1                      ; frame1: R3_w=1
+344: (b7) r4 = 6                      ; frame1: R4_w=6
+345: (b7) r0 = 6                      ; frame1: R0_w=6
+346: (db) r0 = atomic64_cmpxchg((u64 *)(r1 +0), r0, r2)       ; frame1: R0=scalar() R1=fp-16 R2=12 fp-16=mmmmmmmm
+347: (1d) if r0 == r4 goto pc+1       ; frame1: R0=scalar() R4=6
+348: (b7) r3 = 0                      ; frame1: R3_w=0
+349: (7b) *(u64 *)(r10 -40) = r0      ; frame1: R0=scalar(id=2) R10=fp0 fp-40_w=scalar(id=2)
+350: (15) if r0 == 0xa goto pc+1 352: frame1: R0=10 R1=fp-16 R2=12 R3=0 R4=6 R6=20 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=2 R9=ctx() R10=fp0 fp-16=mmmmmmmm fp-24=0x7fffffffffffffff fp-32=ctx() fp-40=10
+352: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+353: (07) r1 += -16                   ; frame1: R1_w=fp-16
+354: (79) r1 = *(u64 *)(r1 +0)        ; frame1: R1_w=scalar() fp-16=mmmmmmmm
+355: (7b) *(u64 *)(r10 -40) = r1      ; frame1: R1_w=scalar(id=3) R10=fp0 fp-40_w=scalar(id=3)
+356: (15) if r1 == 0xa goto pc+1 358: frame1: R0=10 R1=10 R2=12 R3=0 R4=6 R6=20 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=2 R9=ctx() R10=fp0 fp-16=mmmmmmmm fp-24=0x7fffffffffffffff fp-32=ctx() fp-40=10
+358: (b7) r6 = 0                      ; frame1: R6_w=0
+359: (63) *(u32 *)(r10 -16) = r6      ; frame1: R6_w=0 R10=fp0 fp-16=mmmm0
+360: (bf) r2 = r10                    ; frame1: R2_w=fp0 R10=fp0
+361: (07) r2 += -16                   ; frame1: R2_w=fp-16
+362: (18) r1 = 0xffff44edf12b3800     ; frame1: R1_w=map_ptr(map=AYA_LOG_BUF,ks=4,vs=8192)
+364: (85) call bpf_map_lookup_elem#1          ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+365: (15) if r0 == 0x0 goto pc+133    ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+366: (b7) r1 = 25                     ; frame1: R1_w=25
+367: (73) *(u8 *)(r0 +27) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=25
+368: (b7) r1 = 115                    ; frame1: R1_w=115
+369: (73) *(u8 *)(r0 +24) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=115
+370: (73) *(u8 *)(r0 +9) = r1         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=115
+371: (b7) r1 = 101                    ; frame1: R1_w=101
+372: (73) *(u8 *)(r0 +23) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=101
+373: (73) *(u8 *)(r0 +8) = r1         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=101
+374: (b7) r1 = 116                    ; frame1: R1_w=116
+375: (73) *(u8 *)(r0 +25) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=116
+376: (73) *(u8 *)(r0 +22) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=116
+377: (73) *(u8 *)(r0 +10) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=116
+378: (73) *(u8 *)(r0 +7) = r1         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=116
+379: (b7) r1 = 95                     ; frame1: R1_w=95
+380: (73) *(u8 *)(r0 +21) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=95
+381: (73) *(u8 *)(r0 +6) = r1         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=95
+382: (b7) r1 = 102                    ; frame1: R1_w=102
+383: (73) *(u8 *)(r0 +20) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=102
+384: (73) *(u8 *)(r0 +5) = r1         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=102
+385: (b7) r1 = 112                    ; frame1: R1_w=112
+386: (73) *(u8 *)(r0 +19) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=112
+387: (73) *(u8 *)(r0 +4) = r1         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=112
+388: (b7) r1 = 98                     ; frame1: R1_w=98
+389: (73) *(u8 *)(r0 +18) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=98
+390: (73) *(u8 *)(r0 +3) = r1         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=98
+391: (b7) r1 = 3                      ; frame1: R1_w=3
+392: (73) *(u8 *)(r0 +15) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=3
+393: (73) *(u8 *)(r0 +14) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=3
+394: (73) *(u8 *)(r0 +28) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+395: (73) *(u8 *)(r0 +17) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+396: (b7) r2 = 8                      ; frame1: R2_w=8
+397: (73) *(u8 *)(r0 +16) = r2        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R2_w=8
+398: (73) *(u8 *)(r0 +13) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+399: (b7) r3 = 1                      ; frame1: R3_w=1
+400: (73) *(u8 *)(r0 +12) = r3        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R3_w=1
+401: (73) *(u8 *)(r0 +2) = r6         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+402: (73) *(u8 *)(r0 +1) = r2         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R2_w=8
+403: (b7) r1 = 4                      ; frame1: R1_w=4
+404: (73) *(u8 *)(r0 +26) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=4
+405: (b7) r4 = 2                      ; frame1: R4_w=2
+406: (73) *(u8 *)(r0 +11) = r4        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R4_w=2
+407: (73) *(u8 *)(r0 +0) = r3         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R3_w=1
+408: (bf) r5 = r0                     ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+409: (07) r5 += 29                    ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29)
+410: (18) r7 = 0xffff44edf12b1f1e     ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22)
+412: (71) r8 = *(u8 *)(r7 +0)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=98
+413: (73) *(u8 *)(r5 +0) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=98
+414: (71) r8 = *(u8 *)(r7 +1)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=112
+415: (73) *(u8 *)(r5 +1) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=112
+416: (71) r8 = *(u8 *)(r7 +2)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=102
+417: (73) *(u8 *)(r5 +2) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=102
+418: (71) r8 = *(u8 *)(r7 +3)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=45
+419: (73) *(u8 *)(r5 +3) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=45
+420: (71) r8 = *(u8 *)(r7 +4)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=116
+421: (73) *(u8 *)(r5 +4) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=116
+422: (71) r8 = *(u8 *)(r7 +5)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=101
+423: (73) *(u8 *)(r5 +5) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=101
+424: (71) r8 = *(u8 *)(r7 +6)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=115
+425: (73) *(u8 *)(r5 +6) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=115
+426: (71) r8 = *(u8 *)(r7 +7)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=116
+427: (73) *(u8 *)(r5 +7) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=116
+428: (71) r8 = *(u8 *)(r7 +8)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=45
+429: (73) *(u8 *)(r5 +8) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=45
+430: (71) r8 = *(u8 *)(r7 +9)         ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=101
+431: (73) *(u8 *)(r5 +9) = r8         ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=101
+432: (71) r8 = *(u8 *)(r7 +10)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=98
+433: (73) *(u8 *)(r5 +10) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=98
+434: (71) r8 = *(u8 *)(r7 +11)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=112
+435: (73) *(u8 *)(r5 +11) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=112
+436: (71) r8 = *(u8 *)(r7 +12)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=102
+437: (73) *(u8 *)(r5 +12) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=102
+438: (71) r8 = *(u8 *)(r7 +13)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=47
+439: (73) *(u8 *)(r5 +13) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=47
+440: (71) r8 = *(u8 *)(r7 +14)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=115
+441: (73) *(u8 *)(r5 +14) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=115
+442: (71) r8 = *(u8 *)(r7 +15)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=114
+443: (73) *(u8 *)(r5 +15) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=114
+444: (71) r8 = *(u8 *)(r7 +16)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=99
+445: (73) *(u8 *)(r5 +16) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=99
+446: (71) r8 = *(u8 *)(r7 +17)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=47
+447: (73) *(u8 *)(r5 +17) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=47
+448: (71) r8 = *(u8 *)(r7 +18)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=109
+449: (73) *(u8 *)(r5 +18) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=109
+450: (71) r8 = *(u8 *)(r7 +19)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=97
+451: (73) *(u8 *)(r5 +19) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=97
+452: (71) r8 = *(u8 *)(r7 +20)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=105
+453: (73) *(u8 *)(r5 +20) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=105
+454: (71) r8 = *(u8 *)(r7 +21)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=110
+455: (73) *(u8 *)(r5 +21) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=110
+456: (71) r8 = *(u8 *)(r7 +22)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=46
+457: (73) *(u8 *)(r5 +22) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=46
+458: (71) r8 = *(u8 *)(r7 +23)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=114
+459: (73) *(u8 *)(r5 +23) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=114
+460: (71) r8 = *(u8 *)(r7 +24)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=115
+461: (73) *(u8 *)(r5 +24) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=115
+462: (b7) r5 = 107                    ; frame1: R5_w=107
+463: (73) *(u8 *)(r0 +76) = r5        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R5_w=107
+464: (b7) r5 = 111                    ; frame1: R5_w=111
+465: (73) *(u8 *)(r0 +75) = r5        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R5_w=111
+466: (73) *(u8 *)(r0 +73) = r4        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R4_w=2
+467: (73) *(u8 *)(r0 +64) = r3        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R3_w=1
+468: (73) *(u8 *)(r0 +62) = r2        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R2_w=8
+469: (b7) r2 = 224                    ; frame1: R2_w=224
+470: (73) *(u8 *)(r0 +57) = r2        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R2_w=224
+471: (73) *(u8 *)(r0 +74) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+472: (73) *(u8 *)(r0 +71) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+473: (73) *(u8 *)(r0 +70) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+474: (73) *(u8 *)(r0 +69) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+475: (73) *(u8 *)(r0 +68) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+476: (73) *(u8 *)(r0 +67) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+477: (73) *(u8 *)(r0 +66) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+478: (73) *(u8 *)(r0 +65) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+479: (73) *(u8 *)(r0 +63) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+480: (73) *(u8 *)(r0 +60) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+481: (73) *(u8 *)(r0 +59) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+482: (73) *(u8 *)(r0 +58) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+483: (73) *(u8 *)(r0 +56) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6_w=0
+484: (73) *(u8 *)(r0 +55) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=4
+485: (b7) r1 = 20                     ; frame1: R1_w=20
+486: (73) *(u8 *)(r0 +72) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=20
+487: (b7) r1 = 6                      ; frame1: R1_w=6
+488: (73) *(u8 *)(r0 +61) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=6
+489: (b7) r1 = 5                      ; frame1: R1_w=5
+490: (73) *(u8 *)(r0 +54) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=5
+491: (79) r1 = *(u64 *)(r10 -32)      ; frame1: R1_w=ctx() R10=fp0 fp-32=ctx()
+492: (18) r2 = 0xffff44edf12b0400     ; frame1: R2_w=map_ptr(map=AYA_LOGS,ks=4,vs=4)
+494: (18) r3 = 0xffffffff             ; frame1: R3_w=0xffffffff
+496: (bf) r4 = r0                     ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R4_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+497: (b7) r5 = 77                     ; frame1: R5_w=77
+498: (85) call bpf_perf_event_output#25       ; frame1: R0=scalar()
+499: (63) *(u32 *)(r10 -16) = r6      ; frame1: R6=0 R10=fp0 fp-16=mmmm0
+500: (bf) r2 = r10                    ; frame1: R2_w=fp0 R10=fp0
+501: (07) r2 += -16                   ; frame1: R2_w=fp-16
+502: (18) r1 = 0xffff44edf12b3800     ; frame1: R1_w=map_ptr(map=AYA_LOG_BUF,ks=4,vs=8192)
+504: (85) call bpf_map_lookup_elem#1          ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+505: (bf) r7 = r0                     ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+506: (15) if r7 == 0x0 goto pc+209    ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+507: (b7) r1 = 25                     ; frame1: R1_w=25
+508: (73) *(u8 *)(r7 +27) = r1        ; frame1: R1_w=25 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+509: (b7) r1 = 115                    ; frame1: R1_w=115
+510: (73) *(u8 *)(r7 +24) = r1        ; frame1: R1_w=115 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+511: (73) *(u8 *)(r7 +9) = r1         ; frame1: R1_w=115 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+512: (b7) r1 = 101                    ; frame1: R1_w=101
+513: (73) *(u8 *)(r7 +23) = r1        ; frame1: R1_w=101 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+514: (73) *(u8 *)(r7 +8) = r1         ; frame1: R1_w=101 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+515: (b7) r1 = 116                    ; frame1: R1_w=116
+516: (73) *(u8 *)(r7 +25) = r1        ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+517: (73) *(u8 *)(r7 +22) = r1        ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+518: (73) *(u8 *)(r7 +10) = r1        ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+519: (73) *(u8 *)(r7 +7) = r1         ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+520: (b7) r1 = 95                     ; frame1: R1_w=95
+521: (73) *(u8 *)(r7 +21) = r1        ; frame1: R1_w=95 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+522: (73) *(u8 *)(r7 +6) = r1         ; frame1: R1_w=95 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+523: (b7) r1 = 102                    ; frame1: R1_w=102
+524: (73) *(u8 *)(r7 +20) = r1        ; frame1: R1_w=102 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+525: (73) *(u8 *)(r7 +5) = r1         ; frame1: R1_w=102 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+526: (b7) r1 = 112                    ; frame1: R1_w=112
+527: (73) *(u8 *)(r7 +19) = r1        ; frame1: R1_w=112 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+528: (73) *(u8 *)(r7 +4) = r1         ; frame1: R1_w=112 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+529: (b7) r1 = 98                     ; frame1: R1_w=98
+530: (73) *(u8 *)(r7 +18) = r1        ; frame1: R1_w=98 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+531: (73) *(u8 *)(r7 +3) = r1         ; frame1: R1_w=98 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+532: (b7) r1 = 3                      ; frame1: R1_w=3
+533: (73) *(u8 *)(r7 +15) = r1        ; frame1: R1_w=3 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+534: (73) *(u8 *)(r7 +14) = r1        ; frame1: R1_w=3 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+535: (b7) r1 = 2                      ; frame1: R1_w=2
+536: (73) *(u8 *)(r7 +11) = r1        ; frame1: R1_w=2 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+537: (b7) r1 = 1                      ; frame1: R1_w=1
+538: (73) *(u8 *)(r7 +12) = r1        ; frame1: R1_w=1 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+539: (73) *(u8 *)(r7 +0) = r1         ; frame1: R1_w=1 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+540: (73) *(u8 *)(r7 +28) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+541: (73) *(u8 *)(r7 +17) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+542: (b7) r2 = 8                      ; frame1: R2_w=8
+543: (73) *(u8 *)(r7 +16) = r2        ; frame1: R2_w=8 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+544: (73) *(u8 *)(r7 +13) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+545: (73) *(u8 *)(r7 +2) = r6         ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+546: (73) *(u8 *)(r7 +1) = r2         ; frame1: R2_w=8 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+547: (b7) r1 = 4                      ; frame1: R1_w=4
+548: (73) *(u8 *)(r7 +26) = r1        ; frame1: R1_w=4 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+549: (bf) r3 = r7                     ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+550: (07) r3 += 29                    ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29)
+551: (18) r4 = 0xffff44edf12b1f1e     ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22)
+553: (71) r5 = *(u8 *)(r4 +0)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=98
+554: (73) *(u8 *)(r3 +0) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=98
+555: (71) r5 = *(u8 *)(r4 +1)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=112
+556: (73) *(u8 *)(r3 +1) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=112
+557: (71) r5 = *(u8 *)(r4 +2)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=102
+558: (73) *(u8 *)(r3 +2) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=102
+559: (71) r5 = *(u8 *)(r4 +3)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=45
+560: (73) *(u8 *)(r3 +3) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=45
+561: (71) r5 = *(u8 *)(r4 +4)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=116
+562: (73) *(u8 *)(r3 +4) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=116
+563: (71) r5 = *(u8 *)(r4 +5)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=101
+564: (73) *(u8 *)(r3 +5) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=101
+565: (71) r5 = *(u8 *)(r4 +6)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115
+566: (73) *(u8 *)(r3 +6) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=115
+567: (71) r5 = *(u8 *)(r4 +7)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=116
+568: (73) *(u8 *)(r3 +7) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=116
+569: (71) r5 = *(u8 *)(r4 +8)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=45
+570: (73) *(u8 *)(r3 +8) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=45
+571: (71) r5 = *(u8 *)(r4 +9)         ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=101
+572: (73) *(u8 *)(r3 +9) = r5         ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=101
+573: (71) r5 = *(u8 *)(r4 +10)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=98
+574: (73) *(u8 *)(r3 +10) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=98
+575: (71) r5 = *(u8 *)(r4 +11)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=112
+576: (73) *(u8 *)(r3 +11) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=112
+577: (71) r5 = *(u8 *)(r4 +12)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=102
+578: (73) *(u8 *)(r3 +12) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=102
+579: (71) r5 = *(u8 *)(r4 +13)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=47
+580: (73) *(u8 *)(r3 +13) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=47
+581: (71) r5 = *(u8 *)(r4 +14)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115
+582: (73) *(u8 *)(r3 +14) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=115
+583: (71) r5 = *(u8 *)(r4 +15)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=114
+584: (73) *(u8 *)(r3 +15) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=114
+585: (71) r5 = *(u8 *)(r4 +16)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=99
+586: (73) *(u8 *)(r3 +16) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=99
+587: (71) r5 = *(u8 *)(r4 +17)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=47
+588: (73) *(u8 *)(r3 +17) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=47
+589: (71) r5 = *(u8 *)(r4 +18)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=109
+590: (73) *(u8 *)(r3 +18) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=109
+591: (71) r5 = *(u8 *)(r4 +19)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=97
+592: (73) *(u8 *)(r3 +19) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=97
+593: (71) r5 = *(u8 *)(r4 +20)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=105
+594: (73) *(u8 *)(r3 +20) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=105
+595: (71) r5 = *(u8 *)(r4 +21)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=110
+596: (73) *(u8 *)(r3 +21) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=110
+597: (71) r5 = *(u8 *)(r4 +22)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=46
+598: (73) *(u8 *)(r3 +22) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=46
+599: (71) r5 = *(u8 *)(r4 +23)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=114
+600: (73) *(u8 *)(r3 +23) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=114
+601: (71) r5 = *(u8 *)(r4 +24)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115
+602: (73) *(u8 *)(r3 +24) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=115
+603: (b7) r3 = 17                     ; frame1: R3_w=17
+604: (73) *(u8 *)(r7 +73) = r3        ; frame1: R3_w=17 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+605: (73) *(u8 *)(r7 +62) = r2        ; frame1: R2_w=8 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+606: (b7) r2 = 225                    ; frame1: R2_w=225
+607: (73) *(u8 *)(r7 +57) = r2        ; frame1: R2_w=225 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+608: (73) *(u8 *)(r7 +74) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+609: (73) *(u8 *)(r7 +71) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+610: (73) *(u8 *)(r7 +70) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+611: (73) *(u8 *)(r7 +69) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+612: (73) *(u8 *)(r7 +68) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+613: (73) *(u8 *)(r7 +67) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+614: (73) *(u8 *)(r7 +66) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+615: (73) *(u8 *)(r7 +65) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+616: (73) *(u8 *)(r7 +63) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+617: (73) *(u8 *)(r7 +60) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+618: (73) *(u8 *)(r7 +59) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+619: (73) *(u8 *)(r7 +58) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+620: (73) *(u8 *)(r7 +56) = r6        ; frame1: R6=0 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+621: (73) *(u8 *)(r7 +64) = r1        ; frame1: R1_w=4 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+622: (73) *(u8 *)(r7 +55) = r1        ; frame1: R1_w=4 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+623: (b7) r8 = 20                     ; frame1: R8_w=20
+624: (73) *(u8 *)(r7 +72) = r8        ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=20
+625: (b7) r1 = 6                      ; frame1: R1_w=6
+626: (73) *(u8 *)(r7 +61) = r1        ; frame1: R1_w=6 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+627: (b7) r9 = 5                      ; frame1: R9_w=5
+628: (73) *(u8 *)(r7 +54) = r9        ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R9_w=5
+629: (bf) r1 = r7                     ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+630: (07) r1 += 75                    ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75)
+631: (18) r2 = 0xffff44edf12b1f08     ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132)
+633: (71) r3 = *(u8 *)(r2 +0)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+634: (73) *(u8 *)(r1 +0) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+635: (71) r3 = *(u8 *)(r2 +1)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=101
+636: (73) *(u8 *)(r1 +1) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=101
+637: (71) r3 = *(u8 *)(r2 +2)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=115
+638: (73) *(u8 *)(r1 +2) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=115
+639: (71) r3 = *(u8 *)(r2 +3)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+640: (73) *(u8 *)(r1 +3) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+641: (71) r3 = *(u8 *)(r2 +4)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=32
+642: (73) *(u8 *)(r1 +4) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=32
+643: (71) r3 = *(u8 *)(r2 +5)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+644: (73) *(u8 *)(r1 +5) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+645: (71) r3 = *(u8 *)(r2 +6)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=101
+646: (73) *(u8 *)(r1 +6) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=101
+647: (71) r3 = *(u8 *)(r2 +7)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=115
+648: (73) *(u8 *)(r1 +7) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=115
+649: (71) r3 = *(u8 *)(r2 +8)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+650: (73) *(u8 *)(r1 +8) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+651: (71) r3 = *(u8 *)(r2 +9)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=95
+652: (73) *(u8 *)(r1 +9) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=95
+653: (71) r3 = *(u8 *)(r2 +10)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=97
+654: (73) *(u8 *)(r1 +10) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=97
+655: (71) r3 = *(u8 *)(r2 +11)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+656: (73) *(u8 *)(r1 +11) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+657: (71) r3 = *(u8 *)(r2 +12)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=111
+658: (73) *(u8 *)(r1 +12) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=111
+659: (71) r3 = *(u8 *)(r2 +13)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=109
+660: (73) *(u8 *)(r1 +13) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=109
+661: (71) r3 = *(u8 *)(r2 +14)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=105
+662: (73) *(u8 *)(r1 +14) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=105
+663: (71) r3 = *(u8 *)(r2 +15)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=99
+664: (73) *(u8 *)(r1 +15) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=99
+665: (71) r3 = *(u8 *)(r2 +16)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=95
+666: (73) *(u8 *)(r1 +16) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=95
+667: (bf) r1 = r7                     ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+668: (07) r1 += 92                    ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92)
+669: (b7) r2 = 8100                   ; frame1: R2=8100
+670: (85) call pc+17771
+caller:
+ frame1: R6=0 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=20 R9=5 R10=fp0 fp-16=mmmm0 fp-24=0x7fffffffffffffff fp-32=ctx() fp-40=10
+callee:
+ frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R2=8100 R3=95 R4=map_value(map=.rodata,ks=4,vs=132,off=22) R5=115 R10=fp0
+18442: frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R2=8100 R3=95 R4=map_value(map=.rodata,ks=4,vs=132,off=22) R5=115 R10=fp0
+18442: (b7) r0 = 0                    ; frame2: R0_w=0
+18443: (15) if r2 == 0x0 goto pc+9    ; frame2: R2=8100
+18444: (73) *(u8 *)(r1 +0) = r0       ; frame2: R0_w=0 R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92)
+18445: (b7) r3 = 3                    ; frame2: R3_w=3
+18446: (2d) if r3 > r2 goto pc+6      ; frame2: R2=8100 R3_w=3
+18447: (b7) r3 = 1                    ; frame2: R3_w=1
+18448: (73) *(u8 *)(r1 +1) = r3       ; frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R3_w=1
+18449: (73) *(u8 *)(r1 +2) = r0       ; frame2: R0=0 R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92)
+18450: (15) if r2 == 0x3 goto pc+2    ; frame2: R2=8100
+18451: (73) *(u8 *)(r1 +3) = r3       ; frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R3=1
+18452: (b7) r0 = 4                    ; frame2: R0_w=4
+18453: (95) exit
+returning from callee:
+ frame2: R0_w=4 R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R2=8100 R3=1 R4=map_value(map=.rodata,ks=4,vs=132,off=22) R5=115 R10=fp0
+to caller at 671:
+ frame1: R0_w=4 R6=0 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=20 R9=5 R10=fp0 fp-16=mmmm0 fp-24=0x7fffffffffffffff fp-32=ctx() fp-40=10
+671: (15) if r0 == 0x0 goto pc+44     ; frame1: R0_w=4
+672: (bf) r1 = r7                     ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+673: (0f) r1 += r0                    ; frame1: R0_w=4 R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4)
+674: (73) *(u8 *)(r1 +94) = r6        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R6=0
+675: (73) *(u8 *)(r1 +93) = r9        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R9=5
+676: (73) *(u8 *)(r1 +92) = r8        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R8=20
+677: (bf) r2 = r1                     ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R2_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4)
+678: (07) r2 += 95                    ; frame1: R2_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99)
+679: (18) r3 = 0xffff44edf12b1f84     ; frame1: R3_w=map_value(map=.rodata,ks=4,vs=132,off=124)
+681: (71) r4 = *(u8 *)(r3 +0)         ; frame1: R3_w=map_value(map=.rodata,ks=4,vs=132,off=124) R4_w=117
+682: (73) *(u8 *)(r2 +0) = r4         ; frame1: R2_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R4_w=117
+683: (71) r4 = *(u8 *)(r3 +1)         ; frame1: R3_w=map_value(map=.rodata,ks=4,vs=132,off=124) R4_w=115
+684: (73) *(u8 *)(r2 +1) = r4         ; frame1: R2_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R4_w=115
+685: (71) r4 = *(u8 *)(r3 +2)         ; frame1: R3_w=map_value(map=.rodata,ks=4,vs=132,off=124) R4_w=105
+686: (73) *(u8 *)(r2 +2) = r4         ; frame1: R2_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R4_w=105
+687: (71) r4 = *(u8 *)(r3 +3)         ; frame1: R3_w=map_value(map=.rodata,ks=4,vs=132,off=124) R4_w=122
+688: (73) *(u8 *)(r2 +3) = r4         ; frame1: R2_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R4_w=122
+689: (71) r4 = *(u8 *)(r3 +4)         ; frame1: R3_w=map_value(map=.rodata,ks=4,vs=132,off=124) R4_w=101
+690: (73) *(u8 *)(r2 +4) = r4         ; frame1: R2_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=99) R4_w=101
+691: (73) *(u8 *)(r1 +102) = r6       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R6=0
+692: (73) *(u8 *)(r1 +101) = r9       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R9=5
+693: (73) *(u8 *)(r1 +100) = r8       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R8=20
+694: (07) r1 += 103                   ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107)
+695: (18) r2 = 0xffff44edf12b1f19     ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17)
+697: (71) r3 = *(u8 *)(r2 +0)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=32
+698: (73) *(u8 *)(r1 +0) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=32
+699: (71) r3 = *(u8 *)(r2 +1)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=46
+700: (73) *(u8 *)(r1 +1) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=46
+701: (71) r3 = *(u8 *)(r2 +2)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=46
+702: (73) *(u8 *)(r1 +2) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=46
+703: (71) r3 = *(u8 *)(r2 +3)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=46
+704: (73) *(u8 *)(r1 +3) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=46
+705: (71) r3 = *(u8 *)(r2 +4)         ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=32
+706: (73) *(u8 *)(r1 +4) = r3         ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=107) R3_w=32
+707: (07) r0 += 108                   ; frame1: R0_w=112
+708: (79) r1 = *(u64 *)(r10 -32)      ; frame1: R1_w=ctx() R10=fp0 fp-32=ctx()
+709: (18) r2 = 0xffff44edf12b0400     ; frame1: R2_w=map_ptr(map=AYA_LOGS,ks=4,vs=4)
+711: (18) r3 = 0xffffffff             ; frame1: R3_w=0xffffffff
+713: (bf) r4 = r7                     ; frame1: R4_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+714: (bf) r5 = r0                     ; frame1: R0_w=112 R5_w=112
+715: (85) call bpf_perf_event_output#25       ; frame1: R0=scalar()
+716: (b7) r1 = 1                      ; frame1: R1_w=1
+717: (7b) *(u64 *)(r10 -24) = r1      ; frame1: R1_w=1 R10=fp0 fp-24_w=1
+718: (bf) r1 = r10                    ; frame1: R1_w=fp0 R10=fp0
+719: (07) r1 += -24                   ; frame1: R1_w=fp-24
+720: (79) r8 = *(u64 *)(r1 +0)        ; frame1: R1_w=fp-24 R8_w=1 fp-24_w=1
+721: (15) if r8 == 0x1 goto pc+1      ; frame1: R8_w=1
+723: (bf) r2 = r10                    ; frame1: R2_w=fp0 R10=fp0
+724: (07) r2 += -24                   ; frame1: R2_w=fp-24
+725: (b7) r1 = 0                      ; frame1: R1_w=0
+726: (7b) *(u64 *)(r2 +0) = r1        ; frame1: R1_w=0 R2_w=fp-24 fp-24_w=0
+727: (79) r8 = *(u64 *)(r2 +0)        ; frame1: R2_w=fp-24 R8_w=0 fp-24_w=0
+728: (15) if r8 == 0x0 goto pc+2174   ; frame1: R8_w=0
+2903: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+2904: (07) r2 += -24                  ; frame1: R2_w=fp-24
+2905: (b7) r3 = -1                    ; frame1: R3_w=-1
+2906: (7b) *(u64 *)(r2 +0) = r3       ; frame1: R2_w=fp-24 R3_w=-1 fp-24_w=-1
+2907: (79) r8 = *(u64 *)(r2 +0)       ; frame1: R2_w=fp-24 R8_w=-1 fp-24_w=-1
+2908: (15) if r8 == 0xffffffff goto pc+239    ; frame1: R8_w=-1
+3148: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3149: (07) r2 += -16                  ; frame1: R2_w=fp-16
+3150: (79) r3 = *(u64 *)(r2 +0)       ; frame1: R2_w=fp-16 R3_w=scalar() fp-16=mmmm0
+3151: (b7) r3 = 2                     ; frame1: R3_w=2
+3152: (7b) *(u64 *)(r2 +0) = r3       ; frame1: R2_w=fp-16 R3_w=2 fp-16_w=2
+3153: (79) r8 = *(u64 *)(r2 +0)       ; frame1: R2_w=fp-16 R8_w=2 fp-16_w=2
+3154: (15) if r8 == 0x2 goto pc+1     ; frame1: R8_w=2
+3156: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3157: (07) r2 += -16                  ; frame1: R2_w=fp-16
+3158: (7b) *(u64 *)(r2 +0) = r1       ; frame1: R1=0 R2_w=fp-16 fp-16_w=0
+3159: (79) r2 = *(u64 *)(r2 +0)       ; frame1: R2_w=0 fp-16_w=0
+3160: (b7) r2 = 1                     ; frame1: R2_w=1
+3161: (7b) *(u64 *)(r10 -24) = r2     ; frame1: R2_w=1 R10=fp0 fp-24_w=1
+3162: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3163: (07) r2 += -24                  ; frame1: R2_w=fp-24
+3164: (79) r8 = *(u64 *)(r2 +0)       ; frame1: R2_w=fp-24 R8_w=1 fp-24_w=1
+3165: (55) if r8 != 0x1 goto pc+1160          ; frame1: R8_w=1
+3166: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3167: (07) r2 += -24                  ; frame1: R2_w=fp-24
+3168: (b7) r3 = 0                     ; frame1: R3_w=0
+3169: (7b) *(u64 *)(r2 +0) = r3       ; frame1: R2_w=fp-24 R3_w=0 fp-24_w=0
+3170: (79) r8 = *(u64 *)(r2 +0)       ; frame1: R2_w=fp-24 R8_w=0 fp-24_w=0
+3171: (55) if r8 != 0x0 goto pc-2443          ; frame1: R8_w=0
+3172: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3173: (07) r2 += -24                  ; frame1: R2_w=fp-24
+3174: (b7) r3 = -1                    ; frame1: R3_w=-1
+3175: (7b) *(u64 *)(r2 +0) = r3       ; frame1: R2_w=fp-24 R3_w=-1 fp-24_w=-1
+3176: (79) r8 = *(u64 *)(r2 +0)       ; frame1: R2=fp-24 R8=-1 fp-24=-1
+3177: (55) if r8 != 0xffffffff goto pc-269    ; frame1: R8=-1
+3178: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3179: (07) r2 += -16                  ; frame1: R2_w=fp-16
+3180: (79) r3 = *(u64 *)(r2 +0)       ; frame1: R2_w=fp-16 R3_w=0 fp-16=0
+3181: (b7) r3 = 2                     ; frame1: R3_w=2
+3182: (7b) *(u64 *)(r2 +0) = r3       ; frame1: R2_w=fp-16 R3_w=2 fp-16_w=2
+3183: (79) r8 = *(u64 *)(r2 +0)       ; frame1: R2_w=fp-16 R8_w=2 fp-16_w=2
+3184: (55) if r8 != 0x2 goto pc+1380          ; frame1: R8_w=2
+3185: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3186: (07) r2 += -16                  ; frame1: R2_w=fp-16
+3187: (7b) *(u64 *)(r2 +0) = r1       ; frame1: R1=0 R2_w=fp-16 fp-16_w=0
+3188: (79) r2 = *(u64 *)(r2 +0)       ; frame1: R2_w=0 fp-16_w=0
+3189: (b7) r2 = 1                     ; frame1: R2_w=1
+3190: (7b) *(u64 *)(r10 -24) = r2     ; frame1: R2_w=1 R10=fp0 fp-24_w=1
+3191: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3192: (07) r2 += -24                  ; frame1: R2_w=fp-24
+3193: (79) r8 = *(u64 *)(r2 +0)       ; frame1: R2=fp-24 R8=1 fp-24=1
+3194: (55) if r8 != 0x1 goto pc+1131          ; frame1: R8=1
+3195: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3196: (07) r2 += -24                  ; frame1: R2_w=fp-24
+3197: (b7) r3 = 0                     ; frame1: R3_w=0
+3198: (7b) *(u64 *)(r2 +0) = r3       ; frame1: R2_w=fp-24 R3_w=0 fp-24_w=0
+3199: (79) r8 = *(u64 *)(r2 +0)       ; frame1: R2_w=fp-24 R8_w=0 fp-24_w=0
+3200: (55) if r8 != 0x0 goto pc-2472          ; frame1: R8_w=0
+3201: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3202: (07) r1 += -24                  ; frame1: R1_w=fp-24
+3203: (b7) r2 = -1                    ; frame1: R2_w=-1
+3204: (7b) *(u64 *)(r1 +0) = r2       ; frame1: R1_w=fp-24 R2_w=-1 fp-24_w=-1
+3205: (79) r8 = *(u64 *)(r1 +0)       ; frame1: R1=fp-24 R8=-1 fp-24=-1
+3206: (55) if r8 != 0xffffffff goto pc-298    ; frame1: R8=-1
+3207: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3208: (07) r1 += -16                  ; frame1: R1_w=fp-16
+3209: (79) r2 = *(u64 *)(r1 +0)       ; frame1: R1_w=fp-16 R2_w=0 fp-16=0
+3210: (b7) r2 = 2                     ; frame1: R2_w=2
+3211: (7b) *(u64 *)(r1 +0) = r2       ; frame1: R1_w=fp-16 R2_w=2 fp-16_w=2
+3212: (79) r8 = *(u64 *)(r1 +0)       ; frame1: R1_w=fp-16 R8_w=2 fp-16_w=2
+3213: (55) if r8 != 0x2 goto pc+1351          ; frame1: R8_w=2
+3214: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3215: (07) r1 += -16                  ; frame1: R1_w=fp-16
+3216: (7b) *(u64 *)(r1 +0) = r1       ; frame1: R1_w=fp-16 fp-16_w=fp-16
+3217: (79) r1 = *(u64 *)(r1 +0)       ; frame1: R1_w=fp-16 fp-16_w=fp-16
+3218: (b7) r1 = 5                     ; frame1: R1_w=5
+3219: (7b) *(u64 *)(r10 -16) = r1     ; frame1: R1_w=5 R10=fp0 fp-16_w=5
+3220: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3221: (07) r2 += -16                  ; frame1: R2_w=fp-16
+3222: (b7) r3 = 10                    ; frame1: R3_w=10
+3223: (b7) r4 = 1                     ; frame1: R4_w=1
+3224: (b7) r0 = 5                     ; frame1: R0_w=5
+3225: (db) r0 = atomic64_cmpxchg((u64 *)(r2 +0), r0, r3)      ; frame1: R0=5 R2=fp-16 R3=10 fp-16=mmmmmmmm
+3226: (1d) if r0 == r1 goto pc+1      ; frame1: R0=5 R1=5
+3228: (7b) *(u64 *)(r10 -40) = r0     ; frame1: R0=5 R10=fp0 fp-40_w=5
+3229: (15) if r0 == 0x5 goto pc+1     ; frame1: R0=5
+3231: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3232: (07) r1 += -16                  ; frame1: R1_w=fp-16
+3233: (79) r1 = *(u64 *)(r1 +0)       ; frame1: R1_w=scalar() fp-16=mmmmmmmm
+3234: (7b) *(u64 *)(r10 -40) = r1     ; frame1: R1_w=scalar(id=4) R10=fp0 fp-40_w=scalar(id=4)
+3235: (15) if r1 == 0xa goto pc+1 3237: frame1: R0=5 R1=10 R2=fp-16 R3=10 R4=1 R6=0 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=2 R9=5 R10=fp0 fp-16=mmmmmmmm fp-24=-1 fp-32=ctx() fp-40=10
+3237: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3238: (07) r1 += -16                  ; frame1: R1_w=fp-16
+3239: (b7) r2 = 12                    ; frame1: R2_w=12
+3240: (b7) r3 = 1                     ; frame1: R3_w=1
+3241: (b7) r4 = 6                     ; frame1: R4_w=6
+3242: (b7) r0 = 6                     ; frame1: R0_w=6
+3243: (db) r0 = atomic64_cmpxchg((u64 *)(r1 +0), r0, r2)      ; frame1: R0_w=scalar() R1_w=fp-16 R2_w=12 fp-16_w=mmmmmmmm
+3244: (1d) if r0 == r4 goto pc+1      ; frame1: R0_w=scalar() R4_w=6
+3245: (b7) r3 = 0                     ; frame1: R3_w=0
+3246: (7b) *(u64 *)(r10 -40) = r0     ; frame1: R0_w=scalar(id=5) R10=fp0 fp-40_w=scalar(id=5)
+3247: (15) if r0 == 0xa goto pc+1 3249: frame1: R0=10 R1=fp-16 R2=12 R3=0 R4=6 R6=0 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=2 R9=5 R10=fp0 fp-16=mmmmmmmm fp-24=-1 fp-32=ctx() fp-40=10
+3249: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3250: (07) r1 += -16                  ; frame1: R1_w=fp-16
+3251: (79) r1 = *(u64 *)(r1 +0)       ; frame1: R1_w=scalar() fp-16=mmmmmmmm
+3252: (7b) *(u64 *)(r10 -40) = r1     ; frame1: R1_w=scalar(id=6) R10=fp0 fp-40_w=scalar(id=6)
+3253: (15) if r1 == 0xa goto pc+1 3255: frame1: R0=10 R1=10 R2=12 R3=0 R4=6 R6=0 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=2 R9=5 R10=fp0 fp-16=mmmmmmmm fp-24=-1 fp-32=ctx() fp-40=10
+3255: (63) *(u32 *)(r10 -16) = r6     ; frame1: R6=0 R10=fp0 fp-16=mmmm0
+3256: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3257: (07) r2 += -16                  ; frame1: R2_w=fp-16
+3258: (18) r1 = 0xffff44edf12b3800    ; frame1: R1_w=map_ptr(map=AYA_LOG_BUF,ks=4,vs=8192)
+3260: (85) call bpf_map_lookup_elem#1         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3261: (15) if r0 == 0x0 goto pc+133   ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3262: (b7) r1 = 25                    ; frame1: R1_w=25
+3263: (73) *(u8 *)(r0 +27) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=25
+3264: (b7) r1 = 115                   ; frame1: R1_w=115
+3265: (73) *(u8 *)(r0 +24) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=115
+3266: (73) *(u8 *)(r0 +9) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=115
+3267: (b7) r1 = 101                   ; frame1: R1_w=101
+3268: (73) *(u8 *)(r0 +23) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=101
+3269: (73) *(u8 *)(r0 +8) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=101
+3270: (b7) r1 = 116                   ; frame1: R1_w=116
+3271: (73) *(u8 *)(r0 +25) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=116
+3272: (73) *(u8 *)(r0 +22) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=116
+3273: (73) *(u8 *)(r0 +10) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=116
+3274: (73) *(u8 *)(r0 +7) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=116
+3275: (b7) r1 = 95                    ; frame1: R1_w=95
+3276: (73) *(u8 *)(r0 +21) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=95
+3277: (73) *(u8 *)(r0 +6) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=95
+3278: (b7) r1 = 102                   ; frame1: R1_w=102
+3279: (73) *(u8 *)(r0 +20) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=102
+3280: (73) *(u8 *)(r0 +5) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=102
+3281: (b7) r1 = 112                   ; frame1: R1_w=112
+3282: (73) *(u8 *)(r0 +19) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=112
+3283: (73) *(u8 *)(r0 +4) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=112
+3284: (b7) r1 = 98                    ; frame1: R1_w=98
+3285: (73) *(u8 *)(r0 +18) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=98
+3286: (73) *(u8 *)(r0 +3) = r1        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=98
+3287: (b7) r1 = 3                     ; frame1: R1_w=3
+3288: (73) *(u8 *)(r0 +15) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=3
+3289: (73) *(u8 *)(r0 +14) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=3
+3290: (73) *(u8 *)(r0 +28) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3291: (73) *(u8 *)(r0 +17) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3292: (b7) r2 = 8                     ; frame1: R2_w=8
+3293: (73) *(u8 *)(r0 +16) = r2       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R2_w=8
+3294: (73) *(u8 *)(r0 +13) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3295: (b7) r3 = 1                     ; frame1: R3_w=1
+3296: (73) *(u8 *)(r0 +12) = r3       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R3_w=1
+3297: (73) *(u8 *)(r0 +2) = r6        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3298: (73) *(u8 *)(r0 +1) = r2        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R2_w=8
+3299: (b7) r1 = 4                     ; frame1: R1_w=4
+3300: (73) *(u8 *)(r0 +26) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=4
+3301: (b7) r4 = 2                     ; frame1: R4_w=2
+3302: (73) *(u8 *)(r0 +11) = r4       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R4_w=2
+3303: (73) *(u8 *)(r0 +0) = r3        ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R3_w=1
+3304: (bf) r5 = r0                    ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3305: (07) r5 += 29                   ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29)
+3306: (18) r7 = 0xffff44edf12b1f1e    ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22)
+3308: (71) r8 = *(u8 *)(r7 +0)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=98
+3309: (73) *(u8 *)(r5 +0) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=98
+3310: (71) r8 = *(u8 *)(r7 +1)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=112
+3311: (73) *(u8 *)(r5 +1) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=112
+3312: (71) r8 = *(u8 *)(r7 +2)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=102
+3313: (73) *(u8 *)(r5 +2) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=102
+3314: (71) r8 = *(u8 *)(r7 +3)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=45
+3315: (73) *(u8 *)(r5 +3) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=45
+3316: (71) r8 = *(u8 *)(r7 +4)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=116
+3317: (73) *(u8 *)(r5 +4) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=116
+3318: (71) r8 = *(u8 *)(r7 +5)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=101
+3319: (73) *(u8 *)(r5 +5) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=101
+3320: (71) r8 = *(u8 *)(r7 +6)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=115
+3321: (73) *(u8 *)(r5 +6) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=115
+3322: (71) r8 = *(u8 *)(r7 +7)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=116
+3323: (73) *(u8 *)(r5 +7) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=116
+3324: (71) r8 = *(u8 *)(r7 +8)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=45
+3325: (73) *(u8 *)(r5 +8) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=45
+3326: (71) r8 = *(u8 *)(r7 +9)        ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=101
+3327: (73) *(u8 *)(r5 +9) = r8        ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=101
+3328: (71) r8 = *(u8 *)(r7 +10)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=98
+3329: (73) *(u8 *)(r5 +10) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=98
+3330: (71) r8 = *(u8 *)(r7 +11)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=112
+3331: (73) *(u8 *)(r5 +11) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=112
+3332: (71) r8 = *(u8 *)(r7 +12)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=102
+3333: (73) *(u8 *)(r5 +12) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=102
+3334: (71) r8 = *(u8 *)(r7 +13)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=47
+3335: (73) *(u8 *)(r5 +13) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=47
+3336: (71) r8 = *(u8 *)(r7 +14)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=115
+3337: (73) *(u8 *)(r5 +14) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=115
+3338: (71) r8 = *(u8 *)(r7 +15)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=114
+3339: (73) *(u8 *)(r5 +15) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=114
+3340: (71) r8 = *(u8 *)(r7 +16)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=99
+3341: (73) *(u8 *)(r5 +16) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=99
+3342: (71) r8 = *(u8 *)(r7 +17)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=47
+3343: (73) *(u8 *)(r5 +17) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=47
+3344: (71) r8 = *(u8 *)(r7 +18)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=109
+3345: (73) *(u8 *)(r5 +18) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=109
+3346: (71) r8 = *(u8 *)(r7 +19)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=97
+3347: (73) *(u8 *)(r5 +19) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=97
+3348: (71) r8 = *(u8 *)(r7 +20)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=105
+3349: (73) *(u8 *)(r5 +20) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=105
+3350: (71) r8 = *(u8 *)(r7 +21)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=110
+3351: (73) *(u8 *)(r5 +21) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=110
+3352: (71) r8 = *(u8 *)(r7 +22)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=46
+3353: (73) *(u8 *)(r5 +22) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=46
+3354: (71) r8 = *(u8 *)(r7 +23)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=114
+3355: (73) *(u8 *)(r5 +23) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=114
+3356: (71) r8 = *(u8 *)(r7 +24)       ; frame1: R7_w=map_value(map=.rodata,ks=4,vs=132,off=22) R8_w=115
+3357: (73) *(u8 *)(r5 +24) = r8       ; frame1: R5_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R8_w=115
+3358: (b7) r5 = 107                   ; frame1: R5_w=107
+3359: (73) *(u8 *)(r0 +76) = r5       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R5_w=107
+3360: (b7) r5 = 111                   ; frame1: R5_w=111
+3361: (73) *(u8 *)(r0 +75) = r5       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R5_w=111
+3362: (73) *(u8 *)(r0 +73) = r4       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R4_w=2
+3363: (73) *(u8 *)(r0 +64) = r3       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R3_w=1
+3364: (73) *(u8 *)(r0 +62) = r2       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R2_w=8
+3365: (b7) r2 = 225                   ; frame1: R2_w=225
+3366: (73) *(u8 *)(r0 +57) = r2       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R2_w=225
+3367: (73) *(u8 *)(r0 +74) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3368: (73) *(u8 *)(r0 +71) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3369: (73) *(u8 *)(r0 +70) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3370: (73) *(u8 *)(r0 +69) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3371: (73) *(u8 *)(r0 +68) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3372: (73) *(u8 *)(r0 +67) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3373: (73) *(u8 *)(r0 +66) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3374: (73) *(u8 *)(r0 +65) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3375: (73) *(u8 *)(r0 +63) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3376: (73) *(u8 *)(r0 +60) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3377: (73) *(u8 *)(r0 +59) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3378: (73) *(u8 *)(r0 +58) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3379: (73) *(u8 *)(r0 +56) = r6       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R6=0
+3380: (73) *(u8 *)(r0 +55) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=4
+3381: (b7) r1 = 20                    ; frame1: R1_w=20
+3382: (73) *(u8 *)(r0 +72) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=20
+3383: (b7) r1 = 6                     ; frame1: R1_w=6
+3384: (73) *(u8 *)(r0 +61) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=6
+3385: (b7) r1 = 5                     ; frame1: R1_w=5
+3386: (73) *(u8 *)(r0 +54) = r1       ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R1_w=5
+3387: (79) r1 = *(u64 *)(r10 -32)     ; frame1: R1_w=ctx() R10=fp0 fp-32=ctx()
+3388: (18) r2 = 0xffff44edf12b0400    ; frame1: R2_w=map_ptr(map=AYA_LOGS,ks=4,vs=4)
+3390: (18) r3 = 0xffffffff            ; frame1: R3_w=0xffffffff
+3392: (bf) r4 = r0                    ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R4_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3393: (b7) r5 = 77                    ; frame1: R5_w=77
+3394: (85) call bpf_perf_event_output#25      ; frame1: R0=scalar()
+3395: (63) *(u32 *)(r10 -16) = r6     ; frame1: R6=0 R10=fp0 fp-16=mmmm0
+3396: (bf) r2 = r10                   ; frame1: R2_w=fp0 R10=fp0
+3397: (07) r2 += -16                  ; frame1: R2_w=fp-16
+3398: (18) r1 = 0xffff44edf12b3800    ; frame1: R1_w=map_ptr(map=AYA_LOG_BUF,ks=4,vs=8192)
+3400: (85) call bpf_map_lookup_elem#1         ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3401: (bf) r7 = r0                    ; frame1: R0_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3402: (15) if r7 == 0x0 goto pc+201   ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3403: (b7) r1 = 25                    ; frame1: R1_w=25
+3404: (73) *(u8 *)(r7 +27) = r1       ; frame1: R1_w=25 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3405: (b7) r1 = 115                   ; frame1: R1_w=115
+3406: (73) *(u8 *)(r7 +24) = r1       ; frame1: R1_w=115 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3407: (73) *(u8 *)(r7 +9) = r1        ; frame1: R1_w=115 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3408: (b7) r1 = 101                   ; frame1: R1_w=101
+3409: (73) *(u8 *)(r7 +23) = r1       ; frame1: R1_w=101 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3410: (73) *(u8 *)(r7 +8) = r1        ; frame1: R1_w=101 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3411: (b7) r1 = 116                   ; frame1: R1_w=116
+3412: (73) *(u8 *)(r7 +25) = r1       ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3413: (73) *(u8 *)(r7 +22) = r1       ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3414: (73) *(u8 *)(r7 +10) = r1       ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3415: (73) *(u8 *)(r7 +7) = r1        ; frame1: R1_w=116 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3416: (b7) r1 = 95                    ; frame1: R1_w=95
+3417: (73) *(u8 *)(r7 +21) = r1       ; frame1: R1_w=95 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3418: (73) *(u8 *)(r7 +6) = r1        ; frame1: R1_w=95 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3419: (b7) r1 = 102                   ; frame1: R1_w=102
+3420: (73) *(u8 *)(r7 +20) = r1       ; frame1: R1_w=102 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3421: (73) *(u8 *)(r7 +5) = r1        ; frame1: R1_w=102 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3422: (b7) r1 = 112                   ; frame1: R1_w=112
+3423: (73) *(u8 *)(r7 +19) = r1       ; frame1: R1_w=112 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3424: (73) *(u8 *)(r7 +4) = r1        ; frame1: R1_w=112 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3425: (b7) r1 = 98                    ; frame1: R1_w=98
+3426: (73) *(u8 *)(r7 +18) = r1       ; frame1: R1_w=98 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3427: (73) *(u8 *)(r7 +3) = r1        ; frame1: R1_w=98 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3428: (b7) r1 = 3                     ; frame1: R1_w=3
+3429: (73) *(u8 *)(r7 +15) = r1       ; frame1: R1_w=3 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3430: (73) *(u8 *)(r7 +14) = r1       ; frame1: R1_w=3 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3431: (b7) r1 = 2                     ; frame1: R1_w=2
+3432: (73) *(u8 *)(r7 +11) = r1       ; frame1: R1_w=2 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3433: (b7) r1 = 1                     ; frame1: R1_w=1
+3434: (73) *(u8 *)(r7 +12) = r1       ; frame1: R1_w=1 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3435: (73) *(u8 *)(r7 +0) = r1        ; frame1: R1_w=1 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3436: (b7) r8 = 0                     ; frame1: R8_w=0
+3437: (73) *(u8 *)(r7 +28) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3438: (73) *(u8 *)(r7 +17) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3439: (b7) r2 = 8                     ; frame1: R2_w=8
+3440: (73) *(u8 *)(r7 +16) = r2       ; frame1: R2_w=8 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3441: (73) *(u8 *)(r7 +13) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3442: (73) *(u8 *)(r7 +2) = r8        ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3443: (73) *(u8 *)(r7 +1) = r2        ; frame1: R2_w=8 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3444: (b7) r1 = 4                     ; frame1: R1_w=4
+3445: (73) *(u8 *)(r7 +26) = r1       ; frame1: R1_w=4 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3446: (bf) r3 = r7                    ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3447: (07) r3 += 29                   ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29)
+3448: (18) r4 = 0xffff44edf12b1f1e    ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22)
+3450: (71) r5 = *(u8 *)(r4 +0)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=98
+3451: (73) *(u8 *)(r3 +0) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=98
+3452: (71) r5 = *(u8 *)(r4 +1)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=112
+3453: (73) *(u8 *)(r3 +1) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=112
+3454: (71) r5 = *(u8 *)(r4 +2)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=102
+3455: (73) *(u8 *)(r3 +2) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=102
+3456: (71) r5 = *(u8 *)(r4 +3)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=45
+3457: (73) *(u8 *)(r3 +3) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=45
+3458: (71) r5 = *(u8 *)(r4 +4)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=116
+3459: (73) *(u8 *)(r3 +4) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=116
+3460: (71) r5 = *(u8 *)(r4 +5)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=101
+3461: (73) *(u8 *)(r3 +5) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=101
+3462: (71) r5 = *(u8 *)(r4 +6)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115
+3463: (73) *(u8 *)(r3 +6) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=115
+3464: (71) r5 = *(u8 *)(r4 +7)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=116
+3465: (73) *(u8 *)(r3 +7) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=116
+3466: (71) r5 = *(u8 *)(r4 +8)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=45
+3467: (73) *(u8 *)(r3 +8) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=45
+3468: (71) r5 = *(u8 *)(r4 +9)        ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=101
+3469: (73) *(u8 *)(r3 +9) = r5        ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=101
+3470: (71) r5 = *(u8 *)(r4 +10)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=98
+3471: (73) *(u8 *)(r3 +10) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=98
+3472: (71) r5 = *(u8 *)(r4 +11)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=112
+3473: (73) *(u8 *)(r3 +11) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=112
+3474: (71) r5 = *(u8 *)(r4 +12)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=102
+3475: (73) *(u8 *)(r3 +12) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=102
+3476: (71) r5 = *(u8 *)(r4 +13)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=47
+3477: (73) *(u8 *)(r3 +13) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=47
+3478: (71) r5 = *(u8 *)(r4 +14)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115
+3479: (73) *(u8 *)(r3 +14) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=115
+3480: (71) r5 = *(u8 *)(r4 +15)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=114
+3481: (73) *(u8 *)(r3 +15) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=114
+3482: (71) r5 = *(u8 *)(r4 +16)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=99
+3483: (73) *(u8 *)(r3 +16) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=99
+3484: (71) r5 = *(u8 *)(r4 +17)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=47
+3485: (73) *(u8 *)(r3 +17) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=47
+3486: (71) r5 = *(u8 *)(r4 +18)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=109
+3487: (73) *(u8 *)(r3 +18) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=109
+3488: (71) r5 = *(u8 *)(r4 +19)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=97
+3489: (73) *(u8 *)(r3 +19) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=97
+3490: (71) r5 = *(u8 *)(r4 +20)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=105
+3491: (73) *(u8 *)(r3 +20) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=105
+3492: (71) r5 = *(u8 *)(r4 +21)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=110
+3493: (73) *(u8 *)(r3 +21) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=110
+3494: (71) r5 = *(u8 *)(r4 +22)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=46
+3495: (73) *(u8 *)(r3 +22) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=46
+3496: (71) r5 = *(u8 *)(r4 +23)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=114
+3497: (73) *(u8 *)(r3 +23) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=114
+3498: (71) r5 = *(u8 *)(r4 +24)       ; frame1: R4_w=map_value(map=.rodata,ks=4,vs=132,off=22) R5_w=115
+3499: (73) *(u8 *)(r3 +24) = r5       ; frame1: R3_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=29) R5_w=115
+3500: (b7) r3 = 17                    ; frame1: R3_w=17
+3501: (73) *(u8 *)(r7 +73) = r3       ; frame1: R3_w=17 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3502: (73) *(u8 *)(r7 +62) = r2       ; frame1: R2_w=8 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3503: (b7) r2 = 226                   ; frame1: R2_w=226
+3504: (73) *(u8 *)(r7 +57) = r2       ; frame1: R2_w=226 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3505: (73) *(u8 *)(r7 +74) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3506: (73) *(u8 *)(r7 +71) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3507: (73) *(u8 *)(r7 +70) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3508: (73) *(u8 *)(r7 +69) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3509: (73) *(u8 *)(r7 +68) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3510: (73) *(u8 *)(r7 +67) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3511: (73) *(u8 *)(r7 +66) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3512: (73) *(u8 *)(r7 +65) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3513: (73) *(u8 *)(r7 +63) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3514: (73) *(u8 *)(r7 +60) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3515: (73) *(u8 *)(r7 +59) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3516: (73) *(u8 *)(r7 +58) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3517: (73) *(u8 *)(r7 +56) = r8       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8_w=0
+3518: (73) *(u8 *)(r7 +64) = r1       ; frame1: R1_w=4 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3519: (73) *(u8 *)(r7 +55) = r1       ; frame1: R1_w=4 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3520: (b7) r9 = 20                    ; frame1: R9_w=20
+3521: (73) *(u8 *)(r7 +72) = r9       ; frame1: R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R9_w=20
+3522: (b7) r1 = 6                     ; frame1: R1_w=6
+3523: (73) *(u8 *)(r7 +61) = r1       ; frame1: R1_w=6 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3524: (b7) r6 = 5                     ; frame1: R6_w=5
+3525: (73) *(u8 *)(r7 +54) = r6       ; frame1: R6_w=5 R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3526: (bf) r1 = r7                    ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3527: (07) r1 += 75                   ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75)
+3528: (18) r2 = 0xffff44edf12b1f08    ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132)
+3530: (71) r3 = *(u8 *)(r2 +0)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+3531: (73) *(u8 *)(r1 +0) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+3532: (71) r3 = *(u8 *)(r2 +1)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=101
+3533: (73) *(u8 *)(r1 +1) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=101
+3534: (71) r3 = *(u8 *)(r2 +2)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=115
+3535: (73) *(u8 *)(r1 +2) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=115
+3536: (71) r3 = *(u8 *)(r2 +3)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+3537: (73) *(u8 *)(r1 +3) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+3538: (71) r3 = *(u8 *)(r2 +4)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=32
+3539: (73) *(u8 *)(r1 +4) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=32
+3540: (71) r3 = *(u8 *)(r2 +5)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+3541: (73) *(u8 *)(r1 +5) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+3542: (71) r3 = *(u8 *)(r2 +6)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=101
+3543: (73) *(u8 *)(r1 +6) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=101
+3544: (71) r3 = *(u8 *)(r2 +7)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=115
+3545: (73) *(u8 *)(r1 +7) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=115
+3546: (71) r3 = *(u8 *)(r2 +8)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+3547: (73) *(u8 *)(r1 +8) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+3548: (71) r3 = *(u8 *)(r2 +9)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=95
+3549: (73) *(u8 *)(r1 +9) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=95
+3550: (71) r3 = *(u8 *)(r2 +10)       ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=97
+3551: (73) *(u8 *)(r1 +10) = r3       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=97
+3552: (71) r3 = *(u8 *)(r2 +11)       ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=116
+3553: (73) *(u8 *)(r1 +11) = r3       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=116
+3554: (71) r3 = *(u8 *)(r2 +12)       ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=111
+3555: (73) *(u8 *)(r1 +12) = r3       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=111
+3556: (71) r3 = *(u8 *)(r2 +13)       ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=109
+3557: (73) *(u8 *)(r1 +13) = r3       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=109
+3558: (71) r3 = *(u8 *)(r2 +14)       ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=105
+3559: (73) *(u8 *)(r1 +14) = r3       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=105
+3560: (71) r3 = *(u8 *)(r2 +15)       ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=99
+3561: (73) *(u8 *)(r1 +15) = r3       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=99
+3562: (71) r3 = *(u8 *)(r2 +16)       ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132) R3_w=95
+3563: (73) *(u8 *)(r1 +16) = r3       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=75) R3_w=95
+3564: (bf) r1 = r7                    ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3565: (07) r1 += 92                   ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92)
+3566: (b7) r2 = 8100                  ; frame1: R2=8100
+3567: (85) call pc+14874
+caller:
+ frame1: R6=5 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=0 R9=20 R10=fp0 fp-16=mmmm0 fp-24=-1 fp-32=ctx() fp-40=10
+callee:
+ frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R2=8100 R3=95 R4=map_value(map=.rodata,ks=4,vs=132,off=22) R5=115 R10=fp0
+18442: frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R2=8100 R3=95 R4=map_value(map=.rodata,ks=4,vs=132,off=22) R5=115 R10=fp0
+18442: (b7) r0 = 0                    ; frame2: R0_w=0
+18443: (15) if r2 == 0x0 goto pc+9    ; frame2: R2=8100
+18444: (73) *(u8 *)(r1 +0) = r0       ; frame2: R0_w=0 R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92)
+18445: (b7) r3 = 3                    ; frame2: R3_w=3
+18446: (2d) if r3 > r2 goto pc+6      ; frame2: R2=8100 R3_w=3
+18447: (b7) r3 = 1                    ; frame2: R3_w=1
+18448: (73) *(u8 *)(r1 +1) = r3       ; frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R3_w=1
+18449: (73) *(u8 *)(r1 +2) = r0       ; frame2: R0=0 R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92)
+18450: (15) if r2 == 0x3 goto pc+2    ; frame2: R2=8100
+18451: (73) *(u8 *)(r1 +3) = r3       ; frame2: R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R3=1
+18452: (b7) r0 = 4                    ; frame2: R0_w=4
+18453: (95) exit
+returning from callee:
+ frame2: R0_w=4 R1=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=92) R2=8100 R3=1 R4=map_value(map=.rodata,ks=4,vs=132,off=22) R5=115 R10=fp0
+to caller at 3568:
+ frame1: R0_w=4 R6=5 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=0 R9=20 R10=fp0 fp-16=mmmm0 fp-24=-1 fp-32=ctx() fp-40=10
+3568: (15) if r0 == 0x0 goto pc+35    ; frame1: R0_w=4
+3569: (bf) r1 = r7                    ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3570: (0f) r1 += r0                   ; frame1: R0_w=4 R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4)
+3571: (73) *(u8 *)(r1 +98) = r6       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R6=5
+3572: (b7) r2 = 56                    ; frame1: R2_w=56
+3573: (73) *(u8 *)(r1 +96) = r2       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R2_w=56
+3574: (b7) r2 = 105                   ; frame1: R2_w=105
+3575: (73) *(u8 *)(r1 +95) = r2       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R2_w=105
+3576: (73) *(u8 *)(r1 +99) = r8       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R8=0
+3577: (73) *(u8 *)(r1 +94) = r8       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R8=0
+3578: (b7) r2 = 2                     ; frame1: R2_w=2
+3579: (73) *(u8 *)(r1 +93) = r2       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R2_w=2
+3580: (73) *(u8 *)(r1 +97) = r9       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R9=20
+3581: (73) *(u8 *)(r1 +92) = r9       ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=4) R9=20
+3582: (07) r1 += 100                  ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=104)
+3583: (18) r2 = 0xffff44edf12b1f19    ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17)
+3585: (71) r3 = *(u8 *)(r2 +0)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=32
+3586: (73) *(u8 *)(r1 +0) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=104) R3_w=32
+3587: (71) r3 = *(u8 *)(r2 +1)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=46
+3588: (73) *(u8 *)(r1 +1) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=104) R3_w=46
+3589: (71) r3 = *(u8 *)(r2 +2)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=46
+3590: (73) *(u8 *)(r1 +2) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=104) R3_w=46
+3591: (71) r3 = *(u8 *)(r2 +3)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=46
+3592: (73) *(u8 *)(r1 +3) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=104) R3_w=46
+3593: (71) r3 = *(u8 *)(r2 +4)        ; frame1: R2_w=map_value(map=.rodata,ks=4,vs=132,off=17) R3_w=32
+3594: (73) *(u8 *)(r1 +4) = r3        ; frame1: R1_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192,off=104) R3_w=32
+3595: (07) r0 += 105                  ; frame1: R0_w=109
+3596: (79) r1 = *(u64 *)(r10 -32)     ; frame1: R1_w=ctx() R10=fp0 fp-32=ctx()
+3597: (18) r2 = 0xffff44edf12b0400    ; frame1: R2_w=map_ptr(map=AYA_LOGS,ks=4,vs=4)
+3599: (18) r3 = 0xffffffff            ; frame1: R3_w=0xffffffff
+3601: (bf) r4 = r7                    ; frame1: R4_w=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192)
+3602: (bf) r5 = r0                    ; frame1: R0_w=109 R5_w=109
+3603: (85) call bpf_perf_event_output#25      ; frame1: R0=scalar()
+3604: (b7) r1 = 1                     ; frame1: R1_w=1
+3605: (73) *(u8 *)(r10 -4) = r1       ; frame1: R1_w=1 R10=fp0 fp-8=???m????
+3606: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3607: (07) r1 += -4                   ; frame1: R1_w=fp-4
+3608: (71) r8 = *(u8 *)(r1 +0)        ; frame1: R1_w=fp-4 R8_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff)) fp-8=???m????
+3609: (bf) r1 = r8                    ; frame1: R1_w=scalar(id=7,smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff)) R8_w=scalar(id=7,smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+3610: (57) r1 &= 255                  ; frame1: R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+3611: (15) if r1 == 0x1 goto pc+1 3613: frame1: R0=scalar() R1=1 R6=5 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=scalar(id=7,smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff)) R9=20 R10=fp0 fp-8=???m???? fp-16=mmmm0 fp-24=-1 fp-32=ctx() fp-40=10
+3613: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3614: (07) r1 += -4                   ; frame1: R1_w=fp-4
+3615: (b7) r2 = 128                   ; frame1: R2_w=128
+3616: (73) *(u8 *)(r1 +0) = r2        ; frame1: R1_w=fp-4 R2_w=128 fp-8=???m????
+3617: (71) r8 = *(u8 *)(r1 +0)        ; frame1: R1_w=fp-4 R8_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff)) fp-8=???m????
+3618: (bf) r1 = r8                    ; frame1: R1_w=scalar(id=8,smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff)) R8_w=scalar(id=8,smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+3619: (57) r1 &= 255                  ; frame1: R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+3620: (15) if r1 == 0x80 goto pc+1 3622: frame1: R0=scalar() R1=128 R2=128 R6=5 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=scalar(id=8,smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff)) R9=20 R10=fp0 fp-8=???m???? fp-16=mmmm0 fp-24=-1 fp-32=ctx() fp-40=10
+3622: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3623: (07) r1 += -4                   ; frame1: R1_w=fp-4
+3624: (b7) r2 = 127                   ; frame1: R2_w=127
+3625: (73) *(u8 *)(r1 +0) = r2        ; frame1: R1_w=fp-4 R2_w=127 fp-8=???m????
+3626: (71) r8 = *(u8 *)(r1 +0)        ; frame1: R1_w=fp-4 R8_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff)) fp-8=???m????
+3627: (bf) r1 = r8                    ; frame1: R1_w=scalar(id=9,smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff)) R8_w=scalar(id=9,smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+3628: (57) r1 &= 255                  ; frame1: R1_w=scalar(smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff))
+3629: (15) if r1 == 0x7f goto pc+1 3631: frame1: R0=scalar() R1=127 R2=127 R6=5 R7=map_value(map=AYA_LOG_BUF,ks=4,vs=8192) R8=scalar(id=9,smin=smin32=0,smax=umax=smax32=umax32=255,var_off=(0x0; 0xff)) R9=20 R10=fp0 fp-8=???m???? fp-16=mmmm0 fp-24=-1 fp-32=ctx() fp-40=10
+3631: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3632: (07) r1 += -24                  ; frame1: R1_w=fp-24
+3633: (71) r2 = *(u8 *)(r1 +0)        ; frame1: R1_w=fp-24 R2_w=255 fp-24=-1
+3634: (b7) r2 = 2                     ; frame1: R2_w=2
+3635: (73) *(u8 *)(r1 +0) = r2        ; frame1: R1_w=fp-24 R2_w=2 fp-24=mmmmmmm2
+3636: (71) r8 = *(u8 *)(r1 +0)        ; frame1: R1_w=fp-24 R8_w=2 fp-24=mmmmmmm2
+3637: (bf) r1 = r8                    ; frame1: R1_w=2 R8_w=2
+3638: (57) r1 &= 255                  ; frame1: R1_w=2
+3639: (15) if r1 == 0x2 goto pc+1     ; frame1: R1_w=2
+3641: (bf) r1 = r10                   ; frame1: R1_w=fp0 R10=fp0
+3642: (07) r1 += -24                  ; frame1: R1_w=fp-24
+3643: (73) *(u8 *)(r1 +0) = r1
+invalid size of register spill
+verification time 2494 usec
+stack depth 0+40+0+0+0+0+0+0+0+0+0+0+0
+processed 4120 insns (limit 1000000) max_states_per_insn 1 total_states 127 peak_states 127 mark_read 30
+
+
+Caused by:
+    Permission denied (os error 13)
+
+Stack backtrace:
+   0: anyhow::error::<impl core::convert::From<E> for anyhow::Error>::from
+   1: tokio::runtime::park::CachedParkThread::block_on
+   2: tokio::runtime::runtime::Runtime::block_on
+   3: bpf_test::main
+   4: std::sys::backtrace::__rust_begin_short_backtrace
+   5: std::rt::lang_start::{{closure}}
+   6: std::rt::lang_start_internal
+   7: main
+   8: __libc_start_call_main
+             at ./csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+   9: __libc_start_main_impl
+             at ./csu/../csu/libc-start.c:360:3
+  10: _start
