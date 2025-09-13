@@ -872,6 +872,7 @@ jobs:
       - uses: taiki-e/setup-cross-toolchain-action@v1
         with:
           target: ${{ matrix.target }}
+          runner: none
         if: steps.prepare.outputs.target-not-host == 'true'
       - run: tools/test.sh valgrind -vv ${TARGET:-}
       # x86_64 +cmpxchg16b
@@ -962,6 +963,7 @@ jobs:
       - uses: taiki-e/setup-cross-toolchain-action@v1
         with:
           target: ${{ matrix.target }}
+          runner: none
       - run: |
           dpkg_arch="${{ matrix.dpkg-arch }}"
           codename=$(grep -E '^VERSION_CODENAME=' /etc/os-release | cut -d= -f2)
