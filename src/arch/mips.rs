@@ -20,7 +20,10 @@ Generated asm:
 
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::{
+    consume::Dependent,
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+};
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -71,6 +74,30 @@ macro_rules! atomic_load_store {
                     }
                 }
                 out
+            }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                let out: MaybeUninit<Self>;
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        ".set push",
+                        ".set noat",
+                        concat!("l", $size, " {out}, 0({src})"), // atomic { out = *src }
+                        "xor {dep}, {out}, {out}",               // dep = out ^ out
+                        ".set pop",
+                        src = in(reg) ptr_reg!(src),
+                        out = out(reg) out,
+                        dep = lateout(reg) dep,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                Dependent::from_parts(out, dep)
             }
         }
         impl AtomicStore for $ty {
@@ -395,5 +422,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_fast_consume {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_fast_consume {
     ($($tt:tt)*) => {};
 }
