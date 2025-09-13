@@ -113,8 +113,6 @@ mod utils;
 #[macro_use]
 mod tests;
 
-mod arch;
-
 pub mod raw;
 
 #[cfg(doc)]
@@ -126,7 +124,10 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Primitive};
+use self::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Primitive};
+
+// -----------------------------------------------------------------------------
+// AtomicMaybeUninit
 
 /// A potentially uninitialized integer type which can be safely shared between threads.
 ///
@@ -741,14 +742,14 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
 
 macro_rules! int {
     ($ty:ident, $align:ident) => {
-        impl crate::raw::Primitive for $ty {}
+        impl raw::Primitive for $ty {}
         const _: () = {
             assert!(mem::size_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
             assert!(mem::align_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
         };
         // SAFETY: the static assertion above ensures safety requirement.
-        unsafe impl crate::private::PrimitivePriv for $ty {
-            type Align = crate::private::$align;
+        unsafe impl private::PrimitivePriv for $ty {
+            type Align = private::$align;
         }
         impl AtomicMaybeUninit<$ty> {
             /// Creates a new atomic value from a potentially uninitialized value.
@@ -785,6 +786,126 @@ pub use {cfg_has_atomic_32 as cfg_has_atomic_ptr, cfg_no_atomic_32 as cfg_no_ato
 pub use {cfg_has_atomic_64 as cfg_has_atomic_ptr, cfg_no_atomic_64 as cfg_no_atomic_ptr};
 #[cfg(target_pointer_width = "128")]
 pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_atomic_ptr};
+
+// -----------------------------------------------------------------------------
+// Internals
+
+#[cfg_attr(
+    any(target_arch = "aarch64", all(target_arch = "arm64ec", not(atomic_maybe_uninit_no_asm))),
+    path = "arch/aarch64.rs"
+)]
+#[cfg_attr(
+    all(
+        target_arch = "arm",
+        any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+        not(any(
+            target_feature = "v8",
+            atomic_maybe_uninit_target_feature = "v8",
+            target_feature = "v8m",
+            atomic_maybe_uninit_target_feature = "v8m",
+            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+        )),
+    ),
+    path = "arch/arm.rs"
+)]
+#[cfg_attr(
+    all(
+        target_arch = "arm",
+        any(target_os = "linux", target_os = "android"),
+        any(
+            not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
+            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+        ),
+        not(any(
+            target_feature = "v8",
+            atomic_maybe_uninit_target_feature = "v8",
+            target_feature = "v8m",
+            atomic_maybe_uninit_target_feature = "v8m",
+        )),
+    ),
+    path = "arch/arm_linux.rs"
+)]
+#[cfg_attr(
+    all(
+        target_arch = "arm",
+        any(
+            target_feature = "v8",
+            atomic_maybe_uninit_target_feature = "v8",
+            target_feature = "v8m",
+            atomic_maybe_uninit_target_feature = "v8m",
+        ),
+    ),
+    path = "arch/armv8.rs"
+)]
+#[cfg_attr(
+    all(target_arch = "avr", atomic_maybe_uninit_unstable_asm_experimental_arch),
+    path = "arch/avr.rs"
+)]
+#[cfg_attr(
+    all(target_arch = "hexagon", atomic_maybe_uninit_unstable_asm_experimental_arch),
+    path = "arch/hexagon.rs"
+)]
+#[cfg_attr(
+    any(
+        all(target_arch = "loongarch32", not(atomic_maybe_uninit_no_asm)),
+        target_arch = "loongarch64",
+    ),
+    path = "arch/loongarch.rs"
+)]
+#[cfg_attr(
+    all(target_arch = "m68k", atomic_maybe_uninit_unstable_asm_experimental_arch),
+    path = "arch/m68k.rs"
+)]
+#[cfg_attr(
+    all(
+        any(
+            all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
+            target_arch = "mips32r6",
+            target_arch = "mips64",
+            target_arch = "mips64r6",
+        ),
+        atomic_maybe_uninit_unstable_asm_experimental_arch,
+    ),
+    path = "arch/mips.rs"
+)]
+#[cfg_attr(
+    all(target_arch = "msp430", atomic_maybe_uninit_unstable_asm_experimental_arch),
+    path = "arch/msp430.rs"
+)]
+#[cfg_attr(
+    all(
+        any(target_arch = "powerpc", target_arch = "powerpc64"),
+        atomic_maybe_uninit_unstable_asm_experimental_arch,
+    ),
+    path = "arch/powerpc.rs"
+)]
+#[cfg_attr(any(target_arch = "riscv32", target_arch = "riscv64"), path = "arch/riscv.rs")]
+#[cfg_attr(all(target_arch = "s390x", not(atomic_maybe_uninit_no_asm)), path = "arch/s390x.rs")]
+#[cfg_attr(
+    all(
+        any(
+            all(
+                target_arch = "sparc",
+                any(
+                    target_feature = "leoncasa",
+                    atomic_maybe_uninit_target_feature = "leoncasa",
+                    target_feature = "v9",
+                    atomic_maybe_uninit_target_feature = "v9",
+                ),
+            ),
+            target_arch = "sparc64",
+        ),
+        atomic_maybe_uninit_unstable_asm_experimental_arch,
+    ),
+    path = "arch/sparc.rs"
+)]
+#[cfg_attr(any(target_arch = "x86", target_arch = "x86_64"), path = "arch/x86.rs")]
+#[cfg_attr(
+    all(target_arch = "xtensa", atomic_maybe_uninit_unstable_asm_experimental_arch),
+    path = "arch/xtensa.rs"
+)]
+#[allow(missing_docs)] // For cfg_* macros.
+mod arch;
 
 mod private {
     #![allow(missing_debug_implementations)]

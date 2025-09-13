@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// Note: This file is enabled when the current target is not supported.
+
 // Refs:
 // - inline assembly reference: https://doc.rust-lang.org/nightly/reference/inline-assembly.html
 // - inline assembly rust by example: https://doc.rust-lang.org/nightly/rust-by-example/unsafe/asm.html
@@ -9,146 +11,54 @@
 // - LLVM LangRef: https://llvm.org/docs/LangRef.html#inline-assembler-expressions
 // - inline assembly related issues in rust-lang/rust: https://github.com/rust-lang/rust/labels/A-inline-assembly
 
-#![allow(missing_docs)] // For cfg_* macros.
+#[cfg(test)]
+compile_error!("testing unsupported target is not supported");
 
-#[cfg(not(any(
-    target_arch = "x86",
-    target_arch = "x86_64",
-    all(
-        target_arch = "arm",
-        any(
-            target_feature = "v6",
-            atomic_maybe_uninit_target_feature = "v6",
-            target_os = "linux",
-            target_os = "android",
-        ),
-    ),
-    target_arch = "aarch64",
-    target_arch = "riscv32",
-    target_arch = "riscv64",
-    target_arch = "loongarch64",
-    all(
-        any(target_arch = "arm64ec", target_arch = "s390x", target_arch = "loongarch32"),
-        not(atomic_maybe_uninit_no_asm),
-    ),
-    all(
-        any(
-            target_arch = "avr",
-            target_arch = "hexagon",
-            target_arch = "m68k",
-            all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
-            target_arch = "mips32r6",
-            target_arch = "mips64",
-            target_arch = "mips64r6",
-            target_arch = "msp430",
-            target_arch = "powerpc",
-            target_arch = "powerpc64",
-            all(
-                target_arch = "sparc",
-                any(
-                    target_feature = "leoncasa",
-                    atomic_maybe_uninit_target_feature = "leoncasa",
-                    target_feature = "v9",
-                    atomic_maybe_uninit_target_feature = "v9",
-                ),
-            ),
-            target_arch = "sparc64",
-            target_arch = "xtensa",
-        ),
-        atomic_maybe_uninit_unstable_asm_experimental_arch,
-    ),
-)))]
-#[path = "unsupported.rs"]
-mod unsupported;
-
-#[cfg(any(target_arch = "aarch64", all(target_arch = "arm64ec", not(atomic_maybe_uninit_no_asm))))]
-mod aarch64;
-#[cfg(all(
-    target_arch = "arm",
-    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-    not(any(
-        target_feature = "v8",
-        atomic_maybe_uninit_target_feature = "v8",
-        target_feature = "v8m",
-        atomic_maybe_uninit_target_feature = "v8m",
-        atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
-    )),
-))]
-mod arm;
-#[cfg(all(
-    target_arch = "arm",
-    any(target_os = "linux", target_os = "android"),
-    any(
-        not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
-        atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
-    ),
-    not(any(
-        target_feature = "v8",
-        atomic_maybe_uninit_target_feature = "v8",
-        target_feature = "v8m",
-        atomic_maybe_uninit_target_feature = "v8m",
-    )),
-))]
-mod arm_linux;
-#[cfg(all(
-    target_arch = "arm",
-    any(
-        target_feature = "v8",
-        atomic_maybe_uninit_target_feature = "v8",
-        target_feature = "v8m",
-        atomic_maybe_uninit_target_feature = "v8m",
-    ),
-))]
-mod armv8;
-#[cfg(all(target_arch = "avr", atomic_maybe_uninit_unstable_asm_experimental_arch))]
-mod avr;
-#[cfg(all(target_arch = "hexagon", atomic_maybe_uninit_unstable_asm_experimental_arch))]
-mod hexagon;
-#[cfg(any(
-    all(target_arch = "loongarch32", not(atomic_maybe_uninit_no_asm)),
-    target_arch = "loongarch64",
-))]
-mod loongarch;
-#[cfg(all(target_arch = "m68k", atomic_maybe_uninit_unstable_asm_experimental_arch))]
-mod m68k;
-#[cfg(all(
-    any(
-        all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
-        target_arch = "mips32r6",
-        target_arch = "mips64",
-        target_arch = "mips64r6",
-    ),
-    atomic_maybe_uninit_unstable_asm_experimental_arch,
-))]
-mod mips;
-#[cfg(all(target_arch = "msp430", atomic_maybe_uninit_unstable_asm_experimental_arch))]
-mod msp430;
-#[cfg(all(
-    any(target_arch = "powerpc", target_arch = "powerpc64"),
-    atomic_maybe_uninit_unstable_asm_experimental_arch,
-))]
-mod powerpc;
-#[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-mod riscv;
-#[cfg(all(target_arch = "s390x", not(atomic_maybe_uninit_no_asm)))]
-mod s390x;
-#[cfg(all(
-    any(
-        all(
-            target_arch = "sparc",
-            any(
-                target_feature = "leoncasa",
-                atomic_maybe_uninit_target_feature = "leoncasa",
-                target_feature = "v9",
-                atomic_maybe_uninit_target_feature = "v9",
-            ),
-        ),
-        target_arch = "sparc64",
-    ),
-    atomic_maybe_uninit_unstable_asm_experimental_arch,
-))]
-mod sparc;
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-mod x86;
-#[cfg(all(target_arch = "xtensa", atomic_maybe_uninit_unstable_asm_experimental_arch))]
-mod xtensa;
+#[macro_export]
+macro_rules! cfg_has_atomic_8 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_8 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_16 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_16 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_32 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_32 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_64 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_64 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
+}
