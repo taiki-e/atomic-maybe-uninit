@@ -87,6 +87,13 @@ mod imp {
             $ptr // cast is unnecessary here.
         }};
     }
-    pub(crate) type RegSize = usize;
+    #[cfg(target_pointer_width = "16")]
+    pub(crate) type RegSize = u16;
+    #[cfg(target_pointer_width = "32")]
+    pub(crate) type RegSize = u32;
+    #[cfg(target_pointer_width = "64")]
+    pub(crate) type RegSize = u64;
+    #[cfg(target_pointer_width = "128")]
+    pub(crate) type RegSize = u128;
 }
 pub(crate) use self::imp::RegSize;

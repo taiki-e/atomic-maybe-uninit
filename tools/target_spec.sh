@@ -89,7 +89,14 @@ mod imp {
             \$ptr // cast is unnecessary here.
         }};
     }
-    pub(crate) type RegSize = usize;
+EOF
+for size in '16' '32' '64' '128'; do
+  cat >>"${utils_file}" <<EOF
+    #[cfg(target_pointer_width = "${size}")]
+    pub(crate) type RegSize = u${size};
+EOF
+done
+cat >>"${utils_file}" <<EOF
 }
 pub(crate) use self::imp::RegSize;
 EOF

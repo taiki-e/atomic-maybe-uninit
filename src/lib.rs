@@ -103,6 +103,21 @@ Feel free to submit an issue if your target is not supported yet.
 #![allow(clippy::inline_always)]
 #![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
 
+// There are currently no 128-bit or higher builtin targets.
+// (Although some of our generic code is written with the future
+// addition of 128-bit targets in mind.)
+// Note that Rust (and C99) pointers must be at least 16-bit (i.e., 8-bit targets are impossible): https://github.com/rust-lang/rust/pull/49305
+#[cfg(not(any(
+    target_pointer_width = "16",
+    target_pointer_width = "32",
+    target_pointer_width = "64",
+)))]
+compile_error!(
+    "atomic-maybe-uninit currently only supports targets with {16,32,64}-bit pointer width; \
+     if you need support for others, \
+     please submit an issue at <https://github.com/taiki-e/atomic-maybe-uninit>"
+);
+
 #[cfg(test)]
 extern crate std;
 

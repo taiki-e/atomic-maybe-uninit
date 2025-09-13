@@ -284,15 +284,19 @@ pub(crate) struct Pair<T: Copy> {
     pub(crate) lo: MaybeUninit<T>,
 }
 
+#[cfg(not(target_pointer_width = "16"))]
 type MinWord = u32;
+#[cfg(not(target_pointer_width = "16"))]
 #[cfg(target_arch = "s390x")]
 type RetInt = u32;
+#[cfg(not(target_pointer_width = "16"))]
 #[cfg(not(target_arch = "s390x"))]
 type RetInt = RegSize;
 // Helper for implementing sub-word atomic operations using word-sized LL/SC loop or CAS loop.
 //
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L812
 // (aligned_ptr, shift, mask)
+#[cfg(not(target_pointer_width = "16"))]
 #[allow(dead_code)]
 #[inline]
 pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetInt, RetInt) {
@@ -338,8 +342,11 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
     if SHIFT_MASK {
         mask <<= shift;
     }
-    // ptr_lsb << 3 will never overflow u32
-    #[cfg_attr(target_arch = "s390x", allow(clippy::cast_possible_truncation))]
+    // ptr_lsb << 3 will never overflow u32, cast usize to u32 is no-op on 32-bit targets.
+    #[cfg_attr(
+        any(target_arch = "s390x", target_pointer_width = "32"),
+        allow(clippy::cast_possible_truncation)
+    )]
     {
         (aligned_ptr, shift as RetInt, mask)
     }
