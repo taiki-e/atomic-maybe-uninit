@@ -311,6 +311,7 @@ macro_rules! __test_atomic {
         #[test]
         fn swap() {
             // TODO(arm): unhandled instruction: 0xE1A62F92 (as of Valgrind 3.25)
+            // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
             if cfg!(target_arch = "arm") && mem::size_of::<$ty>() == 8 && !IMP_ARM_LINUX
                 || cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2
@@ -374,6 +375,7 @@ macro_rules! __test_atomic {
         ::quickcheck::quickcheck! {
             fn quickcheck_swap(x: $ty, y: $ty) -> bool {
                 // TODO(arm): unhandled instruction: 0xE1A62F92 (as of Valgrind 3.25)
+                // TODO(riscv): wrong result (as of Valgrind 3.25)
                 #[cfg(valgrind)]
                 if cfg!(target_arch = "arm") && mem::size_of::<$ty>() == 8 && !IMP_ARM_LINUX
                     || cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2
@@ -409,6 +411,7 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_swap() {
+            // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -486,6 +489,7 @@ macro_rules! __test_atomic {
     (cas, $ty:ident) => {
         #[test]
         fn compare_exchange() {
+            // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -564,6 +568,7 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn compare_exchange_weak() {
+            // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -615,6 +620,7 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn fetch_update() {
+            // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -660,6 +666,7 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_compare_exchange(x: $ty, y: $ty) -> bool {
+                // TODO(riscv): wrong result (as of Valgrind 3.25)
                 #[cfg(valgrind)]
                 if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                     return true;
@@ -727,6 +734,7 @@ macro_rules! __test_atomic {
                 true
             }
             fn quickcheck_fetch_update(x: $ty, y: $ty) -> bool {
+                // TODO(riscv): wrong result (as of Valgrind 3.25)
                 #[cfg(valgrind)]
                 if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                     return true;
@@ -777,6 +785,7 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_compare_exchange() {
+            // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -857,8 +866,9 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_fetch_update() {
+            // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
-            if cfg!(target_arch = "riscv64") && core::mem::size_of::<$ty>() <= 2 {
+            if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
             }
             unsafe {
@@ -1244,6 +1254,7 @@ macro_rules! __stress_test_acquire_release {
         #[cfg(valgrind)]
         use crate::tests::helper::*;
 
+        // TODO(riscv): wrong result (as of Valgrind 3.25)
         #[cfg(valgrind)]
         if cfg!(target_arch = "riscv64")
             && mem::size_of::<$ty>() <= 2
@@ -1325,6 +1336,7 @@ macro_rules! __stress_test_seqcst {
 
         const N: usize = if cfg!(valgrind) { 50 } else { 50_000 };
 
+        // TODO(riscv): wrong result (as of Valgrind 3.25)
         #[cfg(valgrind)]
         if cfg!(target_arch = "riscv64")
             && mem::size_of::<$ty>() <= 2
