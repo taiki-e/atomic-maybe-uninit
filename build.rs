@@ -32,7 +32,9 @@ fn main() {
     };
 
     if version.minor >= 80 {
-        println!(r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization"))"#);
+        println!(
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization","rmw"))"#
+        );
 
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -42,7 +44,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","thumb-mode","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
         );
     }
 
@@ -483,6 +485,24 @@ fn main() {
                 }
                 target_feature_fallback("isa-68020", isa_68020);
             }
+        }
+        "avr" => {
+            // target_feature "rmw" will be added in https://github.com/rust-lang/rust/pull/146900
+            // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/AVR/AVRDevices.td
+            let mut xmegau = false; // FamilyXMEGAU
+            if let Some(cpu) = target_cpu() {
+                match &*cpu {
+                    "atxmega16a4u" | "atxmega16c4" | "atxmega32a4u" | "atxmega32c3"
+                    | "atxmega32c4" | "atxmega32e5" | "atxmega16e5" | "atxmega8e5"
+                    | "atxmega64a3u" | "atxmega64a4u" | "atxmega64b1" | "atxmega64b3"
+                    | "atxmega64c3" | "atxmega64a1u" | "atxmega128a3u" | "atxmega128b1"
+                    | "atxmega128b3" | "atxmega128c3" | "atxmega192a3u" | "atxmega192c3"
+                    | "atxmega256a3u" | "atxmega256a3bu" | "atxmega256c3" | "atxmega384c3"
+                    | "atxmega128a1u" | "atxmega128a4u" => xmegau = true,
+                    _ => {}
+                }
+            }
+            target_feature_fallback("rmw", xmegau);
         }
         _ => {}
     }

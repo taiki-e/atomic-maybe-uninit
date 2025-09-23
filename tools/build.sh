@@ -457,6 +457,11 @@ build() {
         RUSTFLAGS="${target_rustflags} -C target-cpu=leon4" \
         x_cargo "${args[@]}" "$@"
       ;;
+    avr*)
+      CARGO_TARGET_DIR="${target_dir}/rmw" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+rmw" \
+        x_cargo "${args[@]}" "$@"
+      ;;
   esac
 }
 

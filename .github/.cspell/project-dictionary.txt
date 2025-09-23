@@ -5,10 +5,12 @@ andc
 andn
 aqrl
 armasm
+atxmega
 beqz
 Bicc
 bnez
 boundedly
+brne
 bswap
 casp
 cbnz

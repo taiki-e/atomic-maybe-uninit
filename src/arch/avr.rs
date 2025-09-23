@@ -26,12 +26,12 @@ fn disable() -> u8 {
     let sreg: u8;
     // SAFETY: reading the status register (SREG) and disabling interrupts are safe.
     unsafe {
-        // Do not use `nomem` and `readonly` because prevent subsequent memory accesses from being reordered before interrupts are disabled.
-        // Do not use `preserves_flags` because CLI modifies the I bit of the status register (SREG).
         asm!(
             "in {sreg}, 0x3F", // sreg = SREG
             "cli",             // SREG.I = 0
             sreg = out(reg) sreg,
+            // Do not use `nomem` and `readonly` because prevent subsequent memory accesses from being reordered before interrupts are disabled.
+            // Do not use `preserves_flags` because CLI modifies the I bit of the status register (SREG).
             options(nostack),
         );
     }
@@ -42,12 +42,11 @@ unsafe fn restore(prev_sreg: u8) {
     // SAFETY: the caller must guarantee that the state was retrieved by the previous `disable`,
     unsafe {
         // This clobbers the entire status register. See msp430.rs to safety on this.
-        //
-        // Do not use `nomem` and `readonly` because prevent preceding memory accesses from being reordered after interrupts are enabled.
-        // Do not use `preserves_flags` because OUT modifies the status register (SREG).
         asm!(
             "out 0x3F, {prev_sreg}", // SREG = prev_sreg
             prev_sreg = in(reg) prev_sreg,
+            // Do not use `nomem` and `readonly` because prevent preceding memory accesses from being reordered after interrupts are enabled.
+            // Do not use `preserves_flags` because OUT modifies the status register (SREG).
             options(nostack),
         );
     }
@@ -56,22 +55,17 @@ unsafe fn restore(prev_sreg: u8) {
 #[inline(always)]
 fn xor8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> u8 {
     let out;
-    // SAFETY: calling eor is safe.
+    // SAFETY: calling EOR is safe.
     unsafe {
-        // Do not use `preserves_flags` because EOR modifies Z, N, V, and S bits in the status register (SREG).
         asm!(
             "eor {a}, {b}", // a ^= b
             a = inout(reg) a => out,
             b = in(reg) b,
+            // Do not use `preserves_flags` because EOR modifies Z, N, V, and S bits in the status register (SREG).
             options(pure, nomem, nostack),
         );
     }
     out
-}
-// TODO: use Z bits in SREG instead of == 0?
-#[inline(always)]
-fn cmp8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> bool {
-    xor8(a, b) == 0
 }
 #[inline(always)]
 fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
@@ -80,64 +74,6 @@ fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
     // SAFETY: same layout.
     let [b1, b2] = unsafe { core::mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(b) };
     xor8(a1, b1) | xor8(a2, b2) == 0
-}
-
-macro_rules! atomic_swap {
-    ($ty:ident) => {
-        impl AtomicSwap for $ty {
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                _order: Ordering,
-            ) -> MaybeUninit<Self> {
-                let s = disable();
-                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
-                // On single-core systems, disabling interrupts is enough to prevent data race.
-                let out = unsafe { dst.read() };
-                // SAFETY: see dst.read()
-                unsafe { dst.write(val) }
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
-                out
-            }
-        }
-    };
-}
-macro_rules! atomic_cas {
-    ($ty:ident, $cmp:ident, $cmp_ty:ident) => {
-        impl AtomicCompareExchange for $ty {
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                _success: Ordering,
-                _failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                let s = disable();
-                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
-                // On single-core systems, disabling interrupts is enough to prevent data race.
-                let out = unsafe { dst.read() };
-                // transmute from MaybeUninit<{i,u}{8,16,size}> to MaybeUninit<u{8,16}>
-                #[allow(clippy::useless_transmute)] // only useless when Self is u{8,16}
-                // SAFETY: Self and $cmp_ty has the same layout
-                let r = unsafe {
-                    $cmp(
-                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$cmp_ty>>(old),
-                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$cmp_ty>>(out),
-                    )
-                };
-                if r {
-                    // SAFETY: see dst.read()
-                    unsafe { dst.write(new) }
-                }
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
-                (out, r)
-            }
-        }
-    };
 }
 
 macro_rules! atomic8 {
@@ -154,8 +90,8 @@ macro_rules! atomic8 {
                 unsafe {
                     asm!(
                         "ld {out}, Z", // atomic { out = *Z }
-                        in("Z") src,
                         out = out(reg) out,
+                        in("Z") src,
                         options(nostack, preserves_flags),
                     );
                 }
@@ -173,15 +109,83 @@ macro_rules! atomic8 {
                 unsafe {
                     asm!(
                         "st Z, {val}", // atomic { *Z = val }
-                        in("Z") dst,
                         val = in(reg) val,
+                        in("Z") dst,
                         options(nostack, preserves_flags),
                     );
                 }
             }
         }
-        atomic_swap!($ty);
-        atomic_cas!($ty, cmp8, u8);
+        impl AtomicSwap for $ty {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                let out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(any(target_feature = "rmw", atomic_maybe_uninit_target_feature = "rmw"))]
+                    asm!(
+                        "xch Z, {val}", // atomic { _x = *Z; *Z = val; val = _x }
+                        val = inout(reg) val => out,
+                        in("Z") dst,
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(not(any(target_feature = "rmw", atomic_maybe_uninit_target_feature = "rmw")))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "ld {out}, Z",      //   out = *Z
+                        "st Z, {val}",      //   *Z = val
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        val = in(reg) val,
+                        out = out(reg) out,
+                        sreg = out(reg) _,
+                        in("Z") dst,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                out
+            }
+        }
+        impl AtomicCompareExchange for $ty {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                _success: Ordering,
+                _failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                let out: MaybeUninit<Self>;
+                let mut r: u8;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "ld {out}, Z",      //   out = *Z
+                        "eor {old}, {out}", //   old ^= out; if old == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "brne 2f",          //   if SREG.Z == 0 { jump 'cmp-fail }
+                        "st Z, {new}",      //   *Z = new
+                        "2:", // 'cmp-fail:
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        old = inout(reg) old => r,
+                        new = in(reg) new,
+                        out = out(reg) out,
+                        sreg = out(reg) _,
+                        in("Z") dst,
+                        // EOR modifies the status register (SREG), but `preserves_flags` is okay since SREG is restored at the end.
+                        options(nostack, preserves_flags),
+                    );
+                    (out, r == 0)
+                }
+            }
+        }
     };
 }
 
@@ -217,8 +221,55 @@ macro_rules! atomic16 {
                 unsafe { restore(s) }
             }
         }
-        atomic_swap!($ty);
-        atomic_cas!($ty, cmp16, u16);
+        impl AtomicSwap for $ty {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                let s = disable();
+                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+                // On single-core systems, disabling interrupts is enough to prevent data race.
+                let out = unsafe { dst.read() };
+                // SAFETY: see dst.read()
+                unsafe { dst.write(val) }
+                // SAFETY: the state was retrieved by the previous `disable`.
+                unsafe { restore(s) }
+                out
+            }
+        }
+        impl AtomicCompareExchange for $ty {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                _success: Ordering,
+                _failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                let s = disable();
+                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+                // On single-core systems, disabling interrupts is enough to prevent data race.
+                let out = unsafe { dst.read() };
+                // transmute from MaybeUninit<{i,u}{16,size}> to MaybeUninit<u16>
+                #[allow(clippy::useless_transmute)] // only useless when Self is u16
+                // SAFETY: Self and $cmp_ty has the same layout
+                let r = unsafe {
+                    cmp16(
+                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<u16>>(old),
+                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<u16>>(out),
+                    )
+                };
+                if r {
+                    // SAFETY: see dst.read()
+                    unsafe { dst.write(new) }
+                }
+                // SAFETY: the state was retrieved by the previous `disable`.
+                unsafe { restore(s) }
+                (out, r)
+            }
+        }
     };
 }
 
