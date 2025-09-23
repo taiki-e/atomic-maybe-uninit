@@ -3,16 +3,19 @@
 /*
 AArch64
 
+See "Atomic operation overview by architecture" for atomic operations in this architecture:
+https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#aarch64
+
 Refs:
 - Arm A-profile A64 Instruction Set Architecture
   https://developer.arm.com/documentation/ddi0602/2025-06
 - C/C++ Atomics Application Binary Interface Standard for the Arm® 64-bit Architecture
   https://github.com/ARM-software/abi-aa/blob/2025Q1/atomicsabi64/atomicsabi64.rst
-- Arm Compiler armasm User Guide
+- Arm® Compiler armasm User Guide
   https://developer.arm.com/documentation/dui0801/latest
-- Arm Architecture Reference Manual for A-profile architecture
+- Arm® Architecture Reference Manual for A-profile architecture
   https://developer.arm.com/documentation/ddi0487/latest (PDF)
-- Arm Architecture Reference Manual Supplement - Armv8, for Armv8-R AArch64 architecture profile
+- Arm® Architecture Reference Manual Supplement Armv8, for R-profile AArch64 architecture
   https://developer.arm.com/documentation/ddi0600/latest (PDF)
 - portable-atomic https://github.com/taiki-e/portable-atomic
 

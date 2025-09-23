@@ -24,15 +24,21 @@ This document describes the operations that are considered atomic by architectur
 
 target_arch: aarch64, arm64ec<br>
 Implementation: [aarch64.rs](aarch64.rs)<br>
+Refs: [Arm® Architecture Reference Manual for A-profile architecture](https://developer.arm.com/documentation/ddi0487/latest)
 
-TODO
+TODO: overview
+
+(Refs: Section B2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture)
 
 ## Arm
 
 target_arch: arm<br>
 Implementation: [arm.rs](arm.rs), [armv8.rs](armv8.rs), [arm_linux.rs](arm_linux.rs)<br>
+Refs: [Arm® Architecture Reference Manual for A-profile architecture](https://developer.arm.com/documentation/ddi0487/latest), [Arm® v8-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0553/latest), [ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition](https://developer.arm.com/documentation/ddi0406/latest), [Arm® v7-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0403/latest), [ARM® v6-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0419/latest)
 
-TODO
+TODO: overview
+
+(Refs: Section E2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture, Section B7.2 "Atomicity" of Arm® v8-M Architecture Reference Manual, Section A3.5.3 "Atomicity in the ARM architecture" of ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition, Section A3.5.3 "Atomicity in the Arm architecture" of Arm® v7-M Architecture Reference Manual, Section A3.5.1 "Atomicity in the ARM architecture" of ARM® v6-M Architecture Reference Manual)
 
 ## AVR
 
@@ -51,7 +57,7 @@ This architecture is always single-core and the following operations are atomic:
   - XCH, LAC, LAS, LAT: 8-bit swap,fetch-and-{clear,or,xor} (xmegau family)
 
 - Operations performed in a situation where all interrupts are disabled.<br>
-  However, pure operations that are not affected by compiler fences (note: the correct interrupt
+  However, pure operations that are not affected by compiler fences (Note: the correct interrupt
   disabling and restoring implementation must imply compiler fences, e.g., asm without nomem/readonly)
   may be moved out of the critical section by compiler optimizations.
 
@@ -60,14 +66,14 @@ This architecture is always single-core and the following operations are atomic:
 target_arch: hexagon<br>
 Implementation: [hexagon.rs](hexagon.rs)<br>
 
-TODO
+TODO: reference and overview
 
 ## LoongArch
 
 target_arch: loongarch32, loongarch64<br>
 Implementation: [loongarch.rs](loongarch.rs)<br>
 
-TODO
+TODO: reference and overview
 
 ## M68k
 
@@ -129,7 +135,7 @@ This architecture is always single-core and the following operations are atomic:
   (Refs: [Section 1.3.4.1 "Interrupt Acceptance" of MSP430x5xx and MSP430x6xx Family User's Guide, Rev. Q](https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=59))
 
 - Operations performed in a situation where all interrupts are disabled.<br>
-  However, pure operations that are not affected by compiler fences (note: the correct interrupt
+  However, pure operations that are not affected by compiler fences (Note: the correct interrupt
   disabling and restoring implementation must imply compiler fences, e.g., asm without nomem/readonly)
   may be moved out of the critical section by compiler optimizations.
 
@@ -193,13 +199,13 @@ Note that plq/pstq is not yet supported in LLVM (as of 19).
 
 None of the above instructions imply a memory barrier.
 
-- A sync (sync 0, sync 0,0, hwsync) instruction can be used as both an “import barrier” and an “export barrier”.<br>
+- A sync (sync 0, sync 0,0, hwsync) instruction can be used as both an "import barrier" and an "export barrier".<br>
   Compatibility: POWER1 or later (some BookE processors don't have this and provide msync which has the same bit-pattern instead but no lwsync support)
   - ISA 2.07B: included in the requirements as Base category
   - ISA 3.1C: included in all compliancy subsets
-- A lwsync (sync 1, sync 1,0) instruction can be used as both an “import barrier” and an “export barrier”,
+- A lwsync (sync 1, sync 1,0) instruction can be used as both an "import barrier" and an "export barrier",
   if the specified storage location is in storage that is neither Write Through Required nor Caching Inhibited.<br>
-- An “import barrier” can be constructed by a branch that depends on the loaded value (even a branch
+- An "import barrier" can be constructed by a branch that depends on the loaded value (even a branch
   that depends on a comparison of the same register is okay), followed by an isync instruction.<br>
   Compatibility: POWER1 or later
   - ISA 2.07B: included in the requirements as Base category
@@ -220,7 +226,6 @@ The following instructions are atomic if the address is properly aligned and the
 
 - Load/Store Instructions (relaxed load/store)
   - All {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) load/store instructions<br>
-    Note: Currently, there is no guaranteed 128-bit atomic load/store even on RV128.<br>
     (Refs: [Section "Memory Model Primitives" of RVWMO Memory Consistency Model, Version 2.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/rvwmo.adoc#memory-model-primitives))
 
 - Load-Acquire and Store-Release Instructions
@@ -248,6 +253,8 @@ The mappings from the C/C++ atomic operations are described in the [RISC-V Atomi
 
 Note: "A" extension comprises instructions provided by Zalrsc and Zaamo extensions,
 Zabha and Zacas extensions depends upon Zaamo extension.
+
+(RV128 is not currently ratified, so it is [not mentioned in the ISA manual](https://github.com/riscv/riscv-isa-manual/pull/1942).)
 
 ## s390x
 
@@ -337,11 +344,11 @@ which implies TSO) is mandatory, and PSO and RMO are optional.<br>
 target_arch: x86, x86_64<br>
 Implementation: [x86.rs](x86.rs)<br>
 
-TODO
+TODO: reference and overview
 
 ## Xtensa
 
 target_arch: xtensa<br>
 Implementation: [xtensa.rs](xtensa.rs)<br>
 
-TODO
+TODO: reference and overview
