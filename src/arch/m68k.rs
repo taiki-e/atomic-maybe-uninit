@@ -106,7 +106,7 @@ macro_rules! atomic {
                     let r: u8;
                     asm!(
                         concat!("cas.", $size, " {out}, {new}, ({dst})"), // atomic { if *dst == out { cc.Z = 1; *dst = new } else { cc.Z = 0; out = *dst } }
-                        "seq {r}",                                        // r = cc.Z
+                        "seq {r}",                                        // r = if cc.Z { !0u8 } else { 0 }
                         dst = in(reg_addr) ptr_reg!(dst),
                         new = in(reg_data) new,
                         out = inout(reg_data) old => out,
@@ -114,7 +114,6 @@ macro_rules! atomic {
                         // Do not use `preserves_flags` because CAS modifies N, Z, V, and C bits in the condition codes.
                         options(nostack),
                     );
-                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
             }

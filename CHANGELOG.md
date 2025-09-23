@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix bug in CAS on M68k.
+
 ## [0.3.10] - 2025-09-12
 
 - Increase the minimum supported Rust version (MSRV) from Rust 1.59 to Rust 1.74. ([#48](https://github.com/taiki-e/atomic-maybe-uninit/pull/48))

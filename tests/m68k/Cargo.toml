@@ -90,6 +90,6 @@ panic = "abort"
 [profile.release]
 codegen-units = 1
 lto = true
-# TODO: panic in cas test with -C opt-level=3 as of LLVM 20
+# TODO: Hang with -C opt-level=3 as of LLVM 21
 opt-level = "s"
 panic = "abort"

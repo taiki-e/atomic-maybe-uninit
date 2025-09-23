@@ -248,14 +248,9 @@ run() {
 
   (
     cd -- "${test_dir}"
-    case "${target}" in
-      m68k*) ;;
-      *)
-        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-          RUSTFLAGS="${target_rustflags}" \
-          x_cargo "${args[@]}" "$@"
-        ;;
-    esac
+    CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+      RUSTFLAGS="${target_rustflags}" \
+      x_cargo "${args[@]}" "$@"
     CARGO_TARGET_DIR="${target_dir}/no-std-test" \
       RUSTFLAGS="${target_rustflags}" \
       x_cargo "${args[@]}" --release "$@"
