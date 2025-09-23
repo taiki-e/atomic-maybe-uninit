@@ -45,8 +45,8 @@ macro_rules! serialization {
 }
 
 // Extracts and checks condition code.
-#[inline]
-fn extract_cc(r: i64) -> bool {
+#[inline(always)]
+const fn extract_cc(r: i64) -> bool {
     r.wrapping_add(-268435456) & const_hint!({ 1 << 31 }) != 0
 }
 

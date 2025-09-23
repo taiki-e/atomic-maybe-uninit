@@ -87,8 +87,8 @@ macro_rules! atomic_cas {
 }
 
 // Extracts and checks the EQ bit of cr0.
-#[inline]
-fn test_cr0_eq(cr: crate::utils::RegSize) -> bool {
+#[inline(always)]
+const fn test_cr0_eq(cr: crate::utils::RegSize) -> bool {
     cr & 0x20000000 != 0
 }
 
