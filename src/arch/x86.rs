@@ -205,7 +205,7 @@ macro_rules! atomic64 {
                 // - https://www.felixcloutier.com/x86/movq (SSE2)
                 // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
                 unsafe {
-                    let out: MaybeUninit<core::arch::x86::__m128i>;
+                    let out;
                     // atomic load is always SeqCst.
                     asm!(
                         "movq {out}, qword ptr [{src}]", // atomic { out[:] = *src }
@@ -213,8 +213,10 @@ macro_rules! atomic64 {
                         out = out(xmm_reg) out,
                         options(nostack, preserves_flags),
                     );
-                    #[allow(clippy::missing_transmute_annotations)] // false positive: out is already type annotated
-                    core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
+                    core::mem::transmute::<
+                        MaybeUninit<core::arch::x86::__m128i>,
+                        [MaybeUninit<Self>; 2],
+                    >(out)[0]
                 }
                 #[cfg(all(
                     not(target_feature = "sse2"),
@@ -227,16 +229,18 @@ macro_rules! atomic64 {
                 // Refs:
                 // - https://www.felixcloutier.com/x86/movlps (SSE)
                 unsafe {
-                    let mut out = MaybeUninit::<core::arch::x86::__m128>::zeroed();
+                    let out;
                     // atomic load is always SeqCst.
                     asm!(
                         "movlps {out}, qword ptr [{src}]", // atomic { out[:] = *src }
                         src = in(reg) src,
-                        out = inout(xmm_reg) out,
+                        out = out(xmm_reg) out,
                         options(nostack, preserves_flags),
                     );
-                    #[allow(clippy::missing_transmute_annotations)] // false positive: out is already type annotated
-                    core::mem::transmute::<_, [MaybeUninit<Self>; 2]>(out)[0]
+                    core::mem::transmute::<
+                        MaybeUninit<core::arch::x86::__m128>,
+                        [MaybeUninit<Self>; 2],
+                    >(out)[0]
                 }
                 #[cfg(all(
                     any(
@@ -339,14 +343,21 @@ macro_rules! atomic64 {
                             );
                         }
                         Ordering::SeqCst => {
+                            let p = core::cell::UnsafeCell::new(MaybeUninit::<u32>::uninit());
                             asm!(
                                 "movlps qword ptr [{dst}], {val}", // atomic { *dst = val[:] }
-                                // equivalent to mfence, but doesn't require SSE2
-                                "lock or dword ptr [esp], 0",      // fence
+                                // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
+                                // - https://github.com/taiki-e/portable-atomic/pull/156
+                                // - LLVM uses `lock or` for x86_32 64-bit atomic SeqCst store using SSE https://godbolt.org/z/9sKEr8YWc
+                                // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
+                                // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
+                                // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
+                                "xchg dword ptr [{p}], {tmp}",     // fence
                                 dst = in(reg) dst,
                                 val = in(xmm_reg) val,
-                                // Do not use `preserves_flags` because OR modifies the OF, CF, SF, ZF, and PF flags.
-                                options(nostack),
+                                p = inout(reg) p.get() => _,
+                                tmp = lateout(reg) _,
+                                options(nostack, preserves_flags),
                             );
                         }
                         _ => unreachable!(),
@@ -374,8 +385,8 @@ macro_rules! atomic64 {
                             asm!(
                                 "fild qword ptr [{val}]",  // st.push(*val)
                                 "fistp qword ptr [{dst}]", // atomic { *dst = st.pop() }
-                                val = in(reg) val.as_ptr(),
                                 dst = in(reg) dst,
+                                val = in(reg) val.as_ptr(),
                                 out("st(0)") _,
                                 out("st(1)") _,
                                 out("st(2)") _,
@@ -389,13 +400,21 @@ macro_rules! atomic64 {
                             );
                         }
                         Ordering::SeqCst => {
+                            let p = core::cell::UnsafeCell::new(MaybeUninit::<u32>::uninit());
                             asm!(
-                                "fild qword ptr [{val}]",     // st.push(*val)
-                                "fistp qword ptr [{dst}]",    // atomic { *dst = st.pop() }
-                                // equivalent to mfence, but doesn't require SSE2
-                                "lock or dword ptr [esp], 0", // fence
-                                val = in(reg) val.as_ptr(),
+                                "fild qword ptr [{val}]",      // st.push(*val)
+                                "fistp qword ptr [{dst}]",     // atomic { *dst = st.pop() }
+                                // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
+                                // - https://github.com/taiki-e/portable-atomic/pull/156
+                                // - LLVM uses `lock or` for x86_32 64-bit atomic SeqCst store using SSE https://godbolt.org/z/9sKEr8YWc
+                                // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
+                                // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
+                                // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
+                                "xchg dword ptr [{p}], {tmp}", // fence
                                 dst = in(reg) dst,
+                                val = in(reg) val.as_ptr(),
+                                p = inout(reg) p.get() => _,
+                                tmp = lateout(reg) _,
                                 out("st(0)") _,
                                 out("st(1)") _,
                                 out("st(2)") _,
@@ -404,7 +423,7 @@ macro_rules! atomic64 {
                                 out("st(5)") _,
                                 out("st(6)") _,
                                 out("st(7)") _,
-                                // Do not use `preserves_flags` because OR modifies the OF, CF, SF, ZF, and PF flags, FILD and FISTP modify condition code flags in x87 FPU status word.
+                                // Do not use `preserves_flags` because FILD and FISTP modify condition code flags in x87 FPU status word.
                                 options(nostack),
                             );
                         }
