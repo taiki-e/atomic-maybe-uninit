@@ -256,7 +256,7 @@ run() {
   fi
 
   case "${target}" in
-    # TODO: segmentation fault (also happen without this crate)
+    # TODO(hexagon): segmentation fault (also happen without this crate)
     hexagon-unknown-linux-musl) ;;
     *)
       # LTO + doctests is very slow on some platforms (probably related to the fact that they compile binaries for each example)
@@ -281,7 +281,7 @@ run() {
     case "${target}" in
       # cannot find rsbegin.o/rsend.o when building std: https://github.com/rust-lang/rust/issues/146739
       *-windows-gnu*) ;;
-      # TODO: haw to pass build-std-features to cargo-careful?
+      # TODO(hexagon): haw to pass build-std-features to cargo-careful?
       hexagon-unknown-linux-musl) ;;
       *)
         if [[ ${#build_std[@]} -gt 0 ]]; then

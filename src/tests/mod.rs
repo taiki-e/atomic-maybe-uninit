@@ -52,7 +52,7 @@ cfg_has_atomic_64! {
 }
 test_common!(i128);
 test_common!(u128);
-#[cfg(not(all(valgrind, target_arch = "powerpc64")))] // TODO: Hang (as of Valgrind 3.25)
+#[cfg(not(all(valgrind, target_arch = "powerpc64")))] // TODO(powerpc64): Hang (as of Valgrind 3.25)
 cfg_has_atomic_128! {
     test_atomic!(i128);
     test_atomic!(u128);

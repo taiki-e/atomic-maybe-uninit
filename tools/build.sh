@@ -71,7 +71,7 @@ default_targets=(
 
   # hexagon
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
-  # TODO: error: symbol 'fma' is already defined
+  # TODO(hexagon): error: symbol 'fma' is already defined
   # hexagon-unknown-linux-musl
 
   # loongarch
@@ -308,7 +308,7 @@ build() {
       ;;
     mips-*-linux-* | mipsel-*-linux-*)
       if ! grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
-        # TODO: LLVM bug: Undefined temporary symbol error when building std.
+        # TODO(mips): LLVM bug: Undefined temporary symbol error when building std.
         target_rustflags+=" -C opt-level=1"
       fi
       ;;

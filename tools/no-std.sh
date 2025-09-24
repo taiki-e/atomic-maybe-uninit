@@ -166,7 +166,7 @@ run() {
   fi
   case "${target}" in
     xtensa*)
-      # TODO: run test with simulator on CI
+      # TODO(xtensa): run test with simulator on CI
       if ! type -P wokwi-server >/dev/null; then
         printf '%s\n' "no-std test for ${target} requires wokwi-server (switched to build-only)"
         subcmd=build
