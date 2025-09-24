@@ -194,7 +194,7 @@ macro_rules! atomic {
                                     s!("mov", "{r}, #1"),                                           // r = 1
                                 "4:", // 'success:
                                 dst = in(reg) dst,
-                                old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
+                                old = in(reg) crate::utils::zero_extend32::$ty(old),
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,
@@ -237,7 +237,7 @@ macro_rules! atomic {
                                     s!("mov", "{r}, #1"),                                       // r = 1
                                 "4:", // 'success:
                                 dst = in(reg) dst,
-                                old = in(reg) crate::utils::ZeroExtend::zero_extend(old),
+                                old = in(reg) crate::utils::zero_extend32::$ty(old),
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 r = out(reg) r,

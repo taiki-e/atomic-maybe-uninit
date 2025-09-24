@@ -179,6 +179,7 @@ macro_rules! atomic {
     };
 }
 
+#[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($ty:ident, $bits:tt) => {
         atomic_load_store!($ty, $bits, "", "u");
@@ -217,7 +218,7 @@ macro_rules! atomic_sub_word {
                                 "srl {out}, {out}",             // out >>= sar
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
-                                val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
+                                val = inout(reg) crate::utils::zero_extend32::$ty(val) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,
@@ -280,8 +281,8 @@ macro_rules! atomic_sub_word {
                                 "srl {out}, {out}",             // out >>= sar
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
-                                new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
+                                old = inout(reg) crate::utils::zero_extend32::$ty(old) => _,
+                                new = inout(reg) crate::utils::zero_extend32::$ty(new) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,

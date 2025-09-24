@@ -308,7 +308,7 @@ macro_rules! atomic_sub_word {
                             blx!("{kuser_cmpxchg}"),  // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
                             "bcc 2b",                 // if C == 0 { jump 'retry }
                         "lsr {out}, {out}, {shift}",  // out >>= shift
-                        val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
+                        val = inout(reg) crate::utils::zero_extend32::$ty(val) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
                         inv_mask = in(reg) !mask,
@@ -368,8 +368,8 @@ macro_rules! atomic_sub_word {
                             "mov r0, #1",            // r0 = 1
                         "4:", // 'success:
                         "lsr {out}, {out}, {shift}",  // out >>= shift
-                        old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
-                        new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
+                        old = inout(reg) crate::utils::zero_extend32::$ty(old) => _,
+                        new = inout(reg) crate::utils::zero_extend32::$ty(new) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
                         mask = in(reg) mask,

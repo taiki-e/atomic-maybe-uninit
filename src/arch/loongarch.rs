@@ -227,7 +227,7 @@ macro_rules! atomic_sub_word {
                             "beqz {tmp}, 2b",            // if tmp == 0 { jump 'retry }
                         "srl.w {out}, {out}, {shift}",   // out >>= shift & 31
                         dst = in(reg) ptr_reg!(dst),
-                        val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
+                        val = inout(reg) crate::utils::zero_extend32::$ty(val) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
                         mask = inout(reg) mask => _,
@@ -277,8 +277,8 @@ macro_rules! atomic_sub_word {
                                 "4:", // 'success:
                                 "srl.w {out}, {out}, {shift}",   // out >>= shift & 31
                                 dst = in(reg) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
-                                new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
+                                old = inout(reg) crate::utils::zero_extend32::$ty(old) => _,
+                                new = inout(reg) crate::utils::zero_extend32::$ty(new) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,

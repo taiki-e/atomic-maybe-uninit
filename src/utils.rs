@@ -170,33 +170,7 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
     }
 }
 
-#[cfg(target_pointer_width = "32")]
-// SAFETY: MaybeUninit returned by zero_extend64_ptr is always initialized.
-const _: () = assert!(unsafe {
-    zero_extend64_ptr(ptr::without_provenance_mut(!0)).assume_init() == !0_u32 as u64
-});
-/// Zero-extends the given 32-bit pointer to `MaybeUninit<u64>`.
-/// This is used for 64-bit architecture's 32-bit ABI (e.g., AArch64 ILP32 ABI).
-/// See ptr_reg! macro in src/gen/utils.rs for details.
-#[cfg(target_pointer_width = "32")]
-#[allow(dead_code)]
-#[inline]
-pub(crate) const fn zero_extend64_ptr(v: *mut ()) -> MaybeUninit<u64> {
-    // SAFETY: we can safely transmute any 64-bit value to MaybeUninit<u64>.
-    unsafe {
-        mem::transmute(ZeroExtended::<*mut (), 1> {
-            v: MaybeUninit::new(v),
-            pad: const_hint!({ [core::ptr::null_mut(); 1] }),
-        })
-    }
-}
-#[allow(dead_code)]
-pub(crate) trait ZeroExtend: Copy {
-    type Out: Copy;
-    /// Zero-extends the given `MaybeUninit<Self>` to `MaybeUninit<u32>` if it is smaller than 32-bit,
-    /// otherwise, return the given value as-is.
-    fn zero_extend(v: MaybeUninit<Self>) -> Self::Out;
-}
+#[cfg(not(target_pointer_width = "16"))]
 #[allow(dead_code)]
 #[repr(C)]
 struct ZeroExtended<T: Copy, const N: usize> {
@@ -206,36 +180,64 @@ struct ZeroExtended<T: Copy, const N: usize> {
     #[cfg(target_endian = "little")]
     pad: [T; N],
 }
-macro_rules! zero_extend {
-    ($($ty:ident),* => $out:ident) => {$(
-        impl ZeroExtend for $ty {
-            type Out = MaybeUninit<$out>;
+#[cfg(not(target_pointer_width = "16"))]
+#[allow(dead_code)]
+pub(crate) mod zero_extend32 {
+    use core::mem::{self, MaybeUninit};
+
+    use super::ZeroExtended;
+
+    macro_rules! zero_extend {
+        ($($ty:ident $(($unsigned:ident))?),* => $out:ident) => {$(
+            #[allow(clippy::cast_sign_loss)]
+            // SAFETY: MaybeUninit returned by $ty is always initialized if the input is initialized.
+            const _: () = assert!(unsafe {
+                $ty(MaybeUninit::new(!0)).assume_init() == !(0 as $ty) $( as $unsigned)? as $out
+            });
+            /// Zero-extends the given integer to `MaybeUninit<u32>` if it is smaller than 32-bit,
+            /// otherwise, return the given value as-is.
             #[inline(always)]
-            fn zero_extend(v: MaybeUninit<Self>) -> Self::Out {
+            pub(crate) const fn $ty(v: MaybeUninit<$ty>) -> MaybeUninit<$out> {
                 const LEN: usize
                     = (mem::size_of::<$out>() - mem::size_of::<$ty>()) / mem::size_of::<$ty>();
+                const PAD: [$ty; LEN] = [0; LEN];
                 // SAFETY: we can safely transmute any same-size value to MaybeUninit<$out>.
-                unsafe {
-                    mem::transmute(ZeroExtended::<$ty, LEN> {
-                        v,
-                        pad: const_hint!({ [0; LEN] }),
-                    })
-                }
+                unsafe { mem::transmute(ZeroExtended::<$ty, LEN> { v, pad: PAD }) }
             }
-        }
-    )*};
-    ($($ty:ident),*) => {$(
-        impl ZeroExtend for $ty {
-            type Out = MaybeUninit<Self>;
+        )*};
+        ($($ty:ident),*) => {$(
+            /// Zero-extends the given integer to `MaybeUninit<u32>` if it is smaller than 32-bit,
+            /// otherwise, return the given value as-is.
             #[inline(always)]
-            fn zero_extend(v: MaybeUninit<Self>) -> Self::Out {
+            pub(crate) const fn $ty(v: MaybeUninit<$ty>) -> MaybeUninit<$ty> {
                 v
             }
-        }
-    )*};
+        )*};
+    }
+    zero_extend!(i8(u8), u8, i16(u16), u16 => u32);
+    zero_extend!(i32, u32, i64, u64, isize, usize);
 }
-zero_extend!(i8, u8, i16, u16 => u32);
-zero_extend!(i32, u32, i64, u64, isize, usize);
+#[cfg(target_pointer_width = "32")]
+#[allow(dead_code)]
+pub(crate) mod zero_extend64 {
+    use core::mem::{self, MaybeUninit};
+
+    use super::ZeroExtended;
+
+    // SAFETY: MaybeUninit returned by ptr is always initialized.
+    const _: () = assert!(unsafe {
+        ptr(super::ptr::without_provenance_mut(!0)).assume_init() == !0_u32 as u64
+    });
+    /// Zero-extends the given 32-bit pointer to `MaybeUninit<u64>`.
+    /// This is used for 64-bit architecture's 32-bit ABI (e.g., AArch64 ILP32 ABI).
+    /// See ptr_reg! macro in src/gen/utils.rs for details.
+    #[inline]
+    pub(crate) const fn ptr(v: *mut ()) -> MaybeUninit<u64> {
+        const PAD: [*mut (); 1] = [core::ptr::null_mut(); 1];
+        // SAFETY: we can safely transmute any 64-bit value to MaybeUninit<u64>.
+        unsafe { mem::transmute(ZeroExtended::<*mut (), 1> { v: MaybeUninit::new(v), pad: PAD }) }
+    }
+}
 
 /// A 128-bit value represented as a pair of 64-bit values.
 ///

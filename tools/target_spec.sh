@@ -68,7 +68,7 @@ mod imp {
             {
                 // If we cast to u64 here, the provenance will be lost,
                 // so we convert to MaybeUninit<u64> via zero extend helper.
-                crate::utils::zero_extend64_ptr(\$ptr as *mut ())
+                crate::utils::zero_extend64::ptr(\$ptr as *mut ())
             }
         }};
     }

@@ -164,7 +164,7 @@ macro_rules! atomic_sub_word {
                             "if (!p0) jump 2b",              // if !p0 { jump 'retry }
                         "{out} = asr({out},{shift})",        // out >>= shift
                         dst = in(reg) dst,
-                        val = inout(reg) crate::utils::ZeroExtend::zero_extend(val) => _,
+                        val = inout(reg) crate::utils::zero_extend32::$ty(val) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
                         mask = in(reg) mask,
@@ -212,8 +212,8 @@ macro_rules! atomic_sub_word {
                         "4:", // 'success:
                         "{out} = asr({out},{shift})",         // out >>= shift
                         dst = in(reg) dst,
-                        old = inout(reg) crate::utils::ZeroExtend::zero_extend(old) => _,
-                        new = inout(reg) crate::utils::ZeroExtend::zero_extend(new) => _,
+                        old = inout(reg) crate::utils::zero_extend32::$ty(old) => _,
+                        new = inout(reg) crate::utils::zero_extend32::$ty(new) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
                         mask = in(reg) mask,
