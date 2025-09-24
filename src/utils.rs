@@ -100,18 +100,18 @@ pub(crate) const unsafe fn transmute_copy_by_val<Src, Dst>(src: Src) -> Dst {
     ManuallyDrop::into_inner(unsafe { ConstHack::<Src, Dst> { src: ManuallyDrop::new(src) }.dst })
 }
 
+// core::hint::assert_unchecked polyfill for pre-1.81 rustc.
 #[allow(dead_code)]
-// Stable version of https://doc.rust-lang.org/nightly/std/hint/fn.assert_unchecked.html.
-// TODO: use real core::hint::assert_unchecked on 1.81+ https://github.com/rust-lang/rust/pull/123588
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) const unsafe fn assert_unchecked(cond: bool) {
     if !cond {
-        if cfg!(debug_assertions) {
-            unreachable!()
-        } else {
-            // SAFETY: the caller promised `cond` is true.
-            unsafe { core::hint::unreachable_unchecked() }
+        #[cfg(debug_assertions)]
+        unreachable!();
+        #[cfg(not(debug_assertions))]
+        // SAFETY: the caller promised `cond` is true.
+        unsafe {
+            core::hint::unreachable_unchecked()
         }
     }
 }
