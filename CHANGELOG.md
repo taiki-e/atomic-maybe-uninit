@@ -12,7 +12,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Fix bug in CAS on M68k.
+- Fix bug in CAS on M68k. ([3b022e7](https://github.com/taiki-e/atomic-maybe-uninit/commit/3b022e7dd3d82feff1bfd18002539f7f774d0673))
+
+- Optimize 64-bit load/store on x86_32. ([3b45646](https://github.com/taiki-e/atomic-maybe-uninit/commit/3b4564625830e8685a94818cba6e4698cd0f2113))
+
+- Optimize 8-bit swap/CAS on AVR. ([cbab034](https://github.com/taiki-e/atomic-maybe-uninit/commit/cbab034f49fcd8cd508832ee45f4abb2661bfdd5))
 
 ## [0.3.10] - 2025-09-12
 
