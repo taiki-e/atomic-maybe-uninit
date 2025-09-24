@@ -13,33 +13,48 @@ use core::{
 
 /// Static assertion without depending on const block which requires Rust 1.79.
 macro_rules! static_assert {
-    ($($ty:ident),+ => $($tt:tt)*) => {{
-        // Inspired by https://github.com/nvzqz/static-assertions/issues/40#issuecomment-1458897730.
-        struct _Assert<$($ty),+>($($ty),+);
-        impl<$($ty),+> _Assert<$($ty,)*> {
-            const _CHECK: () = assert!($($tt)*);
-        }
-        _Assert::<$($ty,)*>::_CHECK
+    ($(const $consts:ident: $ty:ty),+ => $($tt:tt)*) => {{
+        const_eval!($(const $consts: $ty),+ => () { assert!($($tt)*) })
     }};
+    ($($ty_params:ident $(: ?Sized $(+ $bounds:path)?)?),+ => $($tt:tt)*) => {{
+        const_eval!($($ty_params $(: ?Sized $(+ $bounds)?)?),+ => () { assert!($($tt)*) })
+    }};
+    ($($ty_params:ident $(: $bounds:path)?),+ => $($tt:tt)*) => {{
+        const_eval!($($ty_params $(: $bounds)?),+ => () { assert!($($tt)*) })
+    }};
+    // Use const _: () = assert!(..) for no parameter cases instead.
 }
 
-/// Uses inline const if available.
-///
-/// As the name implies, this is intended as a hint. Do not use this for use case
-/// that relies on this being computed in a const context (use static_assert instead).
-#[cfg(not(atomic_maybe_uninit_no_inline_const))]
-#[allow(unused_macros)]
-macro_rules! const_hint {
-    ({$($tt:tt)*}) => {
-        const { $($tt)* }
-    }
-}
-#[cfg(atomic_maybe_uninit_no_inline_const)]
-#[allow(unused_macros)]
-macro_rules! const_hint {
-    ({$($tt:tt)*}) => {
-        { $($tt)* }
-    }
+/// Const block emulation without depending on real const block which requires Rust 1.79.
+// Inspired by https://github.com/nvzqz/static-assertions/issues/40#issuecomment-1458897730.
+macro_rules! const_eval {
+    ($(const $const_params:ident: $ty:ty),+ => $ret:ty { $($tt:tt)* }) => {{
+        struct _Tmp<$(const $const_params: $ty,)*>;
+        impl<$(const $const_params: $ty,)*> _Tmp<$($const_params,)*> {
+            const _VAL: $ret = { $($tt)* };
+        }
+        _Tmp::<$($const_params,)*>::_VAL
+    }};
+    ($($ty_params:ident $(: ?Sized $(+ $bounds:path)?)?),+ => $ret:ty { $($tt:tt)* }) => {{
+        struct _Tmp<$($ty_params $(: ?Sized $(+ $bounds)?)?),+>(
+            $(::core::marker::PhantomData<$ty_params>),+
+        );
+        impl<$($ty_params $(: ?Sized $(+ $bounds)?)?),+> _Tmp<$($ty_params,)*> {
+            const _VAL: $ret = { $($tt)* };
+        }
+        _Tmp::<$($ty_params,)*>::_VAL
+    }};
+    ($($ty_params:ident $(: $bounds:path)?),+ => $ret:ty { $($tt:tt)* }) => {{
+        struct _Tmp<$($ty_params $(: $bounds)?),+>($(::core::marker::PhantomData<$ty_params>),+);
+        impl<$($ty_params $(: $bounds)?),+> _Tmp<$($ty_params,)*> {
+            const _VAL: $ret = { $($tt)* };
+        }
+        _Tmp::<$($ty_params,)*>::_VAL
+    }};
+    (=> $ret:ty { $($tt:tt)* }) => {{
+        const _VAL: $ret = { $($tt)* };
+        _VAL
+    }};
 }
 
 /// Make the given function const if the given condition is true.
@@ -152,7 +167,9 @@ macro_rules! debug_assert_atomic_unsafe_precondition {
         #[allow(clippy::arithmetic_side_effects)]
         {
             // Using const block here improves codegen on opt-level=0 https://godbolt.org/z/vrrvTqGda
-            debug_assert!($ptr.addr() & const_hint!({ core::mem::size_of::<$ty>() - 1 }) == 0);
+            debug_assert!(
+                $ptr.addr() & const_eval!(=> usize { core::mem::size_of::<$ty>() - 1 }) == 0
+            );
         }
     }};
 }
@@ -496,7 +513,8 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
         target_arch = "xtensa",
     ));
     const PTR_MASK: usize = mem::size_of::<MinWord>() - 1;
-    let aligned_ptr = ptr.with_addr(ptr.addr() & const_hint!({ !PTR_MASK })).cast::<MinWord>();
+    const PTR_INV_MASK: usize = !PTR_MASK;
+    let aligned_ptr = ptr.with_addr(ptr.addr() & PTR_INV_MASK).cast::<MinWord>();
     let ptr_lsb = if SHIFT_MASK {
         ptr.addr() & PTR_MASK
     } else {
@@ -507,10 +525,10 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
     let shift = if cfg!(any(target_endian = "little", target_arch = "s390x")) {
         ptr_lsb << 3
     } else {
-        (ptr_lsb ^ const_hint!({ mem::size_of::<MinWord>() - mem::size_of::<T>() })) << 3
+        (ptr_lsb ^ const_eval!(T => usize { mem::size_of::<MinWord>() - mem::size_of::<T>() })) << 3
     };
     #[allow(clippy::arithmetic_side_effects)]
-    let mut mask: RetInt = const_hint!({ (1 << (mem::size_of::<T>() << 3)) - 1 }); // !(0 as T) as RetInt
+    let mut mask = const_eval!(T => RetInt { (1 << (mem::size_of::<T>() << 3)) - 1 }); // !(0 as T) as RetInt
     if SHIFT_MASK {
         mask <<= shift;
     }
