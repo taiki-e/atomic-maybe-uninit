@@ -18,6 +18,8 @@ Generated asm:
 - mips64el https://godbolt.org/z/n1P1vGvfe
 */
 
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
@@ -38,6 +40,7 @@ macro_rules! atomic_rmw {
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $size:tt, $l_u_suffix:tt) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -316,24 +319,11 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(i8, "b");
 atomic_sub_word!(u8, "b");
-atomic_sub_word!(i16, "h");
 atomic_sub_word!(u16, "h");
-atomic!(i32, "w", "");
 atomic!(u32, "w", "");
 #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
-atomic!(i64, "d", "d");
-#[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
 atomic!(u64, "d", "d");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "w", "");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "w", "");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "d", "d");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "d", "d");
 
 // -----------------------------------------------------------------------------
 // cfg macros

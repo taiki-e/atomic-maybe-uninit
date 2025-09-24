@@ -374,6 +374,12 @@ build() {
       CARGO_TARGET_DIR="${target_dir}/no-x87" \
         RUSTFLAGS="${target_rustflags} -C target-feature=-x87" \
         x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/no-cmpxchg8b" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_no_cmpxchg8b" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/no-cmpxchg" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_no_cmpxchg --cfg atomic_maybe_uninit_no_cmpxchg8b" \
+        x_cargo "${args[@]}" "$@"
       ;;
     aarch64* | arm64*)
       # macOS is +lse,+lse2,+rcpc by default
@@ -405,6 +411,11 @@ build() {
         x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/lse128-rcpc3" \
         RUSTFLAGS="${target_rustflags} -C target-feature=+lse2,+lse128,+rcpc3" \
+        x_cargo "${args[@]}" "$@"
+      ;;
+    arm-unknown-linux-gnueabi*)
+      CARGO_TARGET_DIR="${target_dir}/cp15-barrier" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_use_cp15_barrier" \
         x_cargo "${args[@]}" "$@"
       ;;
     powerpc-*)

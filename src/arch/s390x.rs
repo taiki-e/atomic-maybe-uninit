@@ -17,6 +17,8 @@ Generated asm:
 - s390x (z196) https://godbolt.org/z/v9Wbro8oj
 */
 
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::{
@@ -52,6 +54,7 @@ const fn extract_cc(r: i64) -> bool {
 
 macro_rules! atomic_load_store {
     ($ty:ident, $l_suffix:tt, $suffix:tt) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -264,19 +267,14 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(i8, "b", "c", "8", "39, 24", "55");
 atomic_sub_word!(u8, "b", "c", "8", "39, 24", "55");
-atomic_sub_word!(i16, "h", "h", "16", "47, 16", "47");
 atomic_sub_word!(u16, "h", "h", "16", "47, 16", "47");
-atomic!(i32, "");
 atomic!(u32, "");
-atomic!(i64, "g");
 atomic!(u64, "g");
-atomic!(isize, "g");
-atomic!(usize, "g");
 
 macro_rules! atomic128 {
     ($ty:ident) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -297,7 +295,7 @@ macro_rules! atomic128 {
                         out("r1") out_lo,
                         options(nostack, preserves_flags),
                     );
-                    MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
                 }
             }
         }
@@ -309,7 +307,7 @@ macro_rules! atomic128 {
                 order: Ordering,
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { $ty: val };
+                let val = MaybeUninit128 { whole: val };
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -343,7 +341,7 @@ macro_rules! atomic128 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { $ty: val };
+                let val = MaybeUninit128 { whole: val };
                 let (mut prev_hi, mut prev_lo);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -364,7 +362,7 @@ macro_rules! atomic128 {
                         // Do not use `preserves_flags` because CDSG modifies the condition code.
                         options(nostack),
                     );
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -378,8 +376,8 @@ macro_rules! atomic128 {
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit128 { $ty: old };
-                let new = MaybeUninit128 { $ty: new };
+                let old = MaybeUninit128 { whole: old };
+                let new = MaybeUninit128 { whole: new };
                 let (prev_hi, prev_lo);
                 let r;
 
@@ -400,7 +398,7 @@ macro_rules! atomic128 {
                         options(nostack),
                     );
                     (
-                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
                         extract_cc(r)
                     )
                 }
@@ -409,7 +407,6 @@ macro_rules! atomic128 {
     };
 }
 
-atomic128!(i128);
 atomic128!(u128);
 
 // -----------------------------------------------------------------------------

@@ -11,6 +11,8 @@ Generated asm:
 - hexagon https://godbolt.org/z/hGMTeEvo1
 */
 
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::{
@@ -20,6 +22,7 @@ use crate::{
 
 macro_rules! atomic_load_store {
     ($ty:ident, $size:tt, $load_ext:tt) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -230,17 +233,13 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(i8, "b");
 atomic_sub_word!(u8, "b");
-atomic_sub_word!(i16, "h");
 atomic_sub_word!(u16, "h");
-atomic!(i32);
 atomic!(u32);
-atomic!(isize);
-atomic!(usize);
 
 macro_rules! atomic64 {
     ($ty:ident) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -259,7 +258,7 @@ macro_rules! atomic64 {
                         out("r3") prev_hi,
                         options(nostack, preserves_flags),
                     );
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -271,7 +270,7 @@ macro_rules! atomic64 {
                 _order: Ordering,
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit64 { $ty: val };
+                let val = MaybeUninit64 { whole: val };
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -293,7 +292,7 @@ macro_rules! atomic64 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit64 { $ty: val };
+                let val = MaybeUninit64 { whole: val };
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -311,7 +310,7 @@ macro_rules! atomic64 {
                         out("p0") _,
                         options(nostack, preserves_flags),
                     );
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -325,8 +324,8 @@ macro_rules! atomic64 {
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit64 { $ty: old };
-                let new = MaybeUninit64 { $ty: new };
+                let old = MaybeUninit64 { whole: old };
+                let new = MaybeUninit64 { whole: new };
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -358,14 +357,13 @@ macro_rules! atomic64 {
                         options(nostack, preserves_flags),
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty, r != 0)
+                    (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r != 0)
                 }
             }
         }
     };
 }
 
-atomic64!(i64);
 atomic64!(u64);
 
 // -----------------------------------------------------------------------------

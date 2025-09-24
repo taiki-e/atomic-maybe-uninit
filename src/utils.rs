@@ -157,6 +157,178 @@ macro_rules! debug_assert_atomic_unsafe_precondition {
     }};
 }
 
+#[allow(unused_macros)]
+macro_rules! delegate_load_store {
+    ($ty:ident, $base:ident) => {
+        const _: () = {
+            assert!(core::mem::size_of::<$ty>() == core::mem::size_of::<$base>());
+            assert!(core::mem::align_of::<$ty>() == core::mem::align_of::<$base>());
+        };
+        impl AtomicLoad for $ty {
+            #[inline]
+            unsafe fn atomic_load(
+                src: *const MaybeUninit<Self>,
+                order: Ordering,
+            ) -> MaybeUninit<Self> {
+                // SAFETY: the caller must uphold the safety contract.
+                // cast and transmute are okay because $ty and $base implement the same layout.
+                unsafe {
+                    core::mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(
+                        <$base as AtomicLoad>::atomic_load(src.cast::<MaybeUninit<$base>>(), order),
+                    )
+                }
+            }
+        }
+        impl AtomicStore for $ty {
+            #[inline]
+            unsafe fn atomic_store(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract.
+                // cast and transmute are okay because $ty and $base implement the same layout.
+                unsafe {
+                    <$base as AtomicStore>::atomic_store(
+                        dst.cast::<MaybeUninit<$base>>(),
+                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
+                        order,
+                    );
+                }
+            }
+        }
+    };
+}
+#[allow(unused_macros)]
+macro_rules! delegate_swap {
+    ($ty:ident, $base:ident) => {
+        const _: () = {
+            assert!(core::mem::size_of::<$ty>() == core::mem::size_of::<$base>());
+            assert!(core::mem::align_of::<$ty>() == core::mem::align_of::<$base>());
+        };
+        impl AtomicSwap for $ty {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) -> MaybeUninit<Self> {
+                // SAFETY: the caller must uphold the safety contract.
+                // cast and transmute are okay because $ty and $base implement the same layout.
+                unsafe {
+                    core::mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(
+                        <$base as AtomicSwap>::atomic_swap(
+                            dst.cast::<MaybeUninit<$base>>(),
+                            core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
+                            order,
+                        ),
+                    )
+                }
+            }
+        }
+    };
+}
+#[allow(unused_macros)]
+macro_rules! delegate_cas {
+    ($ty:ident, $base:ident) => {
+        const _: () = {
+            assert!(core::mem::size_of::<$ty>() == core::mem::size_of::<$base>());
+            assert!(core::mem::align_of::<$ty>() == core::mem::align_of::<$base>());
+        };
+        impl AtomicCompareExchange for $ty {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                current: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                // SAFETY: the caller must uphold the safety contract.
+                // cast and transmute are okay because $ty and $base implement the same layout.
+                unsafe {
+                    let (out, ok) = <$base as AtomicCompareExchange>::atomic_compare_exchange(
+                        dst.cast::<MaybeUninit<$base>>(),
+                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
+                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
+                        success,
+                        failure,
+                    );
+                    (core::mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
+                }
+            }
+            #[inline]
+            unsafe fn atomic_compare_exchange_weak(
+                dst: *mut MaybeUninit<Self>,
+                current: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                // SAFETY: the caller must uphold the safety contract.
+                // cast and transmute are okay because $ty and $base implement the same layout.
+                unsafe {
+                    let (out, ok) = <$base as AtomicCompareExchange>::atomic_compare_exchange_weak(
+                        dst.cast::<MaybeUninit<$base>>(),
+                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
+                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
+                        success,
+                        failure,
+                    );
+                    (core::mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
+                }
+            }
+        }
+    };
+}
+#[allow(unused_macros)]
+macro_rules! delegate_all {
+    ($ty:ident, $base:ident) => {
+        delegate_load_store!($ty, $base);
+        delegate_swap!($ty, $base);
+        delegate_cas!($ty, $base);
+    };
+}
+#[allow(unused_macros)]
+macro_rules! delegate_signed {
+    ($delegate:ident, u8) => {
+        $delegate!(i8, u8);
+    };
+    ($delegate:ident, u16) => {
+        $delegate!(i16, u16);
+    };
+    ($delegate:ident, u32) => {
+        $delegate!(i32, u32);
+    };
+    ($delegate:ident, u64) => {
+        $delegate!(i64, u64);
+    };
+    ($delegate:ident, u128) => {
+        $delegate!(i128, u128);
+    };
+}
+#[allow(unused_macros)]
+macro_rules! delegate_size {
+    ($delegate:ident) => {
+        #[cfg(target_pointer_width = "16")]
+        $delegate!(isize, u16);
+        #[cfg(target_pointer_width = "16")]
+        $delegate!(usize, u16);
+        #[cfg(target_pointer_width = "32")]
+        $delegate!(isize, u32);
+        #[cfg(target_pointer_width = "32")]
+        $delegate!(usize, u32);
+        #[cfg(target_pointer_width = "64")]
+        $delegate!(isize, u64);
+        #[cfg(target_pointer_width = "64")]
+        $delegate!(usize, u64);
+        #[cfg(target_pointer_width = "128")]
+        $delegate!(isize, u128);
+        #[cfg(target_pointer_width = "128")]
+        $delegate!(usize, u128);
+    };
+}
+
 // https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0418r2.html
 // https://github.com/rust-lang/rust/pull/98383
 #[allow(dead_code)]
@@ -188,11 +360,11 @@ pub(crate) mod zero_extend32 {
     use super::ZeroExtended;
 
     macro_rules! zero_extend {
-        ($($ty:ident $(($unsigned:ident))?),* => $out:ident) => {$(
+        ($($ty:ident),* => $out:ident) => {$(
             #[allow(clippy::cast_sign_loss)]
             // SAFETY: MaybeUninit returned by $ty is always initialized if the input is initialized.
             const _: () = assert!(unsafe {
-                $ty(MaybeUninit::new(!0)).assume_init() == !(0 as $ty) $( as $unsigned)? as $out
+                $ty(MaybeUninit::new(!0)).assume_init() == !(0 as $ty) as $out
             });
             /// Zero-extends the given integer to `MaybeUninit<u32>` if it is smaller than 32-bit,
             /// otherwise, return the given value as-is.
@@ -214,8 +386,8 @@ pub(crate) mod zero_extend32 {
             }
         )*};
     }
-    zero_extend!(i8(u8), u8, i16(u16), u16 => u32);
-    zero_extend!(i32, u32, i64, u64, isize, usize);
+    zero_extend!(u8, u16 => u32);
+    zero_extend!(u32, u64);
 }
 #[cfg(target_pointer_width = "32")]
 #[allow(dead_code)]
@@ -247,8 +419,7 @@ pub(crate) mod zero_extend64 {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub(crate) union MaybeUninit128 {
-    pub(crate) u128: MaybeUninit<u128>,
-    pub(crate) i128: MaybeUninit<i128>,
+    pub(crate) whole: MaybeUninit<u128>,
     pub(crate) pair: Pair<u64>,
 }
 /// A 64-bit value represented as a pair of 32-bit values.
@@ -259,8 +430,7 @@ pub(crate) union MaybeUninit128 {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub(crate) union MaybeUninit64 {
-    pub(crate) u64: MaybeUninit<u64>,
-    pub(crate) i64: MaybeUninit<i64>,
+    pub(crate) whole: MaybeUninit<u64>,
     pub(crate) pair: Pair<u32>,
 }
 #[allow(dead_code)]

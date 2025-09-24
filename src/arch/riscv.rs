@@ -25,6 +25,26 @@ Generated asm:
 - riscv32i (+zacas) https://godbolt.org/z/qvcEddac6
 */
 
+delegate_size!(delegate_load_store);
+#[cfg(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zaamo",
+    atomic_maybe_uninit_target_feature = "zaamo",
+    target_feature = "zalrsc",
+    atomic_maybe_uninit_target_feature = "zalrsc",
+))]
+delegate_size!(delegate_swap);
+#[cfg(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zalrsc",
+    atomic_maybe_uninit_target_feature = "zalrsc",
+    target_feature = "zacas",
+    atomic_maybe_uninit_target_feature = "zacas",
+))]
+delegate_size!(delegate_cas);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 #[cfg(any(
@@ -161,6 +181,7 @@ macro_rules! atomic_rmw_lr_sc {
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $size:tt) => {
+        delegate_signed!(delegate_load_store, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -242,6 +263,7 @@ macro_rules! atomic_load_store {
 #[rustfmt::skip]
 macro_rules! atomic_zaamo {
     ($ty:ident, $size:tt) => {
+        delegate_signed!(delegate_swap, $ty);
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -305,6 +327,22 @@ macro_rules! atomic {
             target_feature = "zalrsc",
             atomic_maybe_uninit_target_feature = "zalrsc",
         ))]
+        delegate_signed!(delegate_swap, $ty);
+        #[cfg(not(all(
+            not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+            any(
+                target_feature = "a",
+                atomic_maybe_uninit_target_feature = "a",
+                target_feature = "zaamo",
+                atomic_maybe_uninit_target_feature = "zaamo",
+            ),
+        )))]
+        #[cfg(any(
+            target_feature = "a",
+            atomic_maybe_uninit_target_feature = "a",
+            target_feature = "zalrsc",
+            atomic_maybe_uninit_target_feature = "zalrsc",
+        ))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -340,6 +378,8 @@ macro_rules! atomic {
         }
 
         // compare_exchange
+        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+        delegate_signed!(delegate_cas, $ty);
         #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
         impl AtomicCompareExchange for $ty {
             #[inline]
@@ -382,6 +422,14 @@ macro_rules! atomic {
                 }
             }
         }
+        #[cfg(not(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas")))]
+        #[cfg(any(
+            target_feature = "a",
+            atomic_maybe_uninit_target_feature = "a",
+            target_feature = "zalrsc",
+            atomic_maybe_uninit_target_feature = "zalrsc",
+        ))]
+        delegate_signed!(delegate_cas, $ty);
         #[cfg(not(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas")))]
         #[cfg(any(
             target_feature = "a",
@@ -462,6 +510,23 @@ macro_rules! atomic_sub_word {
                 atomic_maybe_uninit_target_feature = "zalrsc",
             ),
         ))]
+        delegate_signed!(delegate_swap, $ty);
+        #[cfg(not(all(
+            not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+        )))]
+        #[cfg(all(
+            not(all(
+                atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,
+                any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+            )),
+            any(
+                target_feature = "a",
+                atomic_maybe_uninit_target_feature = "a",
+                target_feature = "zalrsc",
+                atomic_maybe_uninit_target_feature = "zalrsc",
+            ),
+        ))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -506,6 +571,24 @@ macro_rules! atomic_sub_word {
                 out
             }
         }
+        #[cfg(not(all(
+            not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+        )))]
+        #[cfg(not(all(
+            not(all(
+                atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,
+                any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+            )),
+            any(
+                target_feature = "a",
+                atomic_maybe_uninit_target_feature = "a",
+                target_feature = "zalrsc",
+                atomic_maybe_uninit_target_feature = "zalrsc",
+            ),
+        )))]
+        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+        delegate_signed!(delegate_swap, $ty);
         #[cfg(not(all(
             not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
             any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
@@ -576,6 +659,11 @@ macro_rules! atomic_sub_word {
             any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
             any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
         ))]
+        delegate_signed!(delegate_cas, $ty);
+        #[cfg(all(
+            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+            any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+        ))]
         impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -619,6 +707,23 @@ macro_rules! atomic_sub_word {
                 }
             }
         }
+        #[cfg(not(all(
+            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+            any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+        )))]
+        #[cfg(all(
+            not(all(
+                atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,
+                any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+            )),
+            any(
+                target_feature = "a",
+                atomic_maybe_uninit_target_feature = "a",
+                target_feature = "zalrsc",
+                atomic_maybe_uninit_target_feature = "zalrsc",
+            ),
+        ))]
+        delegate_signed!(delegate_cas, $ty);
         #[cfg(not(all(
             any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
             any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
@@ -693,6 +798,24 @@ macro_rules! atomic_sub_word {
                 }
             }
         }
+        #[cfg(not(all(
+            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+            any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+        )))]
+        #[cfg(not(all(
+            not(all(
+                atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,
+                any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+            )),
+            any(
+                target_feature = "a",
+                atomic_maybe_uninit_target_feature = "a",
+                target_feature = "zalrsc",
+                atomic_maybe_uninit_target_feature = "zalrsc",
+            ),
+        )))]
+        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+        delegate_signed!(delegate_cas, $ty);
         #[cfg(not(all(
             any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
             any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
@@ -788,39 +911,22 @@ macro_rules! atomic_sub_word {
 }
 
 #[cfg(target_arch = "riscv32")]
-atomic_sub_word!(i8, "b", "24");
-#[cfg(target_arch = "riscv32")]
 atomic_sub_word!(u8, "b", "24");
-#[cfg(target_arch = "riscv32")]
-atomic_sub_word!(i16, "h", "16");
 #[cfg(target_arch = "riscv32")]
 atomic_sub_word!(u16, "h", "16");
 #[cfg(target_arch = "riscv64")]
-atomic_sub_word!(i8, "b", "56");
-#[cfg(target_arch = "riscv64")]
 atomic_sub_word!(u8, "b", "56");
 #[cfg(target_arch = "riscv64")]
-atomic_sub_word!(i16, "h", "48");
-#[cfg(target_arch = "riscv64")]
 atomic_sub_word!(u16, "h", "48");
-atomic!(i32, "w");
 atomic!(u32, "w");
 #[cfg(target_arch = "riscv64")]
-atomic!(i64, "d");
-#[cfg(target_arch = "riscv64")]
 atomic!(u64, "d");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "w");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "w");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "d");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "d");
 
 #[rustfmt::skip]
 macro_rules! atomic_dw {
     ($ty:ident, $size:tt, $reg_size:tt, $reg_size_offset:tt) => {
+        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+        delegate_signed!(delegate_all, $ty);
         #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
         impl AtomicLoad for $ty {
             #[inline]
@@ -847,7 +953,7 @@ macro_rules! atomic_dw {
                         };
                     }
                     atomic_rmw_amocas!(load, order);
-                    MaybeUninitDw { pair: Pair { lo: out_lo, hi: out_hi } }.$ty
+                    MaybeUninitDw { pair: Pair { lo: out_lo, hi: out_hi } }.whole
                 }
             }
         }
@@ -874,7 +980,7 @@ macro_rules! atomic_dw {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninitDw { $ty: val };
+                let val = MaybeUninitDw { whole: val };
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract,
@@ -911,7 +1017,7 @@ macro_rules! atomic_dw {
                         };
                     }
                     atomic_rmw_amocas!(swap, order);
-                    MaybeUninitDw { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninitDw { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -927,8 +1033,8 @@ macro_rules! atomic_dw {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let old = MaybeUninitDw { $ty: old };
-                let new = MaybeUninitDw { $ty: new };
+                let old = MaybeUninitDw { whole: old };
+                let new = MaybeUninitDw { whole: new };
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract,
@@ -963,7 +1069,7 @@ macro_rules! atomic_dw {
                     atomic_rmw_amocas!(cmpxchg, order, failure = failure);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (
-                        MaybeUninitDw { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
+                        MaybeUninitDw { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
                         r != 0
                     )
                 }
@@ -973,11 +1079,7 @@ macro_rules! atomic_dw {
 }
 
 #[cfg(target_arch = "riscv32")]
-atomic_dw!(i64, "d", "w", "4");
-#[cfg(target_arch = "riscv32")]
 atomic_dw!(u64, "d", "w", "4");
-#[cfg(target_arch = "riscv64")]
-atomic_dw!(i128, "q", "d", "8");
 #[cfg(target_arch = "riscv64")]
 atomic_dw!(u128, "q", "d", "8");
 

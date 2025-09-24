@@ -18,6 +18,8 @@ Generated asm:
 - armv4t https://godbolt.org/z/qMYe5qsTb
 */
 
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::{
@@ -101,6 +103,7 @@ macro_rules! blx {
 
 macro_rules! atomic_load_store {
     ($ty:ident, $suffix:tt) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -395,17 +398,13 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(i8, "b");
 atomic_sub_word!(u8, "b");
-atomic_sub_word!(i16, "h");
 atomic_sub_word!(u16, "h");
-atomic!(i32);
 atomic!(u32);
-atomic!(isize);
-atomic!(usize);
 
 macro_rules! atomic64 {
     ($ty:ident) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -531,7 +530,7 @@ macro_rules! atomic64 {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 assert_has_kuser_cmpxchg64();
-                let old = MaybeUninit64 { $ty: old };
+                let old = MaybeUninit64 { whole: old };
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
                 let out_ptr = out.as_mut_ptr();
                 let new = new.as_ptr();
@@ -584,7 +583,6 @@ macro_rules! atomic64 {
     };
 }
 
-atomic64!(i64);
 atomic64!(u64);
 
 // TODO: Since Rust 1.64, the Linux kernel requirement for Rust when using std is 3.2+, so it

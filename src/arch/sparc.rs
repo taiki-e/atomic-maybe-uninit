@@ -19,6 +19,8 @@ Generated asm:
 - sparc64 https://godbolt.org/z/ejM3ooeec
 */
 
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
@@ -163,6 +165,7 @@ macro_rules! atomic_rmw {
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $suffix:tt, $load_sign:tt) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -476,26 +479,12 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(i8, "b");
 atomic_sub_word!(u8, "b");
-atomic_sub_word!(i16, "h");
 atomic_sub_word!(u16, "h");
-atomic!(i32, "", "%icc");
 atomic!(u32, "", "%icc");
 // TODO: V8+ with 64-bit g/o reg
 #[cfg(target_arch = "sparc64")]
-atomic!(i64, "x", "%xcc");
-// TODO: V8+ with 64-bit g/o reg
-#[cfg(target_arch = "sparc64")]
 atomic!(u64, "x", "%xcc");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "", "%icc");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "", "%icc");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "x", "%xcc");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "x", "%xcc");
 
 // -----------------------------------------------------------------------------
 // cfg macros

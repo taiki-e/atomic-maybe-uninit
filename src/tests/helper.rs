@@ -140,6 +140,7 @@ macro_rules! test_atomic {
             mod [<test_atomic_ $ty>] {
                 __test_atomic!(load_store, $ty);
                 __test_atomic!(swap, $ty);
+                #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
                 __test_atomic!(cas, $ty);
             }
         }

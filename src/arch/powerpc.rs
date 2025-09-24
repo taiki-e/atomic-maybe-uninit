@@ -26,6 +26,8 @@ Generated asm:
 - powerpc64le https://godbolt.org/z/3cs6ennKG
 */
 
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
@@ -94,6 +96,7 @@ const fn test_cr0_eq(cr: crate::utils::RegSize) -> bool {
 
 macro_rules! atomic_load_store {
     ($ty:ident, $size:tt, $load_ext:tt) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -478,24 +481,11 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(i8, "b");
 atomic_sub_word!(u8, "b");
-atomic_sub_word!(i16, "h");
 atomic_sub_word!(u16, "h");
-atomic!(i32, "w", "z", "w");
 atomic!(u32, "w", "z", "w");
 #[cfg(target_arch = "powerpc64")]
-atomic!(i64, "d", "", "d");
-#[cfg(target_arch = "powerpc64")]
 atomic!(u64, "d", "", "d");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "w", "z", "w");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "w", "z", "w");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "d", "", "d");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "d", "", "d");
 
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
@@ -504,6 +494,7 @@ atomic!(usize, "d", "", "d");
 ))]
 macro_rules! atomic128 {
     ($ty:ident) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -550,7 +541,7 @@ macro_rules! atomic128 {
                         Ordering::SeqCst => atomic_load_acquire!("sync"),
                         _ => unreachable!(),
                     }
-                    MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
                 }
             }
         }
@@ -562,7 +553,7 @@ macro_rules! atomic128 {
                 order: Ordering,
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { $ty: val };
+                let val = MaybeUninit128 { whole: val };
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -597,7 +588,7 @@ macro_rules! atomic128 {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { $ty: val };
+                let val = MaybeUninit128 { whole: val };
                 let (mut prev_hi, mut prev_lo);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -624,7 +615,7 @@ macro_rules! atomic128 {
                         };
                     }
                     atomic_rmw!(swap, order);
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -638,8 +629,8 @@ macro_rules! atomic128 {
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit128 { $ty: old };
-                let new = MaybeUninit128 { $ty: new };
+                let old = MaybeUninit128 { whole: old };
+                let new = MaybeUninit128 { whole: new };
                 let (mut prev_hi, mut prev_lo);
                 let mut r;
 
@@ -680,7 +671,7 @@ macro_rules! atomic128 {
                     atomic_cas!(cmpxchg, success, failure);
                     // if compare failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (
-                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
                         test_cr0_eq(r)
                     )
                 }
@@ -694,8 +685,8 @@ macro_rules! atomic128 {
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit128 { $ty: old };
-                let new = MaybeUninit128 { $ty: new };
+                let old = MaybeUninit128 { whole: old };
+                let new = MaybeUninit128 { whole: new };
                 let (mut prev_hi, mut prev_lo);
                 let mut r;
 
@@ -734,7 +725,7 @@ macro_rules! atomic128 {
                     atomic_cas!(cmpxchg_weak, success, failure);
                     // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (
-                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
                         test_cr0_eq(r)
                     )
                 }
@@ -743,12 +734,6 @@ macro_rules! atomic128 {
     };
 }
 
-#[cfg(target_arch = "powerpc64")]
-#[cfg(any(
-    target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics",
-))]
-atomic128!(i128);
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",

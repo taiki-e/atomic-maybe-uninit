@@ -16,12 +16,15 @@ Generated asm:
 - msp430 https://godbolt.org/z/vsrq45h5q
 */
 
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 macro_rules! atomic {
     ($ty:ident, $size:tt) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -129,12 +132,8 @@ macro_rules! atomic {
     };
 }
 
-atomic!(i8, "b");
 atomic!(u8, "b");
-atomic!(i16, "w");
 atomic!(u16, "w");
-atomic!(isize, "w");
-atomic!(usize, "w");
 
 // -----------------------------------------------------------------------------
 // cfg macros

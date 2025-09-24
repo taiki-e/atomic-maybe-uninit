@@ -16,9 +16,16 @@ Generated asm:
 - x86 (i586,-x87) https://godbolt.org/z/P8cdjY7h1
 */
 
+delegate_size!(delegate_load_store);
+delegate_size!(delegate_swap);
+#[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
+delegate_size!(delegate_cas);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+#[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
+use crate::raw::AtomicCompareExchange;
+use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 use crate::utils::{MaybeUninit64, Pair};
@@ -44,6 +51,10 @@ macro_rules! atomic {
         $ty:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
         $new_reg:tt
     ) => {
+        delegate_signed!(delegate_load_store, $ty);
+        delegate_signed!(delegate_swap, $ty);
+        #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
+        delegate_signed!(delegate_cas, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -161,24 +172,11 @@ macro_rules! atomic {
     };
 }
 
-atomic!(i8, reg_byte, "", "byte", "al", "cl");
 atomic!(u8, reg_byte, "", "byte", "al", "cl");
-atomic!(i16, reg, ":x", "word", "ax", "cx");
 atomic!(u16, reg, ":x", "word", "ax", "cx");
-atomic!(i32, reg, ":e", "dword", "eax", "ecx");
 atomic!(u32, reg, ":e", "dword", "eax", "ecx");
 #[cfg(target_arch = "x86_64")]
-atomic!(i64, reg, "", "qword", "rax", "rcx");
-#[cfg(target_arch = "x86_64")]
 atomic!(u64, reg, "", "qword", "rax", "rcx");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, reg, ":e", "dword", "eax", "ecx");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, reg, ":e", "dword", "eax", "ecx");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, reg, "", "qword", "rax", "rcx");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, reg, "", "qword", "rax", "rcx");
 
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE)/FILD&FISTP(x87) instead of CMPXCHG8B.
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
@@ -186,6 +184,7 @@ atomic!(usize, reg, "", "qword", "rax", "rcx");
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 macro_rules! atomic64 {
     ($ty:ident) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -305,7 +304,7 @@ macro_rules! atomic64 {
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -444,7 +443,7 @@ macro_rules! atomic64 {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    let val = MaybeUninit64 { $ty: val };
+                    let val = MaybeUninit64 { whole: val };
                     // atomic store by CMPXCHG8B is always SeqCst.
                     let _ = order;
                     asm!(
@@ -477,7 +476,7 @@ macro_rules! atomic64 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit64 { $ty: val };
+                let val = MaybeUninit64 { whole: val };
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -504,7 +503,7 @@ macro_rules! atomic64 {
                         // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                         options(nostack),
                     );
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -518,8 +517,8 @@ macro_rules! atomic64 {
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit64 { $ty: old };
-                let new = MaybeUninit64 { $ty: new };
+                let old = MaybeUninit64 { whole: old };
+                let new = MaybeUninit64 { whole: new };
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -542,7 +541,7 @@ macro_rules! atomic64 {
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (
-                        MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
+                        MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
                         r != 0
                     )
                 }
@@ -551,9 +550,6 @@ macro_rules! atomic64 {
     };
 }
 
-#[cfg(target_arch = "x86")]
-#[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-atomic64!(i64);
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 atomic64!(u64);
@@ -568,6 +564,7 @@ macro_rules! atomic128 {
         atomic128!($ty, "rdi");
     };
     ($ty:ident, $rdi:tt) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -598,7 +595,7 @@ macro_rules! atomic128 {
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -610,7 +607,7 @@ macro_rules! atomic128 {
                 _order: Ordering,
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { $ty: val };
+                let val = MaybeUninit128 { whole: val };
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
@@ -651,7 +648,7 @@ macro_rules! atomic128 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { $ty: val };
+                let val = MaybeUninit128 { whole: val };
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
@@ -682,7 +679,7 @@ macro_rules! atomic128 {
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -696,8 +693,8 @@ macro_rules! atomic128 {
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit128 { $ty: old };
-                let new = MaybeUninit128 { $ty: new };
+                let old = MaybeUninit128 { whole: old };
+                let new = MaybeUninit128 { whole: new };
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
@@ -724,7 +721,7 @@ macro_rules! atomic128 {
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (
-                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty,
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
                         r != 0
                     )
                 }
@@ -733,9 +730,6 @@ macro_rules! atomic128 {
     };
 }
 
-#[cfg(target_arch = "x86_64")]
-#[cfg(target_feature = "cmpxchg16b")]
-atomic128!(i128);
 #[cfg(target_arch = "x86_64")]
 #[cfg(target_feature = "cmpxchg16b")]
 atomic128!(u128);

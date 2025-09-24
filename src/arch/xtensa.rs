@@ -14,6 +14,11 @@ Note that l32ai (acquire load), s32ri (release store), and l32ex/s32ex/getex (LL
 https://github.com/espressif/llvm-project/blob/xtensa_release_19.1.2/llvm/lib/Target/Xtensa/XtensaInstrInfo.td
 */
 
+#[cfg(not(target_feature = "s32c1i"))]
+delegate_size!(delegate_load_store);
+#[cfg(target_feature = "s32c1i")]
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 #[cfg(target_feature = "s32c1i")]
@@ -35,6 +40,10 @@ macro_rules! atomic_rmw {
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $bits:tt, $narrow:tt, $unsigned:tt) => {
+        #[cfg(not(target_feature = "s32c1i"))]
+        delegate_signed!(delegate_load_store, $ty);
+        #[cfg(target_feature = "s32c1i")]
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -302,14 +311,9 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(i8, "8");
 atomic_sub_word!(u8, "8");
-atomic_sub_word!(i16, "16");
 atomic_sub_word!(u16, "16");
-atomic!(i32);
 atomic!(u32);
-atomic!(isize);
-atomic!(usize);
 
 // -----------------------------------------------------------------------------
 // cfg macros

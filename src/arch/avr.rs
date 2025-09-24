@@ -16,6 +16,8 @@ Generated asm:
 - avr https://godbolt.org/z/5TYW8x6T9
 */
 
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
@@ -78,6 +80,7 @@ fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
 
 macro_rules! atomic8 {
     ($ty:ident) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -191,6 +194,7 @@ macro_rules! atomic8 {
 
 macro_rules! atomic16 {
     ($ty:ident) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -273,12 +277,8 @@ macro_rules! atomic16 {
     };
 }
 
-atomic8!(i8);
 atomic8!(u8);
-atomic16!(i16);
 atomic16!(u16);
-atomic16!(isize);
-atomic16!(usize);
 
 // -----------------------------------------------------------------------------
 // cfg macros

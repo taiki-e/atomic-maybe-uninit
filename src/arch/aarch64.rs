@@ -31,6 +31,8 @@ Generated asm:
 - aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/9beasofnd
 */
 
+delegate_size!(delegate_all);
+
 use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
 
 use crate::{
@@ -62,6 +64,7 @@ macro_rules! atomic_rmw {
 #[rustfmt::skip]
 macro_rules! atomic {
     ($ty:ident, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -311,22 +314,10 @@ macro_rules! atomic {
     };
 }
 
-atomic!(i8, "b", ":w", ", uxtb");
 atomic!(u8, "b", ":w", ", uxtb");
-atomic!(i16, "h", ":w", ", uxth");
 atomic!(u16, "h", ":w", ", uxth");
-atomic!(i32, "", ":w", "");
 atomic!(u32, "", ":w", "");
-atomic!(i64, "", "", "");
 atomic!(u64, "", "", "");
-#[cfg(target_pointer_width = "32")]
-atomic!(isize, "", ":w", "");
-#[cfg(target_pointer_width = "32")]
-atomic!(usize, "", ":w", "");
-#[cfg(target_pointer_width = "64")]
-atomic!(isize, "", "", "");
-#[cfg(target_pointer_width = "64")]
-atomic!(usize, "", "", "");
 
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //
@@ -356,6 +347,7 @@ atomic!(usize, "", "", "");
 // Section B2.9 "Synchronization and semaphores" for more.
 macro_rules! atomic128 {
     ($ty:ident) => {
+        delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -427,7 +419,7 @@ macro_rules! atomic128 {
                         }
                         _ => unreachable!(),
                     }
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
                 // SAFETY: the caller must uphold the safety contract.
@@ -468,7 +460,7 @@ macro_rules! atomic128 {
                         Ordering::SeqCst => atomic_load!("a", "l"),
                         _ => unreachable!(),
                     }
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -480,7 +472,7 @@ macro_rules! atomic128 {
                 order: Ordering,
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { $ty: val };
+                let val = MaybeUninit128 { whole: val };
 
                 #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
                 // SAFETY: the caller must guarantee that `dst` is valid for writes,
@@ -588,7 +580,7 @@ macro_rules! atomic128 {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { $ty: val };
+                let val = MaybeUninit128 { whole: val };
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -626,7 +618,7 @@ macro_rules! atomic128 {
                         };
                     }
                     atomic_rmw!(swap, order);
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.$ty
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
         }
@@ -641,8 +633,8 @@ macro_rules! atomic128 {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let old = MaybeUninit128 { $ty: old };
-                let new = MaybeUninit128 { $ty: new };
+                let old = MaybeUninit128 { whole: old };
+                let new = MaybeUninit128 { whole: new };
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -712,7 +704,7 @@ macro_rules! atomic128 {
                     (
                         MaybeUninit128 {
                             pair: Pair { lo: prev_lo, hi: prev_hi }
-                        }.$ty,
+                        }.whole,
                         r != 0
                     )
                 }
@@ -721,7 +713,6 @@ macro_rules! atomic128 {
     };
 }
 
-atomic128!(i128);
 atomic128!(u128);
 
 // -----------------------------------------------------------------------------
