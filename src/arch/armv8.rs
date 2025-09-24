@@ -32,7 +32,11 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]

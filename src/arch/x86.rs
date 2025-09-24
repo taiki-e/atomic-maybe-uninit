@@ -21,7 +21,11 @@ delegate_size!(delegate_swap);
 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 delegate_size!(delegate_cas);
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 use crate::raw::AtomicCompareExchange;
@@ -212,7 +216,7 @@ macro_rules! atomic64 {
                         out = out(xmm_reg) out,
                         options(nostack, preserves_flags),
                     );
-                    core::mem::transmute::<
+                    mem::transmute::<
                         MaybeUninit<core::arch::x86::__m128i>,
                         [MaybeUninit<Self>; 2],
                     >(out)[0]
@@ -236,7 +240,7 @@ macro_rules! atomic64 {
                         out = out(xmm_reg) out,
                         options(nostack, preserves_flags),
                     );
-                    core::mem::transmute::<
+                    mem::transmute::<
                         MaybeUninit<core::arch::x86::__m128>,
                         [MaybeUninit<Self>; 2],
                     >(out)[0]
@@ -330,7 +334,7 @@ macro_rules! atomic64 {
                 // - https://www.felixcloutier.com/x86/or
                 unsafe {
                     let val: MaybeUninit<core::arch::x86::__m128>
-                        = core::mem::transmute([val, MaybeUninit::uninit()]);
+                        = mem::transmute([val, MaybeUninit::uninit()]);
                     match order {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => {

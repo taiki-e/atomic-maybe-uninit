@@ -21,7 +21,11 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 

@@ -19,7 +19,11 @@ delegate_size!(delegate_load_store);
 #[cfg(target_feature = "s32c1i")]
 delegate_size!(delegate_all);
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 #[cfg(target_feature = "s32c1i")]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};

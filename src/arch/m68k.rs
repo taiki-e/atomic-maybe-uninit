@@ -21,7 +21,11 @@ delegate_size!(delegate_load_store);
 #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
 delegate_size!(delegate_all);
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};

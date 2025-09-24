@@ -18,7 +18,11 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
@@ -72,9 +76,9 @@ fn xor8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> u8 {
 #[inline(always)]
 fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
     // SAFETY: same layout.
-    let [a1, a2] = unsafe { core::mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(a) };
+    let [a1, a2] = unsafe { mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(a) };
     // SAFETY: same layout.
-    let [b1, b2] = unsafe { core::mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(b) };
+    let [b1, b2] = unsafe { mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(b) };
     xor8(a1, b1) | xor8(a2, b2) == 0
 }
 
@@ -261,8 +265,8 @@ macro_rules! atomic16 {
                 // SAFETY: Self and $cmp_ty has the same layout
                 let r = unsafe {
                     cmp16(
-                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<u16>>(old),
-                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<u16>>(out),
+                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<u16>>(old),
+                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<u16>>(out),
                     )
                 };
                 if r {

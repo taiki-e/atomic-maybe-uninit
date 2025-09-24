@@ -167,9 +167,7 @@ macro_rules! debug_assert_atomic_unsafe_precondition {
         #[allow(clippy::arithmetic_side_effects)]
         {
             // Using const block here improves codegen on opt-level=0 https://godbolt.org/z/vrrvTqGda
-            debug_assert!(
-                $ptr.addr() & const_eval!(=> usize { core::mem::size_of::<$ty>() - 1 }) == 0
-            );
+            debug_assert!($ptr.addr() & const_eval!(=> usize { mem::size_of::<$ty>() - 1 }) == 0);
         }
     }};
 }
@@ -178,8 +176,8 @@ macro_rules! debug_assert_atomic_unsafe_precondition {
 macro_rules! delegate_load_store {
     ($ty:ident, $base:ident) => {
         const _: () = {
-            assert!(core::mem::size_of::<$ty>() == core::mem::size_of::<$base>());
-            assert!(core::mem::align_of::<$ty>() == core::mem::align_of::<$base>());
+            assert!(mem::size_of::<$ty>() == mem::size_of::<$base>());
+            assert!(mem::align_of::<$ty>() == mem::align_of::<$base>());
         };
         impl AtomicLoad for $ty {
             #[inline]
@@ -190,7 +188,7 @@ macro_rules! delegate_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
-                    core::mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(
+                    mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(
                         <$base as AtomicLoad>::atomic_load(src.cast::<MaybeUninit<$base>>(), order),
                     )
                 }
@@ -208,7 +206,7 @@ macro_rules! delegate_load_store {
                 unsafe {
                     <$base as AtomicStore>::atomic_store(
                         dst.cast::<MaybeUninit<$base>>(),
-                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
+                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
                         order,
                     );
                 }
@@ -220,8 +218,8 @@ macro_rules! delegate_load_store {
 macro_rules! delegate_swap {
     ($ty:ident, $base:ident) => {
         const _: () = {
-            assert!(core::mem::size_of::<$ty>() == core::mem::size_of::<$base>());
-            assert!(core::mem::align_of::<$ty>() == core::mem::align_of::<$base>());
+            assert!(mem::size_of::<$ty>() == mem::size_of::<$base>());
+            assert!(mem::align_of::<$ty>() == mem::align_of::<$base>());
         };
         impl AtomicSwap for $ty {
             #[inline]
@@ -233,10 +231,10 @@ macro_rules! delegate_swap {
                 // SAFETY: the caller must uphold the safety contract.
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
-                    core::mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(
+                    mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(
                         <$base as AtomicSwap>::atomic_swap(
                             dst.cast::<MaybeUninit<$base>>(),
-                            core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
+                            mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
                             order,
                         ),
                     )
@@ -249,8 +247,8 @@ macro_rules! delegate_swap {
 macro_rules! delegate_cas {
     ($ty:ident, $base:ident) => {
         const _: () = {
-            assert!(core::mem::size_of::<$ty>() == core::mem::size_of::<$base>());
-            assert!(core::mem::align_of::<$ty>() == core::mem::align_of::<$base>());
+            assert!(mem::size_of::<$ty>() == mem::size_of::<$base>());
+            assert!(mem::align_of::<$ty>() == mem::align_of::<$base>());
         };
         impl AtomicCompareExchange for $ty {
             #[inline]
@@ -266,12 +264,12 @@ macro_rules! delegate_cas {
                 unsafe {
                     let (out, ok) = <$base as AtomicCompareExchange>::atomic_compare_exchange(
                         dst.cast::<MaybeUninit<$base>>(),
-                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
-                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
+                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
+                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
                         success,
                         failure,
                     );
-                    (core::mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
+                    (mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
                 }
             }
             #[inline]
@@ -287,12 +285,12 @@ macro_rules! delegate_cas {
                 unsafe {
                     let (out, ok) = <$base as AtomicCompareExchange>::atomic_compare_exchange_weak(
                         dst.cast::<MaybeUninit<$base>>(),
-                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
-                        core::mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
+                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
+                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
                         success,
                         failure,
                     );
-                    (core::mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
+                    (mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
                 }
             }
         }

@@ -45,7 +45,11 @@ delegate_size!(delegate_swap);
 ))]
 delegate_size!(delegate_cas);
 
-use core::{arch::asm, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    arch::asm,
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 #[cfg(any(
     target_feature = "a",

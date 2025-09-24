@@ -39,7 +39,10 @@ delegate_size!(delegate_load_store);
 ))]
 delegate_size!(delegate_all);
 
-use core::{mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    mem::{self, MaybeUninit},
+    sync::atomic::Ordering,
+};
 
 #[cfg(any(
     any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
