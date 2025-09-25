@@ -39,8 +39,7 @@ pub trait AtomicLoad: Primitive {
     ///
     /// Behavior is undefined if any of the following conditions are violated:
     ///
-    /// - If `Self` is greater than the pointer width, `src` must be valid for both reads and writes.
-    ///   Otherwise, `src` must be valid for reads.
+    /// - `src` must be valid for reads.
     /// - `src` must be properly aligned **to the size of `Self`**.
     ///   (For example, if `Self` is `u128`, `src` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
     /// - `order` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
@@ -50,6 +49,10 @@ pub trait AtomicLoad: Primitive {
     /// except that concurrent atomic operations on `src` are allowed if the
     /// pointer go through [`UnsafeCell::get`].
     ///
+    /// See the ["Atomic accesses to read-only memory" section in the `core::sync::atomic` docs][read-only-memory]
+    /// for compatibility with read-only memory.
+    ///
+    /// [read-only-memory]: core::sync::atomic#atomic-accesses-to-read-only-memory
     /// [validity]: core::ptr#safety
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self>;
 }
@@ -75,8 +78,7 @@ pub trait AtomicStore: Primitive {
     ///
     /// Behavior is undefined if any of the following conditions are violated:
     ///
-    /// - If `Self` is greater than the pointer width, `dst` must be valid for both reads and writes.
-    ///   Otherwise, `dst` must be valid for writes.
+    /// - `dst` must be valid for writes
     /// - `dst` must be properly aligned **to the size of `Self`**.
     ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
     /// - `order` must be [`SeqCst`], [`Release`], or [`Relaxed`].
