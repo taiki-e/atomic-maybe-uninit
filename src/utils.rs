@@ -127,6 +127,17 @@ pub(crate) fn assert_load_ordering(order: Ordering) {
         _ => unreachable!(),
     }
 }
+#[inline]
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) fn assert_load_memcpy_ordering(order: Ordering) {
+    match order {
+        Ordering::Acquire | Ordering::Relaxed => {}
+        Ordering::Release => panic!("there is no such thing as a release load"),
+        Ordering::AcqRel => panic!("there is no such thing as an acquire-release load"),
+        Ordering::SeqCst => panic!("there is no such thing as a seqcst per-byte load"),
+        _ => unreachable!(),
+    }
+}
 // https://github.com/rust-lang/rust/blob/1.84.0/library/core/src/sync/atomic.rs#L3323
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
@@ -135,6 +146,17 @@ pub(crate) fn assert_store_ordering(order: Ordering) {
         Ordering::Release | Ordering::Relaxed | Ordering::SeqCst => {}
         Ordering::Acquire => panic!("there is no such thing as an acquire store"),
         Ordering::AcqRel => panic!("there is no such thing as an acquire-release store"),
+        _ => unreachable!(),
+    }
+}
+#[inline]
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) fn assert_store_memcpy_ordering(order: Ordering) {
+    match order {
+        Ordering::Release | Ordering::Relaxed => {}
+        Ordering::Acquire => panic!("there is no such thing as an acquire store"),
+        Ordering::AcqRel => panic!("there is no such thing as an acquire-release store"),
+        Ordering::SeqCst => panic!("there is no such thing as a seqcst per-byte store"),
         _ => unreachable!(),
     }
 }

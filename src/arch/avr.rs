@@ -18,13 +18,17 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap};
+
+const OPT_FOR_SIZE: bool = false; // Currently only for bench
 
 // See portable-atomic's interrupt module for more.
 #[inline(always)]
@@ -120,6 +124,140 @@ macro_rules! atomic8 {
                         in("Z") dst,
                         options(nostack, preserves_flags),
                     );
+                }
+            }
+        }
+        impl AtomicMemcpy for $ty {
+            #[inline]
+            unsafe fn atomic_load_memcpy<const DST_ALIGNED: bool>(
+                mut dst: *mut MaybeUninit<Self>,
+                mut src: *const MaybeUninit<Self>,
+                mut count: NonZeroUsize,
+            ) {
+                if OPT_FOR_SIZE {
+                    let mut tmp;
+                    // SAFETY: the caller must uphold the safety contract.
+                    unsafe {
+                        loop {
+                            asm!(
+                                "ld {tmp}, Z+", // atomic { tmp = *Z; Z = Z.byte_add(1) }
+                                tmp = out(reg) tmp,
+                                inout("Z") src,
+                                options(nostack, preserves_flags),
+                            );
+                            dst.write(tmp);
+                            dst = dst.add(1);
+                            match NonZeroUsize::new(count.get() - 1) {
+                                Some(v) => count = v,
+                                None => return,
+                            }
+                        }
+                    }
+                } else {
+                    let mut tmp0;
+                    let mut tmp1;
+                    // SAFETY: the caller must uphold the safety contract.
+                    unsafe {
+                        if count.get() & 0x1 == 1 {
+                            asm!(
+                                "ld {tmp0}, Z+", // atomic { tmp0 = *Z; Z = Z.byte_add(1) }
+                                tmp0 = out(reg) tmp0,
+                                inout("Z") src,
+                                options(nostack, preserves_flags),
+                            );
+                            if DST_ALIGNED {
+                                dst.write(tmp0);
+                            } else {
+                                dst.write_unaligned(tmp0);
+                            }
+                            dst = dst.add(1);
+                            match NonZeroUsize::new(count.get() - 1) {
+                                Some(v) => count = v,
+                                None => return,
+                            }
+                        }
+                        loop {
+                            asm!(
+                                "ld {tmp0}, Z+", // atomic { tmp0 = *Z; Z = Z.byte_add(1) }
+                                "ld {tmp1}, Z+", // atomic { tmp1 = *Z; Z = Z.byte_add(1) }
+                                tmp0 = out(reg) tmp0,
+                                tmp1 = out(reg) tmp1,
+                                inout("Z") src,
+                                options(nostack, preserves_flags),
+                            );
+                            dst.add(1).write(tmp1);
+                            dst.write(tmp0);
+                            dst = dst.add(2);
+                            match NonZeroUsize::new(count.get() - 2) {
+                                Some(v) => count = v,
+                                None => return,
+                            }
+                        }
+                    }
+                }
+            }
+            #[inline]
+            unsafe fn atomic_store_memcpy<const SRC_ALIGNED: bool>(
+                mut dst: *mut MaybeUninit<Self>,
+                mut src: *const MaybeUninit<Self>,
+                mut count: NonZeroUsize,
+            ) {
+                if OPT_FOR_SIZE {
+                    let mut tmp;
+                    // SAFETY: the caller must uphold the safety contract.
+                    unsafe {
+                        loop {
+                            tmp = src.read();
+                            src = src.add(1);
+                            asm!(
+                                "st Z+, {tmp}", // atomic { *Z = tmp; dst = dst.byte_add(1) }
+                                tmp = in(reg) tmp,
+                                inout("Z") dst,
+                                options(nostack, preserves_flags),
+                            );
+                            match NonZeroUsize::new(count.get() - 1) {
+                                Some(v) => count = v,
+                                None => return,
+                            }
+                        }
+                    }
+                } else {
+                    let mut tmp0;
+                    let mut tmp1;
+                    // SAFETY: the caller must uphold the safety contract.
+                    unsafe {
+                        if count.get() & 0x1 == 1 {
+                            tmp0 = src.read();
+                            src = src.add(1);
+                            asm!(
+                                "st Z+, {tmp0}", // atomic { *Z = tmp0; dst = dst.byte_add(1) }
+                                tmp0 = in(reg) tmp0,
+                                inout("Z") dst,
+                                options(nostack, preserves_flags),
+                            );
+                            match NonZeroUsize::new(count.get() - 1) {
+                                Some(v) => count = v,
+                                None => return,
+                            }
+                        }
+                        loop {
+                            tmp1 = src.add(1).read();
+                            tmp0 = src.read();
+                            src = src.add(2);
+                            asm!(
+                                "st Z+, {tmp0}", // atomic { *Z = tmp0; dst = dst.byte_add(1) }
+                                "st Z+, {tmp1}", // atomic { *Z = tmp1; dst = dst.byte_add(1) }
+                                tmp0 = in(reg) tmp0,
+                                tmp1 = in(reg) tmp1,
+                                inout("Z") dst,
+                                options(nostack, preserves_flags),
+                            );
+                            match NonZeroUsize::new(count.get() - 2) {
+                                Some(v) => count = v,
+                                None => return,
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -333,5 +471,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => {};
 }
