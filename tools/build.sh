@@ -69,6 +69,11 @@ default_targets=(
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "avr" then .key else empty end'
   avr-none
 
+  # bpf
+  # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "bpf" then .key else empty end'
+  bpfeb-unknown-none
+  bpfel-unknown-none
+
   # hexagon
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
   # TODO(hexagon): error: symbol 'fma' is already defined
@@ -465,6 +470,11 @@ build() {
     avr*)
       CARGO_TARGET_DIR="${target_dir}/rmw" \
         RUSTFLAGS="${target_rustflags} -C target-feature=+rmw" \
+        x_cargo "${args[@]}" "$@"
+      ;;
+    bpf*)
+      CARGO_TARGET_DIR="${target_dir}/alu32" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+alu32" \
         x_cargo "${args[@]}" "$@"
       ;;
   esac

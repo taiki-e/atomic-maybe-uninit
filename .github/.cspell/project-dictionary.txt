@@ -8,6 +8,7 @@ armasm
 atxmega
 beqz
 Bicc
+bindeps
 bnez
 boundedly
 brne
@@ -27,14 +28,17 @@ distro
 DWCAS
 espup
 fild
+filosottile
 fistp
 gaisler
 getex
 GRLIB
 Halfword
 hwsync
+iface
 IMAFD
 inequal
+insn
 ishld
 isync
 kuser
@@ -65,8 +69,10 @@ lwarx
 lwsync
 mcpu
 membar
+memcg
 memcheck
 memd
+memlock
 memw
 mfcr
 mfence
@@ -87,6 +93,8 @@ qbsp
 quadword
 rcpc
 risbg
+rlim
+rlimit
 rsbegin
 rsend
 RVWMO
@@ -96,6 +104,7 @@ SCWP
 SCWPE
 seqz
 sete
+setrlimit
 signedness
 simavr
 simio
@@ -127,6 +136,7 @@ uxtb
 uxth
 virt
 wokwi
+wreg
 xadd
 xchg
 xmegau
