@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.11] - 2025-09-25
+
 - Fix bug in CAS on M68k. ([3b022e7](https://github.com/taiki-e/atomic-maybe-uninit/commit/3b022e7dd3d82feff1bfd18002539f7f774d0673))
 
 - Optimize 64-bit load/store on x86_32. ([3b45646](https://github.com/taiki-e/atomic-maybe-uninit/commit/3b4564625830e8685a94818cba6e4698cd0f2113))
@@ -365,7 +367,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.10...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.11...HEAD
+[0.3.11]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.7...v0.3.8
