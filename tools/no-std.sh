@@ -328,9 +328,9 @@ run() {
         # isize, usize, i8, u8 are covered by the run with the default feature.
         # NB: Sync feature list with tests/m68k/Cargo.toml
         feature=i16,u16,i32,u32,i64,u64
-        # CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-        #     RUSTFLAGS="${target_rustflags}" \
-        #     x_cargo "${args[@]}" --features "${feature}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+          RUSTFLAGS="${target_rustflags}" \
+          x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
         CARGO_TARGET_DIR="${target_dir}/no-std-test" \
           RUSTFLAGS="${target_rustflags}" \
           x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
