@@ -1,0 +1,21 @@
+{
+    std_thread_delete_current_info
+    Memcheck:Overlap
+    fun:memcpy
+    fun:copy<*>
+    fun:slice_remove<*>
+    fun:remove<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo>
+    fun:_ZN5alloc11collections5btree6remove259_$LT$impl$u20$alloc..collections..btree..node..Handle$LT$alloc..collections..btree..node..NodeRef$LT$alloc..collections..btree..node..marker..Mut$C$K$C$V$C$alloc..collections..btree..node..marker..Leaf$GT$$C$alloc..collections..btree..node..marker..KV$GT$$GT$14remove_leaf_kv17h*E
+    fun:remove_kv_tracking<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo, alloc::collections::btree::map::entry::{impl#9}::remove_kv::{closure_env#0}<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo, alloc::alloc::Global>, alloc::alloc::Global>
+    fun:remove_kv<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo, alloc::alloc::Global>
+    fun:remove_entry<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo, alloc::alloc::Global>
+    fun:remove_entry<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo, alloc::alloc::Global, usize>
+    fun:remove<usize, std::sys::pal::unix::stack_overflow::thread_info::ThreadInfo, alloc::alloc::Global, usize>
+    fun:delete_current_info
+    fun:_ZN3std3sys3pal4unix14stack_overflow3imp12drop_handler17h*E
+    fun:drop
+    fun:drop_in_place<std::sys::pal::unix::stack_overflow::Handler>
+    fun:_ZN3std3sys6thread4unix6Thread3new12thread_start17h*E
+    fun:start_thread
+    obj:/usr/lib/arm-linux-gnueabihf/libc.so.6
+}
