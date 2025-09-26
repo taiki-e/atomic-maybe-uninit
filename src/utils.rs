@@ -100,7 +100,7 @@ pub(crate) const unsafe fn transmute_copy_by_val<Src, Dst>(src: Src) -> Dst {
     ManuallyDrop::into_inner(unsafe { ConstHack::<Src, Dst> { src: ManuallyDrop::new(src) }.dst })
 }
 
-// core::hint::assert_unchecked polyfill for pre-1.81 rustc.
+// Equivalent to core::hint::assert_unchecked, but compatible with pre-1.81 rustc.
 #[allow(dead_code)]
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
