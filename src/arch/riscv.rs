@@ -853,11 +853,47 @@ macro_rules! atomic_sub_word {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: crate::utils::RegSize;
                     // Implement sub-word atomic operations using word-sized CAS loop.
                     // See also create_sub_word_mask_values.
+                    macro_rules! cmpxchg_fail_relaxed {
+                        ($failure_release:tt, $asm_order:tt) => {
+                            asm!(
+                                concat!("sll", w!(), " {mask}, {mask}, {shift}"),               // mask <<= shift & 31
+                                concat!("sll", w!(), " {old}, {old}, {shift}"),                 // old <<= shift & 31
+                                concat!("sll", w!(), " {new}, {new}, {shift}"),                 // new <<= shift & 31
+                                $failure_release,                                               // fence
+                                "lw {tmp}, 0({dst})",                                           // atomic { tmp = *dst }
+                                "2:", // 'retry:
+                                    // out_tmp will be used for later comparison.
+                                    "mv {out_tmp}, {tmp}",                                      // out_tmp = tmp
+                                    "and {out}, {tmp}, {mask}",                                 // out = tmp & mask
+                                    "bne {out}, {old}, 3f",                                     // if out != old { jump 'cmp-fail }
+                                    "xor {out}, {tmp}, {new}",                                  // out = tmp ^ new
+                                    "and {out}, {out}, {mask}",                                 // out &= mask
+                                    "xor {out}, {out}, {tmp}",                                  // out ^= tmp
+                                    concat!("amocas.w", $asm_order, " {tmp}, {out}, 0({dst})"), // atomic { if *dst == tmp { *dst = out } else { out = *dst } }
+                                    "bne {tmp}, {out_tmp}, 2b",                                 // if tmp != out_tmp { jump 'retry }
+                                "3:", // 'cmp-fail:
+                                concat!("srl", w!(), " {out}, {tmp}, {shift}"),                 // out = tmp >> shift & 31
+                                "and {tmp}, {tmp}, {mask}",                                     // tmp &= mask
+                                "xor {tmp}, {old}, {tmp}",                                      // tmp ^= old
+                                "seqz {tmp}, {tmp}",                                            // if tmp == 0 { tmp = 1 } else { tmp = 0 }
+                                dst = in(reg) ptr_reg!(dst),
+                                old = inout(reg) crate::utils::zero_extend32::$ty(old) => _,
+                                new = inout(reg) crate::utils::zero_extend32::$ty(new) => _,
+                                out = out(reg) out,
+                                shift = in(reg) shift,
+                                mask = inout(reg) mask => _,
+                                tmp = out(reg) r,
+                                out_tmp = out(reg) _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
                     macro_rules! cmpxchg {
-                        ($failure_acquire:tt, $failure_release:tt, $asm_order:tt) => {
+                        ($failure_release:tt, $asm_order:tt) => {
                             asm!(
                                 concat!("sll", w!(), " {mask}, {mask}, {shift}"),               // mask <<= shift & 31
                                 concat!("sll", w!(), " {old}, {old}, {shift}"),                 // old <<= shift & 31
@@ -876,7 +912,7 @@ macro_rules! atomic_sub_word {
                                     "bne {tmp}, {out_tmp}, 2b",                                 // if tmp != out_tmp { jump 'retry }
                                     "j 4f",                                                     // jump 'success
                                 "3:", // 'cmp-fail:
-                                    $failure_acquire,                                           // fence
+                                    "fence r, rw",                                              // fence
                                 "4:", // 'success:
                                 concat!("srl", w!(), " {out}, {tmp}, {shift}"),                 // out = tmp >> shift & 31
                                 "and {tmp}, {tmp}, {mask}",                                     // tmp &= mask
@@ -895,15 +931,13 @@ macro_rules! atomic_sub_word {
                         };
                     }
                     match (order, failure) {
-                        (Ordering::Relaxed, _) => cmpxchg!("", "", ""),
-                        (Ordering::Acquire, Ordering::Relaxed) => cmpxchg!("", "", ".aq"),
-                        (Ordering::Acquire, Ordering::Acquire) => cmpxchg!("fence r, rw", "", ".aq"),
-                        (Ordering::Release, _) => cmpxchg!("", "", ".rl"),
-                        (Ordering::AcqRel, Ordering::Relaxed) => cmpxchg!("", "", ".aqrl"),
-                        (Ordering::AcqRel, Ordering::Acquire) => cmpxchg!("fence r, rw", "", ".aqrl"),
-                        (Ordering::SeqCst, Ordering::Relaxed) => cmpxchg!("", "", ".aqrl"),
-                        (Ordering::SeqCst, Ordering::Acquire) => cmpxchg!("fence r, rw", "", ".aqrl"),
-                        (Ordering::SeqCst, Ordering::SeqCst) => cmpxchg!("fence r, rw", "fence rw,rw", ".aqrl"),
+                        (Relaxed, _) => cmpxchg_fail_relaxed!("", ""),
+                        (Acquire, Relaxed) => cmpxchg_fail_relaxed!("", ".aq"),
+                        (Acquire, Acquire) => cmpxchg!("", ".aq"),
+                        (Release, _) => cmpxchg_fail_relaxed!("", ".rl"),
+                        (AcqRel | SeqCst, Relaxed) => cmpxchg_fail_relaxed!("", ".aqrl"),
+                        (AcqRel | SeqCst, Acquire) => cmpxchg!("", ".aqrl"),
+                        (SeqCst, SeqCst) => cmpxchg!("fence rw,rw", ".aqrl"),
                         _ => unreachable!(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test

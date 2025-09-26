@@ -263,7 +263,7 @@ macro_rules! atomic_sub_word {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: u32;
+                    let mut r: u32 = 0;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             // Implement sub-word atomic operations using word-sized CAS loop.
@@ -285,11 +285,8 @@ macro_rules! atomic_sub_word {
                                     "xor {out}, {out}, {tmp}",  // out ^= tmp
                                     "s32c1i {out}, {dst}, 0",   // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
                                     "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
-                                    "movi {tmp}, 1",            // tmp = 1
-                                    "j 4f",                     // jump 'success
+                                    "movi {r}, 1",              // r = 1
                                 "3:", // 'cmp-fail:
-                                    "movi {tmp}, 0",            // tmp = 0
-                                "4:", // 'success:
                                 "ssr {shift}",                  // sar = for_srl(shift & 31)
                                 "srl {out}, {out}",             // out >>= sar
                                 $acquire,                       // fence
@@ -299,7 +296,8 @@ macro_rules! atomic_sub_word {
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,
-                                tmp = out(reg) r,
+                                tmp = out(reg) _,
+                                r = inout(reg) r,
                                 out("scompare1") _,
                                 out("sar") _,
                                 options(nostack, preserves_flags),

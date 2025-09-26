@@ -12,6 +12,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Optimize CAS on Hexagon and MIPS.
+
+- Optimize {8,16}-bit CAS on RISC-V and Xtensa.
+
 ## [0.3.11] - 2025-09-25
 
 - Fix bug in CAS on M68k. ([3b022e7](https://github.com/taiki-e/atomic-maybe-uninit/commit/3b022e7dd3d82feff1bfd18002539f7f774d0673))

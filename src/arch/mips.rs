@@ -137,15 +137,15 @@ macro_rules! atomic {
                                 $release,                                             // fence
                                 "2:", // 'retry:
                                     concat!("ll", $ll_sc_suffix, " {out}, 0({dst})"), // atomic { out = *dst; LL = dst }
-                                    "move {tmp}, {val}",                              // tmp = val
-                                    concat!("sc", $ll_sc_suffix, " {tmp}, 0({dst})"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
-                                    "beqz {tmp}, 2b",                                 // if tmp == 0 { jump 'retry }
+                                    "move {r}, {val}",                                // r = val
+                                    concat!("sc", $ll_sc_suffix, " {r}, 0({dst})"),   // atomic { if LL == dst { *dst = r; r = 1 } else { r = 0 }; LL = None }
+                                    "beqz {r}, 2b",                                   // if r == 0 { jump 'retry }
                                 $acquire,                                             // fence
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = out(reg) out,
-                                tmp = out(reg) _,
+                                r = out(reg) _,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -170,7 +170,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: crate::utils::RegSize;
+                    let mut r: crate::utils::RegSize = 0;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -180,20 +180,17 @@ macro_rules! atomic {
                                 "2:", // 'retry:
                                     concat!("ll", $ll_sc_suffix, " {out}, 0({dst})"), // atomic { out = *dst; LL = dst }
                                     "bne {out}, {old}, 3f",                           // if out != old { jump 'cmp-fail }
-                                    "move {tmp}, {new}",                              // tmp = new
-                                    concat!("sc", $ll_sc_suffix, " {tmp}, 0({dst})"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
-                                    "beqz {tmp}, 2b",                                 // if tmp == 0 { jump 'retry }
-                                    "b 4f",                                           // jump 'success
+                                    "move {r}, {new}",                                // r = new
+                                    concat!("sc", $ll_sc_suffix, " {r}, 0({dst})"),   // atomic { if LL == dst { *dst = r; r = 1 } else { r = 0 }; LL = None }
+                                    "beqz {r}, 2b",                                   // if r == 0 { jump 'retry }
                                 "3:", // 'cmp-fail:
-                                    "li {tmp}, 0",                                    // tmp = 0
-                                "4:", // 'success:
                                 $acquire,                                             // fence
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
                                 out = out(reg) out,
-                                tmp = out(reg) r,
+                                r = inout(reg) r,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -237,10 +234,10 @@ macro_rules! atomic_sub_word {
                                 $release,                       // fence
                                 "2:", // 'retry:
                                     "ll {out}, 0({dst})",       // atomic { out = *dst; LL = dst }
-                                    "and {tmp}, {out}, {mask}", // tmp = out & mask
-                                    "or {tmp}, {tmp}, {val}",   // tmp |= val
-                                    "sc {tmp}, 0({dst})",       // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
-                                    "beqz {tmp}, 2b",           // if tmp == 0 { jump 'retry }
+                                    "and {r}, {out}, {mask}",   // r = out & mask
+                                    "or {r}, {r}, {val}",       // r |= val
+                                    "sc {r}, 0({dst})",         // atomic { if LL == dst { *dst = r; r = 1 } else { r = 0 }; LL = None }
+                                    "beqz {r}, 2b",             // if r == 0 { jump 'retry }
                                 "srlv {out}, {out}, {shift}",   // out >>= shift & 31
                                 $acquire,                       // fence
                                 ".set pop",
@@ -249,7 +246,7 @@ macro_rules! atomic_sub_word {
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,
-                                tmp = out(reg) _,
+                                r = out(reg) _,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -275,7 +272,7 @@ macro_rules! atomic_sub_word {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: crate::utils::RegSize;
+                    let mut r: crate::utils::RegSize = 0;
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg {
@@ -291,15 +288,12 @@ macro_rules! atomic_sub_word {
                                     "ll {out}, 0({dst})",       // atomic { out = *dst; LL = dst }
                                     "and {tmp}, {out}, {mask}", // tmp = out & mask
                                     "bne {tmp}, {old}, 3f",     // if tmp != old { jump 'cmp-fail }
-                                    "xor {tmp}, {out}, {new}",  // tmp = out ^ new
-                                    "and {tmp}, {tmp}, {mask}", // tmp &= mask
-                                    "xor {tmp}, {tmp}, {out}",  // tmp ^= out
-                                    "sc {tmp}, 0({dst})",       // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
-                                    "beqz {tmp}, 2b",           // if tmp == 0 { jump 'retry }
-                                    "b 4f",                     // jump 'success
+                                    "xor {r}, {out}, {new}",    // r = out ^ new
+                                    "and {r}, {r}, {mask}",     // r &= mask
+                                    "xor {r}, {r}, {out}",      // r ^= out
+                                    "sc {r}, 0({dst})",         // atomic { if LL == dst { *dst = r; r = 1 } else { r = 0 }; LL = None }
+                                    "beqz {r}, 2b",             // if r == 0 { jump 'retry }
                                 "3:", // 'cmp-fail:
-                                    "li {tmp}, 0",              // tmp = 0
-                                "4:", // 'success:
                                 "srlv {out}, {out}, {shift}",   // out >>= shift & 31
                                 $acquire,                       // fence
                                 ".set pop",
@@ -309,7 +303,8 @@ macro_rules! atomic_sub_word {
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = inout(reg) mask => _,
-                                tmp = out(reg) r,
+                                tmp = out(reg) _,
+                                r = inout(reg) r,
                                 options(nostack, preserves_flags),
                             )
                         };

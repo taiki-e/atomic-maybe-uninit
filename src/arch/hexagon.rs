@@ -115,7 +115,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: i32 = 1;
+                    let mut r: i32 = 0;
                     asm!(
                         "2:", // 'retry:
                             "{out} = memw_locked({dst})",     // atomic { out = *dst; RESERVE = dst }
@@ -123,10 +123,8 @@ macro_rules! atomic {
                                 "if (!p0.new) jump:nt 3f }}", // if !p0 { jump 'cmp-fail }
                             "memw_locked({dst},p0) = {new}",  // atomic { if RESERVE == dst { *dst = new; p0 = true } else { p0 = false }; RESERVE = None }
                             "if (!p0) jump 2b",               // if !p0 { jump 'retry }
-                            "jump 4f",                        // jump 'success
+                            "{r} = #1",                       // r = 0
                         "3:", // 'cmp-fail:
-                            "{r} = #0",                       // r = 0
-                        "4:", // 'success:
                         dst = in(reg) dst,
                         old = in(reg) old,
                         new = in(reg) new,
@@ -198,7 +196,7 @@ macro_rules! atomic_sub_word {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: i32 = 1;
+                    let mut r: i32 = 0;
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     asm!(
@@ -213,10 +211,8 @@ macro_rules! atomic_sub_word {
                             "{tmp} = or({tmp},{new})",        // tmp |= new
                             "memw_locked({dst},p0) = {tmp}",  // atomic { if RESERVE == dst { *dst = tmp; p0 = true } else { p0 = false }; RESERVE = None }
                             "if (!p0) jump 2b",               // if !p0 { jump 'retry }
-                            "jump 4f",                        // jump 'success
+                            "{r} = #1",                       // r = 0
                         "3:", // 'cmp-fail:
-                            "{r} = #0",                       // r = 0
-                        "4:", // 'success:
                         "{out} = asr({out},{shift})",         // out >>= shift
                         dst = in(reg) dst,
                         old = inout(reg) crate::utils::zero_extend32::$ty(old) => _,
@@ -334,7 +330,7 @@ macro_rules! atomic64 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: i32 = 1;
+                    let mut r: i32 = 0;
                     asm!(
                         "2:", // 'retry:
                             "{{ r7:6 = memd_locked({dst}) }}", // atomic { r6:r7 = *dst; RESERVE = dst }
@@ -345,10 +341,8 @@ macro_rules! atomic64 {
                                 "if (!p0.new) jump:nt 3f }}",  // if !p0 { jump 'cmp-fail }
                             "memd_locked({dst},p0) = r5:4",    // atomic { if RESERVE == dst { *dst = r4:r5; p0 = true } else { p0 = false }; RESERVE = None }
                             "if (!p0) jump 2b",                // if !p0 { jump 'retry }
-                            "jump 4f",                         // jump 'success
+                            "{r} = #1",                        // r = 0
                         "3:", // 'cmp-fail:
-                            "{r} = #0",                        // r = 0
-                        "4:", // 'success:
                         dst = in(reg) dst,
                         r = inout(reg) r,
                         in("r2") old.pair.lo,
