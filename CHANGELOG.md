@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support 64-bit atomics on M68k.
+
 - Optimize CAS on Hexagon and MIPS.
 
 - Optimize {8,16}-bit CAS on RISC-V and Xtensa.
