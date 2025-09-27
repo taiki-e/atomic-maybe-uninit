@@ -1,3 +1,7 @@
 [target.m68k-unknown-linux-gnu]
 linker = "m68k-linux-gnu-gcc"
 runner = "qemu-m68k -L /usr/m68k-linux-gnu"
+
+[target.csky-unknown-linux-gnuabiv2]
+linker = "csky-abiv2-linux-gcc"
+runner = "qemu-cskyv2 -cpu ck860"

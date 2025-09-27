@@ -290,6 +290,13 @@ jobs:
             target: armeb-unknown-linux-gnueabi
             os: ubuntu-22.04
           # ------------------------------------------------------------
+          # csky-unknown-linux-gnuabiv2
+          # TODO: multiple definition of `__lll_lock_wait_private'
+          # - rust: nightly-2025-02-14 # Rust 1.86, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
+          #   target: csky-unknown-linux-gnuabiv2
+          # - rust: nightly
+          #   target: csky-unknown-linux-gnuabiv2
+          # ------------------------------------------------------------
           # hexagon-unknown-linux-musl
           - rust: nightly-2024-11-29 # Rust 1.85, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
             target: hexagon-unknown-linux-musl
@@ -795,6 +802,11 @@ jobs:
               retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused "https://download.gaisler.com/products/TSIM3/bin/tsim-eval/tsim-eval-${tsim3_version}.tar.gz" \
                 | tar xzf - --strip-components 1 -C "${HOME}"/tsim
               printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
+              # https://github.com/taiki-e/rust-cross-toolchain/pkgs/container/rust-cross-toolchain
+              retry docker create --name gcc-csky-linux-gnuabiv2 "ghcr.io/taiki-e/rust-cross-toolchain:csky-unknown-linux-gnuabiv2-dev-amd64"
+              docker cp -- "gcc-csky-linux-gnuabiv2:/csky-unknown-linux-gnuabiv2" "${HOME}"/gcc-csky-linux-gnuabiv2
+              docker rm -f -- gcc-csky-linux-gnuabiv2 >/dev/null
+              printf '%s\n' "${HOME}"/gcc-csky-linux-gnuabiv2/bin >>"${GITHUB_PATH}"
             fi
             # https://github.com/taiki-e/dockerfiles/pkgs/container/qemu-user
             retry docker create --name qemu-user ghcr.io/taiki-e/qemu-user
