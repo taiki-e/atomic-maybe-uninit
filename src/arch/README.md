@@ -93,7 +93,7 @@ The following instructions are atomic if the address is properly aligned and the
 
   (Refs: Section 3.1.11 "Multiprocessor Instructions" of M68000 FAMILY Programmer's Reference Manual)
 
-Note that CAS2 is not yet supported in LLVM (as of 19).
+Note that CAS2 is not yet supported in LLVM (as of 21) (our code use `.2byte` directive to work around it).
 
 ## MIPS
 
