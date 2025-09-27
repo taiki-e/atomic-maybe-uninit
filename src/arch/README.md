@@ -8,6 +8,7 @@ This document describes the operations that are considered atomic by architectur
 - [AArch64](#aarch64)
 - [Arm](#arm)
 - [AVR](#avr)
+- [C-SKY](#c-sky)
 - [Hexagon](#hexagon)
 - [LoongArch](#loongarch)
 - [M68k](#m68k)
@@ -60,6 +61,13 @@ This architecture is always single-core and the following operations are atomic:
   However, pure operations that are not affected by compiler fences (Note: the correct interrupt
   disabling and restoring implementation must imply compiler fences, e.g., asm without nomem/readonly)
   may be moved out of the critical section by compiler optimizations.
+
+## C-SKY
+
+target_arch: csky<br>
+Implementation: [csky.rs](csky.rs)<br>
+
+TODO: reference and overview
 
 ## Hexagon
 

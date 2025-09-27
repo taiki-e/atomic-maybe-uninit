@@ -249,10 +249,23 @@ fn panic(_info: &core::panic::PanicInfo<'_>) -> ! {
 }
 
 mod libc {
-    #[link(name = "c")]
+    #[cfg_attr(not(target_arch = "csky"), link(name = "c"))]
     extern "C" {
         pub fn abort() -> !;
         pub fn exit(status: i32) -> !;
         pub fn puts(s: *const i8) -> i32;
     }
+    // We cannot link to std due to "undefined reference to `pthread_*'" errors.
+    #[cfg(target_arch = "csky")]
+    // Refs: https://github.com/rust-lang/libc/blob/d2ece10681cdf854fc4509ca2de23ce16a3783ff/src/unix/mod.rs#L426-L496
+    #[link(name = "util", kind = "static", modifiers = "-bundle")]
+    #[link(name = "rt", kind = "static", modifiers = "-bundle")]
+    #[link(name = "pthread", kind = "static", modifiers = "-bundle")]
+    #[link(name = "m", kind = "static", modifiers = "-bundle")]
+    #[link(name = "dl", kind = "static", modifiers = "-bundle")]
+    #[link(name = "c", kind = "static", modifiers = "-bundle")]
+    #[link(name = "gcc_eh", kind = "static", modifiers = "-bundle")]
+    #[link(name = "gcc", kind = "static", modifiers = "-bundle")]
+    #[link(name = "c", kind = "static", modifiers = "-bundle")]
+    extern "C" {}
 }

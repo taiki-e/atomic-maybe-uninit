@@ -50,6 +50,9 @@ default_targets=(
 
   # m68k
   m68k-unknown-linux-gnu
+
+  # csky
+  csky-unknown-linux-gnuabiv2
 )
 
 x() {
@@ -238,6 +241,17 @@ run() {
         return 0
       fi
       test_dir=tests/no-std-linux
+      ;;
+    csky*)
+      case "${commit_date}" in
+        2023-08-23)
+          # condition bit support requires Rust 1.86: https://github.com/rust-lang/rust/pull/136217
+          printf '%s\n' "target '${target}' is not supported on this version (skipped)"
+          return 0
+          ;;
+      esac
+      test_dir=tests/no-std-linux
+      target_rustflags+=" -C target-feature=+crt-static"
       ;;
     *) bail "unrecognized target '${target}'" ;;
   esac
