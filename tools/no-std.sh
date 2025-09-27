@@ -237,7 +237,7 @@ run() {
         printf '%s\n' "target '${target}' is not supported on this version (skipped)"
         return 0
       fi
-      test_dir=tests/m68k
+      test_dir=tests/no-std-linux
       ;;
     *) bail "unrecognized target '${target}'" ;;
   esac
