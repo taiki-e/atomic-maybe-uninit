@@ -57,13 +57,19 @@ macro_rules! atomic_rmw {
 
 // Adds S suffix if needed. We prefer instruction without S suffix,
 // but Armv8-M Baseline doesn't support thumb2 instructions.
-#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+#[cfg(any(
+    not(any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode")),
+    any(target_feature = "thumb2", atomic_maybe_uninit_target_feature = "thumb2"),
+))]
 macro_rules! s {
     ($op:tt, $operand:tt) => {
         concat!($op, " ", $operand)
     };
 }
-#[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))]
+#[cfg(not(any(
+    not(any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode")),
+    any(target_feature = "thumb2", atomic_maybe_uninit_target_feature = "thumb2"),
+)))]
 macro_rules! s {
     ($op:tt, $operand:tt) => {
         concat!($op, "s ", $operand)

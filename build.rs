@@ -44,7 +44,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","thumb2","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
         );
     }
 
@@ -195,7 +195,7 @@ fn main() {
                 target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")).unwrap();
             subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
             subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
-            subarch = subarch.split_once('.').unwrap_or((subarch, "")).0; // ignore .base/.main suffix
+            let (mut subarch, suffix) = subarch.split_once('.').unwrap_or((subarch, "")); // .base/.main suffix
             let mut known = true;
             // As of rustc nightly-2025-01-13, there are the following "vN*" patterns:
             // $ rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
@@ -286,6 +286,7 @@ fn main() {
                 let thumb_mode =
                     target.starts_with("thumb") || generated::ARM_BUT_THUMB_MODE.contains(&target);
                 target_feature_fallback("thumb-mode", thumb_mode);
+                target_feature_fallback("thumb2", v7 || v8m && suffix == "main");
             }
         }
         "riscv32" | "riscv64" => {
