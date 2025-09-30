@@ -279,8 +279,8 @@ run() {
       *-linux-musl*) flags+=" -C target-feature=-crt-static" ;;
     esac
     case "${target}" in
-      # cannot find rsbegin.o/rsend.o when building std: https://github.com/rust-lang/rust/issues/146739
-      *-windows-gnu*) ;;
+      # cannot find crt2.o/rsbegin.o/rsend.o when building std
+      i686-pc-windows-gnu) ;;
       # TODO(hexagon): haw to pass build-std-features to cargo-careful?
       hexagon-unknown-linux-musl) ;;
       *)
