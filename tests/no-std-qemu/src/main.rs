@@ -193,6 +193,8 @@ fn run() {
         test_atomic!(i128);
         test_atomic!(u128);
     }
+
+    // TODO: test memcpy
 }
 
 const LOAD_ORDERINGS: [Ordering; 3] = [Ordering::Relaxed, Ordering::Acquire, Ordering::SeqCst];

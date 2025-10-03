@@ -186,6 +186,8 @@ fn main() -> ! {
     test_atomic!(i32);
     test_atomic!(u32);
 
+    // TODO: test memcpy
+
     println!("Tests finished successfully");
 
     #[allow(clippy::empty_loop)] // this test crate is #![no_std]

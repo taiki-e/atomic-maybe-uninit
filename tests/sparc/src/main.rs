@@ -198,6 +198,8 @@ extern "C" fn main() -> i32 {
     test_atomic!(i32);
     test_atomic!(u32);
 
+    // TODO: test memcpy
+
     println!("Tests finished successfully");
 
     0

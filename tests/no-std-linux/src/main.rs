@@ -204,6 +204,8 @@ extern "C" fn main() {
         test_atomic!(u64);
     }
 
+    // TODO: test memcpy
+
     unsafe { libc::exit(0) }
 }
 
