@@ -13,19 +13,21 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
 use crate::{
-    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap},
     utils::{MaybeUninit64, Pair},
 };
 
 macro_rules! atomic_load_store {
-    ($ty:ident, $size:tt, $load_ext:tt) => {
+    ($ty:ident, $size:literal, $suffix:tt, $load_ext:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -39,7 +41,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("{out} = mem", $load_ext, $size, "({src})"), // atomic { out = *src }
+                        concat!("{out} = mem", $load_ext, $suffix, "({src})"), // atomic { out = *src }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -60,7 +62,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("mem", $size, "({dst}) = {val}"), // atomic { *dst = val }
+                        concat!("mem", $suffix, "({dst}) = {val}"), // atomic { *dst = val }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         options(nostack, preserves_flags),
@@ -68,12 +70,46 @@ macro_rules! atomic_load_store {
                 }
             }
         }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("{tmp0} = mem", $load_ext, $suffix, "({src}++#", $size, ")"), // atomic { tmp0 = *src }; src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("{tmp1} = mem", $load_ext, $suffix, "({src}+#", $size, ")"),    // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("{tmp0} = mem", $load_ext, $suffix, "({src}++#2*", $size, ")"), // atomic { tmp0 = *src }; src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("mem", $suffix, "({dst}++#", $size, ") = {tmp0}"), // atomic { *dst = tmp0 }; dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("mem", $suffix, "({dst}+#", $size, ") = {tmp1}"),    // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("mem", $suffix, "({dst}++#2*", $size, ") = {tmp0}"), // atomic { *dst = tmp0 }; dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
     };
 }
 
 macro_rules! atomic {
-    ($ty:ident) => {
-        atomic_load_store!($ty, "w", "");
+    ($ty:ident, $size:literal) => {
+        atomic_load_store!($ty, $size, "w", "");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -142,8 +178,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($ty:ident, $size:tt) => {
-        atomic_load_store!($ty, $size, "u");
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load_store!($ty, $size, $suffix, "u");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -233,9 +269,9 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(u8, "b");
-atomic_sub_word!(u16, "h");
-atomic!(u32);
+atomic_sub_word!(u8, "1", "b");
+atomic_sub_word!(u16, "2", "h");
+atomic!(u32, "4");
 
 macro_rules! atomic64 {
     ($ty:ident) => {
@@ -413,5 +449,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => {};
 }

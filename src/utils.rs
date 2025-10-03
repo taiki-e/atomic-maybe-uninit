@@ -127,6 +127,18 @@ pub(crate) fn assert_load_ordering(order: Ordering) {
         _ => unreachable!(),
     }
 }
+#[allow(dead_code)]
+#[inline]
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) fn assert_load_memcpy_ordering(order: Ordering) {
+    match order {
+        Ordering::Acquire | Ordering::Relaxed => {}
+        Ordering::Release => panic!("there is no such thing as a release load"),
+        Ordering::AcqRel => panic!("there is no such thing as an acquire-release load"),
+        Ordering::SeqCst => panic!("there is no such thing as a seqcst per-byte load"),
+        _ => unreachable!(),
+    }
+}
 // https://github.com/rust-lang/rust/blob/1.84.0/library/core/src/sync/atomic.rs#L3323
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
@@ -135,6 +147,18 @@ pub(crate) fn assert_store_ordering(order: Ordering) {
         Ordering::Release | Ordering::Relaxed | Ordering::SeqCst => {}
         Ordering::Acquire => panic!("there is no such thing as an acquire store"),
         Ordering::AcqRel => panic!("there is no such thing as an acquire-release store"),
+        _ => unreachable!(),
+    }
+}
+#[allow(dead_code)]
+#[inline]
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) fn assert_store_memcpy_ordering(order: Ordering) {
+    match order {
+        Ordering::Release | Ordering::Relaxed => {}
+        Ordering::Acquire => panic!("there is no such thing as an acquire store"),
+        Ordering::AcqRel => panic!("there is no such thing as an acquire-release store"),
+        Ordering::SeqCst => panic!("there is no such thing as a seqcst per-byte store"),
         _ => unreachable!(),
     }
 }
@@ -341,6 +365,145 @@ macro_rules! delegate_size {
         $delegate!(isize, u128);
         #[cfg(target_pointer_width = "128")]
         $delegate!(usize, u128);
+    };
+}
+
+#[allow(dead_code)]
+pub(crate) const OPT_FOR_SIZE: bool = false; // Currently only for bench
+#[allow(unused_macros)]
+macro_rules! load_memcpy {
+    ($ty:ident, |$src:ident, $tmp0:ident, $tmp1:ident| $load1:expr, $load2:expr,) => {
+        #[inline]
+        unsafe fn atomic_load_memcpy<const DST_ALIGNED: bool>(
+            mut dst: *mut MaybeUninit<$ty>,
+            src: *const MaybeUninit<$ty>,
+            mut count: NonZeroUsize,
+        ) {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            let mut $src = src;
+            #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+            let mut $src = ptr_reg!(src);
+            let mut $tmp0;
+            if crate::utils::OPT_FOR_SIZE {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    loop {
+                        $load1;
+                        if DST_ALIGNED {
+                            dst.write($tmp0);
+                        } else {
+                            dst.write_unaligned($tmp0);
+                        }
+                        dst = dst.add(1);
+                        match NonZeroUsize::new(count.get() - 1) {
+                            Some(v) => count = v,
+                            None => return,
+                        }
+                    }
+                }
+            } else {
+                let mut $tmp1;
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    if count.get() & 0x1 == 1 {
+                        $load1;
+                        if DST_ALIGNED {
+                            dst.write($tmp0);
+                        } else {
+                            dst.write_unaligned($tmp0);
+                        }
+                        dst = dst.add(1);
+                        match NonZeroUsize::new(count.get() - 1) {
+                            Some(v) => count = v,
+                            None => return,
+                        }
+                    }
+                    loop {
+                        $load2;
+                        if DST_ALIGNED {
+                            dst.add(1).write($tmp1);
+                            dst.write($tmp0);
+                        } else {
+                            dst.add(1).write_unaligned($tmp1);
+                            dst.write_unaligned($tmp0);
+                        }
+                        dst = dst.add(2);
+                        match NonZeroUsize::new(count.get() - 2) {
+                            Some(v) => count = v,
+                            None => return,
+                        }
+                    }
+                }
+            }
+        }
+    };
+}
+#[allow(unused_macros)]
+macro_rules! store_memcpy {
+    ($ty:ident, |$dst:ident, $tmp0:ident, $tmp1:ident| $store1:expr, $store2:expr,) => {
+        #[inline]
+        unsafe fn atomic_store_memcpy<const SRC_ALIGNED: bool>(
+            dst: *mut MaybeUninit<$ty>,
+            mut src: *const MaybeUninit<$ty>,
+            mut count: NonZeroUsize,
+        ) {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            let mut $dst = dst;
+            #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+            let mut $dst = ptr_reg!(dst);
+            let mut $tmp0;
+            if crate::utils::OPT_FOR_SIZE {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    loop {
+                        if SRC_ALIGNED {
+                            $tmp0 = src.read();
+                        } else {
+                            $tmp0 = src.read_unaligned();
+                        }
+                        src = src.add(1);
+                        $store1;
+                        match NonZeroUsize::new(count.get() - 1) {
+                            Some(v) => count = v,
+                            None => return,
+                        }
+                    }
+                }
+            } else {
+                let mut $tmp1;
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    if count.get() & 0x1 == 1 {
+                        if SRC_ALIGNED {
+                            $tmp0 = src.read();
+                        } else {
+                            $tmp0 = src.read_unaligned();
+                        }
+                        src = src.add(1);
+                        $store1;
+                        match NonZeroUsize::new(count.get() - 1) {
+                            Some(v) => count = v,
+                            None => return,
+                        }
+                    }
+                    loop {
+                        if SRC_ALIGNED {
+                            $tmp1 = src.add(1).read();
+                            $tmp0 = src.read();
+                        } else {
+                            $tmp1 = src.add(1).read_unaligned();
+                            $tmp0 = src.read_unaligned();
+                        }
+                        src = src.add(2);
+                        $store2;
+                        match NonZeroUsize::new(count.get() - 2) {
+                            Some(v) => count = v,
+                            None => return,
+                        }
+                    }
+                }
+            }
+        }
     };
 }
 

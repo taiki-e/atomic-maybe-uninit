@@ -1,3 +1,6 @@
+addi
+addiu
+addq
 amocas
 amoswap
 amswap
@@ -22,6 +25,7 @@ cmpw
 cmpxchg
 csel
 cset
+daddiu
 dbar
 distro
 DWCAS

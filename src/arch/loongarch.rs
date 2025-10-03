@@ -4,7 +4,8 @@
 LoongArch32 and LoongArch64
 
 Refs:
-- https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/loongarch/introduction.rst#references
+- LoongArch Reference Manual - Volume 1: Basic Architecture
+  https://loongson.github.io/LoongArch-Documentation/LoongArch-Vol1-EN.html
 
 Generated asm:
 - loongarch64 https://godbolt.org/z/36649a5c8
@@ -12,17 +13,32 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap};
+
+#[cfg(target_arch = "loongarch32")]
+macro_rules! addi {
+    () => {
+        "addi.w"
+    };
+}
+#[cfg(target_arch = "loongarch64")]
+macro_rules! addi {
+    () => {
+        "addi.d"
+    };
+}
 
 #[rustfmt::skip]
 macro_rules! atomic_load {
-    ($ty:ident, $size:tt) => {
+    ($ty:ident, $size:literal, $suffix:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -38,8 +54,8 @@ macro_rules! atomic_load {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                concat!("ld.", $size, " {out}, {src}, 0"), // atomic { out = *src }
-                                $acquire,                                  // fence
+                                concat!("ld.", $suffix, " {out}, {src}, 0"), // atomic { out = *src }
+                                $acquire,                                    // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -56,12 +72,50 @@ macro_rules! atomic_load {
                 out
             }
         }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("ld.", $suffix, " {tmp0}, {src}, 0"), // atomic { tmp0 = *src }
+                    concat!(addi!(), " {src}, {src}, ", $size),   // src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("ld.", $suffix, " {tmp1}, {src}, ", $size), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("ld.", $suffix, " {tmp0}, {src}, 0"),       // atomic { tmp0 = *src }
+                    concat!(addi!(), " {src}, {src}, 2*", $size),       // src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("st.", $suffix, " {tmp0}, {dst}, 0"), // atomic { *dst = tmp0 }
+                    concat!(addi!(), " {dst}, {dst}, ", $size),   // dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("st.", $suffix, " {tmp1}, {dst}, ", $size), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("st.", $suffix, " {tmp0}, {dst}, 0"),       // atomic { *dst = tmp0 }
+                    concat!(addi!(), " {dst}, {dst}, 2*", $size),       // dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
     };
 }
 
 macro_rules! atomic {
-    ($ty:ident, $size:tt) => {
-        atomic_load!($ty, $size);
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load!($ty, $size, $suffix);
         impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
@@ -76,7 +130,7 @@ macro_rules! atomic {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                concat!("st.", $size, " {val}, {dst}, 0"), // atomic { *dst = val }
+                                concat!("st.", $suffix, " {val}, {dst}, 0"), // atomic { *dst = val }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -84,7 +138,7 @@ macro_rules! atomic {
                         }
                         Ordering::Release | Ordering::SeqCst => {
                             asm!(
-                                concat!("amswap_db.", $size, " $zero, {val}, {dst}"), // atomic { _x = *dst; *dst = val; _ = _x }
+                                concat!("amswap_db.", $suffix, " $zero, {val}, {dst}"), // atomic { _x = *dst; *dst = val; _ = _x }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -109,7 +163,7 @@ macro_rules! atomic {
                 unsafe {
                     // AMO is always SeqCst.
                     asm!(
-                        concat!("amswap_db.", $size, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = _x }
+                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = _x }
                         dst = in(reg) ptr_reg!(dst),
                         val = in(reg) val,
                         out = out(reg) out,
@@ -138,15 +192,15 @@ macro_rules! atomic {
                         ($failure_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ll.", $size, " {out}, {dst}, 0"), // atomic { out = *dst; LL = dst }
-                                    "bne {out}, {old}, 3f",                    // if out != old { jump 'cmp-fail }
-                                    "move {tmp}, {new}",                       // tmp = new
-                                    concat!("sc.", $size, " {tmp}, {dst}, 0"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
-                                    "beqz {tmp}, 2b",                          // if tmp == 0 { jump 'retry }
-                                    "b 4f",                                    // jump 'success
+                                    concat!("ll.", $suffix, " {out}, {dst}, 0"), // atomic { out = *dst; LL = dst }
+                                    "bne {out}, {old}, 3f",                      // if out != old { jump 'cmp-fail }
+                                    "move {tmp}, {new}",                         // tmp = new
+                                    concat!("sc.", $suffix, " {tmp}, {dst}, 0"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                                    "beqz {tmp}, 2b",                            // if tmp == 0 { jump 'retry }
+                                    "b 4f",                                      // jump 'success
                                 "3:", // 'cmp-fail:
-                                    $failure_fence,                            // fence
-                                    "move {tmp}, $zero",                       // tmp = 0
+                                    $failure_fence,                              // fence
+                                    "move {tmp}, $zero",                         // tmp = 0
                                 "4:", // 'success:
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
@@ -174,8 +228,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($ty:ident, $size:tt) => {
-        atomic_load!($ty, $size);
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load!($ty, $size, $suffix);
         impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
@@ -190,9 +244,9 @@ macro_rules! atomic_sub_word {
                     macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                $release,                                  // fence
-                                concat!("st.", $size, " {val}, {dst}, 0"), // atomic { *dst = val }
-                                $acquire,                                  // fence
+                                $release,                                    // fence
+                                concat!("st.", $suffix, " {val}, {dst}, 0"), // atomic { *dst = val }
+                                $acquire,                                    // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -310,11 +364,11 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(u8, "b");
-atomic_sub_word!(u16, "h");
-atomic!(u32, "w");
+atomic_sub_word!(u8, "1", "b");
+atomic_sub_word!(u16, "2", "h");
+atomic!(u32, "4", "w");
 #[cfg(target_arch = "loongarch64")]
-atomic!(u64, "d");
+atomic!(u64, "8", "d");
 
 // -----------------------------------------------------------------------------
 // cfg macros
@@ -377,5 +431,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => {};
 }

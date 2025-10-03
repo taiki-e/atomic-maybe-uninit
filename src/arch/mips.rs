@@ -7,9 +7,12 @@ See "Atomic operation overview by architecture" for atomic operations in this ar
 https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#mips
 
 Refs:
-- The MIPS32® Instruction Set Manual, Revision 6.06 (MD00086) https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00086-2B-MIPS32BIS-AFP-6.06.pdf
-- The MIPS64® Instruction Set Reference Manual, Revision 6.06 (MD00087) https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00087-2B-MIPS64BIS-AFP-6.06.pdf
-- MIPS® Coherence Protocol Specification, Revision 01.01 (MD00605) https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00605-2B-CMPCOHERE-AFP-01.01.pdf
+- The MIPS32® Instruction Set Manual, Revision 6.06 (MD00086)
+  https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00086-2B-MIPS32BIS-AFP-6.06.pdf
+- The MIPS64® Instruction Set Reference Manual, Revision 6.06 (MD00087)
+  https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00087-2B-MIPS64BIS-AFP-6.06.pdf
+- MIPS® Coherence Protocol Specification, Revision 01.01 (MD00605)
+  https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00605-2B-CMPCOHERE-AFP-01.01.pdf
 
 Generated asm:
 - mips https://godbolt.org/z/KMYoovEWe
@@ -20,13 +23,15 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap};
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -41,9 +46,22 @@ macro_rules! atomic_rmw {
     };
 }
 
+#[cfg(any(target_arch = "mips", target_arch = "mips32r6"))]
+macro_rules! daddiu {
+    () => {
+        "addiu"
+    };
+}
+#[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
+macro_rules! daddiu {
+    () => {
+        "daddiu"
+    };
+}
+
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $size:tt, $l_u_suffix:tt) => {
+    ($ty:ident, $size:literal, $suffix:tt, $l_u_suffix:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -61,8 +79,8 @@ macro_rules! atomic_load_store {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                concat!("l", $size, " {out}, 0({src})"), // atomic { out = *src }
-                                $acquire,                                // fence
+                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = *src }
+                                $acquire,                                  // fence
                                 ".set pop",
                                 src = in(reg) ptr_reg!(src),
                                 out = out(reg) out,
@@ -96,9 +114,9 @@ macro_rules! atomic_load_store {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                $release,                                // fence
-                                concat!("s", $size, " {val}, 0({dst})"), // atomic { *dst = val }
-                                $acquire,                                // fence
+                                $release,                                  // fence
+                                concat!("s", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
+                                $acquire,                                  // fence
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
@@ -110,13 +128,63 @@ macro_rules! atomic_load_store {
                 }
             }
         }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    ".set push",
+                    ".set noat",
+                    concat!("l", $suffix, " {tmp0}, 0({src})"),   // atomic { tmp0 = *src }
+                    concat!(daddiu!(), " {src}, {src}, ", $size), // src = src.byte_add($size)
+                    ".set pop",
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    ".set push",
+                    ".set noat",
+                    concat!("l", $suffix, " {tmp1}, ", $size, "({src})"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("l", $suffix, " {tmp0}, 0({src})"),           // atomic { tmp0 = *src }
+                    concat!(daddiu!(), " {src}, {src}, 2*", $size),       // src = src.byte_add(2*$size)
+                    ".set pop",
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    ".set push",
+                    ".set noat",
+                    concat!("s", $suffix, " {tmp0}, 0({dst})"),   // atomic { *dst = tmp0 }
+                    concat!(daddiu!(), " {dst}, {dst}, ", $size), // dst = dst.byte_add($size)
+                    ".set pop",
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    ".set push",
+                    ".set noat",
+                    concat!("s", $suffix, " {tmp1}, ", $size, "({dst})"), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("s", $suffix, " {tmp0}, 0({dst})"),           // atomic { *dst = tmp0 }
+                    concat!(daddiu!(), " {dst}, {dst}, 2*", $size),       // dst = dst.byte_add(2*$size)
+                    ".set pop",
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
     };
 }
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $size:tt, $ll_sc_suffix:tt) => {
-        atomic_load_store!($ty, $size, "");
+    ($ty:ident, $size:literal, $suffix:tt, $ll_sc_suffix:tt) => {
+        atomic_load_store!($ty, $size, $suffix, "");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -206,8 +274,8 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $size:tt) => {
-        atomic_load_store!($ty, $size, "u");
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load_store!($ty, $size, $suffix, "u");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -318,11 +386,11 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(u8, "b");
-atomic_sub_word!(u16, "h");
-atomic!(u32, "w", "");
+atomic_sub_word!(u8, "1", "b");
+atomic_sub_word!(u16, "2", "h");
+atomic!(u32, "4", "w", "");
 #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
-atomic!(u64, "d", "d");
+atomic!(u64, "8", "d", "d");
 
 // -----------------------------------------------------------------------------
 // cfg macros
@@ -385,5 +453,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => {};
 }

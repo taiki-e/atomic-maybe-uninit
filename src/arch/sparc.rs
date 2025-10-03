@@ -21,13 +21,15 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap};
 
 #[cfg(any(
     target_arch = "sparc64",
@@ -168,7 +170,7 @@ macro_rules! atomic_rmw {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $suffix:tt, $load_sign:tt) => {
+    ($ty:ident, $size:literal, $suffix:tt, $load_sign:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -280,13 +282,56 @@ macro_rules! atomic_load_store {
                 }
             }
         }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("ld", $load_sign, $suffix, " [{src}], {tmp0}"), // atomic { tmp0 = *src }
+                    concat!("add {src}, ", $size, ", {src}"),               // src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("ld", $load_sign, $suffix, " [{src}+", $size, "], {tmp1}"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("ld", $load_sign, $suffix, " [{src}], {tmp0}"),             // atomic { tmp0 = *src }
+                    concat!("add {src}, 2*", $size, ", {src}"),                         // src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
+                    concat!("st", $suffix, " {tmp0}, [{dst}]"), // atomic { *dst = tmp0 }
+                    leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
+                    concat!("add {dst}, ", $size, ", {dst}"),   // dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
+                    concat!("st", $suffix, " {tmp1}, [{dst}+", $size, "]"), // atomic { *dst.byte_add($size) = tmp1 }
+                    leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
+                    concat!("st", $suffix, " {tmp0}, [{dst}]"),             // atomic { *dst = tmp0 }
+                    leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
+                    concat!("add {dst}, 2*", $size, ", {dst}"),             // src = src.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
     };
 }
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $suffix:tt, $cc:tt) => {
-        atomic_load_store!($ty, $suffix, "");
+    ($ty:ident, $size:literal, $suffix:tt, $cc:tt) => {
+        atomic_load_store!($ty, $size, $suffix, "");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -371,8 +416,8 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $suffix:tt) => {
-        atomic_load_store!($ty, $suffix, "u");
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load_store!($ty, $size, $suffix, "u");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -483,12 +528,12 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(u8, "b");
-atomic_sub_word!(u16, "h");
-atomic!(u32, "", "%icc");
+atomic_sub_word!(u8, "1", "b");
+atomic_sub_word!(u16, "2", "h");
+atomic!(u32, "4", "", "%icc");
 // TODO: V8+ with 64-bit g/o reg
 #[cfg(target_arch = "sparc64")]
-atomic!(u64, "x", "%xcc");
+atomic!(u64, "8", "x", "%xcc");
 
 // -----------------------------------------------------------------------------
 // cfg macros
@@ -553,5 +598,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => {};
 }

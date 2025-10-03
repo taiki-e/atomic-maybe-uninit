@@ -21,15 +21,17 @@ delegate_size!(delegate_swap);
 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 delegate_size!(delegate_cas);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 use crate::raw::AtomicCompareExchange;
-use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap};
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 use crate::utils::{MaybeUninit64, Pair};
@@ -52,7 +54,7 @@ macro_rules! ptr_modifier {
 
 macro_rules! atomic {
     (
-        $ty:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
+        $ty:ident, $size:literal, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
         $new_reg:tt
     ) => {
         delegate_signed!(delegate_load_store, $ty);
@@ -116,6 +118,44 @@ macro_rules! atomic {
                 }
             }
         }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("mov {tmp0", $val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"), // atomic { tmp0 = *src }
+                    concat!("lea {src}, [{src}+", $size, "]"),                                                  // src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out($val_reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("mov {tmp1", $val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}+", $size, "]"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("mov {tmp0", $val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"),             // atomic { tmp0 = *src }
+                    concat!("lea {src}, [{src}+2*", $size, "]"),                                                            // src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out($val_reg) tmp0,
+                    tmp1 = out($val_reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp0", $val_modifier, "}"), // atomic { *dst = tmp0 }
+                    concat!("lea {dst}, [{dst}+", $size, "]"),                                                  // dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in($val_reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}+", $size, "], {tmp1", $val_modifier, "}"), // atomic { *dst.byte_add($size) = tmp0 }
+                    concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp0", $val_modifier, "}"),             // atomic { *dst = tmp0 }
+                    concat!("lea {dst}, [{dst}+2*", $size, "]"),                                                            // dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in($val_reg) tmp0,
+                    tmp1 = in($val_reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -176,11 +216,11 @@ macro_rules! atomic {
     };
 }
 
-atomic!(u8, reg_byte, "", "byte", "al", "cl");
-atomic!(u16, reg, ":x", "word", "ax", "cx");
-atomic!(u32, reg, ":e", "dword", "eax", "ecx");
+atomic!(u8, "1", reg_byte, "", "byte", "al", "cl");
+atomic!(u16, "2", reg, ":x", "word", "ax", "cx");
+atomic!(u32, "4", reg, ":e", "dword", "eax", "ecx");
 #[cfg(target_arch = "x86_64")]
-atomic!(u64, reg, "", "qword", "rax", "rcx");
+atomic!(u64, "8", reg, "", "qword", "rax", "rcx");
 
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE)/FILD&FISTP(x87) instead of CMPXCHG8B.
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
@@ -824,4 +864,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }

@@ -45,9 +45,11 @@ delegate_size!(delegate_swap);
 ))]
 delegate_size!(delegate_cas);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
@@ -69,7 +71,7 @@ use crate::raw::AtomicCompareExchange;
     atomic_maybe_uninit_target_feature = "zalrsc",
 ))]
 use crate::raw::AtomicSwap;
-use crate::raw::{AtomicLoad, AtomicStore};
+use crate::raw::{AtomicLoad, AtomicMemcpy, AtomicStore};
 #[cfg(target_arch = "riscv32")]
 #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
 use crate::utils::{MaybeUninit64 as MaybeUninitDw, Pair};
@@ -184,7 +186,7 @@ macro_rules! atomic_rmw_lr_sc {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $size:tt) => {
+    ($ty:ident, $size:literal, $suffix:tt) => {
         delegate_signed!(delegate_load_store, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -200,9 +202,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                $release,                                // fence
-                                concat!("l", $size, " {out}, 0({src})"), // atomic { out = *src }
-                                $acquire,                                // fence
+                                $release,                                  // fence
+                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = *src }
+                                $acquire,                                  // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -233,9 +235,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                $release,                                // fence
-                                concat!("s", $size, " {val}, 0({dst})"), // atomic { *dst = val }
-                                $acquire,                                // fence
+                                $release,                                  // fence
+                                concat!("s", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
+                                $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -252,6 +254,44 @@ macro_rules! atomic_load_store {
                 }
             }
         }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("l", $suffix, " {tmp0}, 0({src})"), // atomic { tmp0 = *src }
+                    concat!("addi {src}, {src}, ", $size),      // src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("l", $suffix, " {tmp1}, ", $size, "({src})"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("l", $suffix, " {tmp0}, 0({src})"),           // atomic { tmp0 = *src }
+                    concat!("addi {src}, {src}, 2*", $size),              // src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("s", $suffix, " {tmp0}, 0({dst})"), // atomic { *dst = tmp0 }
+                    concat!("addi {dst}, {dst}, ", $size),      // dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("s", $suffix, " {tmp1}, ", $size, "({dst})"), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("s", $suffix, " {tmp0}, 0({dst})"),           // atomic { *dst = tmp0 }
+                    concat!("addi {dst}, {dst}, 2*", $size),              // dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
     };
 }
 
@@ -266,7 +306,7 @@ macro_rules! atomic_load_store {
 ))]
 #[rustfmt::skip]
 macro_rules! atomic_zaamo {
-    ($ty:ident, $size:tt) => {
+    ($ty:ident, $suffix:tt) => {
         delegate_signed!(delegate_swap, $ty);
         impl AtomicSwap for $ty {
             #[inline]
@@ -284,7 +324,7 @@ macro_rules! atomic_zaamo {
                     macro_rules! swap {
                         ($order:tt) => {
                             asm!(
-                                concat!("amoswap.", $size, $order, " {out}, {val}, 0({dst})"), // atomic { _x = *dst; *dst = val; out = _x }
+                                concat!("amoswap.", $suffix, $order, " {out}, {val}, 0({dst})"), // atomic { _x = *dst; *dst = val; out = _x }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = lateout(reg) out,
@@ -302,8 +342,8 @@ macro_rules! atomic_zaamo {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $size:tt) => {
-        atomic_load_store!($ty, $size);
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load_store!($ty, $size, $suffix);
 
         // swap
         #[cfg(all(
@@ -315,7 +355,7 @@ macro_rules! atomic {
                 atomic_maybe_uninit_target_feature = "zaamo",
             ),
         ))]
-        atomic_zaamo!($ty, $size);
+        atomic_zaamo!($ty, $suffix);
         #[cfg(not(all(
             not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
             any(
@@ -364,8 +404,8 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("lr.", $size, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
-                                    concat!("sc.", $size, $release, " {r}, {val}, 0({dst})"), // atomic { if RS == dst { *dst = val; r = 0 } else { r = nonzero }; RS = None }
+                                    concat!("lr.", $suffix, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
+                                    concat!("sc.", $suffix, $release, " {r}, {val}, 0({dst})"), // atomic { if RS == dst { *dst = val; r = 0 } else { r = nonzero }; RS = None }
                                     "bnez {r}, 2b",                                           // if r != 0 { jump 'retry }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
@@ -408,7 +448,7 @@ macro_rules! atomic {
                                 $fence,                                                           // fence
                                 // old will be used for later comparison.
                                 "mv {out}, {old}",                                                // out = old
-                                concat!("amocas.", $size, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
+                                concat!("amocas.", $suffix, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
                                 "xor {r}, {out}, {old}",                                          // r = out ^ old
                                 "seqz {r}, {r}",                                                  // if r == 0 { r = 1 } else { r = 0 }
                                 dst = in(reg) ptr_reg!(dst),
@@ -462,9 +502,9 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("lr.", $size, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
+                                    concat!("lr.", $suffix, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
                                     "bne {out}, {old}, 3f",                                   // if out != old { jump 'cmp-fail }
-                                    concat!("sc.", $size, $release, " {r}, {new}, 0({dst})"), // atomic { if RS == dst { *dst = new; r = 0 } else { r = nonzero }; RS = None }
+                                    concat!("sc.", $suffix, $release, " {r}, {new}, 0({dst})"), // atomic { if RS == dst { *dst = new; r = 0 } else { r = nonzero }; RS = None }
                                     "bnez {r}, 2b",                                           // if r != 0 { jump 'retry }
                                 "3:", // 'cmp-fail:
                                 "xor {r}, {out}, {old}",                                      // r = out ^ old
@@ -489,15 +529,15 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $size:tt, $shift:tt) => {
-        atomic_load_store!($ty, $size);
+    ($ty:ident, $size:literal, $suffix:tt, $shift:tt) => {
+        atomic_load_store!($ty, $size, $suffix);
 
         // swap
         #[cfg(all(
             not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
             any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
         ))]
-        atomic_zaamo!($ty, $size);
+        atomic_zaamo!($ty, $suffix);
         #[cfg(not(all(
             not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
             any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
@@ -692,7 +732,7 @@ macro_rules! atomic_sub_word {
                                 // old will be used for later comparison.
                                 "mv {out}, {old}",                                                // out = old
                                 concat!("slli {old}, {old}, ", $shift),                           // old <<= $shift
-                                concat!("amocas.", $size, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
+                                concat!("amocas.", $suffix, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
                                 concat!("srai {old}, {old}, ", $shift),                           // old >>= $shift
                                 "xor {r}, {out}, {old}",                                          // r = out ^ old
                                 "seqz {r}, {r}",                                                  // if r == 0 { r = 1 } else { r = 0 }
@@ -949,20 +989,20 @@ macro_rules! atomic_sub_word {
 }
 
 #[cfg(target_arch = "riscv32")]
-atomic_sub_word!(u8, "b", "24");
+atomic_sub_word!(u8, "1", "b", "24");
 #[cfg(target_arch = "riscv32")]
-atomic_sub_word!(u16, "h", "16");
+atomic_sub_word!(u16, "2", "h", "16");
 #[cfg(target_arch = "riscv64")]
-atomic_sub_word!(u8, "b", "56");
+atomic_sub_word!(u8, "1", "b", "56");
 #[cfg(target_arch = "riscv64")]
-atomic_sub_word!(u16, "h", "48");
-atomic!(u32, "w");
+atomic_sub_word!(u16, "2", "h", "48");
+atomic!(u32, "4", "w");
 #[cfg(target_arch = "riscv64")]
-atomic!(u64, "d");
+atomic!(u64, "8", "d");
 
 #[rustfmt::skip]
 macro_rules! atomic_dw {
-    ($ty:ident, $size:tt, $reg_size:tt, $reg_size_offset:tt) => {
+    ($ty:ident, $suffix:tt, $reg_size:tt, $reg_size_offset:tt) => {
         #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
         delegate_signed!(delegate_all, $ty);
         #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
@@ -982,7 +1022,7 @@ macro_rules! atomic_dw {
                         ($fence:tt, $asm_order:tt) => {
                             asm!(
                                 $fence,                                                     // fence
-                                concat!("amocas.", $size, $asm_order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
+                                concat!("amocas.", $suffix, $asm_order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
                                 src = in(reg) ptr_reg!(src),
                                 inout("a2") 0 as crate::utils::RegSize => out_lo,
                                 inout("a3") 0 as crate::utils::RegSize => out_hi,
@@ -1036,7 +1076,7 @@ macro_rules! atomic_dw {
                                     // tmp_lo:tmp_hi will be used for later comparison.
                                     "mv {tmp_lo}, a4",                                          // tmp_lo = a4
                                     "mv {tmp_hi}, a5",                                          // tmp_hi = a5
-                                    concat!("amocas.", $size, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                    concat!("amocas.", $suffix, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
                                     "xor {tmp_lo}, {tmp_lo}, a4",                               // tmp_lo ^= a4
                                     "xor {tmp_hi}, {tmp_hi}, a5",                               // tmp_hi ^= a5
                                     "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                          // tmp_lo |= tmp_hi
@@ -1086,7 +1126,7 @@ macro_rules! atomic_dw {
                                 // tmp_lo:tmp_hi will be used for later comparison.
                                 "mv {tmp_lo}, a4",                                          // tmp_lo = a4
                                 "mv {tmp_hi}, a5",                                          // tmp_hi = a5
-                                concat!("amocas.", $size, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                concat!("amocas.", $suffix, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
                                 "xor {tmp_lo}, {tmp_lo}, a4",                               // tmp_lo ^= a4
                                 "xor {tmp_hi}, {tmp_hi}, a5",                               // tmp_hi ^= a5
                                 "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                          // tmp_lo |= tmp_hi
@@ -1271,4 +1311,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }
