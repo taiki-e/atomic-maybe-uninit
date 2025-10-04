@@ -152,9 +152,10 @@ macro_rules! __test_atomic {
         use std::{
             collections::BTreeSet,
             mem::{self, MaybeUninit},
+            thread,
+            time::Instant,
             vec,
             vec::Vec,
-            thread
         };
 
         use crate::{AtomicMaybeUninit, tests::helper::*, utils::RegSize};
@@ -208,8 +209,8 @@ macro_rules! __test_atomic {
             }
             test_load_ordering(|order| VAR.load(order));
             test_store_ordering(|order| VAR.store(MaybeUninit::new(10), order));
-            unsafe {
-                for (load_order, store_order) in LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS) {
+            for (load_order, store_order) in LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS) {
+                unsafe {
                     assert_eq!(VAR.load(load_order).assume_init(), 10);
                     VAR.store(MaybeUninit::new(5), store_order);
                     assert_eq!(VAR.load(load_order).assume_init(), 5);
@@ -274,38 +275,38 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn stress_load_store() {
-            unsafe {
-                let mut rng = fastrand::Rng::new();
-                let (iterations, threads) = stress_test_config(&mut rng);
-                let data1 = (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>();
-                let set = data1.iter().copied().collect::<BTreeSet<_>>();
-                let a = AtomicMaybeUninit::<$ty>::from(data1[rng.usize(0..iterations)]);
-                let now = &std::time::Instant::now();
-                thread::scope(|s| {
-                    for _ in 0..threads {
-                        s.spawn(|| {
-                            let mut rng = fastrand::Rng::new();
-                            let now = *now;
-                            for i in 0..iterations {
-                                a.store(MaybeUninit::new(data1[i]), rand_store_ordering(&mut rng));
-                            }
-                            std::eprintln!("store end={:?}", now.elapsed());
-                        });
-                        s.spawn(|| {
-                            let mut rng = fastrand::Rng::new();
-                            let now = *now;
-                            let mut v = vec![0; iterations];
-                            for i in 0..iterations {
+            let mut rng = fastrand::Rng::new();
+            let (iterations, threads) = stress_test_config(&mut rng);
+            let data1 = (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>();
+            let set = data1.iter().copied().collect::<BTreeSet<_>>();
+            let a = AtomicMaybeUninit::<$ty>::from(data1[rng.usize(0..iterations)]);
+            let now = &Instant::now();
+            thread::scope(|s| {
+                for _ in 0..threads {
+                    s.spawn(|| {
+                        let mut rng = fastrand::Rng::new();
+                        let now = *now;
+                        for i in 0..iterations {
+                            a.store(MaybeUninit::new(data1[i]), rand_store_ordering(&mut rng));
+                        }
+                        std::eprintln!("store end={:?}", now.elapsed());
+                    });
+                    s.spawn(|| {
+                        let mut rng = fastrand::Rng::new();
+                        let now = *now;
+                        let mut v = vec![0; iterations];
+                        for i in 0..iterations {
+                            unsafe {
                                 v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                             }
-                            std::eprintln!("load end={:?}", now.elapsed());
-                            for v in v {
-                                assert!(set.contains(&v), "v={}", v);
-                            }
-                        });
-                    }
-                });
-            }
+                        }
+                        std::eprintln!("load end={:?}", now.elapsed());
+                        for v in v {
+                            assert!(set.contains(&v), "v={}", v);
+                        }
+                    });
+                }
+            });
         }
     };
     (swap, $ty:ident) => {
@@ -319,14 +320,14 @@ macro_rules! __test_atomic {
             {
                 return;
             }
-            unsafe {
-                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
-                #[cfg(valgrind)]
-                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
-                    mark_aligned_defined(&a);
-                }
-                test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
-                for order in SWAP_ORDERINGS {
+            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
+            #[cfg(valgrind)]
+            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                mark_aligned_defined(&a);
+            }
+            test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
+            for order in SWAP_ORDERINGS {
+                unsafe {
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
                     #[cfg(valgrind)]
                     if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
@@ -417,59 +418,61 @@ macro_rules! __test_atomic {
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
             }
-            unsafe {
-                let mut rng = fastrand::Rng::new();
-                let (iterations, threads) = stress_test_config(&mut rng);
-                let data1 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
-                    .collect::<Vec<_>>();
-                let data2 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
-                    .collect::<Vec<_>>();
-                let set = &data1
-                    .iter()
-                    .flat_map(|v| v.iter().copied())
-                    .chain(data2.iter().flat_map(|v| v.iter().copied()))
-                    .collect::<BTreeSet<_>>();
-                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
-                #[cfg(valgrind)]
-                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
-                    mark_aligned_defined(a);
-                }
-                let now = &std::time::Instant::now();
-                thread::scope(|s| {
-                    for thread in 0..threads {
-                        if thread % 2 == 0 {
-                            s.spawn(move || {
-                                let mut rng = fastrand::Rng::new();
-                                let now = *now;
-                                for i in 0..iterations {
-                                    a.store(
-                                        MaybeUninit::new(data1[thread][i]),
-                                        rand_store_ordering(&mut rng),
-                                    );
-                                }
-                                std::eprintln!("store end={:?}", now.elapsed());
-                            });
-                        } else {
-                            s.spawn(|| {
-                                let mut rng = fastrand::Rng::new();
-                                let now = *now;
-                                let mut v = vec![0; iterations];
-                                for i in 0..iterations {
-                                    v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
-                                }
-                                std::eprintln!("load end={:?}", now.elapsed());
-                                for v in v {
-                                    assert!(set.contains(&v), "v={}", v);
-                                }
-                            });
-                        }
+            let mut rng = fastrand::Rng::new();
+            let (iterations, threads) = stress_test_config(&mut rng);
+            let data1 = &(0..threads)
+                .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
+                .collect::<Vec<_>>();
+            let data2 = &(0..threads)
+                .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
+                .collect::<Vec<_>>();
+            let set = &data1
+                .iter()
+                .flat_map(|v| v.iter().copied())
+                .chain(data2.iter().flat_map(|v| v.iter().copied()))
+                .collect::<BTreeSet<_>>();
+            let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
+            #[cfg(valgrind)]
+            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                mark_aligned_defined(a);
+            }
+            let now = &Instant::now();
+            thread::scope(|s| {
+                for thread in 0..threads {
+                    if thread % 2 == 0 {
                         s.spawn(move || {
+                            let mut rng = fastrand::Rng::new();
+                            let now = *now;
+                            for i in 0..iterations {
+                                a.store(
+                                    MaybeUninit::new(data1[thread][i]),
+                                    rand_store_ordering(&mut rng),
+                                );
+                            }
+                            std::eprintln!("store end={:?}", now.elapsed());
+                        });
+                    } else {
+                        s.spawn(|| {
                             let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![0; iterations];
                             for i in 0..iterations {
+                                unsafe {
+                                    v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
+                                }
+                            }
+                            std::eprintln!("load end={:?}", now.elapsed());
+                            for v in v {
+                                assert!(set.contains(&v), "v={}", v);
+                            }
+                        });
+                    }
+                    s.spawn(move || {
+                        let mut rng = fastrand::Rng::new();
+                        let now = *now;
+                        let mut v = vec![0; iterations];
+                        for i in 0..iterations {
+                            unsafe {
                                 v[i] = a
                                     .swap(
                                         MaybeUninit::new(data2[thread][i]),
@@ -477,14 +480,14 @@ macro_rules! __test_atomic {
                                     )
                                     .assume_init();
                             }
-                            std::eprintln!("swap end={:?}", now.elapsed());
-                            for v in v {
-                                assert!(set.contains(&v), "v={}", v);
-                            }
-                        });
-                    }
-                });
-            }
+                        }
+                        std::eprintln!("swap end={:?}", now.elapsed());
+                        for v in v {
+                            assert!(set.contains(&v), "v={}", v);
+                        }
+                    });
+                }
+            });
         }
     };
     (cas, $ty:ident) => {
@@ -495,16 +498,16 @@ macro_rules! __test_atomic {
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
             }
-            unsafe {
-                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
-                #[cfg(valgrind)]
-                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
-                    mark_aligned_defined(&a);
-                }
-                test_compare_exchange_ordering(|success, failure| {
-                    a.compare_exchange(MaybeUninit::new(5), MaybeUninit::new(5), success, failure)
-                });
-                for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
+            #[cfg(valgrind)]
+            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                mark_aligned_defined(&a);
+            }
+            test_compare_exchange_ordering(|success, failure| {
+                a.compare_exchange(MaybeUninit::new(5), MaybeUninit::new(5), success, failure)
+            });
+            for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+                unsafe {
                     for (x, y) in [(5, 10), ($ty::MAX, $ty::MIN), ($ty::MIN, $ty::MAX)] {
                         let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(x));
                         #[cfg(valgrind)]
@@ -574,21 +577,21 @@ macro_rules! __test_atomic {
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
             }
-            unsafe {
-                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
-                #[cfg(valgrind)]
-                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
-                    mark_aligned_defined(&a);
-                }
-                test_compare_exchange_ordering(|success, failure| {
-                    a.compare_exchange_weak(
-                        MaybeUninit::new(5),
-                        MaybeUninit::new(5),
-                        success,
-                        failure,
-                    )
-                });
-                for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
+            #[cfg(valgrind)]
+            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                mark_aligned_defined(&a);
+            }
+            test_compare_exchange_ordering(|success, failure| {
+                a.compare_exchange_weak(
+                    MaybeUninit::new(5),
+                    MaybeUninit::new(5),
+                    success,
+                    failure,
+                )
+            });
+            for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+                unsafe {
                     for x in [4, $ty::MAX, $ty::MIN] {
                         let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(x));
                         #[cfg(valgrind)]
@@ -626,16 +629,16 @@ macro_rules! __test_atomic {
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
             }
-            unsafe {
-                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(7));
-                #[cfg(valgrind)]
-                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
-                    mark_aligned_defined(&a);
-                }
-                test_compare_exchange_ordering(|set, fetch| {
-                    a.fetch_update(set, fetch, |x| Some(x))
-                });
-                for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(7));
+            #[cfg(valgrind)]
+            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                mark_aligned_defined(&a);
+            }
+            test_compare_exchange_ordering(|set, fetch| {
+                a.fetch_update(set, fetch, |x| Some(x))
+            });
+            for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+                unsafe {
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(7));
                     #[cfg(valgrind)]
                     if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
@@ -791,79 +794,81 @@ macro_rules! __test_atomic {
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
             }
-            unsafe {
-                let mut rng = fastrand::Rng::new();
-                let (iterations, threads) = stress_test_config(&mut rng);
-                let data1 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
-                    .collect::<Vec<_>>();
-                let data2 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
-                    .collect::<Vec<_>>();
-                let set = &data1
-                    .iter()
-                    .flat_map(|v| v.iter().copied())
-                    .chain(data2.iter().flat_map(|v| v.iter().copied()))
-                    .collect::<BTreeSet<_>>();
-                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
-                #[cfg(valgrind)]
-                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
-                    mark_aligned_defined(a);
-                }
-                let now = &std::time::Instant::now();
-                thread::scope(|s| {
-                    for thread in 0..threads {
-                        if thread % 2 == 0 {
-                            s.spawn(move || {
-                                let mut rng = fastrand::Rng::new();
-                                let now = *now;
-                                for i in 0..iterations {
-                                    a.store(
-                                        MaybeUninit::new(data1[thread][i]),
-                                        rand_store_ordering(&mut rng),
-                                    );
-                                }
-                                std::eprintln!("store end={:?}", now.elapsed());
-                            });
-                        } else {
-                            s.spawn(|| {
-                                let mut rng = fastrand::Rng::new();
-                                let now = *now;
-                                let mut v = vec![0; iterations];
-                                for i in 0..iterations {
-                                    v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
-                                }
-                                std::eprintln!("load end={:?}", now.elapsed());
-                                for v in v {
-                                    assert!(set.contains(&v), "v={}", v);
-                                }
-                            });
-                        }
+            let mut rng = fastrand::Rng::new();
+            let (iterations, threads) = stress_test_config(&mut rng);
+            let data1 = &(0..threads)
+                .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
+                .collect::<Vec<_>>();
+            let data2 = &(0..threads)
+                .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
+                .collect::<Vec<_>>();
+            let set = &data1
+                .iter()
+                .flat_map(|v| v.iter().copied())
+                .chain(data2.iter().flat_map(|v| v.iter().copied()))
+                .collect::<BTreeSet<_>>();
+            let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
+            #[cfg(valgrind)]
+            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                mark_aligned_defined(a);
+            }
+            let now = &Instant::now();
+            thread::scope(|s| {
+                for thread in 0..threads {
+                    if thread % 2 == 0 {
                         s.spawn(move || {
                             let mut rng = fastrand::Rng::new();
                             let now = *now;
-                            let mut v = vec![data2[0][0]; iterations];
                             for i in 0..iterations {
-                                let old = if i % 2 == 0 {
-                                    MaybeUninit::new(rng.$ty(..))
-                                } else {
-                                    a.load(Ordering::Relaxed)
-                                };
-                                let new = MaybeUninit::new(data2[thread][i]);
-                                let o = rand_compare_exchange_ordering(&mut rng);
-                                match a.compare_exchange(old, new, o.0, o.1) {
-                                    Ok(r) => assert_eq!(old.assume_init(), r.assume_init()),
-                                    Err(r) => v[i] = r.assume_init(),
+                                a.store(
+                                    MaybeUninit::new(data1[thread][i]),
+                                    rand_store_ordering(&mut rng),
+                                );
+                            }
+                            std::eprintln!("store end={:?}", now.elapsed());
+                        });
+                    } else {
+                        s.spawn(|| {
+                            let mut rng = fastrand::Rng::new();
+                            let now = *now;
+                            let mut v = vec![0; iterations];
+                            for i in 0..iterations {
+                                unsafe {
+                                    v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                             }
-                            std::eprintln!("compare_exchange end={:?}", now.elapsed());
+                            std::eprintln!("load end={:?}", now.elapsed());
                             for v in v {
                                 assert!(set.contains(&v), "v={}", v);
                             }
                         });
                     }
-                });
-            }
+                    s.spawn(move || {
+                        let mut rng = fastrand::Rng::new();
+                        let now = *now;
+                        let mut v = vec![data2[0][0]; iterations];
+                        for i in 0..iterations {
+                            let old = if i % 2 == 0 {
+                                MaybeUninit::new(rng.$ty(..))
+                            } else {
+                                a.load(Ordering::Relaxed)
+                            };
+                            let new = MaybeUninit::new(data2[thread][i]);
+                            let o = rand_compare_exchange_ordering(&mut rng);
+                            unsafe {
+                                match a.compare_exchange(old, new, o.0, o.1) {
+                                    Ok(r) => assert_eq!(old.assume_init(), r.assume_init()),
+                                    Err(r) => v[i] = r.assume_init(),
+                                }
+                            }
+                        }
+                        std::eprintln!("compare_exchange end={:?}", now.elapsed());
+                        for v in v {
+                            assert!(set.contains(&v), "v={}", v);
+                        }
+                    });
+                }
+            });
         }
         #[test]
         fn stress_fetch_update() {
@@ -872,59 +877,61 @@ macro_rules! __test_atomic {
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
             }
-            unsafe {
-                let mut rng = fastrand::Rng::new();
-                let (iterations, threads) = stress_test_config(&mut rng);
-                let data1 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
-                    .collect::<Vec<_>>();
-                let data2 = &(0..threads)
-                    .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
-                    .collect::<Vec<_>>();
-                let set = &data1
-                    .iter()
-                    .flat_map(|v| v.iter().copied())
-                    .chain(data2.iter().flat_map(|v| v.iter().copied()))
-                    .collect::<BTreeSet<_>>();
-                let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
-                #[cfg(valgrind)]
-                if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
-                    mark_aligned_defined(a);
-                }
-                let now = &std::time::Instant::now();
-                thread::scope(|s| {
-                    for thread in 0..threads {
-                        if thread % 2 == 0 {
-                            s.spawn(move || {
-                                let mut rng = fastrand::Rng::new();
-                                let now = *now;
-                                for i in 0..iterations {
-                                    a.store(
-                                        MaybeUninit::new(data1[thread][i]),
-                                        rand_store_ordering(&mut rng),
-                                    );
-                                }
-                                std::eprintln!("store end={:?}", now.elapsed());
-                            });
-                        } else {
-                            s.spawn(|| {
-                                let mut rng = fastrand::Rng::new();
-                                let now = *now;
-                                let mut v = vec![0; iterations];
-                                for i in 0..iterations {
-                                    v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
-                                }
-                                std::eprintln!("load end={:?}", now.elapsed());
-                                for v in v {
-                                    assert!(set.contains(&v), "v={}", v);
-                                }
-                            });
-                        }
+            let mut rng = fastrand::Rng::new();
+            let (iterations, threads) = stress_test_config(&mut rng);
+            let data1 = &(0..threads)
+                .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
+                .collect::<Vec<_>>();
+            let data2 = &(0..threads)
+                .map(|_| (0..iterations).map(|_| rng.$ty(..)).collect::<Vec<_>>())
+                .collect::<Vec<_>>();
+            let set = &data1
+                .iter()
+                .flat_map(|v| v.iter().copied())
+                .chain(data2.iter().flat_map(|v| v.iter().copied()))
+                .collect::<BTreeSet<_>>();
+            let a = &AtomicMaybeUninit::<$ty>::from(data2[0][rng.usize(0..iterations)]);
+            #[cfg(valgrind)]
+            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                mark_aligned_defined(a);
+            }
+            let now = &Instant::now();
+            thread::scope(|s| {
+                for thread in 0..threads {
+                    if thread % 2 == 0 {
                         s.spawn(move || {
+                            let mut rng = fastrand::Rng::new();
+                            let now = *now;
+                            for i in 0..iterations {
+                                a.store(
+                                    MaybeUninit::new(data1[thread][i]),
+                                    rand_store_ordering(&mut rng),
+                                );
+                            }
+                            std::eprintln!("store end={:?}", now.elapsed());
+                        });
+                    } else {
+                        s.spawn(|| {
                             let mut rng = fastrand::Rng::new();
                             let now = *now;
                             let mut v = vec![0; iterations];
                             for i in 0..iterations {
+                                unsafe {
+                                    v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
+                                }
+                            }
+                            std::eprintln!("load end={:?}", now.elapsed());
+                            for v in v {
+                                assert!(set.contains(&v), "v={}", v);
+                            }
+                        });
+                    }
+                    s.spawn(move || {
+                        let mut rng = fastrand::Rng::new();
+                        let now = *now;
+                        let mut v = vec![0; iterations];
+                        for i in 0..iterations {
+                            unsafe {
                                 v[i] = a
                                     .fetch_update(
                                         rand_swap_ordering(&mut rng),
@@ -934,14 +941,14 @@ macro_rules! __test_atomic {
                                     .unwrap()
                                     .assume_init();
                             }
-                            std::eprintln!("swap end={:?}", now.elapsed());
-                            for v in v {
-                                assert!(set.contains(&v), "v={}", v);
-                            }
-                        });
-                    }
-                });
-            }
+                        }
+                        std::eprintln!("swap end={:?}", now.elapsed());
+                        for v in v {
+                            assert!(set.contains(&v), "v={}", v);
+                        }
+                    });
+                }
+            });
         }
     };
 }
@@ -1275,7 +1282,7 @@ macro_rules! __stress_test_acquire_release {
             mark_aligned_defined(a);
         }
         let b = &AtomicUsize::new(0);
-        thread::scope(|s| unsafe {
+        thread::scope(|s| {
             s.spawn(|| {
                 for i in 0..n {
                     b.store(i, Ordering::Relaxed);
@@ -1283,7 +1290,7 @@ macro_rules! __stress_test_acquire_release {
                 }
             });
             loop {
-                let a = a.load(Ordering::$load_order).assume_init();
+                let a = unsafe { a.load(Ordering::$load_order).assume_init() };
                 let b = b.load(Ordering::Relaxed);
                 assert!(a as usize <= b, "a={},b={}", a, b);
                 if a as usize == n - 1 {
@@ -1357,7 +1364,7 @@ macro_rules! __stress_test_seqcst {
         }
         let c = &AtomicUsize::new(0);
         let ready = &AtomicUsize::new(0);
-        thread::scope(|s| unsafe {
+        thread::scope(|s| {
             for n in 0..N {
                 a.store(MaybeUninit::new(0), Ordering::Relaxed);
                 b.store(MaybeUninit::new(0), Ordering::Relaxed);
@@ -1365,14 +1372,14 @@ macro_rules! __stress_test_seqcst {
                 let h_a = s.spawn(|| {
                     while ready.load(Ordering::Relaxed) == 0 {}
                     a.$write(MaybeUninit::new(1), Ordering::$store_order);
-                    if b.load(Ordering::$load_order).assume_init() == 0 {
+                    if unsafe { b.load(Ordering::$load_order).assume_init() == 0 } {
                         c.fetch_add(1, Ordering::Relaxed);
                     }
                 });
                 let h_b = s.spawn(|| {
                     while ready.load(Ordering::Relaxed) == 0 {}
                     b.$write(MaybeUninit::new(1), Ordering::$store_order);
-                    if a.load(Ordering::$load_order).assume_init() == 0 {
+                    if unsafe { a.load(Ordering::$load_order).assume_init() == 0 } {
                         c.fetch_add(1, Ordering::Relaxed);
                     }
                 });
