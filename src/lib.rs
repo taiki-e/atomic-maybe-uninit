@@ -16,7 +16,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, and Xtensa are supported.
+Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, C-SKY, and Xtensa are supported.
 (You can use `cfg_{has,no}_*` macros to write code based on whether or not which size of primitives is available.)
 
 | target_arch                     | primitives                                          | load/store | swap/CAS |
@@ -47,9 +47,10 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, P
 | hexagon \[9] (experimental)     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | m68k \[9] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | m68k (+isa-68020) \[9] \[10] (experimental) | i64,u64                                 | ✓          | ✓        |
+| csky \[9] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | xtensa \[9] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 
-\[1] Arm's atomic RMW operations are not available on Armv6-M (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). Xtensa's atomic RMW operations are not available on esp32s2.<br>
+\[1] Arm's atomic RMW operations are not available on Armv6-M (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[4] Requires `zacas` target feature.<br>
@@ -857,6 +858,10 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(target_arch = "avr", atomic_maybe_uninit_unstable_asm_experimental_arch),
     path = "arch/avr.rs"
+)]
+#[cfg_attr(
+    all(target_arch = "csky", atomic_maybe_uninit_unstable_asm_experimental_arch),
+    path = "arch/csky.rs"
 )]
 #[cfg_attr(
     all(target_arch = "hexagon", atomic_maybe_uninit_unstable_asm_experimental_arch),

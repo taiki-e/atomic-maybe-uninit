@@ -39,7 +39,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -115,6 +115,15 @@ fn main() {
         "avr" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430" | "powerpc"
         | "powerpc64" | "xtensa" => {
             if version.nightly && is_allowed_feature("asm_experimental_arch") {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
+            }
+        }
+        "csky" => {
+            // https://github.com/rust-lang/rust/pull/136217 merged in Rust 1.86 (nightly-2025-02-14).
+            if version.nightly
+                && version.probe(86, 2025, 2, 13)
+                && is_allowed_feature("asm_experimental_arch")
+            {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
         }
@@ -500,6 +509,23 @@ fn main() {
                 }
             }
             target_feature_fallback("rmw", xmegau);
+        }
+        "csky" => {
+            let mut no_ldex_stex = true;
+            if let Some(cpu) = target_cpu() {
+                // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/CSKY/CSKY.td#L373
+                if cpu.starts_with("ck860") {
+                    no_ldex_stex = false;
+                }
+            } else {
+                // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/csky_unknown_linux_gnuabiv2hf.rs#L20
+                if target == "csky-unknown-linux-gnuabiv2hf" {
+                    no_ldex_stex = false;
+                }
+            }
+            if no_ldex_stex {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_ldex_stex");
+            }
         }
         _ => {}
     }

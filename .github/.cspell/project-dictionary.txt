@@ -1,3 +1,4 @@
+abiv
 amocas
 amoswap
 amswap
@@ -18,10 +19,12 @@ ccmp
 cdsg
 CDSY
 clrex
+cmpne
 cmpw
 cmpxchg
 csel
 cset
+cskyv
 dbar
 distro
 DWCAS
@@ -44,6 +47,7 @@ ldar
 ldarx
 ldaxp
 ldclrp
+ldex
 ldiapp
 ldrex
 ldrexd
@@ -83,6 +87,7 @@ opensbi
 orrs
 partword
 pstq
+pthread
 qbsp
 quadword
 rcpc
@@ -106,6 +111,7 @@ sreg
 srlv
 stbar
 stdcx
+stex
 stilp
 stlxp
 stpq
