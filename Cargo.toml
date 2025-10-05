@@ -77,7 +77,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # CPU is specified in a custom target, since rustc does not have target
     # features to indicate them, and target name beginning with i386- may
     # actually be i686 (e.g., i386-apple-ios)
-    # https://github.com/rust-lang/rust/blob/1.84.0/compiler/rustc_target/src/spec/base/apple/mod.rs#L65
+    # https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/base/apple/mod.rs#L68
     # x86: Assume CPU does not have CMPXCHG8B instruction.
     # This is a cfg for compatibility with 80486/80386, but note that
     # LLVM does not support those CPUs well: https://reviews.llvm.org/D18802

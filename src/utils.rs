@@ -116,7 +116,7 @@ pub(crate) const unsafe fn assert_unchecked(cond: bool) {
     }
 }
 
-// https://github.com/rust-lang/rust/blob/1.84.0/library/core/src/sync/atomic.rs#L3338
+// https://github.com/rust-lang/rust/blob/1.90.0/library/core/src/sync/atomic.rs#L3951
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn assert_load_ordering(order: Ordering) {
@@ -127,7 +127,7 @@ pub(crate) fn assert_load_ordering(order: Ordering) {
         _ => unreachable!(),
     }
 }
-// https://github.com/rust-lang/rust/blob/1.84.0/library/core/src/sync/atomic.rs#L3323
+// https://github.com/rust-lang/rust/blob/1.90.0/library/core/src/sync/atomic.rs#L3936
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn assert_store_ordering(order: Ordering) {
@@ -138,7 +138,7 @@ pub(crate) fn assert_store_ordering(order: Ordering) {
         _ => unreachable!(),
     }
 }
-// https://github.com/rust-lang/rust/blob/1.84.0/library/core/src/sync/atomic.rs#L3404
+// https://github.com/rust-lang/rust/blob/1.90.0/library/core/src/sync/atomic.rs#L4020
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn assert_compare_exchange_ordering(success: Ordering, failure: Ordering) {
