@@ -514,7 +514,7 @@ fn main() {
             let mut no_ldex_stex = true;
             if let Some(cpu) = target_cpu() {
                 // https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/Target/CSKY/CSKY.td#L373
-                if cpu.starts_with("ck860") {
+                if cpu.starts_with("ck860") || cpu.starts_with("c860") {
                     no_ldex_stex = false;
                 }
             } else {

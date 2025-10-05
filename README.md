@@ -53,7 +53,7 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, P
 | csky \[9] (experimental)        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | xtensa \[9] (experimental)      | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 
-\[1] Arm's atomic RMW operations are not available on Armv6-M (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
+\[1] Arm's atomic RMW operations are not available on Armv6-M (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* or c860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[4] Requires `zacas` target feature.<br>
