@@ -110,23 +110,6 @@ macro_rules! test_atomic_load_store {
         }
     };
 }
-macro_rules! test_atomic_load_store_swap {
-    ($ty:ident) => {
-        paste::paste! {
-            #[allow(
-                clippy::alloc_instead_of_core,
-                clippy::arithmetic_side_effects,
-                clippy::std_instead_of_alloc,
-                clippy::std_instead_of_core,
-                clippy::undocumented_unsafe_blocks,
-            )]
-            mod [<test_atomic_ $ty>] {
-                __test_atomic!(load_store, $ty);
-                __test_atomic!(swap, $ty);
-            }
-        }
-    };
-}
 macro_rules! test_atomic {
     ($ty:ident) => {
         paste::paste! {
@@ -139,7 +122,9 @@ macro_rules! test_atomic {
             )]
             mod [<test_atomic_ $ty>] {
                 __test_atomic!(load_store, $ty);
+                #[cfg(not(all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex)))]
                 __test_atomic!(swap, $ty);
+                #[cfg(not(all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex)))]
                 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
                 __test_atomic!(cas, $ty);
             }
@@ -274,6 +259,8 @@ macro_rules! __test_atomic {
             }
         }
         #[test]
+        // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
+        #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_load_store() {
             let mut rng = fastrand::Rng::new();
             let (iterations, threads) = stress_test_config(&mut rng);
@@ -412,6 +399,8 @@ macro_rules! __test_atomic {
             }
         }
         #[test]
+        // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
+        #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_swap() {
             // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
@@ -788,6 +777,8 @@ macro_rules! __test_atomic {
             }
         }
         #[test]
+        // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
+        #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_compare_exchange() {
             // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
@@ -871,6 +862,8 @@ macro_rules! __test_atomic {
             });
         }
         #[test]
+        // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
+        #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_fetch_update() {
             // TODO(riscv): wrong result (as of Valgrind 3.25)
             #[cfg(valgrind)]
@@ -1393,7 +1386,6 @@ macro_rules! __stress_test_seqcst {
     }};
 }
 // Catches unwinding panic on architectures with weak memory models.
-#[allow(dead_code)]
 pub(crate) fn catch_unwind_on_weak_memory_arch(pat: &str, f: impl Fn()) {
     // With x86 TSO, RISC-V TSO (optional, not default), SPARC TSO (optional, default),
     // and IBM-370 memory models should never be a panic here.
@@ -1424,7 +1416,6 @@ pub(crate) fn catch_unwind_on_weak_memory_arch(pat: &str, f: impl Fn()) {
     }
 }
 // Catches unwinding panic on architectures with non-sequentially consistent memory models.
-#[allow(dead_code)]
 pub(crate) fn catch_unwind_on_non_seqcst_arch(pat: &str, f: impl Fn()) {
     if !is_panic_abort() {
         // This could be Err on architectures with non-sequentially consistent memory models.
@@ -1446,6 +1437,7 @@ pub(crate) fn catch_unwind_on_non_seqcst_arch(pat: &str, f: impl Fn()) {
 }
 macro_rules! stress_test_load_store {
     ($ty:ident) => {
+        #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
@@ -1491,6 +1483,7 @@ macro_rules! stress_test_load_store {
 macro_rules! stress_test {
     ($ty:ident) => {
         stress_test_load_store!($ty);
+        #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,

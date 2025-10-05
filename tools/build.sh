@@ -69,6 +69,11 @@ default_targets=(
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "avr" then .key else empty end'
   avr-none
 
+  # csky
+  # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "csky" then .key else empty end'
+  csky-unknown-linux-gnuabiv2
+  csky-unknown-linux-gnuabiv2hf
+
   # hexagon
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
   # TODO(hexagon): error: symbol 'fma' is already defined
@@ -465,6 +470,11 @@ build() {
     avr*)
       CARGO_TARGET_DIR="${target_dir}/rmw" \
         RUSTFLAGS="${target_rustflags} -C target-feature=+rmw" \
+        x_cargo "${args[@]}" "$@"
+      ;;
+    csky-unknown-linux-gnuabiv2)
+      CARGO_TARGET_DIR="${target_dir}/ck860" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=ck860" \
         x_cargo "${args[@]}" "$@"
       ;;
   esac

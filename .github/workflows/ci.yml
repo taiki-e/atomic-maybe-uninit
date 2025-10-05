@@ -290,6 +290,29 @@ jobs:
             target: armeb-unknown-linux-gnueabi
             os: ubuntu-22.04
           # ------------------------------------------------------------
+          # csky-unknown-linux-gnuabiv2
+          - rust: nightly-2025-02-14 # Rust 1.86, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
+            target: csky-unknown-linux-gnuabiv2
+            # +crt-static: Workaround for C-SKY QEMU issue
+            # ldex/stex requires ck860*
+            flags: -C target-feature=+crt-static -C target-cpu=ck860
+          - rust: nightly
+            target: csky-unknown-linux-gnuabiv2
+            # +crt-static: Workaround for C-SKY QEMU issue
+            # ldex/stex requires ck860*
+            flags: -C target-feature=+crt-static -C target-cpu=ck860
+          # ------------------------------------------------------------
+          # csky-unknown-linux-gnuabiv2hf
+          # TODO: relocations in generic ELF (EM: 252)
+          # - rust: nightly-2025-02-14 # Rust 1.86, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
+          #   target: csky-unknown-linux-gnuabiv2hf
+          #   # +crt-static: Workaround for C-SKY QEMU issue
+          #   flags: -C target-feature=+crt-static
+          # - rust: nightly
+          #   target: csky-unknown-linux-gnuabiv2hf
+          #   # +crt-static: Workaround for C-SKY QEMU issue
+          #   flags: -C target-feature=+crt-static
+          # ------------------------------------------------------------
           # hexagon-unknown-linux-musl
           - rust: nightly-2024-11-29 # Rust 1.85, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
             target: hexagon-unknown-linux-musl
@@ -510,7 +533,34 @@ jobs:
       - uses: taiki-e/setup-cross-toolchain-action@v1
         with:
           target: ${{ matrix.target }}
-        if: steps.prepare.outputs.target-not-host == 'true'
+        if: steps.prepare.outputs.target-not-host == 'true' && !startsWith(matrix.target, 'csky-')
+      # TODO: not yet supported in setup-cross-toolchain-action
+      - run: |
+          retry() {
+            for i in {1..10}; do
+              if "$@"; then
+                return 0
+              else
+                sleep "${i}"
+              fi
+            done
+            "$@"
+          }
+          target="${{ matrix.target }}"
+          # https://github.com/taiki-e/rust-cross-toolchain/pkgs/container/rust-cross-toolchain
+          retry docker create --name gcc-csky-linux-gnuabiv2 "ghcr.io/taiki-e/rust-cross-toolchain:${target}-dev-amd64"
+          docker cp -- "gcc-csky-linux-gnuabiv2:/${target}" "${HOME}"/gcc-csky-linux-gnuabiv2
+          docker rm -f -- gcc-csky-linux-gnuabiv2 >/dev/null
+          printf '%s\n' "${HOME}"/gcc-csky-linux-gnuabiv2/bin >>"${GITHUB_PATH}"
+          printf '%s\n' "CARGO_TARGET_CSKY_UNKNOWN_LINUX_GNUABIV2_LINKER=csky-abiv2-linux-gcc" >>"${GITHUB_ENV}"
+          case "${target}" in
+            *hf) qemu_cpu=ck860fv ;;
+            # https://github.com/taiki-e/atomic-maybe-uninit/pull/32#issuecomment-3341287749
+            *) qemu_cpu=ck860 ;;
+          esac
+          printf '%s\n' "CARGO_TARGET_CSKY_UNKNOWN_LINUX_GNUABIV2_RUNNER=qemu-cskyv2 -cpu ${qemu_cpu}" >>"${GITHUB_ENV}"
+          printf 'BUILD_STD=-Z''build-std\n' >>"${GITHUB_ENV}"
+        if: startsWith(matrix.target, 'csky-')
       - run: |
           target="${{ matrix.target }}"
           target_lower="${target//-/_}"
@@ -525,7 +575,8 @@ jobs:
         if: matrix.flags != ''
       - run: printf '%s\n' "RUSTFLAGS=${RUSTFLAGS} -D linker_messages" >>"${GITHUB_ENV}"
         # TODO(macos): error: linker stderr: ld: ignoring duplicate libraries: '-lc', '-lm'
-        if: matrix.rust == 'nightly' && !contains(matrix.target, '-darwin')
+        # TODO(csky): error: linker stderr: /home/runner/gcc-csky-linux-gnuabiv2/bin/../lib/gcc/csky-linux-gnuabiv2/6.3.0/../../../../csky-linux-gnuabiv2/bin/ld: file ....o's arch flag ck860 conflict with target ck810,set target arch flag to ck860
+        if: matrix.rust == 'nightly' && !(contains(matrix.target, '-darwin') || matrix.target == 'csky-unknown-linux-gnuabiv2')
       # Old LLVM bug: Undefined temporary symbol error when building std.
       - name: Workaround for old LLVM bug about MIPS32
         run: printf 'RELEASE=--release\n' >>"${GITHUB_ENV}"
