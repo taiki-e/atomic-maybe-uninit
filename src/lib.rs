@@ -105,6 +105,7 @@ Feel free to submit an issue if your target is not supported yet.
 #![cfg_attr(atomic_maybe_uninit_no_strict_provenance, allow(unstable_name_collisions))]
 #![allow(clippy::inline_always)]
 #![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
+#![allow(missing_docs)] // TODO
 
 // There are currently no 128-bit or higher builtin targets.
 // (Although some of our generic code is written with the future

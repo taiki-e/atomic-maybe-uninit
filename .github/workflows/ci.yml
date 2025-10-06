@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - dev
+      - consume
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:

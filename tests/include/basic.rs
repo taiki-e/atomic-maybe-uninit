@@ -29,6 +29,7 @@ macro_rules! __test_atomic {
                     let _v = a.load(load_order);
                 }
             }
+            // TODO: load_consume
         }
         cfg_has_atomic_cas! {
         swap();

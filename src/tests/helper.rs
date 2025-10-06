@@ -227,6 +227,7 @@ macro_rules! __test_atomic {
                     let _v = a.load(load_order);
                 }
             }
+            // TODO: load_consume
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_load_store(x: $ty, y: $ty) -> bool {
@@ -254,6 +255,7 @@ macro_rules! __test_atomic {
                             arr.assert();
                         }
                     }
+                    // TODO: load_consume
                 }
                 true
             }
