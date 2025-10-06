@@ -1215,8 +1215,22 @@ impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
 
 // Test the cases that should not fail if the memory ordering is implemented correctly.
 // This is still not exhaustive and only tests a few cases.
-// This currently only supports 32-bit or more integers.
 macro_rules! __stress_test_acquire_release {
+    (prepare) => {
+        #[cfg(valgrind)]
+        use std::mem;
+        use std::{
+            mem::MaybeUninit,
+            sync::atomic::{AtomicUsize, Ordering},
+            thread,
+        };
+
+        #[cfg(valgrind)]
+        use crate::tests::helper::*;
+        use crate::{
+            AtomicMaybeUninit, tests::helper::catch_unwind_on_weak_memory_arch as can_panic,
+        };
+    };
     (should_pass, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             #[test]
@@ -1243,18 +1257,6 @@ macro_rules! __stress_test_acquire_release {
         }
     };
     ($ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
-        #[cfg(valgrind)]
-        use std::mem;
-        use std::{
-            mem::MaybeUninit,
-            sync::atomic::{AtomicUsize, Ordering},
-            thread,
-        };
-
-        use crate::AtomicMaybeUninit;
-        #[cfg(valgrind)]
-        use crate::tests::helper::*;
-
         // TODO(riscv): wrong result (as of Valgrind 3.25)
         #[cfg(valgrind)]
         if cfg!(target_arch = "riscv64")
@@ -1267,7 +1269,7 @@ macro_rules! __stress_test_acquire_release {
         // This test is relatively fast because it spawns only one thread, but
         // the iterations are limited to a maximum value of integers.
         if $ty::try_from(n).is_err() {
-            n = $ty::MAX as usize;
+            n = ($ty::MAX as usize).checked_add(1).unwrap();
         }
         let a = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
         #[cfg(valgrind)]
@@ -1294,6 +1296,21 @@ macro_rules! __stress_test_acquire_release {
     }};
 }
 macro_rules! __stress_test_seqcst {
+    (prepare) => {
+        #[cfg(valgrind)]
+        use std::mem;
+        use std::{
+            mem::MaybeUninit,
+            sync::atomic::{AtomicUsize, Ordering},
+            thread,
+        };
+
+        #[cfg(valgrind)]
+        use crate::tests::helper::*;
+        use crate::{
+            AtomicMaybeUninit, tests::helper::catch_unwind_on_non_seqcst_arch as can_panic,
+        };
+    };
     (should_pass, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             #[test]
@@ -1323,18 +1340,6 @@ macro_rules! __stress_test_seqcst {
         }
     };
     ($ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
-        #[cfg(valgrind)]
-        use std::mem;
-        use std::{
-            mem::MaybeUninit,
-            sync::atomic::{AtomicUsize, Ordering},
-            thread,
-        };
-
-        use crate::AtomicMaybeUninit;
-        #[cfg(valgrind)]
-        use crate::tests::helper::*;
-
         const N: usize = if cfg!(valgrind) { 50 } else { 50_000 };
 
         // TODO(riscv): wrong result (as of Valgrind 3.25)
@@ -1447,7 +1452,7 @@ macro_rules! stress_test_load_store {
                 clippy::undocumented_unsafe_blocks
             )]
             mod [<stress_acquire_release_load_store_ $ty>] {
-                use crate::tests::helper::catch_unwind_on_weak_memory_arch as can_panic;
+                __stress_test_acquire_release!(prepare);
                 __stress_test_acquire_release!(can_panic, $ty, store, Relaxed, Relaxed);
                 __stress_test_acquire_release!(can_panic, $ty, store, Relaxed, Release);
                 __stress_test_acquire_release!(can_panic, $ty, store, Relaxed, SeqCst);
@@ -1466,7 +1471,7 @@ macro_rules! stress_test_load_store {
                 clippy::undocumented_unsafe_blocks
             )]
             mod [<stress_seqcst_load_store_ $ty>] {
-                use crate::tests::helper::catch_unwind_on_non_seqcst_arch as can_panic;
+                __stress_test_seqcst!(prepare);
                 __stress_test_seqcst!(can_panic, $ty, store, Relaxed, Relaxed);
                 __stress_test_seqcst!(can_panic, $ty, store, Relaxed, Release);
                 __stress_test_seqcst!(can_panic, $ty, store, Relaxed, SeqCst);
@@ -1493,7 +1498,7 @@ macro_rules! stress_test {
                 clippy::undocumented_unsafe_blocks
             )]
             mod [<stress_acquire_release_load_swap_ $ty>] {
-                use crate::tests::helper::catch_unwind_on_weak_memory_arch as can_panic;
+                __stress_test_acquire_release!(prepare);
                 __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, Relaxed);
                 __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, Acquire);
                 __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, Release);
@@ -1518,7 +1523,7 @@ macro_rules! stress_test {
                 clippy::undocumented_unsafe_blocks
             )]
             mod [<stress_seqcst_load_swap_ $ty>] {
-                use crate::tests::helper::catch_unwind_on_non_seqcst_arch as can_panic;
+                __stress_test_seqcst!(prepare);
                 __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, Relaxed);
                 __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, Acquire);
                 __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, Release);
