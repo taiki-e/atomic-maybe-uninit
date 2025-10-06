@@ -42,7 +42,6 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicLoad, AtomicStore};
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 use crate::utils::MaybeUninit64;
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
@@ -51,6 +50,10 @@ use crate::utils::MaybeUninit64;
     not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
 ))]
 use crate::utils::Pair;
+use crate::{
+    consume::Dependent,
+    raw::{AtomicLoad, AtomicStore},
+};
 
 #[cfg(any(
     atomic_maybe_uninit_test_prefer_kuser_memory_barrier,
@@ -513,6 +516,27 @@ macro_rules! atomic_load_store {
                     }
                 }
                 out
+            }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                let out: MaybeUninit<Self>;
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        concat!("ldr", $suffix, " {out}, [{src}]"), // atomic { out = zero_extend(*src) }
+                        "eor {dep}, {out}, {out}",                  // dep = out ^ out
+                        src = in(reg) src,
+                        out = lateout(reg) out,
+                        dep = lateout(reg) dep,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                Dependent::from_parts(out, dep)
             }
         }
         impl AtomicStore for $ty {
@@ -1144,6 +1168,43 @@ impl AtomicLoad for u64 {
             out
         }
     }
+    #[inline]
+    unsafe fn atomic_load_consume(src: *const MaybeUninit<Self>) -> Dependent<MaybeUninit<Self>> {
+        debug_assert_atomic_unsafe_precondition!(src, $ty);
+        let (prev_lo, prev_hi);
+        let dep;
+
+        #[cfg(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            asm!(
+                "ldrexd r0, r1, [{src}]", // atomic { r0:r1 = *src; EXCLUSIVE = src }
+                "eor {dep}, r0, r0",      // dep = r0 ^ r0
+                src = in(reg) src,
+                dep = lateout(reg) dep,
+                // prev pair - must be even-numbered and not R14
+                lateout("r0") prev_lo,
+                lateout("r1") prev_hi,
+                options(nostack, preserves_flags),
+            );
+            Dependent::from_parts(
+                MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
+                dep,
+            )
+        }
+        #[cfg(not(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        )))]
+        // SAFETY: the caller must uphold the safety contract.
+        // "acquire" load is safe fallback of "consume" load.
+        unsafe {
+            Dependent::new_no_dep(Self::atomic_load(src, Ordering::Acquire))
+        }
+    }
 }
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 impl AtomicStore for u64 {
@@ -1729,6 +1790,14 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_fast_consume {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_fast_consume {
+    ($($tt:tt)*) => {};
 }
 
 #[cfg(not(all(

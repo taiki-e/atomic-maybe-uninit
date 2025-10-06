@@ -19,7 +19,10 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicLoad, AtomicStore};
+use crate::{
+    consume::Dependent,
+    raw::{AtomicLoad, AtomicStore},
+};
 
 cfg_sel!({
     #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
@@ -117,6 +120,26 @@ macro_rules! atomic_load_store {
                     }
                 }
                 out
+            }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                let out: MaybeUninit<Self>;
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        concat!("ld32.", $suffix, " {out}, ({src}, 0)"), // atomic { out = zero_extend(*src) }
+                        "xor32 {dep}, {out}, {out}",                     // dep = out ^ out
+                        src = in(reg) src,
+                        out = lateout(reg) out,
+                        dep = lateout(reg) dep,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                Dependent::from_parts(out, dep)
             }
         }
         impl AtomicStore for $ty {
@@ -406,4 +429,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_fast_consume {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_fast_consume {
+    ($($tt:tt)*) => {};
 }

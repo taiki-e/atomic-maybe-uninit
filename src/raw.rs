@@ -9,6 +9,8 @@ use core::{
 };
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
+use crate::{cfg_has_fast_consume, cfg_no_fast_consume, consume::Dependent};
+
 // TODO(semver): merge AtomicLoad and AtomicStore and rename to AtomicLoadStore?
 
 /// Primitive types that may support atomic operations.
@@ -55,6 +57,34 @@ pub trait AtomicLoad: Primitive {
     /// [read-only-memory]: core::sync::atomic#atomic-accesses-to-read-only-memory
     /// [validity]: core::ptr#safety
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self>;
+
+    cfg_has_fast_consume! {
+        /// Loads a value from `src` with "consume" memory ordering.
+        ///
+        /// # Safety
+        ///
+        /// This has the same safety requirements as as [`atomic_load`](Self::atomic_load) except
+        /// that it does not take the `order` argument.
+        unsafe fn atomic_load_consume(
+            src: *const MaybeUninit<Self>,
+        ) -> Dependent<MaybeUninit<Self>>;
+    }
+    cfg_no_fast_consume! {
+        /// Loads a value from `src` with "consume" memory ordering.
+        ///
+        /// # Safety
+        ///
+        /// This has the same safety requirements as as [`atomic_load`](Self::atomic_load) except
+        /// that it does not take the `order` argument.
+        #[inline]
+        unsafe fn atomic_load_consume(
+            src: *const MaybeUninit<Self>,
+        ) -> Dependent<MaybeUninit<Self>> {
+            // SAFETY: the caller must uphold the safety contract.
+            // "acquire" load is safe fallback of "consume" load.
+            unsafe { Dependent::new_no_dep(Self::atomic_load(src, Ordering::Acquire)) }
+        }
+    }
 }
 
 /// Atomic store.

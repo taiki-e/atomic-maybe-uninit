@@ -13,7 +13,10 @@ use std::{
 #[cfg(valgrind)]
 use crabgrind::memcheck;
 
-use crate::*;
+use crate::{
+    consume::{Dependent, WithDependency},
+    *,
+};
 
 macro_rules! test_common {
     ($ty:ident) => {
@@ -1465,6 +1468,61 @@ pub(crate) fn acquire_release1<T: Send + Sync>(
         }
     });
 }
+pub(crate) fn consume_release1<T: Send + Sync>(
+    min: isize,
+    max: isize,
+    new: impl Fn(isize) -> T,
+    load: impl Fn(&T) -> Dependent<isize> + Send + Sync,
+    store: impl Fn(&T, isize) + Send + Sync,
+    #[allow(unused_variables)] do_rmw: bool,
+) {
+    let n: usize = 50_000;
+
+    // TODO(riscv): wrong result (as of Valgrind 3.26)
+    #[cfg(valgrind)]
+    if cfg!(target_arch = "riscv64") && max <= u16::MAX as isize && do_rmw {
+        return;
+    }
+    let mut start: isize = 0;
+    #[allow(clippy::cast_possible_wrap)]
+    let mut end: isize = n as isize;
+    // This test is relatively fast because it spawns only one thread, but
+    // the iterations are limited to a maximum value of integers.
+    if max < end {
+        start = min;
+        end = max;
+    }
+    assert!((start..end).len() <= n, "{}", (start..end).len());
+    let a = &new(start);
+    #[cfg(valgrind)]
+    if IMP_EMU_SUB_WORD_CAS && max <= u16::MAX as isize && do_rmw {
+        mark_aligned_defined(a);
+    }
+    let b = &AtomicIsize::new(start);
+    let a_ready = &AtomicUsize::new(0);
+    let b_ready = &AtomicUsize::new(0);
+    thread::scope(|s| {
+        s.spawn(|| {
+            while a_ready.load(Ordering::Relaxed) == 0 {}
+            b_ready.store(1, Ordering::Relaxed);
+            for i in start..end {
+                b.store(i, Ordering::Relaxed);
+                store(a, i);
+            }
+        });
+        let end = end - 1;
+        a_ready.store(1, Ordering::Relaxed);
+        while b_ready.load(Ordering::Relaxed) == 0 {}
+        loop {
+            let a = load(a);
+            let b = b.with_dep(a.dep).load(Ordering::Relaxed);
+            assert!(a.val <= b, "a={a},b={b}");
+            if a.val == end && b == end {
+                break;
+            }
+        }
+    });
+}
 // To test this working correctly:
 // - Uncomment can_panic case in __stress_seqcst,
 //   and run test with `--release -- seqcst1 --ignored`.
@@ -1618,6 +1676,30 @@ macro_rules! __call_stress_test_fn {
             true, // do_rmw
         )
     };
+    ($name:ident, $ty:ident, load, $write:ident, consume_no_dep, $store_order:ident) => {
+        $name(
+            $ty::MIN.try_into().unwrap_or(isize::MIN),
+            $ty::MAX.try_into().unwrap_or(isize::MAX),
+            |v| AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(v as $ty)),
+            |a| unsafe { a.load_consume().val.assume_init() as isize },
+            |a, v| {
+                a.$write(MaybeUninit::new(v as $ty), Ordering::$store_order);
+            },
+            stringify!($write) == "swap",
+        )
+    };
+    (acquire_release1, $ty:ident, load, $write:ident, consume_with_dep, $store_order:ident) => {
+        consume_release1(
+            $ty::MIN.try_into().unwrap_or(isize::MIN),
+            $ty::MAX.try_into().unwrap_or(isize::MAX),
+            |v| AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(v as $ty)),
+            |a| unsafe { a.load_consume().map_val(|v| v.assume_init() as isize) },
+            |a, v| {
+                a.$write(MaybeUninit::new(v as $ty), Ordering::$store_order);
+            },
+            stringify!($write) == "swap",
+        )
+    };
     ($name:ident, $ty:ident, load, $write:ident, $load_order:ident, $store_order:ident) => {
         $name(
             $ty::MIN.try_into().unwrap_or(isize::MIN),
@@ -1701,6 +1783,12 @@ macro_rules! stress_test {
                 __stress_acquire_release!(can_panic, $ty, load, store, Relaxed, Relaxed);
                 __stress_acquire_release!(can_panic, $ty, load, store, Relaxed, Release);
                 __stress_acquire_release!(can_panic, $ty, load, store, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, store, consume_no_dep, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, store, consume_no_dep, Release);
+                __stress_acquire_release!(can_panic, $ty, load, store, consume_no_dep, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, store, consume_with_dep, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, load, store, consume_with_dep, Release);
+                __stress_acquire_release!(should_pass, $ty, load, store, consume_with_dep, SeqCst);
                 __stress_acquire_release!(can_panic, $ty, load, store, Acquire, Relaxed);
                 __stress_acquire_release!(should_pass, $ty, load, store, Acquire, Release);
                 __stress_acquire_release!(should_pass, $ty, load, store, Acquire, SeqCst);
