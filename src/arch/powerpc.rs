@@ -34,13 +34,16 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
 use crate::utils::{MaybeUninit128, Pair};
+use crate::{
+    consume::Dependent,
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+};
 
 // https://gcc.gnu.org/legacy-ml/gcc-patches/2006-11/msg01238.html
 #[cfg(any(target_feature = "msync", atomic_maybe_uninit_target_feature = "msync"))]
@@ -143,6 +146,27 @@ macro_rules! atomic_load_store {
                     }
                 }
                 out
+            }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                let out: MaybeUninit<Self>;
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        concat!("l", $size, $load_ext, " {out}, 0({src})"), // atomic { out = *src }
+                        "xor {dep}, {out}, {out}",                          // dep = out ^ out
+                        src = in(reg_nonzero) ptr_reg!(src),
+                        out = lateout(reg) out,
+                        dep = lateout(reg) dep,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                Dependent::from_parts(out, dep)
             }
         }
         impl AtomicStore for $ty {
@@ -548,6 +572,33 @@ macro_rules! atomic128 {
                     MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
                 }
             }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                let (out_hi, out_lo);
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        "lq %r4, 0({src})",    // atomic { r4:r5 = *src }
+                        "xor {dep}, %r4, %r4", // dep = r4 ^ r4
+                        src = in(reg_nonzero) ptr_reg!(src),
+                        dep = lateout(reg) dep,
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        out("r4") out_hi,
+                        out("r5") out_lo,
+                        options(nostack, preserves_flags),
+                    );
+                    Dependent::from_parts(
+                        MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole,
+                        dep,
+                    )
+                }
+            }
         }
         impl AtomicStore for $ty {
             #[inline]
@@ -842,5 +893,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_fast_consume {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_fast_consume {
     ($($tt:tt)*) => {};
 }

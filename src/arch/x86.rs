@@ -825,3 +825,11 @@ macro_rules! cfg_has_atomic_cas {
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[macro_export]
+macro_rules! cfg_has_fast_consume {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_no_fast_consume {
+    ($($tt:tt)*) => { $($tt)* };
+}

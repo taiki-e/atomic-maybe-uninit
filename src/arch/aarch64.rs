@@ -40,9 +40,40 @@ use core::{
 };
 
 use crate::{
+    consume::{DependencyType, Dependent},
     raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
     utils::{MaybeUninit128, Pair},
 };
+
+macro_rules! with_dep {
+    ($name:ident, $base:ty) => {
+        #[inline(always)]
+        pub(crate) fn $name(mut a: $base, b: DependencyType) -> $base {
+            // SAFETY: calling ADD is safe.
+            unsafe {
+                #[cfg(target_pointer_width = "64")]
+                asm!(
+                    "add {a}, {a}, {b}", // a = a + b
+                    a = inout(reg) a,
+                    b = in(reg) b,
+                    // Do not use `pure` because prevent this operation from being removed.
+                    options(nomem, nostack, preserves_flags),
+                );
+                #[cfg(target_pointer_width = "32")]
+                asm!(
+                    "add {a:w}, {a:w}, {b:w}", // a = a + b
+                    a = inout(reg) a,
+                    b = in(reg) b,
+                    // Do not use `pure` because prevent this operation from being removed.
+                    options(nomem, nostack, preserves_flags),
+                );
+            }
+            a
+        }
+    };
+}
+with_dep!(dep_with_dep, DependencyType);
+with_dep!(ptr_with_dep, *mut u8);
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -102,6 +133,27 @@ macro_rules! atomic {
                     }
                 }
                 out
+            }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                let out: MaybeUninit<Self>;
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        concat!("ldr", $suffix, " {out", $val_modifier, "}, [{src}]"), // atomic { out = *src }
+                        "eor {dep:x}, {out:x}, {out:x}",                               // dep = out ^ out
+                        src = in(reg) ptr_reg!(src),
+                        out = lateout(reg) out,
+                        dep = lateout(reg) dep,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                Dependent::from_parts(out, dep)
             }
         }
         impl AtomicStore for $ty {
@@ -467,6 +519,76 @@ macro_rules! atomic128 {
                     MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
             }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                let (mut prev_lo, mut prev_hi);
+                let dep;
+
+                #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
+                // SAFETY: the caller must guarantee that `dst` is valid for reads,
+                // 16-byte aligned, that there are no concurrent non-atomic operations.
+                // the above cfg guarantee that the CPU supports FEAT_LSE2.
+                //
+                // Refs:
+                // - LDP https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDP--Load-pair-of-registers-
+                // - LDIAPP https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
+                unsafe {
+                    asm!(
+                        concat!("ldp {prev_lo}, {prev_hi}, [{src}]"), // atomic { prev_lo:prev_hi = *src }
+                        "eor {dep:x}, {prev_lo:x}, {prev_lo:x}",      // dep = prev_lo ^ prev_lo
+                        src = in(reg) ptr_reg!(src),
+                        prev_hi = lateout(reg) prev_hi,
+                        prev_lo = lateout(reg) prev_lo,
+                        dep = lateout(reg) dep,
+                        options(nostack, preserves_flags),
+                    );
+                    Dependent::from_parts(
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
+                        dep,
+                    )
+                }
+                #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(target_feature = "lse")]
+                    {
+                        asm!(
+                            // Refs: https://developer.arm.com/documentation/ddi0602/2024-12/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
+                            concat!("casp x2, x3, x2, x3, [{src}]"), // atomic { if *src == x2:x3 { *dst = x2:x3 } else { x2:x3 = *dst } }
+                            "eor {dep:x}, x2, x2",                   // dep = x2 ^ x2
+                            src = in(reg) ptr_reg!(src),
+                            dep = lateout(reg) dep,
+                            // must be allocated to even/odd register pair
+                            inout("x2") 0_u64 => prev_lo,
+                            inout("x3") 0_u64 => prev_hi,
+                            options(nostack, preserves_flags),
+                        )
+                    }
+                    #[cfg(not(target_feature = "lse"))]
+                    {
+                        asm!(
+                            "2:", // 'retry:
+                                concat!("ldxp {prev_lo}, {prev_hi}, [{src}]"),        // atomic { prev_lo:prev_hi = *src; EXCLUSIVE = src }
+                                concat!("stxp {r:w}, {prev_lo}, {prev_hi}, [{src}]"), // atomic { if EXCLUSIVE == src { *src = prev_lo:prev_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
+                            "eor {dep:x}, {prev_lo:x}, {prev_lo:x}",                  // dep = prev_lo ^ prev_lo
+                            src = in(reg) ptr_reg!(src),
+                            prev_lo = out(reg) prev_lo,
+                            prev_hi = out(reg) prev_hi,
+                            r = out(reg) _,
+                            dep = lateout(reg) dep,
+                            options(nostack, preserves_flags),
+                        )
+                    }
+                    Dependent::from_parts(
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
+                        dep,
+                    )
+                }
+            }
         }
         impl AtomicStore for $ty {
             #[inline]
@@ -768,5 +890,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_fast_consume {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_fast_consume {
     ($($tt:tt)*) => {};
 }

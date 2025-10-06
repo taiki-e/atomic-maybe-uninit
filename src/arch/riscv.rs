@@ -69,13 +69,16 @@ use crate::raw::AtomicCompareExchange;
     atomic_maybe_uninit_target_feature = "zalrsc",
 ))]
 use crate::raw::AtomicSwap;
-use crate::raw::{AtomicLoad, AtomicStore};
 #[cfg(target_arch = "riscv32")]
 #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
 use crate::utils::{MaybeUninit64 as MaybeUninitDw, Pair};
 #[cfg(target_arch = "riscv64")]
 #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
 use crate::utils::{MaybeUninit128 as MaybeUninitDw, Pair};
+use crate::{
+    consume::Dependent,
+    raw::{AtomicLoad, AtomicStore},
+};
 
 #[cfg(not(all(
     not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
@@ -217,6 +220,27 @@ macro_rules! atomic_load_store {
                     }
                 }
                 out
+            }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                let out: MaybeUninit<Self>;
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        concat!("l", $size, " {out}, 0({src})"), // atomic { out = *src }
+                        "xor {dep}, {out}, {out}",               // dep = out ^ out
+                        src = in(reg_nonzero) ptr_reg!(src),
+                        out = lateout(reg) out,
+                        dep = lateout(reg) dep,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                Dependent::from_parts(out, dep)
             }
         }
         impl AtomicStore for $ty {
@@ -994,6 +1018,30 @@ macro_rules! atomic_dw {
                     MaybeUninitDw { pair: Pair { lo: out_lo, hi: out_hi } }.whole
                 }
             }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                let (out_hi, out_lo);
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        concat!("amocas.", $size, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
+                        "xor {dep}, a2, a2",                            // dep = a2 ^ a2
+                        src = in(reg) ptr_reg!(src),
+                        inout("a2") 0 as crate::utils::RegSize => out_lo,
+                        inout("a3") 0 as crate::utils::RegSize => out_hi,
+                        options(nostack, preserves_flags),
+                    );
+                    Dependent::from_parts(
+                        MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole,
+                        dep,
+                    )
+                }
+            }
         }
         #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
         impl AtomicStore for $ty {
@@ -1271,4 +1319,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_fast_consume {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_fast_consume {
+    ($($tt:tt)*) => {};
 }

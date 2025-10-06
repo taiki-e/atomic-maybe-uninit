@@ -193,6 +193,26 @@ macro_rules! delegate_load_store {
                     )
                 }
             }
+            crate::cfg_has_fast_consume! {
+                #[inline]
+                unsafe fn atomic_load_consume(
+                    src: *const MaybeUninit<Self>,
+                ) -> Dependent<MaybeUninit<Self>> {
+                    // SAFETY: the caller must uphold the safety contract.
+                    // cast and transmute are okay because $ty and $base implement the same layout,
+                    // and Dependent is repr(C) and Dependency is ZST or repr(transparent) over RegSize.
+                    unsafe {
+                        mem::transmute::<
+                            Dependent<MaybeUninit<$base>>,
+                            Dependent<MaybeUninit<Self>>,
+                        >(
+                            <$base as AtomicLoad>::atomic_load_consume(
+                                src.cast::<MaybeUninit<$base>>(),
+                            ),
+                        )
+                    }
+                }
+            }
         }
         impl AtomicStore for $ty {
             #[inline]
