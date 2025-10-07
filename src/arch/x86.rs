@@ -56,8 +56,21 @@ macro_rules! ptr_modifier {
 
 macro_rules! atomic {
     (
-        $ty:ident, $val_reg:tt, $val_modifier:tt, $ptr_size:tt, $cmpxchg_cmp_reg:tt,
-        $new_reg:tt
+        $ty:ident, $val_reg:ident, $ux_reg:ident, $ux:ident,
+        $zx:literal, $val_modifier:literal, $reg_val_modifier:tt, $zx_val_modifier:tt, $ptr_size:tt,
+        $cmpxchg_cmp_reg:tt
+    ) => {
+        #[cfg(target_arch = "x86")]
+        atomic!($ty, $val_reg, $ux_reg, reg_abcd, $ux, $zx, $val_modifier,
+            $reg_val_modifier, $zx_val_modifier, $ptr_size, $cmpxchg_cmp_reg);
+        #[cfg(target_arch = "x86_64")]
+        atomic!($ty, $val_reg, $ux_reg, reg, $ux, $zx, $val_modifier,
+            $reg_val_modifier, $zx_val_modifier, $ptr_size, $cmpxchg_cmp_reg);
+    };
+    (
+        $ty:ident, $val_reg:ident, $ux_reg:ident, $r_reg:ident, $ux:ident,
+        $zx:literal, $val_modifier:literal, $reg_val_modifier:tt, $zx_val_modifier:tt, $ptr_size:tt,
+        $cmpxchg_cmp_reg:tt
     ) => {
         delegate_signed!(delegate_load_store, $ty);
         delegate_signed!(delegate_swap, $ty);
@@ -70,19 +83,19 @@ macro_rules! atomic {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(src, $ty);
-                let out: MaybeUninit<Self>;
+                let out;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // atomic load is always SeqCst.
                     asm!(
-                        concat!("mov {out", $val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"), // atomic { out = *src }
+                        concat!("mov", $zx, " {out", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"), // atomic { out = *src }
                         src = in(reg) src,
-                        out = lateout($val_reg) out,
+                        out = lateout(reg) out,
                         options(nostack, preserves_flags),
                     );
                 }
-                out
+                crate::utils::extend32::$ty::extract(out)
             }
         }
         impl AtomicStore for $ty {
@@ -160,18 +173,20 @@ macro_rules! atomic {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg
                 unsafe {
-                    let r: u8;
+                    let r: MaybeUninit<u32>;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], ", $new_reg), // atomic { if *dst == $cmpxchg_cmp_reg { ZF = 1; *dst = $new_reg } else { ZF = 0; $cmpxchg_cmp_reg = *dst } }
-                        "sete cl",                                                                            // cl = ZF
+                        concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {new", $reg_val_modifier, "}"), // atomic { if *dst == $cmpxchg_cmp_reg { ZF = 1; *dst = new } else { ZF = 0; $cmpxchg_cmp_reg = *dst } }
+                        "sete {r:l}",                                                                                           // r = ZF
                         dst = in(reg) dst,
-                        in($new_reg) new,
-                        lateout("cl") r,
+                        // Avoid reg_byte ($val_reg) in new and r to work around cranelift bug with multiple or lateout reg_byte.
+                        new = in($ux_reg) crate::utils::extend32::$ty::$ux(new),
+                        r = lateout($r_reg) r,
                         inout($cmpxchg_cmp_reg) old => out,
                         // Do not use `preserves_flags` because CMPXCHG modifies the ZF, CF, PF, AF, SF, and OF flags.
                         options(nostack),
                     );
+                    let r = crate::utils::extend32::u8::extract(r).assume_init();
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     (out, r != 0)
                 }
@@ -180,11 +195,14 @@ macro_rules! atomic {
     };
 }
 
-atomic!(u8, reg_byte, "", "byte", "al", "cl");
-atomic!(u16, reg, ":x", "word", "ax", "cx");
-atomic!(u32, reg, ":e", "dword", "eax", "ecx");
+#[cfg(target_arch = "x86")]
+atomic!(u8, reg_byte, reg_abcd, uninit, "zx", "", ":l", ":e", "byte", "al");
 #[cfg(target_arch = "x86_64")]
-atomic!(u64, reg, "", "qword", "rax", "rcx");
+atomic!(u8, reg_byte, reg, uninit, "zx", "", ":l", ":e", "byte", "al");
+atomic!(u16, reg, reg, identity, "zx", ":x", ":x", ":e", "word", "ax");
+atomic!(u32, reg, reg, identity, "", ":e", ":e", ":e", "dword", "eax");
+#[cfg(target_arch = "x86_64")]
+atomic!(u64, reg, reg, identity, "", "", "", "", "qword", "rax");
 
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE)/FILD&FISTP(x87) instead of CMPXCHG8B.
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/test/CodeGen/X86/atomic-load-store-wide.ll

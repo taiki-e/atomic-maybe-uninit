@@ -393,6 +393,28 @@ pub(crate) mod extend32 {
                     // SAFETY: we can safely transmute any same-size value to MaybeUninit<$out>.
                     unsafe { mem::transmute(Extended::<$ty, LEN> { v, pad: PAD }) }
                 }
+                /// Uninit-extends the given integer to `MaybeUninit<u32>` if it is smaller than 32-bit,
+                /// otherwise, return the given value as-is.
+                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                #[inline(always)]
+                pub(crate) const fn uninit(v: MaybeUninit<$ty>) -> MaybeUninit<$out> {
+                    const PAD: [MaybeUninit<$ty>; LEN] = [MaybeUninit::uninit(); LEN];
+                    // SAFETY: we can safely transmute any same-size value to MaybeUninit<$out>.
+                    unsafe { mem::transmute(Extended::<$ty, LEN> { v, pad: PAD }) }
+                }
+                /// Inverse of extend.
+                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                #[inline(always)]
+                pub(crate) const fn extract(v: MaybeUninit<$out>) -> MaybeUninit<$ty> {
+                    // SAFETY: Extended is repr(C) and all fields are MaybeUninit<$ty> or its array,
+                    // so we can safely transmute any same-size value to Extended.
+                    unsafe { mem::transmute::<MaybeUninit<$out>, Extended::<$ty, LEN>>(v).v }
+                }
+                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                #[inline(always)]
+                pub(crate) const fn identity(v: MaybeUninit<$ty>) -> MaybeUninit<$ty> {
+                    v
+                }
             }
         )*};
         ($($ty:ident),*) => {$(
@@ -405,6 +427,9 @@ pub(crate) mod extend32 {
                 }
                 #[allow(unused_imports)]
                 pub(crate) use self::identity as zero;
+                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                #[allow(unused_imports)]
+                pub(crate) use self::{identity as uninit, identity as extract};
             }
         )*};
     }
