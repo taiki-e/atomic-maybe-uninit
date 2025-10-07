@@ -99,7 +99,7 @@ const fn test_cr0_eq(cr: crate::utils::RegSize) -> bool {
 }
 
 macro_rules! atomic_load_store {
-    ($ty:ident, $size:tt, $load_ext:tt) => {
+    ($ty:ident, $suffix:tt, $load_ext:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -116,11 +116,11 @@ macro_rules! atomic_load_store {
                         ($release:expr) => {
                             asm!(
                                 $release,
-                                concat!("l", $size, $load_ext, " {out}, 0({src})"), // atomic { out = *src }
-                                "cmpw {out}, {out}",                                // if out == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                "bne- %cr0, 2f",                                    // if unlikely(cr0.EQ == 0) { jump 'never }
+                                concat!("l", $suffix, $load_ext, " {out}, 0({src})"), // atomic { out = *src }
+                                "cmpw {out}, {out}",                                  // if out == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                "bne- %cr0, 2f",                                      // if unlikely(cr0.EQ == 0) { jump 'never }
                                 "2:", // 'never:
-                                "isync",                                            // fence (works in combination with a branch that depends on the loaded value)
+                                "isync",                                              // fence (works in combination with a branch that depends on the loaded value)
                                 src = in(reg_nonzero) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 out("cr0") _,
@@ -131,7 +131,7 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                concat!("l", $size, $load_ext, " {out}, 0({src})"), // atomic { out = *src }
+                                concat!("l", $suffix, $load_ext, " {out}, 0({src})"), // atomic { out = *src }
                                 src = in(reg_nonzero) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -159,8 +159,8 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_store {
                         ($release:expr) => {
                             asm!(
-                                $release,                                 // fence
-                                concat!("st", $size, " {val}, 0({dst})"), // atomic { *dst = val }
+                                $release,                                   // fence
+                                concat!("st", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -181,8 +181,8 @@ macro_rules! atomic_load_store {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $size:tt, $load_ext:tt, $cmp_size:tt) => {
-        atomic_load_store!($ty, $size, $load_ext);
+    ($ty:ident, $suffix:tt, $load_ext:tt, $cmp_size:tt) => {
+        atomic_load_store!($ty, $suffix, $load_ext);
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -198,12 +198,12 @@ macro_rules! atomic {
                     macro_rules! swap {
                         ($acquire:expr, $release:expr) => {
                             asm!(
-                                $release,                                        // fence
+                                $release,                                          // fence
                                 "2:", // 'retry:
-                                    concat!("l", $size, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
-                                    concat!("st", $size, "cx. {val}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = val; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne %cr0, 2b",                              // if cr0.EQ == 0 { jump 'retry }
-                                $acquire,                                        // fence
+                                    concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
+                                    concat!("st", $suffix, "cx. {val}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = val; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne %cr0, 2b",                                // if cr0.EQ == 0 { jump 'retry }
+                                $acquire,                                          // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = out(reg) out,
@@ -235,17 +235,17 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
-                                $release,                                        // fence
+                                $release,                                          // fence
                                 "2:", // 'retry:
-                                    concat!("l", $size, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
-                                    concat!("cmp", $cmp_size, " {old}, {out}"),  // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                    "bne %cr0, 3f",                              // if cr0.EQ == 0 { jump 'cmp-fail }
-                                    concat!("st", $size, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne %cr0, 2b",                              // if cr0.EQ == 0 { jump 'retry }
-                                    $acquire_success,                            // fence
+                                    concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
+                                    concat!("cmp", $cmp_size, " {old}, {out}"),    // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                    "bne %cr0, 3f",                                // if cr0.EQ == 0 { jump 'cmp-fail }
+                                    concat!("st", $suffix, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne %cr0, 2b",                                // if cr0.EQ == 0 { jump 'retry }
+                                    $acquire_success,                              // fence
                                 "3:", // 'cmp-fail:
-                                $acquire_always,                                 // fence
-                                "mfcr {r}",                                      // r = zero_extend(cr)
+                                $acquire_always,                                   // fence
+                                "mfcr {r}",                                        // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = in(reg) crate::utils::extend32::$ty::zero(old),
                                 new = in(reg) new,
@@ -278,15 +278,15 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak {
                         ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
-                                $release,                                    // fence
-                                concat!("l", $size, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
-                                concat!("cmp", $cmp_size, " {old}, {out}"),  // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                "bne %cr0, 3f",                              // if cr0.EQ == 0 { jump 'cmp-fail }
-                                concat!("st", $size, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                $acquire_success,                            // fence
+                                $release,                                      // fence
+                                concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
+                                concat!("cmp", $cmp_size, " {old}, {out}"),    // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                "bne %cr0, 3f",                                // if cr0.EQ == 0 { jump 'cmp-fail }
+                                concat!("st", $suffix, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                $acquire_success,                              // fence
                                 "3:", // 'cmp-fail:
-                                $acquire_always,                             // fence
-                                "mfcr {r}",                                  // r = zero_extend(cr)
+                                $acquire_always,                               // fence
+                                "mfcr {r}",                                    // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = in(reg) crate::utils::extend32::$ty::zero(old),
                                 new = in(reg) new,
@@ -308,17 +308,17 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $size:tt) => {
+    ($ty:ident, $suffix:tt) => {
         #[cfg(any(
             target_feature = "partword-atomics",
             atomic_maybe_uninit_target_feature = "partword-atomics",
         ))]
-        atomic!($ty, $size, "z", "w");
+        atomic!($ty, $suffix, "z", "w");
         #[cfg(not(any(
             target_feature = "partword-atomics",
             atomic_maybe_uninit_target_feature = "partword-atomics",
         )))]
-        atomic_load_store!($ty, $size, "z");
+        atomic_load_store!($ty, $suffix, "z");
         #[cfg(not(any(
             target_feature = "partword-atomics",
             atomic_maybe_uninit_target_feature = "partword-atomics",

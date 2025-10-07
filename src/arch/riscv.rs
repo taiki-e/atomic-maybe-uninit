@@ -184,7 +184,7 @@ macro_rules! atomic_rmw_lr_sc {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $size:tt) => {
+    ($ty:ident, $suffix:tt) => {
         delegate_signed!(delegate_load_store, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -200,9 +200,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_load {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                $release,                                // fence
-                                concat!("l", $size, " {out}, 0({src})"), // atomic { out = *src }
-                                $acquire,                                // fence
+                                $release,                                  // fence
+                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = *src }
+                                $acquire,                                  // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -233,9 +233,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                $release,                                // fence
-                                concat!("s", $size, " {val}, 0({dst})"), // atomic { *dst = val }
-                                $acquire,                                // fence
+                                $release,                                  // fence
+                                concat!("s", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
+                                $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -266,7 +266,7 @@ macro_rules! atomic_load_store {
 ))]
 #[rustfmt::skip]
 macro_rules! atomic_zaamo {
-    ($ty:ident, $size:tt) => {
+    ($ty:ident, $suffix:tt) => {
         delegate_signed!(delegate_swap, $ty);
         impl AtomicSwap for $ty {
             #[inline]
@@ -284,7 +284,7 @@ macro_rules! atomic_zaamo {
                     macro_rules! swap {
                         ($order:tt) => {
                             asm!(
-                                concat!("amoswap.", $size, $order, " {out}, {val}, 0({dst})"), // atomic { _x = *dst; *dst = val; out = _x }
+                                concat!("amoswap.", $suffix, $order, " {out}, {val}, 0({dst})"), // atomic { _x = *dst; *dst = val; out = _x }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = lateout(reg) out,
@@ -302,8 +302,8 @@ macro_rules! atomic_zaamo {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $size:tt) => {
-        atomic_load_store!($ty, $size);
+    ($ty:ident, $suffix:tt) => {
+        atomic_load_store!($ty, $suffix);
 
         // swap
         #[cfg(all(
@@ -315,7 +315,7 @@ macro_rules! atomic {
                 atomic_maybe_uninit_target_feature = "zaamo",
             ),
         ))]
-        atomic_zaamo!($ty, $size);
+        atomic_zaamo!($ty, $suffix);
         #[cfg(not(all(
             not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
             any(
@@ -364,9 +364,9 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("lr.", $size, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
-                                    concat!("sc.", $size, $release, " {r}, {val}, 0({dst})"), // atomic { if RS == dst { *dst = val; r = 0 } else { r = nonzero }; RS = None }
-                                    "bnez {r}, 2b",                                           // if r != 0 { jump 'retry }
+                                    concat!("lr.", $suffix, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
+                                    concat!("sc.", $suffix, $release, " {r}, {val}, 0({dst})"), // atomic { if RS == dst { *dst = val; r = 0 } else { r = nonzero }; RS = None }
+                                    "bnez {r}, 2b",                                             // if r != 0 { jump 'retry }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = out(reg) out,
@@ -405,12 +405,12 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($fence:tt, $asm_order:tt) => {
                             asm!(
-                                $fence,                                                           // fence
+                                $fence,                                                             // fence
                                 // old will be used for later comparison.
-                                "mv {out}, {old}",                                                // out = old
-                                concat!("amocas.", $size, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
-                                "xor {r}, {out}, {old}",                                          // r = out ^ old
-                                "seqz {r}, {r}",                                                  // if r == 0 { r = 1 } else { r = 0 }
+                                "mv {out}, {old}",                                                  // out = old
+                                concat!("amocas.", $suffix, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
+                                "xor {r}, {out}, {old}",                                            // r = out ^ old
+                                "seqz {r}, {r}",                                                    // if r == 0 { r = 1 } else { r = 0 }
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
@@ -462,13 +462,13 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("lr.", $size, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
-                                    "bne {out}, {old}, 3f",                                   // if out != old { jump 'cmp-fail }
-                                    concat!("sc.", $size, $release, " {r}, {new}, 0({dst})"), // atomic { if RS == dst { *dst = new; r = 0 } else { r = nonzero }; RS = None }
-                                    "bnez {r}, 2b",                                           // if r != 0 { jump 'retry }
+                                    concat!("lr.", $suffix, $acquire, " {out}, 0({dst})"),      // atomic { out = *dst; RS = dst }
+                                    "bne {out}, {old}, 3f",                                     // if out != old { jump 'cmp-fail }
+                                    concat!("sc.", $suffix, $release, " {r}, {new}, 0({dst})"), // atomic { if RS == dst { *dst = new; r = 0 } else { r = nonzero }; RS = None }
+                                    "bnez {r}, 2b",                                             // if r != 0 { jump 'retry }
                                 "3:", // 'cmp-fail:
-                                "xor {r}, {out}, {old}",                                      // r = out ^ old
-                                "seqz {r}, {r}",                                              // if r == 0 { r = 1 } else { r = 0 }
+                                "xor {r}, {out}, {old}",                                        // r = out ^ old
+                                "seqz {r}, {r}",                                                // if r == 0 { r = 1 } else { r = 0 }
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
@@ -489,15 +489,15 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $size:tt, $shift:tt) => {
-        atomic_load_store!($ty, $size);
+    ($ty:ident, $suffix:tt, $shift:tt) => {
+        atomic_load_store!($ty, $suffix);
 
         // swap
         #[cfg(all(
             not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
             any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
         ))]
-        atomic_zaamo!($ty, $size);
+        atomic_zaamo!($ty, $suffix);
         #[cfg(not(all(
             not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
             any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
@@ -688,14 +688,14 @@ macro_rules! atomic_sub_word {
                     macro_rules! cmpxchg {
                         ($fence:tt, $asm_order:tt) => {
                             asm!(
-                                $fence,                                                           // fence
+                                $fence,                                                             // fence
                                 // old will be used for later comparison.
-                                "mv {out}, {old}",                                                // out = old
-                                concat!("slli {old}, {old}, ", $shift),                           // old <<= $shift
-                                concat!("amocas.", $size, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
-                                concat!("srai {old}, {old}, ", $shift),                           // old >>= $shift
-                                "xor {r}, {out}, {old}",                                          // r = out ^ old
-                                "seqz {r}, {r}",                                                  // if r == 0 { r = 1 } else { r = 0 }
+                                "mv {out}, {old}",                                                  // out = old
+                                concat!("slli {old}, {old}, ", $shift),                             // old <<= $shift
+                                concat!("amocas.", $suffix, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
+                                concat!("srai {old}, {old}, ", $shift),                             // old >>= $shift
+                                "xor {r}, {out}, {old}",                                            // r = out ^ old
+                                "seqz {r}, {r}",                                                    // if r == 0 { r = 1 } else { r = 0 }
                                 dst = in(reg) ptr_reg!(dst),
                                 old = inout(reg) old => _,
                                 new = in(reg) new,
@@ -962,7 +962,7 @@ atomic!(u64, "d");
 
 #[rustfmt::skip]
 macro_rules! atomic_dw {
-    ($ty:ident, $size:tt, $reg_size:tt, $reg_size_offset:tt) => {
+    ($ty:ident, $suffix:tt, $reg_size:tt, $reg_size_offset:tt) => {
         #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
         delegate_signed!(delegate_all, $ty);
         #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
@@ -981,8 +981,8 @@ macro_rules! atomic_dw {
                     macro_rules! load {
                         ($fence:tt, $asm_order:tt) => {
                             asm!(
-                                $fence,                                                     // fence
-                                concat!("amocas.", $size, $asm_order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
+                                $fence,                                                       // fence
+                                concat!("amocas.", $suffix, $asm_order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
                                 src = in(reg) ptr_reg!(src),
                                 inout("a2") 0 as crate::utils::RegSize => out_lo,
                                 inout("a3") 0 as crate::utils::RegSize => out_hi,
@@ -1030,17 +1030,17 @@ macro_rules! atomic_dw {
                             asm!(
                                 // This is not single-copy atomic reads, but this is ok because subsequent
                                 // CAS will check for consistency.
-                                concat!("l", $reg_size, " a4, ({dst})"),                        // atomic { a4 = *dst }
-                                concat!("l", $reg_size, " a5, ", $reg_size_offset, "({dst})"),  // atomic { a5 = *dst.byte_add($reg_size_offset) }
+                                concat!("l", $reg_size, " a4, ({dst})"),                          // atomic { a4 = *dst }
+                                concat!("l", $reg_size, " a5, ", $reg_size_offset, "({dst})"),    // atomic { a5 = *dst.byte_add($reg_size_offset) }
                                 "2:", // 'retry:
                                     // tmp_lo:tmp_hi will be used for later comparison.
-                                    "mv {tmp_lo}, a4",                                          // tmp_lo = a4
-                                    "mv {tmp_hi}, a5",                                          // tmp_hi = a5
-                                    concat!("amocas.", $size, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
-                                    "xor {tmp_lo}, {tmp_lo}, a4",                               // tmp_lo ^= a4
-                                    "xor {tmp_hi}, {tmp_hi}, a5",                               // tmp_hi ^= a5
-                                    "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                          // tmp_lo |= tmp_hi
-                                    "bnez {tmp_lo}, 2b",                                        // if tmp_lo != 0 { jump 'retry }
+                                    "mv {tmp_lo}, a4",                                            // tmp_lo = a4
+                                    "mv {tmp_hi}, a5",                                            // tmp_hi = a5
+                                    concat!("amocas.", $suffix, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                    "xor {tmp_lo}, {tmp_lo}, a4",                                 // tmp_lo ^= a4
+                                    "xor {tmp_hi}, {tmp_hi}, a5",                                 // tmp_hi ^= a5
+                                    "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                            // tmp_lo |= tmp_hi
+                                    "bnez {tmp_lo}, 2b",                                          // if tmp_lo != 0 { jump 'retry }
                                 dst = in(reg) ptr_reg!(dst),
                                 tmp_lo = out(reg) _,
                                 tmp_hi = out(reg) _,
@@ -1082,15 +1082,15 @@ macro_rules! atomic_dw {
                     macro_rules! cmpxchg {
                         ($fence:tt, $asm_order:tt) => {
                             asm!(
-                                $fence,                                                     // fence
+                                $fence,                                                       // fence
                                 // tmp_lo:tmp_hi will be used for later comparison.
-                                "mv {tmp_lo}, a4",                                          // tmp_lo = a4
-                                "mv {tmp_hi}, a5",                                          // tmp_hi = a5
-                                concat!("amocas.", $size, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
-                                "xor {tmp_lo}, {tmp_lo}, a4",                               // tmp_lo ^= a4
-                                "xor {tmp_hi}, {tmp_hi}, a5",                               // tmp_hi ^= a5
-                                "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                          // tmp_lo |= tmp_hi
-                                "seqz {tmp_lo}, {tmp_lo}",                                  // if tmp_lo == 0 { tmp_lo = 1 } else { tmp_lo = 0 }
+                                "mv {tmp_lo}, a4",                                            // tmp_lo = a4
+                                "mv {tmp_hi}, a5",                                            // tmp_hi = a5
+                                concat!("amocas.", $suffix, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                "xor {tmp_lo}, {tmp_lo}, a4",                                 // tmp_lo ^= a4
+                                "xor {tmp_hi}, {tmp_hi}, a5",                                 // tmp_hi ^= a5
+                                "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                            // tmp_lo |= tmp_hi
+                                "seqz {tmp_lo}, {tmp_lo}",                                    // if tmp_lo == 0 { tmp_lo = 1 } else { tmp_lo = 0 }
                                 dst = in(reg) ptr_reg!(dst),
                                 tmp_lo = out(reg) r,
                                 tmp_hi = out(reg) _,

@@ -25,7 +25,7 @@ use crate::{
 };
 
 macro_rules! atomic_load_store {
-    ($ty:ident, $size:tt, $load_ext:tt) => {
+    ($ty:ident, $suffix:tt, $load_ext:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -39,7 +39,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("{out} = mem", $load_ext, $size, "({src})"), // atomic { out = *src }
+                        concat!("{out} = mem", $load_ext, $suffix, "({src})"), // atomic { out = *src }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -60,7 +60,7 @@ macro_rules! atomic_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("mem", $size, "({dst}) = {val}"), // atomic { *dst = val }
+                        concat!("mem", $suffix, "({dst}) = {val}"), // atomic { *dst = val }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         options(nostack, preserves_flags),
@@ -142,8 +142,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($ty:ident, $size:tt) => {
-        atomic_load_store!($ty, $size, "u");
+    ($ty:ident, $suffix:tt) => {
+        atomic_load_store!($ty, $suffix, "u");
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(

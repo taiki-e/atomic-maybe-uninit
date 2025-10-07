@@ -35,7 +35,7 @@ use crate::{
 };
 
 macro_rules! atomic {
-    ($ty:ident, $size:tt) => {
+    ($ty:ident, $suffix:tt) => {
         #[cfg(not(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020")))]
         delegate_signed!(delegate_load_store, $ty);
         #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
@@ -51,7 +51,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("move.", $size, " ({src}), {out}"), // atomic { out = *src }
+                        concat!("move.", $suffix, " ({src}), {out}"), // atomic { out = *src }
                         src = in(reg_addr) ptr_reg!(src),
                         out = out(reg_data) out,
                         // Do not use `preserves_flags` because MOVE modifies N, Z, V, and C bits in the condition codes.
@@ -71,7 +71,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("move.", $size, " {val}, ({dst})"), // atomic { *dst = val }
+                        concat!("move.", $suffix, " {val}, ({dst})"), // atomic { *dst = val }
                         dst = in(reg_addr) ptr_reg!(dst),
                         val = in(reg_data) val,
                         // Do not use `preserves_flags` because MOVE modifies N, Z, V, and C bits in the condition codes.
@@ -92,10 +92,10 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("move.", $size, " ({dst}), {out}"),           // atomic { out = *dst }
+                        concat!("move.", $suffix, " ({dst}), {out}"),           // atomic { out = *dst }
                         "2:", // 'retry:
-                            concat!("cas.", $size, " {out}, {val}, ({dst})"), // atomic { if *dst == out { cc.Z = 1; *dst = val } else { cc.Z = 0; out = *dst } }
-                            "bne 2b",                                         // if cc.Z == 0 { jump 'retry }
+                            concat!("cas.", $suffix, " {out}, {val}, ({dst})"), // atomic { if *dst == out { cc.Z = 1; *dst = val } else { cc.Z = 0; out = *dst } }
+                            "bne 2b",                                           // if cc.Z == 0 { jump 'retry }
                         dst = in(reg_addr) ptr_reg!(dst),
                         val = in(reg_data) val,
                         out = out(reg_data) out,
@@ -121,8 +121,8 @@ macro_rules! atomic {
                 unsafe {
                     let r: u8;
                     asm!(
-                        concat!("cas.", $size, " {out}, {new}, ({dst})"), // atomic { if *dst == out { cc.Z = 1; *dst = new } else { cc.Z = 0; out = *dst } }
-                        "seq {r}",                                        // r = if cc.Z { !0u8 } else { 0 }
+                        concat!("cas.", $suffix, " {out}, {new}, ({dst})"), // atomic { if *dst == out { cc.Z = 1; *dst = new } else { cc.Z = 0; out = *dst } }
+                        "seq {r}",                                          // r = if cc.Z { !0u8 } else { 0 }
                         dst = in(reg_addr) ptr_reg!(dst),
                         new = in(reg_data) new,
                         out = inout(reg_data) old => out,

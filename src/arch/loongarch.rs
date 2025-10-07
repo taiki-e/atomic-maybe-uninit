@@ -22,7 +22,7 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 #[rustfmt::skip]
 macro_rules! atomic_load {
-    ($ty:ident, $size:tt) => {
+    ($ty:ident, $suffix:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -38,8 +38,8 @@ macro_rules! atomic_load {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                concat!("ld.", $size, " {out}, {src}, 0"), // atomic { out = *src }
-                                $acquire,                                  // fence
+                                concat!("ld.", $suffix, " {out}, {src}, 0"), // atomic { out = *src }
+                                $acquire,                                    // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -60,8 +60,8 @@ macro_rules! atomic_load {
 }
 
 macro_rules! atomic {
-    ($ty:ident, $size:tt) => {
-        atomic_load!($ty, $size);
+    ($ty:ident, $suffix:tt) => {
+        atomic_load!($ty, $suffix);
         impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
@@ -76,7 +76,7 @@ macro_rules! atomic {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                concat!("st.", $size, " {val}, {dst}, 0"), // atomic { *dst = val }
+                                concat!("st.", $suffix, " {val}, {dst}, 0"), // atomic { *dst = val }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -84,7 +84,7 @@ macro_rules! atomic {
                         }
                         Ordering::Release | Ordering::SeqCst => {
                             asm!(
-                                concat!("amswap_db.", $size, " $zero, {val}, {dst}"), // atomic { _x = *dst; *dst = val; _ = _x }
+                                concat!("amswap_db.", $suffix, " $zero, {val}, {dst}"), // atomic { _x = *dst; *dst = val; _ = _x }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -109,7 +109,7 @@ macro_rules! atomic {
                 unsafe {
                     // AMO is always SeqCst.
                     asm!(
-                        concat!("amswap_db.", $size, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = _x }
+                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = _x }
                         dst = in(reg) ptr_reg!(dst),
                         val = in(reg) val,
                         out = out(reg) out,
@@ -138,15 +138,15 @@ macro_rules! atomic {
                         ($failure_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ll.", $size, " {out}, {dst}, 0"), // atomic { out = *dst; LL = dst }
-                                    "bne {out}, {old}, 3f",                    // if out != old { jump 'cmp-fail }
-                                    "move {tmp}, {new}",                       // tmp = new
-                                    concat!("sc.", $size, " {tmp}, {dst}, 0"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
-                                    "beqz {tmp}, 2b",                          // if tmp == 0 { jump 'retry }
-                                    "b 4f",                                    // jump 'success
+                                    concat!("ll.", $suffix, " {out}, {dst}, 0"), // atomic { out = *dst; LL = dst }
+                                    "bne {out}, {old}, 3f",                      // if out != old { jump 'cmp-fail }
+                                    "move {tmp}, {new}",                         // tmp = new
+                                    concat!("sc.", $suffix, " {tmp}, {dst}, 0"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                                    "beqz {tmp}, 2b",                            // if tmp == 0 { jump 'retry }
+                                    "b 4f",                                      // jump 'success
                                 "3:", // 'cmp-fail:
-                                    $failure_fence,                            // fence
-                                    "move {tmp}, $zero",                       // tmp = 0
+                                    $failure_fence,                              // fence
+                                    "move {tmp}, $zero",                         // tmp = 0
                                 "4:", // 'success:
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
@@ -174,8 +174,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($ty:ident, $size:tt) => {
-        atomic_load!($ty, $size);
+    ($ty:ident, $suffix:tt) => {
+        atomic_load!($ty, $suffix);
         impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
@@ -190,9 +190,9 @@ macro_rules! atomic_sub_word {
                     macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                $release,                                  // fence
-                                concat!("st.", $size, " {val}, {dst}, 0"), // atomic { *dst = val }
-                                $acquire,                                  // fence
+                                $release,                                    // fence
+                                concat!("st.", $suffix, " {val}, {dst}, 0"), // atomic { *dst = val }
+                                $acquire,                                    // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),

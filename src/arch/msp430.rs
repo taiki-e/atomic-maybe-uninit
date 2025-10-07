@@ -27,7 +27,7 @@ use core::{
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
 macro_rules! atomic {
-    ($ty:ident, $size:tt) => {
+    ($ty:ident, $suffix:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -40,7 +40,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("mov.", $size, " @{src}, {out}"), // atomic { out = *src }
+                        concat!("mov.", $suffix, " @{src}, {out}"), // atomic { out = *src }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -59,7 +59,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("mov.", $size, " {val}, 0({dst})"), // atomic { *dst = val }
+                        concat!("mov.", $suffix, " {val}, 0({dst})"), // atomic { *dst = val }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         options(nostack, preserves_flags),
@@ -81,11 +81,11 @@ macro_rules! atomic {
                 // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
                 unsafe {
                     asm!(
-                        "mov r2, {sr}",                             // sr = SR
-                        "dint {{ nop",                              // atomic { SR.GIE = 0
-                        concat!("mov.", $size, " @{dst}, {out}"),   //   out = *dst
-                        concat!("mov.", $size, " {val}, 0({dst})"), //   *dst = val
-                        "nop {{ mov {sr}, r2 {{ nop",               //   SR = sr }
+                        "mov r2, {sr}",                               // sr = SR
+                        "dint {{ nop",                                // atomic { SR.GIE = 0
+                        concat!("mov.", $suffix, " @{dst}, {out}"),   //   out = *dst
+                        concat!("mov.", $suffix, " {val}, 0({dst})"), //   *dst = val
+                        "nop {{ mov {sr}, r2 {{ nop",                 //   SR = sr }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         out = out(reg) out,
@@ -113,14 +113,14 @@ macro_rules! atomic {
                 // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
                 unsafe {
                     asm!(
-                        "mov r2, {sr}",                             // sr = SR
-                        "dint {{ nop",                              // atomic { SR.GIE = 0
-                        concat!("mov.", $size, " @{dst}, {out}"),   //   out = *dst
-                        concat!("xor.", $size, " {out}, {old}"),    //   old ^= out; if old == 0 { SR.Z = 1 } else { SR.Z = 0 }
-                        "jne 2f",                                   //   if SR.Z == 0 { jump 'cmp-fail }
-                        concat!("mov.", $size, " {new}, 0({dst})"), //   *dst = new
+                        "mov r2, {sr}",                               // sr = SR
+                        "dint {{ nop",                                // atomic { SR.GIE = 0
+                        concat!("mov.", $suffix, " @{dst}, {out}"),   //   out = *dst
+                        concat!("xor.", $suffix, " {out}, {old}"),    //   old ^= out; if old == 0 { SR.Z = 1 } else { SR.Z = 0 }
+                        "jne 2f",                                     //   if SR.Z == 0 { jump 'cmp-fail }
+                        concat!("mov.", $suffix, " {new}, 0({dst})"), //   *dst = new
                         "2:", // 'cmp-fail:
-                        "nop {{ mov {sr}, r2 {{ nop",               //   SR = sr }
+                        "nop {{ mov {sr}, r2 {{ nop",                 //   SR = sr }
                         dst = in(reg) dst,
                         old = inout(reg) old => r,
                         new = in(reg) new,
