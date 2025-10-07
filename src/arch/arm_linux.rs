@@ -7,7 +7,8 @@ See "Atomic operation overview by architecture" for atomic operations in this ar
 https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#arm
 
 Refs:
-- https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/arm/kernel_user_helpers.rst
+- Kernel-provided User Helpers
+  https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/arm/kernel_user_helpers.rst
 - https://github.com/rust-lang/compiler-builtins/blob/compiler_builtins-v0.1.124/src/arm_linux.rs
 - ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition
   ARMv4 and ARMv5 Differences

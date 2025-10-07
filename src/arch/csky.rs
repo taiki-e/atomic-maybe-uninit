@@ -8,7 +8,6 @@ Refs:
   https://github.com/c-sky/csky-doc/blob/9f7121f7d40970ba5cc0f15716da033db2bb9d07/CSKY%20Architecture%20user_guide.pdf
 - Linux kernel's C-SKY atomic implementation
   https://github.com/torvalds/linux/blob/v6.16/arch/csky/include/asm/atomic.h
-  https://github.com/torvalds/linux/blob/v6.16/arch/csky/include/asm/barrier.h
   https://github.com/torvalds/linux/blob/v6.16/arch/csky/include/asm/cmpxchg.h
 
 Generated asm:
@@ -30,6 +29,9 @@ use core::{
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
+// According to Linux kernel, there is a more efficient BAR instruction for this purpose, but that
+// instruction is not mentioned in CSKY Architecture user_guide, so we always use SYNC for now.
+// https://github.com/torvalds/linux/blob/v6.16/arch/csky/include/asm/barrier.h
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
         match $order {
