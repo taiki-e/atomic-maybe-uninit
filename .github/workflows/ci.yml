@@ -789,6 +789,10 @@ jobs:
         if: matrix.rust == 'stable'
       - uses: taiki-e/install-action@espup
         if: matrix.rust == 'stable'
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: bpf-linker
+        if: matrix.rust == 'nightly'
       - run: |
           retry() {
             for i in {1..10}; do
