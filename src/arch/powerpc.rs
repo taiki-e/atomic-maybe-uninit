@@ -247,7 +247,7 @@ macro_rules! atomic {
                                 $acquire_always,                                 // fence
                                 "mfcr {r}",                                      // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                old = in(reg) crate::utils::zero_extend32::$ty(old),
+                                old = in(reg) crate::utils::extend32::$ty::zero(old),
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 r = lateout(reg) r,
@@ -288,7 +288,7 @@ macro_rules! atomic {
                                 $acquire_always,                             // fence
                                 "mfcr {r}",                                  // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                old = in(reg) crate::utils::zero_extend32::$ty(old),
+                                old = in(reg) crate::utils::extend32::$ty::zero(old),
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 r = lateout(reg) r,
@@ -353,7 +353,7 @@ macro_rules! atomic_sub_word {
                                 $acquire,                        // fence
                                 "srw {out}, {out}, {shift}",     // out >>= shift
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                val = inout(reg) crate::utils::zero_extend32::$ty(val) => _,
+                                val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = in(reg) mask,
@@ -412,8 +412,8 @@ macro_rules! atomic_sub_word {
                                 "srw {out}, {out}, {shift}",     // out >>= shift
                                 "mfcr {tmp}",                    // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::zero_extend32::$ty(old) => _,
-                                new = inout(reg) crate::utils::zero_extend32::$ty(new) => _,
+                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
+                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = in(reg) mask,
@@ -465,8 +465,8 @@ macro_rules! atomic_sub_word {
                                 "srw {out}, {out}, {shift}", // out >>= shift
                                 "mfcr {tmp}",                // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::zero_extend32::$ty(old) => _,
-                                new = inout(reg) crate::utils::zero_extend32::$ty(new) => _,
+                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
+                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
                                 out = out(reg) out,
                                 shift = in(reg) shift,
                                 mask = in(reg) mask,

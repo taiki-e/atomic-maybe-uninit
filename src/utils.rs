@@ -158,6 +158,19 @@ pub(crate) fn assert_compare_exchange_ordering(success: Ordering, failure: Order
     }
 }
 
+// https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0418r2.html
+// https://github.com/rust-lang/rust/pull/98383
+#[allow(dead_code)]
+#[inline]
+pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> Ordering {
+    match (success, failure) {
+        (Ordering::Relaxed, Ordering::Acquire) => Ordering::Acquire,
+        (Ordering::Release, Ordering::Acquire) => Ordering::AcqRel,
+        (_, Ordering::SeqCst) => Ordering::SeqCst,
+        _ => success,
+    }
+}
+
 #[allow(unused_macros)]
 macro_rules! debug_assert_atomic_unsafe_precondition {
     ($ptr:ident, $ty:ident) => {{
@@ -344,72 +357,66 @@ macro_rules! delegate_size {
     };
 }
 
-// https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0418r2.html
-// https://github.com/rust-lang/rust/pull/98383
-#[allow(dead_code)]
-#[inline]
-pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> Ordering {
-    match (success, failure) {
-        (Ordering::Relaxed, Ordering::Acquire) => Ordering::Acquire,
-        (Ordering::Release, Ordering::Acquire) => Ordering::AcqRel,
-        (_, Ordering::SeqCst) => Ordering::SeqCst,
-        _ => success,
-    }
-}
-
 #[cfg(not(target_pointer_width = "16"))]
 #[allow(dead_code)]
 #[repr(C)]
-struct ZeroExtended<T: Copy, const N: usize> {
+struct Extended<T: Copy, const N: usize> {
     #[cfg(target_endian = "big")]
-    pad: [T; N],
+    pad: [MaybeUninit<T>; N],
     v: MaybeUninit<T>,
     #[cfg(target_endian = "little")]
-    pad: [T; N],
+    pad: [MaybeUninit<T>; N],
 }
 #[cfg(not(target_pointer_width = "16"))]
 #[allow(dead_code)]
-pub(crate) mod zero_extend32 {
-    use core::mem::{self, MaybeUninit};
-
-    use super::ZeroExtended;
-
-    macro_rules! zero_extend {
+pub(crate) mod extend32 {
+    macro_rules! extend {
         ($($ty:ident),* => $out:ident) => {$(
-            #[allow(clippy::cast_sign_loss)]
-            // SAFETY: MaybeUninit returned by $ty is always initialized if the input is initialized.
-            const _: () = assert!(unsafe {
-                $ty(MaybeUninit::new(!0)).assume_init() == !(0 as $ty) as $out
-            });
-            /// Zero-extends the given integer to `MaybeUninit<u32>` if it is smaller than 32-bit,
-            /// otherwise, return the given value as-is.
-            #[inline(always)]
-            pub(crate) const fn $ty(v: MaybeUninit<$ty>) -> MaybeUninit<$out> {
+            pub(crate) mod $ty {
+                use core::mem::{self, MaybeUninit};
+
+                use super::super::Extended;
+
                 const LEN: usize
                     = (mem::size_of::<$out>() - mem::size_of::<$ty>()) / mem::size_of::<$ty>();
-                const PAD: [$ty; LEN] = [0; LEN];
-                // SAFETY: we can safely transmute any same-size value to MaybeUninit<$out>.
-                unsafe { mem::transmute(ZeroExtended::<$ty, LEN> { v, pad: PAD }) }
+
+                #[allow(clippy::cast_sign_loss)]
+                // SAFETY: MaybeUninit returned by $ty is always initialized if the input is initialized.
+                const _: () = assert!(unsafe {
+                    zero(MaybeUninit::new(!0)).assume_init() == !(0 as $ty) as $out
+                });
+                /// Zero-extends the given integer to `MaybeUninit<u32>` if it is smaller than 32-bit,
+                /// otherwise, return the given value as-is.
+                #[inline(always)]
+                pub(crate) const fn zero(v: MaybeUninit<$ty>) -> MaybeUninit<$out> {
+                    const PAD: [MaybeUninit<$ty>; LEN] = [MaybeUninit::new(0); LEN];
+                    // SAFETY: we can safely transmute any same-size value to MaybeUninit<$out>.
+                    unsafe { mem::transmute(Extended::<$ty, LEN> { v, pad: PAD }) }
+                }
             }
         )*};
         ($($ty:ident),*) => {$(
-            /// Zero-extends the given integer to `MaybeUninit<u32>` if it is smaller than 32-bit,
-            /// otherwise, return the given value as-is.
-            #[inline(always)]
-            pub(crate) const fn $ty(v: MaybeUninit<$ty>) -> MaybeUninit<$ty> {
-                v
+            pub(crate) mod $ty {
+                use core::mem::MaybeUninit;
+
+                #[inline(always)]
+                pub(crate) const fn identity(v: MaybeUninit<$ty>) -> MaybeUninit<$ty> {
+                    v
+                }
+                #[allow(unused_imports)]
+                pub(crate) use self::identity as zero;
             }
         )*};
     }
-    zero_extend!(u8, u16 => u32);
-    zero_extend!(u32, u64);
+    extend!(u8, u16 => u32);
+    extend!(u32, u64);
 }
 #[cfg(target_pointer_width = "32")]
 #[allow(dead_code)]
 pub(crate) mod zero_extend64 {
     use core::mem::{self, MaybeUninit};
 
-    use super::ZeroExtended;
+    use super::Extended;
 
     // SAFETY: MaybeUninit returned by ptr is always initialized.
     const _: () = assert!(unsafe {
@@ -420,9 +427,9 @@ pub(crate) mod zero_extend64 {
     /// See ptr_reg! macro in src/gen/utils.rs for details.
     #[inline]
     pub(crate) const fn ptr(v: *mut ()) -> MaybeUninit<u64> {
-        const PAD: [*mut (); 1] = [core::ptr::null_mut(); 1];
+        const PAD: [MaybeUninit<*mut ()>; 1] = [MaybeUninit::new(core::ptr::null_mut()); 1];
         // SAFETY: we can safely transmute any 64-bit value to MaybeUninit<u64>.
-        unsafe { mem::transmute(ZeroExtended::<*mut (), 1> { v: MaybeUninit::new(v), pad: PAD }) }
+        unsafe { mem::transmute(Extended::<*mut (), 1> { v: MaybeUninit::new(v), pad: PAD }) }
     }
 }
 

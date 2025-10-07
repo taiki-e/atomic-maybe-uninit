@@ -169,7 +169,7 @@ macro_rules! atomic_sub_word {
                             "if (!p0) jump 2b",              // if !p0 { jump 'retry }
                         "{out} = asr({out},{shift})",        // out >>= shift
                         dst = in(reg) dst,
-                        val = inout(reg) crate::utils::zero_extend32::$ty(val) => _,
+                        val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
                         mask = in(reg) mask,
@@ -215,8 +215,8 @@ macro_rules! atomic_sub_word {
                         "3:", // 'cmp-fail:
                         "{out} = asr({out},{shift})",         // out >>= shift
                         dst = in(reg) dst,
-                        old = inout(reg) crate::utils::zero_extend32::$ty(old) => _,
-                        new = inout(reg) crate::utils::zero_extend32::$ty(new) => _,
+                        old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
+                        new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
                         out = out(reg) out,
                         shift = in(reg) shift,
                         mask = in(reg) mask,
