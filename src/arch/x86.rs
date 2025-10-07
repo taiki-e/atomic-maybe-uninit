@@ -4,8 +4,12 @@
 x86 and x86_64
 
 Refs:
-- x86 and amd64 instruction reference https://www.felixcloutier.com/x86
-- portable-atomic https://github.com/taiki-e/portable-atomic
+- Intel® 64 and IA-32 Architectures Software Developer Manuals
+  https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+- x86 and amd64 instruction reference
+  https://www.felixcloutier.com/x86
+- portable-atomic
+  https://github.com/taiki-e/portable-atomic
 
 Generated asm:
 - x86_64 https://godbolt.org/z/xKzj4WcaE

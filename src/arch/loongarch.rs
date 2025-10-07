@@ -4,7 +4,8 @@
 LoongArch32 and LoongArch64
 
 Refs:
-- https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/loongarch/introduction.rst#references
+- LoongArch Reference Manual - Volume 1: Basic Architecture
+  https://loongson.github.io/LoongArch-Documentation/LoongArch-Vol1-EN.html
 
 Generated asm:
 - loongarch64 https://godbolt.org/z/36649a5c8
