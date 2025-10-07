@@ -60,9 +60,56 @@ macro_rules! atomic_load {
     };
 }
 
+#[rustfmt::skip]
+macro_rules! atomic_store {
+    ($ty:ident, $suffix:tt) => {
+        impl AtomicStore for $ty {
+            #[inline]
+            unsafe fn atomic_store(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    macro_rules! atomic_store {
+                        ($acquire:tt, $release:tt) => {
+                            asm!(
+                                $release,                                    // fence
+                                concat!("st.", $suffix, " {val}, {dst}, 0"), // atomic { *dst = val }
+                                $acquire,                                    // fence
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) val,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("", "dbar 18"),
+                        Ordering::SeqCst => atomic_store!("dbar 16", "dbar 16"),
+                        _ => unreachable!(),
+                    }
+                }
+            }
+        }
+    };
+}
+
 macro_rules! atomic {
     ($ty:ident, $suffix:tt) => {
         atomic_load!($ty, $suffix);
+        #[cfg(any(
+            target_arch = "loongarch32",
+            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+        ))]
+        atomic_store!($ty, $suffix);
+        #[cfg(not(any(
+            target_arch = "loongarch32",
+            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+        )))]
         impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
@@ -108,14 +155,34 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    #[cfg(any(
+                        target_arch = "loongarch32",
+                        atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+                    ))]
+                    asm!(
+                        "2:", // 'retry:
+                            concat!("ll.", $suffix, " {out}, {dst}, 0"),  // atomic { out = *dst; LL = dst }
+                            "move {tmp}, {val}",                          // tmp = val
+                            concat!("sc.", $suffix, " {tmp}, {dst}, 0"),  // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                            "beqz {tmp}, 2b",                             // if tmp == 0 { jump 'retry }
+                        dst = in(reg) ptr_reg!(dst),
+                        val = in(reg) val,
+                        out = out(reg) out,
+                        tmp = out(reg) _,
+                        options(nostack, preserves_flags),
+                    );
                     // AMO is always SeqCst.
+                    #[cfg(not(any(
+                        target_arch = "loongarch32",
+                        atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+                    )))]
                     asm!(
                         concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = _x }
                         dst = in(reg) ptr_reg!(dst),
                         val = in(reg) val,
                         out = out(reg) out,
                         options(nostack, preserves_flags),
-                    )
+                    );
                 }
                 out
             }
@@ -177,38 +244,7 @@ macro_rules! atomic {
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
         atomic_load!($ty, $suffix);
-        impl AtomicStore for $ty {
-            #[inline]
-            unsafe fn atomic_store(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! atomic_store {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                $release,                                    // fence
-                                concat!("st.", $suffix, " {val}, {dst}, 0"), // atomic { *dst = val }
-                                $acquire,                                    // fence
-                                dst = in(reg) ptr_reg!(dst),
-                                val = in(reg) val,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        Ordering::Relaxed => atomic_store!("", ""),
-                        Ordering::Release => atomic_store!("", "dbar 18"),
-                        Ordering::SeqCst => atomic_store!("dbar 16", "dbar 16"),
-                        _ => unreachable!(),
-                    }
-                }
-            }
-        }
+        atomic_store!($ty, $suffix);
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
