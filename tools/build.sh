@@ -345,7 +345,7 @@ build() {
     args+=(
       --tests
       --all-features
-      --workspace
+      --workspace --exclude bench
     )
   else
     args+=(
