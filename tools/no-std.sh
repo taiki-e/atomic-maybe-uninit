@@ -230,6 +230,9 @@ run() {
       export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh wokwi-server ${target}"
       linker=linkall.x
       target_rustflags+=" -C link-arg=-Wl,-T${linker} -C link-arg=-nostartfiles"
+      local cpu
+      cpu=$(cut -d- -f2 <<<"${target}")
+      args+=(--features "esp-println/${cpu},esp-hal/${cpu}")
       ;;
     m68k*)
       if [[ "${llvm_version}" -lt 20 ]]; then

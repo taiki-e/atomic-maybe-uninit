@@ -8,17 +8,9 @@ publish = false
 [dependencies]
 atomic-maybe-uninit = { path = "../.." }
 
+esp-hal = "0.23"
+esp-println = { version = "0.16", default-features = false, features = ["uart"] }
 paste = "1"
-
-[target.xtensa-esp32-none-elf.dependencies]
-esp-println = { version = "0.15", default-features = false, features = ["uart", "esp32"] }
-esp-hal = { version = "0.23", features = ["esp32"] }
-[target.xtensa-esp32s2-none-elf.dependencies]
-esp-println = { version = "0.15", default-features = false, features = ["uart", "esp32s2"] }
-esp-hal = { version = "0.23", features = ["esp32s2"] }
-[target.xtensa-esp32s3-none-elf.dependencies]
-esp-println = { version = "0.15", default-features = false, features = ["uart", "esp32s3"] }
-esp-hal = { version = "0.23", features = ["esp32s3"] }
 
 [lints]
 workspace = true
