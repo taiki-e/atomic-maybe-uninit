@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.12] - 2025-10-14
+
 - Support C-SKY (experimental). ([#32](https://github.com/taiki-e/atomic-maybe-uninit/pull/32))
 
 - Support 64-bit atomics on M68k. ([#50](https://github.com/taiki-e/atomic-maybe-uninit/pull/50))
@@ -379,7 +381,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.11...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.12...HEAD
+[0.3.12]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.11...v0.3.12
 [0.3.11]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.8...v0.3.9
