@@ -12,11 +12,17 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Support 64-bit atomics on M68k.
+- Support C-SKY (experimental). ([#32](https://github.com/taiki-e/atomic-maybe-uninit/pull/32))
 
-- Optimize CAS on Hexagon and MIPS.
+- Support 64-bit atomics on M68k. ([#50](https://github.com/taiki-e/atomic-maybe-uninit/pull/50))
 
-- Optimize {8,16}-bit CAS on RISC-V and Xtensa.
+- Fix compile error on LoongArch32. ([658e1fc](https://github.com/taiki-e/atomic-maybe-uninit/commit/658e1fc68397ccd4ddc0092b4f667a30fa870a60))
+
+- Optimize CAS on Hexagon and MIPS. ([4b0c7b2](https://github.com/taiki-e/atomic-maybe-uninit/commit/4b0c7b20f9571b652628502f2935139c498aabd1))
+
+- Optimize {8,16}-bit CAS on RISC-V and Xtensa. ([4b0c7b2](https://github.com/taiki-e/atomic-maybe-uninit/commit/4b0c7b20f9571b652628502f2935139c498aabd1))
+
+- Optimize CAS on x86/x86_64. ([3ad33c8](https://github.com/taiki-e/atomic-maybe-uninit/commit/3ad33c896119a5522838ec20a146b58fa295f7d1))
 
 ## [0.3.11] - 2025-09-25
 
