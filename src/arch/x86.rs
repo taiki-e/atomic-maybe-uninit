@@ -14,6 +14,7 @@ Refs:
 Generated asm:
 - x86_64 https://godbolt.org/z/xKzj4WcaE
 - x86_64 (+cmpxchg16b) https://godbolt.org/z/jzMoM9nhq
+- x86_64 (+cmpxchg16b,+avx) https://godbolt.org/z/6TnxM5hnj
 - x86 (i686) https://godbolt.org/z/sM6MPjYWf
 - x86 (i686,-sse2) https://godbolt.org/z/MsrxfbcMG
 - x86 (i586) https://godbolt.org/z/KEo6P7YEo
@@ -598,14 +599,38 @@ macro_rules! atomic128 {
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(src, $ty);
-                let (prev_lo, prev_hi);
 
+                // VMOVDQA is atomic when AVX is available.
+                // See https://gcc.gnu.org/bugzilla//show_bug.cgi?id=104688 for details.
+                //
+                // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
+                //
+                // Do not use vector registers on targets such as x86_64-unknown-none unless SSE is explicitly enabled.
+                // https://doc.rust-lang.org/nightly/rustc/platform-support/x86_64-unknown-none.html
+                #[cfg(all(target_feature = "sse", target_feature = "avx"))]
+                // SAFETY: the caller must guarantee that `src` is valid for reads,
+                // 16-byte aligned, and that there are no concurrent non-atomic operations.
+                // cfg guarantees that the CPU supports AVX.
+                unsafe {
+                    let out;
+                    asm!(
+                        concat!("vmovdqa {out}, xmmword ptr [{src", ptr_modifier!(), "}]"), // atomic { out = *src }
+                        src = in(reg) src,
+                        out = lateout(xmm_reg) out,
+                        options(nostack, preserves_flags),
+                    );
+                    mem::transmute::<MaybeUninit<core::arch::x86_64::__m128i>, MaybeUninit<Self>>(
+                        out
+                    )
+                }
+                #[cfg(not(all(target_feature = "sse", target_feature = "avx")))]
                 // SAFETY: the caller must guarantee that `src` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
+                    let (prev_lo, prev_hi);
                     // atomic load is always SeqCst.
                     asm!(
                         "mov {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
@@ -630,17 +655,63 @@ macro_rules! atomic128 {
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
-                _order: Ordering,
+                order: Ordering,
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { whole: val };
 
+                // VMOVDQA is atomic when AVX is available.
+                // See https://gcc.gnu.org/bugzilla//show_bug.cgi?id=104688 for details.
+                //
+                // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
+                //
+                // Do not use vector registers on targets such as x86_64-unknown-none unless SSE is explicitly enabled.
+                // https://doc.rust-lang.org/nightly/rustc/platform-support/x86_64-unknown-none.html
+                #[cfg(all(target_feature = "sse", target_feature = "avx"))]
+                // SAFETY: the caller must guarantee that `dst` is valid for writes,
+                // 16-byte aligned, and that there are no concurrent non-atomic operations.
+                // cfg guarantees that the CPU supports AVX.
+                unsafe {
+                    let val: MaybeUninit<core::arch::x86_64::__m128i> = mem::transmute(val);
+                    match order {
+                        // Relaxed and Release stores are equivalent.
+                        Ordering::Relaxed | Ordering::Release => {
+                            asm!(
+                                concat!("vmovdqa xmmword ptr [{dst", ptr_modifier!(), "}], {val}"), // atomic { *dst = val }
+                                dst = in(reg) dst,
+                                val = in(xmm_reg) val,
+                                options(nostack, preserves_flags),
+                            );
+                        }
+                        Ordering::SeqCst => {
+                            let p = core::cell::UnsafeCell::new(MaybeUninit::<u64>::uninit());
+                            asm!(
+                                concat!("vmovdqa xmmword ptr [{dst", ptr_modifier!(), "}], {val}"), // atomic { *dst = val }
+                                // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
+                                // - https://github.com/taiki-e/portable-atomic/pull/156
+                                // - LLVM uses `lock or` for x86_32 64-bit atomic SeqCst store using SSE https://godbolt.org/z/9sKEr8YWc
+                                // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
+                                // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
+                                // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
+                                concat!("xchg qword ptr [{p", ptr_modifier!(), "}], {tmp}"),        // fence
+                                dst = in(reg) dst,
+                                val = in(xmm_reg) val,
+                                p = inout(reg) p.get() => _,
+                                tmp = lateout(reg) _,
+                                options(nostack, preserves_flags),
+                            );
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                #[cfg(not(all(target_feature = "sse", target_feature = "avx")))]
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
+                    let val = MaybeUninit128 { whole: val };
+                    let _ = order;
                     // atomic store is always SeqCst.
                     asm!(
                         "xchg {rbx_tmp}, rbx", // save rbx which is reserved by LLVM

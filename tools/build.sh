@@ -368,6 +368,9 @@ build() {
           RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
           x_cargo "${args[@]}" "$@"
       fi
+      CARGO_TARGET_DIR="${target_dir}/cmpxchg16b-avx" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b,+avx" \
+        x_cargo "${args[@]}" "$@"
       ;;
     i686*)
       CARGO_TARGET_DIR="${target_dir}/sse" \

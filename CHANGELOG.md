@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Optimize 128-bit load/store when AVX is enabled.
+
 ## [0.3.12] - 2025-10-14
 
 - Support C-SKY (experimental). ([#32](https://github.com/taiki-e/atomic-maybe-uninit/pull/32))

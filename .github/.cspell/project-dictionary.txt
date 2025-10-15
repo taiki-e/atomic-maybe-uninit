@@ -132,6 +132,7 @@ uwriteln
 uxtb
 uxth
 virt
+vmovdqa
 wokwi
 xadd
 xchg
