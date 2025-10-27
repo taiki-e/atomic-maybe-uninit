@@ -857,7 +857,7 @@ jobs:
                 | tar xJf - --strip-components 1 -C "${HOME}"/sparc-bcc-gcc
               printf '%s\n' "${HOME}"/sparc-bcc-gcc/bin >>"${GITHUB_PATH}"
               # https://www.gaisler.com/products/tsim3
-              tsim3_version=3.1.12
+              tsim3_version=3.1.13
               retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused "https://download.gaisler.com/products/TSIM3/bin/tsim-eval/tsim-eval-${tsim3_version}.tar.gz" \
                 | tar xzf - --strip-components 1 -C "${HOME}"/tsim
               printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
