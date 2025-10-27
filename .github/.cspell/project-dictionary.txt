@@ -26,7 +26,6 @@ csel
 cset
 cskyv
 dbar
-distro
 DWCAS
 espup
 fild
