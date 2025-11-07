@@ -5,6 +5,7 @@ updates:
       - /
       # crates with [workspace] table are not recognized by the above 'directory: /'
       - /tests/avr
+      - /tests/bpf
       - /tests/msp430
       - /tests/no-std-linux
       - /tests/no-std-qemu
