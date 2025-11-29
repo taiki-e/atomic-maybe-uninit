@@ -374,7 +374,7 @@ macro_rules! atomic64 {
                                 "movlps qword ptr [{dst}], {val}", // atomic { *dst = val[:] }
                                 // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
                                 // - https://github.com/taiki-e/portable-atomic/pull/156
-                                // - LLVM uses `lock or` for x86_32 64-bit atomic SeqCst store using SSE https://godbolt.org/z/9sKEr8YWc
+                                // - LLVM uses `lock or` https://godbolt.org/z/vv6rjzfYd
                                 // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
                                 // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
                                 // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
@@ -432,7 +432,7 @@ macro_rules! atomic64 {
                                 "fistp qword ptr [{dst}]",     // atomic { *dst = st.pop() }
                                 // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
                                 // - https://github.com/taiki-e/portable-atomic/pull/156
-                                // - LLVM uses `lock or` for x86_32 64-bit atomic SeqCst store using SSE https://godbolt.org/z/9sKEr8YWc
+                                // - LLVM uses `lock or` https://godbolt.org/z/vv6rjzfYd
                                 // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
                                 // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
                                 // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
@@ -604,10 +604,7 @@ macro_rules! atomic128 {
                 // See https://gcc.gnu.org/bugzilla//show_bug.cgi?id=104688 for details.
                 //
                 // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
-                //
-                // Do not use vector registers on targets such as x86_64-unknown-none unless SSE is explicitly enabled.
-                // https://doc.rust-lang.org/nightly/rustc/platform-support/x86_64-unknown-none.html
-                #[cfg(all(target_feature = "sse", target_feature = "avx"))]
+                #[cfg(target_feature = "avx")]
                 // SAFETY: the caller must guarantee that `src` is valid for reads,
                 // 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports AVX.
@@ -623,7 +620,7 @@ macro_rules! atomic128 {
                         out
                     )
                 }
-                #[cfg(not(all(target_feature = "sse", target_feature = "avx")))]
+                #[cfg(not(target_feature = "avx"))]
                 // SAFETY: the caller must guarantee that `src` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
@@ -663,10 +660,7 @@ macro_rules! atomic128 {
                 // See https://gcc.gnu.org/bugzilla//show_bug.cgi?id=104688 for details.
                 //
                 // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
-                //
-                // Do not use vector registers on targets such as x86_64-unknown-none unless SSE is explicitly enabled.
-                // https://doc.rust-lang.org/nightly/rustc/platform-support/x86_64-unknown-none.html
-                #[cfg(all(target_feature = "sse", target_feature = "avx"))]
+                #[cfg(target_feature = "avx")]
                 // SAFETY: the caller must guarantee that `dst` is valid for writes,
                 // 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports AVX.
@@ -688,7 +682,7 @@ macro_rules! atomic128 {
                                 concat!("vmovdqa xmmword ptr [{dst", ptr_modifier!(), "}], {val}"), // atomic { *dst = val }
                                 // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
                                 // - https://github.com/taiki-e/portable-atomic/pull/156
-                                // - LLVM uses `lock or` for x86_32 64-bit atomic SeqCst store using SSE https://godbolt.org/z/9sKEr8YWc
+                                // - LLVM uses `lock or` https://godbolt.org/z/vv6rjzfYd
                                 // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
                                 // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
                                 // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
@@ -703,7 +697,7 @@ macro_rules! atomic128 {
                         _ => unreachable!(),
                     }
                 }
-                #[cfg(not(all(target_feature = "sse", target_feature = "avx")))]
+                #[cfg(not(target_feature = "avx"))]
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
