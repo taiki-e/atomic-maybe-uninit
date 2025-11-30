@@ -1,6 +1,6 @@
 [package]
 name = "atomic-maybe-uninit"
-version = "0.3.12" #publish:version
+version = "0.3.13" #publish:version
 edition = "2021"
 # NB: Sync with rust-version field in other Cargo.toml files and msrv badge in README.md
 rust-version = "1.74" # For MaybeUninit registers in asm!: https://github.com/rust-lang/rust/pull/114790
