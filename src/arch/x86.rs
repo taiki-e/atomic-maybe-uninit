@@ -26,15 +26,17 @@ delegate_size!(delegate_swap);
 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 delegate_size!(delegate_cas);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 use crate::raw::AtomicCompareExchange;
-use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap};
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 use crate::utils::{MaybeUninit64, Pair};
@@ -57,19 +59,19 @@ macro_rules! ptr_modifier {
 
 macro_rules! atomic {
     (
-        $ty:ident, $val_reg:ident, $ux_reg:ident, $ux:ident,
+        $ty:ident, $size:literal, $val_reg:ident, $ux_reg:ident, $ux:ident,
         $zx:literal, $val_modifier:literal, $reg_val_modifier:tt, $zx_val_modifier:tt, $ptr_size:tt,
         $cmpxchg_cmp_reg:tt
     ) => {
         #[cfg(target_arch = "x86")]
-        atomic!($ty, $val_reg, $ux_reg, reg_abcd, $ux, $zx, $val_modifier,
+        atomic!($ty, $size, $val_reg, $ux_reg, reg_abcd, $ux, $zx, $val_modifier,
             $reg_val_modifier, $zx_val_modifier, $ptr_size, $cmpxchg_cmp_reg);
         #[cfg(target_arch = "x86_64")]
-        atomic!($ty, $val_reg, $ux_reg, reg, $ux, $zx, $val_modifier,
+        atomic!($ty, $size, $val_reg, $ux_reg, reg, $ux, $zx, $val_modifier,
             $reg_val_modifier, $zx_val_modifier, $ptr_size, $cmpxchg_cmp_reg);
     };
     (
-        $ty:ident, $val_reg:ident, $ux_reg:ident, $r_reg:ident, $ux:ident,
+        $ty:ident, $size:literal, $val_reg:ident, $ux_reg:ident, $r_reg:ident, $ux:ident,
         $zx:literal, $val_modifier:literal, $reg_val_modifier:tt, $zx_val_modifier:tt, $ptr_size:tt,
         $cmpxchg_cmp_reg:tt
     ) => {
@@ -132,6 +134,45 @@ macro_rules! atomic {
                         _ => unreachable!(),
                     }
                 }
+            }
+        }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("mov", $zx, " {tmp0", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"), // atomic { tmp0 = *src }
+                    concat!("lea {src", ptr_modifier!(), "}, [{src", ptr_modifier!(), "} + ", $size, "]"),                  // src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("mov", $zx, " {tmp1", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "} + ", $size, "]"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("mov", $zx, " {tmp0", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"),               // atomic { tmp0 = *src }
+                    concat!("lea {src", ptr_modifier!(), "}, [{src", ptr_modifier!(), "} + 2*", $size, "]"),                              // src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            // Avoid reg_byte ($val_reg) to work around cranelift bug with multiple or lateout reg_byte.
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp0", $reg_val_modifier, "}"), // atomic { *dst = tmp0 }
+                    concat!("lea {dst", ptr_modifier!(), "}, [{dst", ptr_modifier!(), "} + ", $size, "]"),          // dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in($ux_reg) crate::utils::extend32::$ty::$ux(tmp0),
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "} + ", $size, "], {tmp1", $reg_val_modifier, "}"), // atomic { *dst.byte_add($size) = tmp0 }
+                    concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp0", $reg_val_modifier, "}"),               // atomic { *dst = tmp0 }
+                    concat!("lea {dst", ptr_modifier!(), "}, [{dst", ptr_modifier!(), "} + 2*", $size, "]"),                      // dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in($ux_reg) crate::utils::extend32::$ty::$ux(tmp0),
+                    tmp1 = in($ux_reg) crate::utils::extend32::$ty::$ux(tmp1),
+                    options(nostack, preserves_flags),
+                ),
             }
         }
         impl AtomicSwap for $ty {
@@ -197,13 +238,13 @@ macro_rules! atomic {
 }
 
 #[cfg(target_arch = "x86")]
-atomic!(u8, reg_byte, reg_abcd, uninit, "zx", "", ":l", ":e", "byte", "al");
+atomic!(u8, "1", reg_byte, reg_abcd, uninit, "zx", "", ":l", ":e", "byte", "al");
 #[cfg(target_arch = "x86_64")]
-atomic!(u8, reg_byte, reg, uninit, "zx", "", ":l", ":e", "byte", "al");
-atomic!(u16, reg, reg, identity, "zx", ":x", ":x", ":e", "word", "ax");
-atomic!(u32, reg, reg, identity, "", ":e", ":e", ":e", "dword", "eax");
+atomic!(u8, "1", reg_byte, reg, uninit, "zx", "", ":l", ":e", "byte", "al");
+atomic!(u16, "2", reg, reg, identity, "zx", ":x", ":x", ":e", "word", "ax");
+atomic!(u32, "4", reg, reg, identity, "", ":e", ":e", ":e", "dword", "eax");
 #[cfg(target_arch = "x86_64")]
-atomic!(u64, reg, reg, identity, "", "", "", "", "qword", "rax");
+atomic!(u64, "8", reg, reg, identity, "", "", "", "", "qword", "rax");
 
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE)/FILD&FISTP(x87) instead of CMPXCHG8B.
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
@@ -911,4 +952,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }

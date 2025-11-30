@@ -45,9 +45,11 @@ delegate_size!(delegate_swap);
 ))]
 delegate_size!(delegate_cas);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
@@ -69,7 +71,7 @@ use crate::raw::AtomicCompareExchange;
     atomic_maybe_uninit_target_feature = "zalrsc",
 ))]
 use crate::raw::AtomicSwap;
-use crate::raw::{AtomicLoad, AtomicStore};
+use crate::raw::{AtomicLoad, AtomicMemcpy, AtomicStore};
 #[cfg(target_arch = "riscv32")]
 #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
 use crate::utils::{MaybeUninit64 as MaybeUninitDw, Pair};
@@ -184,7 +186,7 @@ macro_rules! atomic_rmw_lr_sc {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $suffix:tt) => {
+    ($ty:ident, $size:literal, $suffix:tt) => {
         delegate_signed!(delegate_load_store, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -252,6 +254,44 @@ macro_rules! atomic_load_store {
                 }
             }
         }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("l", $suffix, " {tmp0}, 0({src})"), // atomic { tmp0 = *src }
+                    concat!("addi {src}, {src}, ", $size),      // src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("l", $suffix, " {tmp1}, ", $size, "({src})"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("l", $suffix, " {tmp0}, 0({src})"),           // atomic { tmp0 = *src }
+                    concat!("addi {src}, {src}, 2*", $size),              // src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("s", $suffix, " {tmp0}, 0({dst})"), // atomic { *dst = tmp0 }
+                    concat!("addi {dst}, {dst}, ", $size),      // dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("s", $suffix, " {tmp1}, ", $size, "({dst})"), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("s", $suffix, " {tmp0}, 0({dst})"),           // atomic { *dst = tmp0 }
+                    concat!("addi {dst}, {dst}, 2*", $size),              // dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
     };
 }
 
@@ -302,8 +342,8 @@ macro_rules! atomic_zaamo {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $suffix:tt) => {
-        atomic_load_store!($ty, $suffix);
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load_store!($ty, $size, $suffix);
 
         // swap
         #[cfg(all(
@@ -489,8 +529,8 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $suffix:tt, $shift:tt) => {
-        atomic_load_store!($ty, $suffix);
+    ($ty:ident, $size:literal, $suffix:tt, $shift:tt) => {
+        atomic_load_store!($ty, $size, $suffix);
 
         // swap
         #[cfg(all(
@@ -949,16 +989,16 @@ macro_rules! atomic_sub_word {
 }
 
 #[cfg(target_arch = "riscv32")]
-atomic_sub_word!(u8, "b", "24");
+atomic_sub_word!(u8, "1", "b", "24");
 #[cfg(target_arch = "riscv32")]
-atomic_sub_word!(u16, "h", "16");
+atomic_sub_word!(u16, "2", "h", "16");
 #[cfg(target_arch = "riscv64")]
-atomic_sub_word!(u8, "b", "56");
+atomic_sub_word!(u8, "1", "b", "56");
 #[cfg(target_arch = "riscv64")]
-atomic_sub_word!(u16, "h", "48");
-atomic!(u32, "w");
+atomic_sub_word!(u16, "2", "h", "48");
+atomic!(u32, "4", "w");
 #[cfg(target_arch = "riscv64")]
-atomic!(u64, "d");
+atomic!(u64, "8", "d");
 
 #[rustfmt::skip]
 macro_rules! atomic_dw {
@@ -1271,4 +1311,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }

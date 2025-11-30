@@ -13,17 +13,32 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap};
+
+#[cfg(target_arch = "loongarch32")]
+macro_rules! addi {
+    () => {
+        "addi.w"
+    };
+}
+#[cfg(target_arch = "loongarch64")]
+macro_rules! addi {
+    () => {
+        "addi.d"
+    };
+}
 
 #[rustfmt::skip]
 macro_rules! atomic_load {
-    ($ty:ident, $suffix:tt) => {
+    ($ty:ident, $size:literal, $suffix:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -55,6 +70,44 @@ macro_rules! atomic_load {
                     }
                 }
                 out
+            }
+        }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("ld.", $suffix, " {tmp0}, {src}, 0"), // atomic { tmp0 = *src }
+                    concat!(addi!(), " {src}, {src}, ", $size),   // src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("ld.", $suffix, " {tmp1}, {src}, ", $size), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("ld.", $suffix, " {tmp0}, {src}, 0"),       // atomic { tmp0 = *src }
+                    concat!(addi!(), " {src}, {src}, 2*", $size),       // src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("st.", $suffix, " {tmp0}, {dst}, 0"), // atomic { *dst = tmp0 }
+                    concat!(addi!(), " {dst}, {dst}, ", $size),   // dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("st.", $suffix, " {tmp1}, {dst}, ", $size), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("st.", $suffix, " {tmp0}, {dst}, 0"),       // atomic { *dst = tmp0 }
+                    concat!(addi!(), " {dst}, {dst}, 2*", $size),       // dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
             }
         }
     };
@@ -99,8 +152,8 @@ macro_rules! atomic_store {
 }
 
 macro_rules! atomic {
-    ($ty:ident, $suffix:tt) => {
-        atomic_load!($ty, $suffix);
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load!($ty, $size, $suffix);
         #[cfg(any(
             target_arch = "loongarch32",
             atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
@@ -242,8 +295,8 @@ macro_rules! atomic {
 }
 
 macro_rules! atomic_sub_word {
-    ($ty:ident, $suffix:tt) => {
-        atomic_load!($ty, $suffix);
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load!($ty, $size, $suffix);
         atomic_store!($ty, $suffix);
         impl AtomicSwap for $ty {
             #[inline]
@@ -347,11 +400,11 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(u8, "b");
-atomic_sub_word!(u16, "h");
-atomic!(u32, "w");
+atomic_sub_word!(u8, "1", "b");
+atomic_sub_word!(u16, "2", "h");
+atomic!(u32, "4", "w");
 #[cfg(target_arch = "loongarch64")]
-atomic!(u64, "d");
+atomic!(u64, "8", "d");
 
 // -----------------------------------------------------------------------------
 // cfg macros
@@ -414,5 +467,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => {};
 }
