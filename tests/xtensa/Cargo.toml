@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 atomic-maybe-uninit = { path = "../.." }
 
-esp-hal = "1.0"
+esp-hal = "1"
 esp-println = { version = "0.16", default-features = false, features = ["uart"] }
 paste = "1"
 
