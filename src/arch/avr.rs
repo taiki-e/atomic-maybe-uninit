@@ -18,13 +18,15 @@ Generated asm:
 
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap};
 
 // See portable-atomic's interrupt module for more.
 #[inline(always)]
@@ -121,6 +123,40 @@ macro_rules! atomic8 {
                         options(nostack, preserves_flags),
                     );
                 }
+            }
+        }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    "ld {tmp0}, Z+", // atomic { tmp0 = *Z; Z = Z.byte_add(1) }
+                    tmp0 = out(reg) tmp0,
+                    inout("Z") src,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    "ld {tmp0}, Z+", // atomic { tmp0 = *Z; Z = Z.byte_add(1) }
+                    "ld {tmp1}, Z+", // atomic { tmp1 = *Z; Z = Z.byte_add(1) }
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    inout("Z") src,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    "st Z+, {tmp0}", // atomic { *Z = tmp0; dst = dst.byte_add(1) }
+                    tmp0 = in(reg) tmp0,
+                    inout("Z") dst,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    "st Z+, {tmp0}", // atomic { *Z = tmp0; dst = dst.byte_add(1) }
+                    "st Z+, {tmp1}", // atomic { *Z = tmp1; dst = dst.byte_add(1) }
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    inout("Z") dst,
+                    options(nostack, preserves_flags),
+                ),
             }
         }
         impl AtomicSwap for $ty {
@@ -333,5 +369,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => {};
 }
