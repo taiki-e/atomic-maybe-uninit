@@ -12,7 +12,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Optimize 128-bit load/store when AVX is enabled.
+- Optimize 128-bit load/store when AVX is enabled. ([908f454](https://github.com/taiki-e/atomic-maybe-uninit/commit/908f4542cd8a991a666502ad17f46610f1659039))
 
 ## [0.3.12] - 2025-10-14
 
