@@ -124,7 +124,7 @@ default_targets=(
   # riscv64 with A-extension
   riscv64gc-unknown-linux-gnu
   # riscv64 without A-extension
-  riscv64i-unknown-none-elf # custom target
+  riscv64im-unknown-none-elf
 
   # s390x
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "s390x" then .key else empty end'
@@ -254,6 +254,9 @@ build() {
   if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
     if [[ "${target}" == "avr-none" ]]; then
       target=avr-unknown-gnu-atmega2560 # custom target
+    fi
+    if [[ "${target}" == "riscv64im-unknown-none-elf" ]]; then
+      target=riscv64i-unknown-none-elf # custom target
     fi
     if [[ ! -f "target-specs/${target}.json" ]]; then
       printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped all checks)"

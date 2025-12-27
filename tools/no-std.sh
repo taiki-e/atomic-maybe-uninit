@@ -35,7 +35,7 @@ default_targets=(
   riscv32em-unknown-none-elf
   riscv32emc-unknown-none-elf
   # riscv64
-  riscv64i-unknown-none-elf # custom target
+  riscv64im-unknown-none-elf
   riscv64imac-unknown-none-elf
   riscv64gc-unknown-none-elf
 
@@ -128,6 +128,9 @@ run() {
   target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
   local target_rustflags="${RUSTFLAGS:-}"
   if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
+    if [[ "${target}" == "riscv64im-unknown-none-elf" ]]; then
+      target=riscv64i-unknown-none-elf # custom target
+    fi
     if [[ ! -f "target-specs/${target}.json" ]]; then
       printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped)"
       return 0
