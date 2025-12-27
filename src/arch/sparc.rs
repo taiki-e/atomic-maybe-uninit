@@ -29,142 +29,124 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
-#[cfg(any(
-    target_arch = "sparc64",
-    target_feature = "v9",
-    atomic_maybe_uninit_target_feature = "v9",
-))]
-macro_rules! cas {
-    ($suffix:tt, $rs1:tt, $rs2:tt, $rd:tt) => {
-        concat!("cas", $suffix, " ", $rs1, ", ", $rs2, ", ", $rd)
-    };
-}
-#[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
-macro_rules! cas {
-    ("", $rs1:tt, $rs2:tt, $rd:tt) => {
-        concat!(leon_align!(), "casa ", $rs1, " 10, ", $rs2, ", ", $rd)
-    };
-}
-
-// Bicc instructions are deprecated in V9.
-#[cfg(any(
-    target_arch = "sparc64",
-    target_feature = "v9",
-    atomic_maybe_uninit_target_feature = "v9",
-))]
-macro_rules! bne {
-    ($cc:tt, $label:tt) => {
-        concat!("bne ", $cc, ", ", $label, "\n", "nop")
-    };
-}
-#[cfg(not(any(
-    target_arch = "sparc64",
-    target_feature = "v9",
-    atomic_maybe_uninit_target_feature = "v9",
-)))]
-macro_rules! bne {
-    ("%icc", $label:tt) => {
-        concat!("bne ", $label, "\n", "nop")
-    };
-}
-
-// MOVcc instructions are unavailable in V8.
-#[cfg(any(
-    target_arch = "sparc64",
-    target_feature = "v9",
-    atomic_maybe_uninit_target_feature = "v9",
-))]
-macro_rules! move_ {
-    ($cc:tt, $val:tt, $rd:tt) => {
-        concat!("move ", $cc, ", ", $val, ", ", $rd)
-    };
-}
-#[cfg(not(any(
-    target_arch = "sparc64",
-    target_feature = "v9",
-    atomic_maybe_uninit_target_feature = "v9",
-)))]
-macro_rules! move_ {
-    ($cc:tt, $val:tt, $rd:tt) => {
-        concat!(bne!($cc, "99f"), "\n", "mov ", $val, ", ", $rd, "\n", "99:")
-    };
-}
-
-// Workaround for errata (GRLIB-TN-0009, GRLIB-TN-0010).
-// https://www.gaisler.com/app-notes-tech-notes-and-white-papers
-#[cfg(not(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa")))]
-macro_rules! leon_nop {
-    () => {
-        ""
-    };
-}
-#[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
-macro_rules! leon_nop {
-    () => {
-        "nop\n"
-    };
-}
-// Workaround for errata (GRLIB-TN-0011).
-// https://www.gaisler.com/app-notes-tech-notes-and-white-papers
-#[cfg(not(any(
-    target_arch = "sparc64",
-    target_feature = "v9",
-    atomic_maybe_uninit_target_feature = "v9",
-)))]
-#[cfg(not(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa")))]
-macro_rules! leon_align {
-    () => {
-        ""
-    };
-}
-#[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
-macro_rules! leon_align {
-    () => {
-        ".p2align 4\n"
-    };
-}
-
-#[cfg(any(
-    target_arch = "sparc64",
-    target_feature = "v9",
-    atomic_maybe_uninit_target_feature = "v9",
-))]
-macro_rules! atomic_rmw {
-    ($op:ident, $order:ident) => {
-        match $order {
-            Ordering::Relaxed => $op!("", ""),
-            // 15 == #LoadLoad | #StoreLoad | #LoadStore | #StoreStore
-            Ordering::Acquire => $op!("membar 15", ""),
-            Ordering::Release => $op!("", "membar 15"),
-            Ordering::AcqRel | Ordering::SeqCst => $op!("membar 15", "membar 15"),
-            _ => unreachable!(),
+cfg_sel!({
+    #[cfg(any(
+        target_arch = "sparc64",
+        target_feature = "v9",
+        atomic_maybe_uninit_target_feature = "v9",
+    ))]
+    {
+        // Bicc instructions are deprecated in V9.
+        macro_rules! bne {
+            ($cc:tt, $label:tt) => {
+                concat!("bne ", $cc, ", ", $label, "\n", "nop")
+            };
         }
-    };
-}
-#[cfg(not(any(
-    target_arch = "sparc64",
-    target_feature = "v9",
-    atomic_maybe_uninit_target_feature = "v9",
-)))]
-macro_rules! atomic_rmw {
-    ($op:ident, $order:ident) => {
-        // GCC and LLVM use different types of memory barriers in SPARC-V8, and probably have
-        // different semantics to obtain as a result. My experience with this platform is that LLVM
-        // is often incomplete and GCC's is more likely to be correct, but I use code with both
-        // semantics just to be safe.
-        match $order {
-            Ordering::Relaxed => $op!("", ""),
-            Ordering::Acquire => $op!("stbar", ""),
-            Ordering::Release => {
-                $op!("", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"))
-            }
-            Ordering::AcqRel | Ordering::SeqCst => {
-                $op!("stbar", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"))
-            }
-            _ => unreachable!(),
+        // MOVcc instructions are unavailable in V8.
+        macro_rules! move_ {
+            ($cc:tt, $val:tt, $rd:tt) => {
+                concat!("move ", $cc, ", ", $val, ", ", $rd)
+            };
         }
-    };
-}
+        macro_rules! atomic_rmw {
+            ($op:ident, $order:ident) => {
+                match $order {
+                    Ordering::Relaxed => $op!("", ""),
+                    // 15 == #LoadLoad | #StoreLoad | #LoadStore | #StoreStore
+                    Ordering::Acquire => $op!("membar 15", ""),
+                    Ordering::Release => $op!("", "membar 15"),
+                    Ordering::AcqRel | Ordering::SeqCst => $op!("membar 15", "membar 15"),
+                    _ => unreachable!(),
+                }
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        macro_rules! bne {
+            ("%icc", $label:tt) => {
+                concat!("bne ", $label, "\n", "nop")
+            };
+        }
+        macro_rules! move_ {
+            ($cc:tt, $val:tt, $rd:tt) => {
+                concat!(bne!($cc, "99f"), "\n", "mov ", $val, ", ", $rd, "\n", "99:")
+            };
+        }
+        macro_rules! atomic_rmw {
+            ($op:ident, $order:ident) => {
+                // GCC and LLVM use different types of memory barriers in SPARC-V8, and probably have
+                // different semantics to obtain as a result. My experience with this platform is that LLVM
+                // is often incomplete and GCC's is more likely to be correct, but I use code with both
+                // semantics just to be safe.
+                match $order {
+                    Ordering::Relaxed => $op!("", ""),
+                    Ordering::Acquire => $op!("stbar", ""),
+                    Ordering::Release => {
+                        $op!("", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"))
+                    }
+                    Ordering::AcqRel | Ordering::SeqCst => {
+                        $op!("stbar", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"))
+                    }
+                    _ => unreachable!(),
+                }
+            };
+        }
+    }
+});
+
+cfg_sel!({
+    #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
+    {
+        macro_rules! cas {
+            ("", $rs1:tt, $rs2:tt, $rd:tt) => {
+                concat!(leon_align!(), "casa ", $rs1, " 10, ", $rs2, ", ", $rd)
+            };
+        }
+        // Workaround for errata (GRLIB-TN-0009, GRLIB-TN-0010).
+        // https://www.gaisler.com/app-notes-tech-notes-and-white-papers
+        macro_rules! leon_nop {
+            () => {
+                "nop\n"
+            };
+        }
+        // Workaround for errata (GRLIB-TN-0011).
+        // https://www.gaisler.com/app-notes-tech-notes-and-white-papers
+        macro_rules! leon_align {
+            () => {
+                ".p2align 4\n"
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        #[cfg(any(
+            target_arch = "sparc64",
+            target_feature = "v9",
+            atomic_maybe_uninit_target_feature = "v9",
+        ))]
+        macro_rules! cas {
+            ($suffix:tt, $rs1:tt, $rs2:tt, $rd:tt) => {
+                concat!("cas", $suffix, " ", $rs1, ", ", $rs2, ", ", $rd)
+            };
+        }
+        macro_rules! leon_nop {
+            () => {
+                ""
+            };
+        }
+        #[cfg(not(any(
+            target_arch = "sparc64",
+            target_feature = "v9",
+            atomic_maybe_uninit_target_feature = "v9",
+        )))]
+        macro_rules! leon_align {
+            () => {
+                ""
+            };
+        }
+    }
+});
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {

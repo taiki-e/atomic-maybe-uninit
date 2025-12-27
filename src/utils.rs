@@ -73,6 +73,28 @@ macro_rules! const_fn {
     };
 }
 
+// rustfmt-compatible cfg_select/cfg_if alternative
+// Note: This macro is cfg_sel!({ }), not cfg_sel! { }.
+// An extra brace is used in input to make contents rustfmt-able.
+#[allow(unused_macros)]
+macro_rules! cfg_sel {
+    ({#[cfg(else)] { $($output:tt)* }}) => {
+        $($output)*
+    };
+    ({
+        #[cfg($cfg:meta)]
+        { $($output:tt)* }
+        $($( $rest:tt )+)?
+    }) => {
+        #[cfg($cfg)]
+        cfg_sel! {{#[cfg(else)] { $($output)* }}}
+        $(
+            #[cfg(not($cfg))]
+            cfg_sel! {{ $($rest)+ }}
+        )?
+    };
+}
+
 // HACK: This is equivalent to transmute_copy by value, but available in const
 // context even on older rustc (const transmute_copy requires Rust 1.74), and
 // can work around "cannot borrow here, since the borrowed element may contain
