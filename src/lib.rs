@@ -66,6 +66,10 @@ for more information about atomic operations in these architectures.
 
 Feel free to submit an issue if your target is not supported yet.
 
+## Limitations
+
+This crate uses inline assembly to implement atomic operations (this is currently the only sound way to perform atomic operations on uninitialized values), so it is not compatible with Miri and Sanitizers.
+
 ## Related Projects
 
 - [portable-atomic]: Portable atomic types including support for 128-bit atomics, atomic float, etc.
