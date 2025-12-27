@@ -363,7 +363,7 @@ macro_rules! atomic {
                         };
                     }
                     macro_rules! cmpxchg_acqrel {
-                        ($acquire_failure:expr) => {
+                        ($skip_failure_fence:expr) => {
                             asm_use_dmb!(
                                 concat!("ldrex", $suffix, " {out}, [{dst}]"),          // atomic { out = *dst; EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                    // if out == old { Z = 1 } else { Z = 0 }
@@ -379,8 +379,7 @@ macro_rules! atomic {
                                 "3:", // 'cmp-fail:
                                     "mov {r}, #1",                                     // r = 1
                                     clrex!(),                                          // EXCLUSIVE = None
-                                    $acquire_failure,                                  // fence
-                                    "b 5f",                                            // jump 'end
+                                    $skip_failure_fence,                               // jump 'end
                                 "4:", // 'success:
                                     dmb!(),                                            // fence
                                 "5:", // 'end:
@@ -406,8 +405,8 @@ macro_rules! atomic {
                         (Release, Relaxed) => cmpxchg_release!(""),
                         (Release, Acquire | SeqCst) => cmpxchg_release!(dmb!()),
                         // AcqRel and SeqCst compare_exchange are equivalent.
-                        (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!(""),
-                        (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
+                        (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!("b 5f"),
+                        (AcqRel | SeqCst, _) => cmpxchg_acqrel!(""),
                         _ => unreachable!(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
@@ -765,7 +764,7 @@ macro_rules! atomic64 {
                         };
                     }
                     macro_rules! cmpxchg_acqrel {
-                        ($acquire_failure:expr) => {
+                        ($skip_failure_fence:expr) => {
                             asm_use_dmb!(
                                 "ldrexd r2, r3, [{dst}]",          // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
                                 "eor {tmp}, r3, {old_hi}",         // tmp = r3 ^ old_hi
@@ -785,8 +784,7 @@ macro_rules! atomic64 {
                                 "3:", // 'cmp-fail:
                                     "mov {r}, #1",                 // r = 1
                                     clrex!(),                      // EXCLUSIVE = None
-                                    $acquire_failure,              // fence
-                                    "b 5f",                        // jump 'end
+                                    $skip_failure_fence,           // jump 'end
                                 "4:", // 'success:
                                     dmb!(),                        // fence
                                 "5:", // 'end
@@ -814,8 +812,8 @@ macro_rules! atomic64 {
                         (Release, Relaxed) => cmpxchg_release!(""),
                         (Release, Acquire | SeqCst) => cmpxchg_release!(dmb!()),
                         // AcqRel and SeqCst compare_exchange are equivalent.
-                        (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!(""),
-                        (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
+                        (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!("b 5f"),
+                        (AcqRel | SeqCst, _) => cmpxchg_acqrel!(""),
                         _ => unreachable!(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
