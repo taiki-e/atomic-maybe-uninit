@@ -17,6 +17,14 @@ runner = "qemu-system-arm -M lm3s6965evb -cpu cortex-m33 -display none -semihost
 [target.thumbv8m.main-none-eabihf]
 runner = "qemu-system-arm -M lm3s6965evb -cpu cortex-m33 -display none -semihosting -kernel"
 
+# Armv6
+[target.armv6-none-eabi]
+runner = "qemu-system-arm -M versatilepb -cpu arm1176 -display none -semihosting -kernel"
+[target.armv6-none-eabihf]
+runner = "qemu-system-arm -M versatilepb -cpu arm1176 -display none -semihosting -kernel"
+[target.thumbv6-none-eabi]
+runner = "qemu-system-arm -M versatilepb -cpu arm1176 -display none -semihosting -kernel"
+
 # RISC-V
 [target.'cfg(all(target_arch = "riscv32", target_os = "none"))']
 runner = "qemu-system-riscv32 -M virt -display none -semihosting -kernel"

@@ -174,6 +174,16 @@ macro_rules! atomic {
         ))]
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
@@ -206,6 +216,16 @@ macro_rules! atomic {
             }
         }
         impl AtomicStore for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
@@ -242,6 +262,16 @@ macro_rules! atomic {
             not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
         ))]
         impl AtomicSwap for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -291,6 +321,16 @@ macro_rules! atomic {
             not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
         ))]
         impl AtomicCompareExchange for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -414,6 +454,16 @@ macro_rules! atomic {
                     (out, r == 0)
                 }
             }
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
                 dst: *mut MaybeUninit<Self>,
@@ -543,6 +593,16 @@ macro_rules! atomic64 {
         delegate_signed!(delegate_all, $ty);
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicLoad for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
@@ -579,6 +639,16 @@ macro_rules! atomic64 {
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicStore for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
@@ -623,6 +693,16 @@ macro_rules! atomic64 {
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicSwap for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -672,6 +752,16 @@ macro_rules! atomic64 {
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicCompareExchange for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -821,6 +911,16 @@ macro_rules! atomic64 {
                     (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
                 }
             }
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
                 dst: *mut MaybeUninit<Self>,

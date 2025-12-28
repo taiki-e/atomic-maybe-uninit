@@ -130,6 +130,7 @@ uwrite
 uwriteln
 uxtb
 uxth
+versatilepb
 virt
 vmovdqa
 wokwi

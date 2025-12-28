@@ -206,8 +206,8 @@ fn main() {
             subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
             let (mut subarch, suffix) = subarch.split_once('.').unwrap_or((subarch, "")); // .base/.main suffix
             let mut known = true;
-            // As of rustc nightly-2025-01-13, there are the following "vN*" patterns:
-            // $ rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
+            // As of rustc nightly-2025-12-17, there are the following "vN*" patterns:
+            // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
             // ""
             // "v4t"
             // "v5te"
@@ -268,7 +268,7 @@ fn main() {
             let (v8, v8m) = if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
                 // Armv8-M is not considered as v8 by LLVM.
                 // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
-                if subarch.contains('m') {
+                if mclass {
                     // Armv8-M Mainline is a superset of Armv7-M.
                     // Armv8-M Baseline is a superset of Armv6-M.
                     // That said, LLVM handles thumbv8m.main without v8m like v6m, not v7m: https://godbolt.org/z/Ph96v9zae

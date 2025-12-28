@@ -22,6 +22,9 @@ default_targets=(
   thumbv8m.base-none-eabi
   thumbv8m.main-none-eabi
   thumbv8m.main-none-eabihf
+  # v6
+  # armv6-none-eabi # TODO(arm): Hang on 64-bit atomics
+  # thumbv6-none-eabi # TODO: "rustc-LLVM ERROR: Cannot select: intrinsic %llvm.arm.hint" will be fixed in https://github.com/rust-lang/rust/pull/150138
 
   # riscv32
   riscv32i-unknown-none-elf
@@ -188,7 +191,7 @@ run() {
 
   local test_dir
   case "${target}" in
-    thumb* | riscv*)
+    arm* | thumb* | riscv*)
       test_dir=tests/no-std-qemu
       linker=link.x
       target_rustflags+=" -C link-arg=-T${linker}"
