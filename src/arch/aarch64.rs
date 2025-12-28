@@ -19,16 +19,7 @@ Refs:
   https://developer.arm.com/documentation/ddi0600/latest (PDF)
 - portable-atomic https://github.com/taiki-e/portable-atomic
 
-Generated asm:
-- aarch64 https://godbolt.org/z/e8Wesj5WP
-- aarch64 msvc https://godbolt.org/z/jcTW8Eafo
-- aarch64 (+lse) https://godbolt.org/z/999aq8jGE
-- aarch64 msvc (+lse) https://godbolt.org/z/TodsEnfz6
-- aarch64 (+lse,+lse2) https://godbolt.org/z/r1M5GYWEj
-- aarch64 (+lse,+lse2,+rcpc3) https://godbolt.org/z/c9dnqxM45
-- aarch64 (+rcpc) https://godbolt.org/z/Ezc49YK6h
-- aarch64 (+lse2,+lse128) https://godbolt.org/z/GMdboxzjc
-- aarch64 (+lse2,+lse128,+rcpc3) https://godbolt.org/z/9beasofnd
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);

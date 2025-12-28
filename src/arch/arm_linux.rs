@@ -14,9 +14,7 @@ Refs:
   ARMv4 and ARMv5 Differences
   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences
 
-Generated asm:
-- armv5te https://godbolt.org/z/jqMMv6c3K
-- armv4t https://godbolt.org/z/qMYe5qsTb
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);

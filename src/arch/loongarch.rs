@@ -7,8 +7,7 @@ Refs:
 - LoongArch Reference Manual - Volume 1: Basic Architecture
   https://loongson.github.io/LoongArch-Documentation/LoongArch-Vol1-EN.html
 
-Generated asm:
-- loongarch64 https://godbolt.org/z/36649a5c8
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);

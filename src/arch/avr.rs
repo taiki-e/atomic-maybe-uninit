@@ -12,8 +12,7 @@ Refs:
 - portable-atomic
   https://github.com/taiki-e/portable-atomic
 
-Generated asm:
-- avr https://godbolt.org/z/5TYW8x6T9
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);

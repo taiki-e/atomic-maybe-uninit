@@ -20,12 +20,7 @@ Refs:
 - Instruction Set Assembly Guide for Armv7 and earlier Arm architectures Reference Guide
   https://developer.arm.com/documentation/100076/0200
 
-Generated asm:
-- armv7-a https://godbolt.org/z/qe34fzjs8
-- armv7-m https://godbolt.org/z/d741vssoa
-- armv6 (cp15_barrier) https://godbolt.org/z/aa7qb3jar
-- armv6 (__kuser_memory_barrier) https://godbolt.org/z/efEMEre5q
-- armv6-m https://godbolt.org/z/68jrzsW1v
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 #[cfg(not(any(

@@ -14,15 +14,7 @@ Refs:
 - portable-atomic
   https://github.com/taiki-e/portable-atomic
 
-Generated asm:
-- riscv64gc https://godbolt.org/z/f79P64a3T
-- riscv64gc (+zacas) https://godbolt.org/z/T4WajbxxM
-- riscv64gc (+zabha,+zacas) https://godbolt.org/z/jshsqo5f9
-- riscv32imac https://godbolt.org/z/3aPdnon9G
-- riscv32imac (+zacas) https://godbolt.org/z/Ysnnj5v77
-- riscv32imac (+zabha,+zacas) https://godbolt.org/z/cnKjonTbq
-- riscv32i (+zalrsc) https://godbolt.org/z/hPMxf95YG
-- riscv32i (+zacas) https://godbolt.org/z/qvcEddac6
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_load_store);

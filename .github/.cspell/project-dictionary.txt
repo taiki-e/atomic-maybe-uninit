@@ -25,6 +25,8 @@ cmpxchg
 csel
 cset
 cskyv
+cxchg
+cxchgweak
 dbar
 DWCAS
 espup
@@ -85,6 +87,7 @@ nostartfiles
 opensbi
 orrs
 partword
+powerpcspe
 pstq
 pthread
 qbsp
@@ -125,6 +128,8 @@ systeminfo
 tsim
 uart
 ultrasparc
+umax
+umin
 usart
 uwrite
 uwriteln
@@ -138,6 +143,7 @@ xadd
 xchg
 xmegau
 xmmword
+xsub
 zaamo
 zabha
 zacas

@@ -74,7 +74,9 @@ This crate uses inline assembly to implement atomic operations (this is currentl
 
 - [portable-atomic]: Portable atomic types including support for 128-bit atomics, atomic float, etc.
 - [atomic-memcpy]: Byte-wise atomic memcpy.
+- [asmtest]: A library for tracking generated assemblies.
 
+[asmtest]: https://github.com/taiki-e/asmtest
 [atomic-memcpy]: https://github.com/taiki-e/atomic-memcpy
 [portable-atomic]: https://github.com/taiki-e/portable-atomic
 [undefined-behavior]: https://doc.rust-lang.org/reference/behavior-considered-undefined.html

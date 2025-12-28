@@ -12,8 +12,7 @@ Refs:
 - portable-atomic
   https://github.com/taiki-e/portable-atomic
 
-Generated asm:
-- msp430 https://godbolt.org/z/vsrq45h5q
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);
