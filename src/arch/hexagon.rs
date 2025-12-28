@@ -7,8 +7,7 @@ Refs:
 - Qualcomm Hexagon V73 Programmer’s Reference Manual
   https://docs.qualcomm.com/bundle/publicresource/80-N2040-53_REV_AB_Qualcomm_Hexagon_V73_Programmers_Reference_Manual.pdf
 
-Generated asm:
-- hexagon https://godbolt.org/z/hGMTeEvo1
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);

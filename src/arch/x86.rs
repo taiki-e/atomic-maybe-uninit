@@ -11,14 +11,7 @@ Refs:
 - portable-atomic
   https://github.com/taiki-e/portable-atomic
 
-Generated asm:
-- x86_64 https://godbolt.org/z/xKzj4WcaE
-- x86_64 (+cmpxchg16b) https://godbolt.org/z/jzMoM9nhq
-- x86_64 (+cmpxchg16b,+avx) https://godbolt.org/z/6TnxM5hnj
-- x86 (i686) https://godbolt.org/z/sM6MPjYWf
-- x86 (i686,-sse2) https://godbolt.org/z/MsrxfbcMG
-- x86 (i586) https://godbolt.org/z/KEo6P7YEo
-- x86 (i586,-x87) https://godbolt.org/z/P8cdjY7h1
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_load_store);

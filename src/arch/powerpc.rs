@@ -16,14 +16,7 @@ Refs:
 - portable-atomic
   https://github.com/taiki-e/portable-atomic
 
-Generated asm:
-- powerpc https://godbolt.org/z/6PMzWfhEM
-- powerpc (+msync) https://godbolt.org/z/hsEGM66T9
-- powerpc (pwr8) https://godbolt.org/z/5KvMh4Phn
-- powerpc64 https://godbolt.org/z/exbfnjTW4
-- powerpc64 (pwr8) https://godbolt.org/z/4r3xGo8ef
-- powerpc64le (pwr7) https://godbolt.org/z/9zzaKcWbe
-- powerpc64le https://godbolt.org/z/3cs6ennKG
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);

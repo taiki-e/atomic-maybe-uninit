@@ -13,10 +13,7 @@ Refs:
 - The V8+ Technical Specification
   https://temlib.org/pub/SparcStation/Standards/V8plus.pdf
 
-Generated asm:
-- sparcv8+leoncasa https://godbolt.org/z/4TPGbfPo4
-- sparcv8plus https://godbolt.org/z/rvnPono8j
-- sparc64 https://godbolt.org/z/ejM3ooeec
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);

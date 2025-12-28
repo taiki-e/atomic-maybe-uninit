@@ -12,9 +12,7 @@ Refs:
 - portable-atomic
   https://github.com/taiki-e/portable-atomic
 
-Generated asm:
-- s390x https://godbolt.org/z/Y4YvPsTWz
-- s390x (z196) https://godbolt.org/z/v9Wbro8oj
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);
