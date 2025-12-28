@@ -624,19 +624,26 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
         if: startsWith(matrix.target, 'i586') || startsWith(matrix.target, 'i686')
       # aarch64 +lse
-      # macOS is skipped because it is +rcpc,+lse,+lse2 by default
+      # macOS is skipped because it is +lse,+lse2,+rcpc by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
-        if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
-      # aarch64 +rcpc,+lse,+lse2
-      # macOS is skipped because it is +rcpc,+lse,+lse2 by default
+        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64')) && !contains(matrix.target, '-darwin')
+      # aarch64 +lse,+lse2,+rcpc
+      # macOS is skipped because it is +lse,+lse2,+rcpc by default
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc,+lse,+lse2
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc,+lse,+lse2
-        if: startsWith(matrix.target, 'aarch64') && !contains(matrix.target, '-darwin')
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse,+lse2,+rcpc
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse,+lse2,+rcpc
+        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64')) && !contains(matrix.target, '-darwin')
+      # aarch64 +lse2,+lse128,+rcpc
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse2,+lse128,+rcpc
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse2,+lse128,+rcpc
+        # Only QEMU supports this, so skip other runners.
+        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64')) && !contains(matrix.target, '-darwin') && !contains(matrix.os, '-arm')
       # arm v8 little endian
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
@@ -725,7 +732,6 @@ jobs:
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+zabha,+zacas
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+zabha,+zacas
-          QEMU_CPU: max
         if: startsWith(matrix.target, 'riscv')
       # riscv zalrsc-based RMW ({32,64}-bit swap with Zalrsc without Zaamo)
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
@@ -969,13 +975,13 @@ jobs:
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
-        if: startsWith(matrix.target, 'aarch64')
-      # aarch64 +rcpc,+lse
+        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
+      # aarch64 +lse,+rcpc
       - run: tools/test.sh valgrind -vv ${TARGET:-}
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+rcpc,+lse
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+rcpc,+lse
-        if: startsWith(matrix.target, 'aarch64')
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse,+rcpc
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse,+rcpc
+        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
       # arm v8 little endian
       - run: tools/test.sh valgrind -vv ${TARGET:-}
         env:
