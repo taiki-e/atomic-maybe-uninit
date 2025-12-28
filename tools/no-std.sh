@@ -53,6 +53,9 @@ default_targets=(
 
   # m68k
   m68k-unknown-linux-gnu
+
+  # bpf
+  bpfel-unknown-none
 )
 
 x() {
@@ -179,11 +182,18 @@ run() {
       fi
       ;;
   esac
-  local args=("${target_flags[@]}")
+  local args=()
+  case "${target}" in
+    bpf*) ;;
+    *) args+=("${target_flags[@]}") ;;
+  esac
   if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
     retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
   elif [[ -n "${nightly}" ]]; then
-    args+=(-Z build-std="core")
+    case "${target}" in
+      bpf*) ;;
+      *) args+=(-Z build-std="core") ;;
+    esac
   else
     printf '%s\n' "target '${target}' requires nightly compiler (skipped)"
     return 0
@@ -248,18 +258,34 @@ run() {
       fi
       test_dir=tests/no-std-linux
       ;;
+    bpf*)
+      case "${commit_date}" in
+        2023-08-23)
+          # bpf-test uses 2024 edition
+          printf '%s\n' "target '${target}' is not supported on this version (skipped)"
+          return 0
+          ;;
+      esac
+      test_dir=tests/bpf
+      args+=(--config "target.\"cfg(all())\".runner=\"${workspace_dir}/tools/runner.sh sudo ${target}\"")
+      ;;
     *) bail "unrecognized target '${target}'" ;;
   esac
   case "${target}" in
-    m68k*) ;;
+    m68k* | bpf*) ;;
     *) args+=(--all-features) ;;
   esac
 
   (
     cd -- "${test_dir}"
-    CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-      RUSTFLAGS="${target_rustflags}" \
-      x_cargo "${args[@]}" "$@"
+    case "${target}" in
+      bpf*) ;;
+      *)
+        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+          RUSTFLAGS="${target_rustflags}" \
+          x_cargo "${args[@]}" "$@"
+        ;;
+    esac
     CARGO_TARGET_DIR="${target_dir}/no-std-test" \
       RUSTFLAGS="${target_rustflags}" \
       x_cargo "${args[@]}" --release "$@"
@@ -343,6 +369,19 @@ run() {
         CARGO_TARGET_DIR="${target_dir}/no-std-test" \
           RUSTFLAGS="${target_rustflags}" \
           x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        ;;
+      bpf*)
+        # Note: We cannot test everything at once due to size.
+        # isize, usize, i64, u64 are covered by the run with the default feature.
+        # NB: Sync feature list with tests/bpf/Cargo.toml
+        for feature in i32 u32; do
+          # CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+          #   RUSTFLAGS="${target_rustflags}" \
+          #   x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        done
         ;;
     esac
   )
