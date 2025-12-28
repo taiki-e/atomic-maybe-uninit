@@ -97,6 +97,17 @@ EOF
       *) bail "unrecognized runner '${runner}'" ;;
     esac
     ;;
+  bpf*)
+    case "${runner}" in
+      sudo)
+        start_simulator() {
+          # shellcheck disable=SC2024
+          sudo -E "${bin}" &>>"${stdout}" &
+        }
+        ;;
+      *) bail "unrecognized runner '${runner}'" ;;
+    esac
+    ;;
   *) bail "unrecognized target '${target}'" ;;
 esac
 
