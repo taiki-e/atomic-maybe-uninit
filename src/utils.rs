@@ -609,12 +609,16 @@ pair!(MaybeUninit64, u64, u32);
 pair!(MaybeUninit16, u16, u8);
 
 #[cfg(not(target_pointer_width = "16"))]
+#[cfg(all(target_arch = "bpf", not(target_feature = "alu32")))]
+type MinWord = u64;
+#[cfg(not(target_pointer_width = "16"))]
+#[cfg(not(all(target_arch = "bpf", not(target_feature = "alu32"))))]
 type MinWord = u32;
 #[cfg(not(target_pointer_width = "16"))]
-#[cfg(target_arch = "s390x")]
+#[cfg(any(target_arch = "s390x", all(target_arch = "bpf", target_feature = "alu32")))]
 type RetInt = u32;
 #[cfg(not(target_pointer_width = "16"))]
-#[cfg(not(target_arch = "s390x"))]
+#[cfg(not(any(target_arch = "s390x", all(target_arch = "bpf", target_feature = "alu32"))))]
 type RetInt = RegSize;
 // Helper for implementing sub-word atomic operations using word-sized LL/SC loop or CAS loop.
 //
