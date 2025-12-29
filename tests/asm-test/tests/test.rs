@@ -43,6 +43,8 @@ fn test() {
         // AVR
         Revision::new("avr", "avr-none")
             .rustc_args(["-C", "target-cpu=atmega2560"]),
+        Revision::new("avr_rmw", "avr-none")
+            .rustc_args(["-C", "target-cpu=atxmega384c3"]),
         // C-SKY
         Revision::new("csky", "csky-unknown-linux-gnuabiv2")
             .rustc_args(["-C", "target-cpu=ck860"]),
@@ -101,6 +103,8 @@ fn test() {
         Revision::new("x86_64_cmpxchg16b", "x86_64-unknown-linux-gnu")
             .rustc_args(["-C", "target-feature=+cmpxchg16b"]),
         Revision::new("x86_64_cmpxchg16b_avx", "x86_64-unknown-linux-gnu")
+            .rustc_args(["-C", "target-feature=+cmpxchg16b,+avx"]),
+        Revision::new("x86_64_cmpxchg16b_avx_x32", "x86_64-unknown-linux-gnux32")
             .rustc_args(["-C", "target-feature=+cmpxchg16b,+avx"]),
         Revision::new("x86_sse2", "i686-unknown-linux-gnu"),
         Revision::new("x86_sse", "i686-unknown-linux-gnu")

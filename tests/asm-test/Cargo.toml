@@ -1,9 +1,10 @@
 [package]
 name = "asm-test"
-version = "0.0.0"
 edition = "2021"
-rust-version = "1.74" # Prevent clippy from suggesting a code that requires a new version.
-publish = false
+
+[lib]
+doc = false
+doctest = false
 
 [features]
 core = []
