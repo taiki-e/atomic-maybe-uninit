@@ -48,4 +48,6 @@ fn run() {
         test_atomic!(i128);
         test_atomic!(u128);
     }
+
+    // TODO: test memcpy
 }

@@ -48,6 +48,8 @@ fn main() -> ! {
     test_atomic!(i16);
     test_atomic!(u16);
 
+    // TODO: test memcpy
+
     println!("Tests finished successfully");
 
     sim::exit(0)
