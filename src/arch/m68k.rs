@@ -12,8 +12,7 @@ Refs:
 - M68060 User’s Manual
   https://www.nxp.com/docs/en/data-sheet/MC68060UM.pdf
 
-Generated asm:
-- m68k (M68020) https://godbolt.org/z/87Wxq1Wdj
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 #[cfg(not(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020")))]

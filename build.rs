@@ -206,8 +206,8 @@ fn main() {
             subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
             let (mut subarch, suffix) = subarch.split_once('.').unwrap_or((subarch, "")); // .base/.main suffix
             let mut known = true;
-            // As of rustc nightly-2025-01-13, there are the following "vN*" patterns:
-            // $ rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
+            // As of rustc nightly-2025-12-17, there are the following "vN*" patterns:
+            // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
             // ""
             // "v4t"
             // "v5te"
@@ -268,7 +268,7 @@ fn main() {
             let (v8, v8m) = if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
                 // Armv8-M is not considered as v8 by LLVM.
                 // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
-                if subarch.contains('m') {
+                if mclass {
                     // Armv8-M Mainline is a superset of Armv7-M.
                     // Armv8-M Baseline is a superset of Armv6-M.
                     // That said, LLVM handles thumbv8m.main without v8m like v6m, not v7m: https://godbolt.org/z/Ph96v9zae
@@ -308,8 +308,11 @@ fn main() {
             // https://github.com/gcc-mirror/gcc/commit/11c2453a16b725b7fb67778e1ab4636a51a1217d
             // https://github.com/rust-lang/rust/pull/130877
             let mut zaamo = false;
-            // target_feature "zacas" is unstable and available on rustc side since nightly-2025-02-26: https://github.com/rust-lang/rust/pull/137417
-            if (!version.probe(87, 2025, 2, 25) || needs_target_feature_fallback(&version, None))
+            // target_feature "zacas" is unstable and available on rustc side
+            // since nightly-2025-02-26 (https://github.com/rust-lang/rust/pull/137417),
+            // and stabilized in Rust 1.94 (https://github.com/rust-lang/rust/pull/145948).
+            if (!version.probe(87, 2025, 2, 25)
+                || needs_target_feature_fallback(&version, Some(94)))
                 && version.llvm >= 20
             {
                 // amocas.{w,d,q} (and amocas.{b,h} if zabha is also available)
@@ -317,8 +320,11 @@ fn main() {
                 // available non-experimental since LLVM 20 https://github.com/llvm/llvm-project/commit/614aeda93b2225c6eb42b00ba189ba7ca2585c60
                 zaamo |= target_feature_fallback("zacas", false);
             }
-            // target_feature "zaamo"/"zabha"/"zalrsc" is unstable and available on rustc side since nightly-2024-10-02: https://github.com/rust-lang/rust/pull/130877
-            if (!version.probe(83, 2024, 10, 1) || needs_target_feature_fallback(&version, None))
+            // target_feature "zaamo"/"zabha"/"zalrsc" is unstable and available on rustc side
+            // since nightly-2024-10-02 (https://github.com/rust-lang/rust/pull/130877),
+            // and stabilized in Rust 1.94 (https://github.com/rust-lang/rust/pull/145948).
+            if (!version.probe(83, 2024, 10, 1)
+                || needs_target_feature_fallback(&version, Some(94)))
                 && version.llvm >= 19
             {
                 // amo*.{b,h}
@@ -635,8 +641,8 @@ mod version {
         // the rustc version, we assume this is the current version.
         // It is no problem if this is older than the actual latest stable.
         // LLVM version is assumed to be the minimum external LLVM version:
-        // https://github.com/rust-lang/rust/blob/1.91.0/src/bootstrap/src/core/build_steps/llvm.rs#L626
-        pub(crate) const LATEST: Self = Self::stable(91, 19);
+        // https://github.com/rust-lang/rust/blob/1.92.0/src/bootstrap/src/core/build_steps/llvm.rs#L626
+        pub(crate) const LATEST: Self = Self::stable(92, 20);
 
         pub(crate) const fn stable(rustc_minor: u32, llvm_major: u32) -> Self {
             Self {

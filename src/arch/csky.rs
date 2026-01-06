@@ -10,8 +10,7 @@ Refs:
   https://github.com/torvalds/linux/blob/v6.16/arch/csky/include/asm/atomic.h
   https://github.com/torvalds/linux/blob/v6.16/arch/csky/include/asm/cmpxchg.h
 
-Generated asm:
-- csky https://godbolt.org/z/jK4c68WeG
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 #[cfg(atomic_maybe_uninit_no_ldex_stex)]

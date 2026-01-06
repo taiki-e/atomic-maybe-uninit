@@ -14,11 +14,7 @@ Refs:
 - MIPS® Coherence Protocol Specification, Revision 01.01 (MD00605)
   https://s3-eu-west-1.amazonaws.com/downloads-mips/documents/MD00605-2B-CMPCOHERE-AFP-01.01.pdf
 
-Generated asm:
-- mips https://godbolt.org/z/KMYoovEWe
-- mipsel https://godbolt.org/z/5n1c1M4Ev
-- mips64 https://godbolt.org/z/qErPfjKM9
-- mips64el https://godbolt.org/z/n1P1vGvfe
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);

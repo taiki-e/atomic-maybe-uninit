@@ -299,8 +299,7 @@ macro_rules! __test_atomic {
     (swap, $ty:ident) => {
         #[test]
         fn swap() {
-            // TODO(arm): unhandled instruction: 0xE1A62F92 (as of Valgrind 3.25)
-            // TODO(riscv): wrong result (as of Valgrind 3.25)
+            // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
             if cfg!(target_arch = "arm") && mem::size_of::<$ty>() == 8 && !IMP_ARM_LINUX
                 || cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2
@@ -363,8 +362,7 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_swap(x: $ty, y: $ty) -> bool {
-                // TODO(arm): unhandled instruction: 0xE1A62F92 (as of Valgrind 3.25)
-                // TODO(riscv): wrong result (as of Valgrind 3.25)
+                // TODO(riscv): wrong result (as of Valgrind 3.26)
                 #[cfg(valgrind)]
                 if cfg!(target_arch = "arm") && mem::size_of::<$ty>() == 8 && !IMP_ARM_LINUX
                     || cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2
@@ -402,7 +400,7 @@ macro_rules! __test_atomic {
         // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
         #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_swap() {
-            // TODO(riscv): wrong result (as of Valgrind 3.25)
+            // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -482,7 +480,7 @@ macro_rules! __test_atomic {
     (cas, $ty:ident) => {
         #[test]
         fn compare_exchange() {
-            // TODO(riscv): wrong result (as of Valgrind 3.25)
+            // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -561,7 +559,7 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn compare_exchange_weak() {
-            // TODO(riscv): wrong result (as of Valgrind 3.25)
+            // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -613,7 +611,7 @@ macro_rules! __test_atomic {
         }
         #[test]
         fn fetch_update() {
-            // TODO(riscv): wrong result (as of Valgrind 3.25)
+            // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -659,7 +657,7 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_compare_exchange(x: $ty, y: $ty) -> bool {
-                // TODO(riscv): wrong result (as of Valgrind 3.25)
+                // TODO(riscv): wrong result (as of Valgrind 3.26)
                 #[cfg(valgrind)]
                 if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                     return true;
@@ -727,7 +725,7 @@ macro_rules! __test_atomic {
                 true
             }
             fn quickcheck_fetch_update(x: $ty, y: $ty) -> bool {
-                // TODO(riscv): wrong result (as of Valgrind 3.25)
+                // TODO(riscv): wrong result (as of Valgrind 3.26)
                 #[cfg(valgrind)]
                 if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                     return true;
@@ -780,7 +778,7 @@ macro_rules! __test_atomic {
         // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
         #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_compare_exchange() {
-            // TODO(riscv): wrong result (as of Valgrind 3.25)
+            // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -865,7 +863,7 @@ macro_rules! __test_atomic {
         // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
         #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_fetch_update() {
-            // TODO(riscv): wrong result (as of Valgrind 3.25)
+            // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
                 return;
@@ -1257,7 +1255,7 @@ macro_rules! __stress_test_acquire_release {
         }
     };
     ($ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
-        // TODO(riscv): wrong result (as of Valgrind 3.25)
+        // TODO(riscv): wrong result (as of Valgrind 3.26)
         #[cfg(valgrind)]
         if cfg!(target_arch = "riscv64")
             && mem::size_of::<$ty>() <= 2
@@ -1342,7 +1340,7 @@ macro_rules! __stress_test_seqcst {
     ($ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
         const N: usize = if cfg!(valgrind) { 50 } else { 50_000 };
 
-        // TODO(riscv): wrong result (as of Valgrind 3.25)
+        // TODO(riscv): wrong result (as of Valgrind 3.26)
         #[cfg(valgrind)]
         if cfg!(target_arch = "riscv64")
             && mem::size_of::<$ty>() <= 2

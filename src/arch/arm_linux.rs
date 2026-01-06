@@ -14,9 +14,7 @@ Refs:
   ARMv4 and ARMv5 Differences
   https://developer.arm.com/documentation/ddi0406/cb/Appendixes/ARMv4-and-ARMv5-Differences
 
-Generated asm:
-- armv5te https://godbolt.org/z/jqMMv6c3K
-- armv4t https://godbolt.org/z/qMYe5qsTb
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);
@@ -64,47 +62,50 @@ fn kuser_helper_version() -> i32 {
     unsafe { crate::utils::ptr::with_exposed_provenance::<i32>(KUSER_HELPER_VERSION).read() }
 }
 
-// blx requires Armv5t
-#[cfg(all(
-    any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"),
-    not(atomic_maybe_uninit_test_prefer_bx),
-))]
-macro_rules! blx {
-    ($addr:tt) => {
-        concat!("blx ", $addr)
-    };
-}
-#[cfg(not(all(
-    any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"),
-    not(atomic_maybe_uninit_test_prefer_bx),
-)))]
-#[cfg(not(any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode")))]
-#[rustfmt::skip]
-macro_rules! blx {
-    ($addr:tt) => {
-        concat!(
-            "mov lr, pc", "\n",
-            "bx ", $addr
-        )
-    };
-}
-#[cfg(not(all(
-    any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"),
-    not(atomic_maybe_uninit_test_prefer_bx),
-)))]
-#[cfg(any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"))]
-#[rustfmt::skip]
-macro_rules! blx {
-    ($addr:tt) => {
-        concat!(
-            "bl 120f", "\n",
-            "b 121f", "\n",
-            "120:", "\n",
-            "bx ", $addr, "\n",
-            "121:",
-        )
-    };
-}
+cfg_sel!({
+    // blx requires Armv5t
+    #[cfg(all(
+        any(target_feature = "v5te", atomic_maybe_uninit_target_feature = "v5te"),
+        not(atomic_maybe_uninit_test_prefer_bx),
+    ))]
+    {
+        macro_rules! blx {
+            ($addr:tt) => {
+                concat!("blx ", $addr)
+            };
+        }
+    }
+    #[cfg(not(any(
+        target_feature = "thumb-mode",
+        atomic_maybe_uninit_target_feature = "thumb-mode",
+    )))]
+    {
+        #[rustfmt::skip]
+        macro_rules! blx {
+            ($addr:tt) => {
+                concat!(
+                    "mov lr, pc", "\n",
+                    "bx ", $addr
+                )
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        #[rustfmt::skip]
+        macro_rules! blx {
+            ($addr:tt) => {
+                concat!(
+                    "bl 120f", "\n",
+                    "b 121f", "\n",
+                    "120:", "\n",
+                    "bx ", $addr, "\n",
+                    "121:",
+                )
+            };
+        }
+    }
+});
 
 macro_rules! atomic_load_store {
     ($ty:ident, $suffix:tt) => {

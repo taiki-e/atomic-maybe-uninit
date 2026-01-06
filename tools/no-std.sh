@@ -22,6 +22,9 @@ default_targets=(
   thumbv8m.base-none-eabi
   thumbv8m.main-none-eabi
   thumbv8m.main-none-eabihf
+  # v6
+  # armv6-none-eabi # TODO(arm): Hang on 64-bit atomics
+  # thumbv6-none-eabi # TODO: "rustc-LLVM ERROR: Cannot select: intrinsic %llvm.arm.hint" will be fixed in https://github.com/rust-lang/rust/pull/150138
 
   # riscv32
   riscv32i-unknown-none-elf
@@ -35,7 +38,7 @@ default_targets=(
   riscv32em-unknown-none-elf
   riscv32emc-unknown-none-elf
   # riscv64
-  riscv64i-unknown-none-elf # custom target
+  riscv64im-unknown-none-elf
   riscv64imac-unknown-none-elf
   riscv64gc-unknown-none-elf
 
@@ -128,6 +131,9 @@ run() {
   target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
   local target_rustflags="${RUSTFLAGS:-}"
   if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
+    if [[ "${target}" == "riscv64im-unknown-none-elf" ]]; then
+      target=riscv64i-unknown-none-elf # custom target
+    fi
     if [[ ! -f "target-specs/${target}.json" ]]; then
       printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped)"
       return 0
@@ -185,7 +191,7 @@ run() {
 
   local test_dir
   case "${target}" in
-    thumb* | riscv*)
+    arm* | thumb* | riscv*)
       test_dir=tests/no-std-qemu
       linker=link.x
       target_rustflags+=" -C link-arg=-T${linker}"

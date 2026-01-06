@@ -12,6 +12,12 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.14] - 2025-12-28
+
+- Support thumbv6k. ([c5e93f5](https://github.com/taiki-e/atomic-maybe-uninit/commit/c5e93f58e511bc34cdcd398470a14d7afc4712f6))
+
+- Optimize CAS on Armv6 and Armv7. ([f98d8ab](https://github.com/taiki-e/atomic-maybe-uninit/commit/f98d8ab43c83e49bc3e030d8c3cb8ea1c5f96cab))
+
 ## [0.3.13] - 2025-11-30
 
 - Optimize 128-bit load/store when AVX is enabled. ([908f454](https://github.com/taiki-e/atomic-maybe-uninit/commit/908f4542cd8a991a666502ad17f46610f1659039))
@@ -385,7 +391,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.13...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.14...HEAD
+[0.3.14]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.13...v0.3.14
 [0.3.13]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.12...v0.3.13
 [0.3.12]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.11...v0.3.12
 [0.3.11]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.10...v0.3.11

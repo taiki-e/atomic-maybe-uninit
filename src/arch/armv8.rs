@@ -24,10 +24,7 @@ Refs:
 - Arm Cortex-M23 Devices Generic User Guide
   https://developer.arm.com/documentation/dui1095/a
 
-Generated asm:
-- armv8-a https://godbolt.org/z/xoPv85sMo
-- armv8-m baseline https://godbolt.org/z/MrMdWfoEq
-- armv8-m mainline https://godbolt.org/z/5odW5YnxP
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 delegate_size!(delegate_all);

@@ -20,12 +20,7 @@ Refs:
 - Instruction Set Assembly Guide for Armv7 and earlier Arm architectures Reference Guide
   https://developer.arm.com/documentation/100076/0200
 
-Generated asm:
-- armv7-a https://godbolt.org/z/qe34fzjs8
-- armv7-m https://godbolt.org/z/d741vssoa
-- armv6 (cp15_barrier) https://godbolt.org/z/aa7qb3jar
-- armv6 (__kuser_memory_barrier) https://godbolt.org/z/efEMEre5q
-- armv6-m https://godbolt.org/z/68jrzsW1v
+See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 #[cfg(not(any(
@@ -53,57 +48,89 @@ use crate::raw::{AtomicLoad, AtomicStore};
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 use crate::utils::{MaybeUninit64, Pair};
 
-#[cfg(all(
-    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
-))]
-#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
-macro_rules! dmb {
-    () => {
-        "dmb ish"
-    };
-}
-// Only a full system barrier exists in the M-class architectures.
-#[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))]
-macro_rules! dmb {
-    () => {
-        "dmb sy"
-    };
-}
-// Armv6 does not support `dmb`, so use use special instruction equivalent to a DMB.
-//
-// Refs:
-// - https://reviews.llvm.org/D5386
-// - https://developer.arm.com/documentation/ddi0360/f/control-coprocessor-cp15/register-descriptions/c7--cache-operations-register
-#[cfg(not(all(
-    any(target_os = "linux", target_os = "android"),
-    not(atomic_maybe_uninit_use_cp15_barrier),
-)))]
-#[cfg(not(all(
-    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
-)))]
-#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
-macro_rules! dmb {
-    () => {
-        "mcr p15, #0, {zero}, c7, c10, #5"
-    };
-}
-// We prefer __kuser_memory_barrier over cp15_barrier because cp15_barrier is
-// trapped and emulated by default on Linux/Android with Armv8+ (or Armv7+?).
-// https://github.com/rust-lang/rust/issues/60605
-#[cfg(all(
-    any(target_os = "linux", target_os = "android"),
-    not(atomic_maybe_uninit_use_cp15_barrier),
-))]
-#[cfg(not(all(
-    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
-)))]
-#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
-macro_rules! dmb {
-    () => {
-        "blx {kuser_memory_barrier}"
+cfg_sel!({
+    #[cfg(all(
+        any(
+            target_feature = "v7",
+            atomic_maybe_uninit_target_feature = "v7",
+            target_feature = "mclass",
+            atomic_maybe_uninit_target_feature = "mclass",
+        ),
+        not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
+    ))]
+    {
+        // Only a full system barrier exists in the M-class architectures.
+        #[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))]
+        macro_rules! dmb {
+            () => {
+                "dmb sy"
+            };
+        }
+        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+        macro_rules! dmb {
+            () => {
+                "dmb ish"
+            };
+        }
+        macro_rules! asm_use_dmb {
+            ($($asm:tt)*) => {
+                core::arch::asm!($($asm)*)
+            };
+        }
+    }
+    // We prefer __kuser_memory_barrier over cp15_barrier because cp15_barrier is
+    // trapped and emulated by default on Linux/Android with Armv8+ (or Armv7+?).
+    // https://github.com/rust-lang/rust/issues/60605
+    #[cfg(all(
+        any(target_os = "linux", target_os = "android"),
+        not(atomic_maybe_uninit_use_cp15_barrier),
+    ))]
+    {
+        macro_rules! dmb {
+            () => {
+                "blx {kuser_memory_barrier}"
+            };
+        }
+        macro_rules! asm_use_dmb {
+            ($($asm:tt)*) => {
+                // In this case, dmb! calls __kuser_memory_barrier.
+                core::arch::asm!(
+                    $($asm)*
+                    // __kuser_memory_barrier (see also arm_linux.rs)
+                    // https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/arm/kernel_user_helpers.rst
+                    kuser_memory_barrier = inout(reg) 0xFFFF0FA0_usize => _,
+                    out("lr") _,
+                )
+            };
+        }
+    }
+    // Armv6 does not support DMB instruction, so use use special instruction equivalent to it.
+    //
+    // Refs:
+    // - https://reviews.llvm.org/D5386
+    // - https://developer.arm.com/documentation/ddi0360/f/control-coprocessor-cp15/register-descriptions/c7--cache-operations-register
+    #[cfg(else)]
+    {
+        macro_rules! dmb {
+            () => {
+                "mcr p15, #0, {zero}, c7, c10, #5"
+            };
+        }
+        macro_rules! asm_use_dmb {
+            ($($asm:tt)*) => {
+                // In this case, dmb! calls `mcr p15, 0, <Rd>, c7, c10, 5`, and
+                // the value in the Rd register should be zero (SBZ).
+                core::arch::asm!(
+                    $($asm)*
+                    zero = inout(reg) 0_u32 => _,
+                )
+            };
+        }
+    }
+});
+macro_rules! asm_no_dmb {
+    ($($asm:tt)*) => {
+        core::arch::asm!($($asm)*)
     };
 }
 
@@ -128,73 +155,6 @@ macro_rules! clrex {
     };
 }
 
-macro_rules! asm_no_dmb {
-    ($($asm:tt)*) => {
-        core::arch::asm!($($asm)*)
-    };
-}
-#[cfg(all(
-    any(
-        target_feature = "v7",
-        atomic_maybe_uninit_target_feature = "v7",
-        target_feature = "mclass",
-        atomic_maybe_uninit_target_feature = "mclass",
-    ),
-    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
-))]
-macro_rules! asm_use_dmb {
-    ($($asm:tt)*) => {
-        core::arch::asm!($($asm)*)
-    };
-}
-#[cfg(not(all(
-    any(target_os = "linux", target_os = "android"),
-    not(atomic_maybe_uninit_use_cp15_barrier),
-)))]
-#[cfg(not(all(
-    any(
-        target_feature = "v7",
-        atomic_maybe_uninit_target_feature = "v7",
-        target_feature = "mclass",
-        atomic_maybe_uninit_target_feature = "mclass",
-    ),
-    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
-)))]
-macro_rules! asm_use_dmb {
-    ($($asm:tt)*) => {
-        // In this case, dmb! calls `mcr p15, 0, <Rd>, c7, c10, 5`, and the value in the Rd register should be zero (SBZ).
-        core::arch::asm!(
-            $($asm)*
-            zero = inout(reg) 0_u32 => _,
-        )
-    };
-}
-#[cfg(all(
-    any(target_os = "linux", target_os = "android"),
-    not(atomic_maybe_uninit_use_cp15_barrier),
-))]
-#[cfg(not(all(
-    any(
-        target_feature = "v7",
-        atomic_maybe_uninit_target_feature = "v7",
-        target_feature = "mclass",
-        atomic_maybe_uninit_target_feature = "mclass",
-    ),
-    not(atomic_maybe_uninit_test_prefer_kuser_memory_barrier),
-)))]
-macro_rules! asm_use_dmb {
-    ($($asm:tt)*) => {
-        // In this case, dmb! calls __kuser_memory_barrier.
-        core::arch::asm!(
-            $($asm)*
-            // __kuser_memory_barrier (see also arm_linux.rs)
-            // https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/arm/kernel_user_helpers.rst
-            kuser_memory_barrier = inout(reg) 0xFFFF0FA0_usize => _,
-            out("lr") _,
-        )
-    };
-}
-
 #[rustfmt::skip]
 macro_rules! atomic {
     ($ty:ident, $suffix:tt) => {
@@ -209,6 +169,16 @@ macro_rules! atomic {
         ))]
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
@@ -241,6 +211,16 @@ macro_rules! atomic {
             }
         }
         impl AtomicStore for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
@@ -277,6 +257,16 @@ macro_rules! atomic {
             not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
         ))]
         impl AtomicSwap for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -326,6 +316,16 @@ macro_rules! atomic {
             not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
         ))]
         impl AtomicCompareExchange for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -398,7 +398,7 @@ macro_rules! atomic {
                         };
                     }
                     macro_rules! cmpxchg_acqrel {
-                        ($acquire_failure:expr) => {
+                        ($skip_failure_fence:expr) => {
                             asm_use_dmb!(
                                 concat!("ldrex", $suffix, " {out}, [{dst}]"),          // atomic { out = *dst; EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                    // if out == old { Z = 1 } else { Z = 0 }
@@ -414,8 +414,7 @@ macro_rules! atomic {
                                 "3:", // 'cmp-fail:
                                     "mov {r}, #1",                                     // r = 1
                                     clrex!(),                                          // EXCLUSIVE = None
-                                    $acquire_failure,                                  // fence
-                                    "b 5f",                                            // jump 'end
+                                    $skip_failure_fence,                               // jump 'end
                                 "4:", // 'success:
                                     dmb!(),                                            // fence
                                 "5:", // 'end:
@@ -441,8 +440,8 @@ macro_rules! atomic {
                         (Release, Relaxed) => cmpxchg_release!(""),
                         (Release, Acquire | SeqCst) => cmpxchg_release!(dmb!()),
                         // AcqRel and SeqCst compare_exchange are equivalent.
-                        (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!(""),
-                        (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
+                        (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!("b 5f"),
+                        (AcqRel | SeqCst, _) => cmpxchg_acqrel!(""),
                         _ => unreachable!(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
@@ -450,6 +449,16 @@ macro_rules! atomic {
                     (out, r == 0)
                 }
             }
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
                 dst: *mut MaybeUninit<Self>,
@@ -579,6 +588,16 @@ macro_rules! atomic64 {
         delegate_signed!(delegate_all, $ty);
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicLoad for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
@@ -615,6 +634,16 @@ macro_rules! atomic64 {
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicStore for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
@@ -659,6 +688,16 @@ macro_rules! atomic64 {
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicSwap for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
@@ -708,6 +747,16 @@ macro_rules! atomic64 {
         }
         #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicCompareExchange for $ty {
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -800,7 +849,7 @@ macro_rules! atomic64 {
                         };
                     }
                     macro_rules! cmpxchg_acqrel {
-                        ($acquire_failure:expr) => {
+                        ($skip_failure_fence:expr) => {
                             asm_use_dmb!(
                                 "ldrexd r2, r3, [{dst}]",          // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
                                 "eor {tmp}, r3, {old_hi}",         // tmp = r3 ^ old_hi
@@ -820,8 +869,7 @@ macro_rules! atomic64 {
                                 "3:", // 'cmp-fail:
                                     "mov {r}, #1",                 // r = 1
                                     clrex!(),                      // EXCLUSIVE = None
-                                    $acquire_failure,              // fence
-                                    "b 5f",                        // jump 'end
+                                    $skip_failure_fence,           // jump 'end
                                 "4:", // 'success:
                                     dmb!(),                        // fence
                                 "5:", // 'end
@@ -849,8 +897,8 @@ macro_rules! atomic64 {
                         (Release, Relaxed) => cmpxchg_release!(""),
                         (Release, Acquire | SeqCst) => cmpxchg_release!(dmb!()),
                         // AcqRel and SeqCst compare_exchange are equivalent.
-                        (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!(""),
-                        (AcqRel | SeqCst, _) => cmpxchg_acqrel!(dmb!()),
+                        (AcqRel | SeqCst, Relaxed) => cmpxchg_acqrel!("b 5f"),
+                        (AcqRel | SeqCst, _) => cmpxchg_acqrel!(""),
                         _ => unreachable!(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
@@ -858,6 +906,16 @@ macro_rules! atomic64 {
                     (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
                 }
             }
+            #[cfg_attr(
+                all(
+                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+                    not(any(
+                        target_feature = "v7", atomic_maybe_uninit_target_feature = "v7",
+                        target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass",
+                    )),
+                ),
+                instruction_set(arm::a32)
+            )]
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
                 dst: *mut MaybeUninit<Self>,
