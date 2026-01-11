@@ -181,6 +181,9 @@ bail() {
   printf >&2 'error: %s\n' "$*"
   exit 1
 }
+info() {
+  printf >&2 'info: %s\n' "$*"
+}
 is_no_std() {
   case "$1" in
     *-linux-none*) ;;
@@ -259,12 +262,15 @@ build() {
       target=riscv64i-unknown-none-elf # custom target
     fi
     if [[ ! -f "target-specs/${target}.json" ]]; then
-      printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped all checks)"
+      if [[ -n "${ALL_TARGETS_MUST_BE_AVAILABLE:-}" ]]; then
+        bail "target '${target}' not available on ${rustc_version}"
+      fi
+      info "target '${target}' not available on ${rustc_version} (skipped all checks)"
       return 0
     fi
     if [[ "${rustc_minor_version}" -lt 91 ]] && [[ "${target}" != "avr"* ]]; then
       # Skip pre-1.91 because target-pointer-width change
-      printf '%s\n' "target '${target}' requires 1.91-nightly or later (skipped)"
+      info "target '${target}' requires 1.91-nightly or later (skipped)"
       return 0
     fi
     local target_flags=(--target "${workspace_dir}/target-specs/${target}.json")
@@ -294,7 +300,7 @@ build() {
       args+=(-Z build-std="core")
     fi
   else
-    printf '%s\n' "target '${target}' requires nightly compiler (skipped all checks)"
+    info "target '${target}' requires nightly compiler (skipped all checks)"
     return 0
   fi
   case "${target}" in
@@ -308,7 +314,7 @@ build() {
       ;;
     m68k*)
       if [[ "${llvm_version}" -lt 20 ]]; then
-        printf '%s\n' "target '${target}' requires LLVM 20+ (skipped all checks)"
+        info "target '${target}' requires LLVM 20+ (skipped all checks)"
         return 0
       fi
       # Workaround for compiler SIGSEGV.

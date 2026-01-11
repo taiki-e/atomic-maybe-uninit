@@ -82,6 +82,9 @@ bail() {
   printf >&2 'error: %s\n' "$*"
   exit 1
 }
+info() {
+  printf >&2 'info: %s\n' "$*"
+}
 
 pre_args=()
 is_custom_toolchain=''
@@ -135,12 +138,15 @@ run() {
       target=riscv64i-unknown-none-elf # custom target
     fi
     if [[ ! -f "target-specs/${target}.json" ]]; then
-      printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped)"
+      if [[ -n "${ALL_TARGETS_MUST_BE_AVAILABLE:-}" ]]; then
+        bail "target '${target}' not available on ${rustc_version}"
+      fi
+      info "target '${target}' not available on ${rustc_version} (skipped)"
       return 0
     fi
     if [[ "${rustc_minor_version}" -lt 91 ]] && [[ "${target}" != "avr"* ]]; then
       # Skip pre-1.91 because target-pointer-width change
-      printf '%s\n' "target '${target}' requires 1.91-nightly or later (skipped)"
+      info "target '${target}' requires 1.91-nightly or later (skipped)"
       return 0
     fi
     local target_flags=(--target "${workspace_dir}/target-specs/${target}.json")
@@ -152,19 +158,19 @@ run() {
     case "${target}" in
       sparc*)
         if ! type -P tsim-leon3 >/dev/null; then
-          printf '%s\n' "no-std test for ${target} requires tsim-leon3 (switched to build-only)"
+          info "no-std test for ${target} requires tsim-leon3 (switched to build-only)"
           subcmd=build
         fi
         ;;
       avr*)
         if ! type -P simavr >/dev/null; then
-          printf '%s\n' "no-std test for ${target} requires simavr (switched to build-only)"
+          info "no-std test for ${target} requires simavr (switched to build-only)"
           subcmd=build
         fi
         ;;
       msp430*)
         if ! type -P mspdebug >/dev/null; then
-          printf '%s\n' "no-std test for ${target} requires mspdebug (switched to build-only)"
+          info "no-std test for ${target} requires mspdebug (switched to build-only)"
           subcmd=build
         fi
         ;;
@@ -174,7 +180,7 @@ run() {
     xtensa*)
       # TODO(xtensa): run test with simulator on CI
       if ! type -P wokwi-server >/dev/null; then
-        printf '%s\n' "no-std test for ${target} requires wokwi-server (switched to build-only)"
+        info "no-std test for ${target} requires wokwi-server (switched to build-only)"
         subcmd=build
       fi
       ;;
@@ -185,7 +191,7 @@ run() {
   elif [[ -n "${nightly}" ]]; then
     args+=(-Z build-std="core")
   else
-    printf '%s\n' "target '${target}' requires nightly compiler (skipped)"
+    info "target '${target}' requires nightly compiler (skipped)"
     return 0
   fi
 
@@ -200,7 +206,7 @@ run() {
       case "${commit_date}" in
         2023-08-23)
           # no asm support
-          printf '%s\n' "target '${target}' is not supported on this version (skipped)"
+          info "target '${target}' is not supported on this version (skipped)"
           return 0
           ;;
       esac
@@ -217,7 +223,7 @@ run() {
       case "${commit_date}" in
         2023-08-23)
           # multiple definition of `__muldi3'
-          printf '%s\n' "target '${target}' in broken on this version (skipped)"
+          info "target '${target}' in broken on this version (skipped)"
           return 0
           ;;
       esac
@@ -243,7 +249,7 @@ run() {
     m68k*)
       if [[ "${llvm_version}" -lt 20 ]]; then
         # pre-20 LLVM bug https://github.com/llvm/llvm-project/issues/107939
-        printf '%s\n' "target '${target}' is not supported on this version (skipped)"
+        info "target '${target}' is not supported on this version (skipped)"
         return 0
       fi
       test_dir=tests/no-std-linux

@@ -582,7 +582,7 @@ jobs:
         # TODO(macos): error: linker stderr: ld: ignoring duplicate libraries: '-lc', '-lm'
         # TODO(windows): error: linker stdout: C:\a\portable-atomic\portable-atomic\target\debug\deps\portable_atomic-6f0d7f05900c9263.exe : warning LNK4072: section count 101 exceeds max (96); image may not run
         # TODO(csky): error: linker stderr: /home/runner/gcc-csky-linux-gnuabiv2/bin/../lib/gcc/csky-linux-gnuabiv2/6.3.0/../../../../csky-linux-gnuabiv2/bin/ld: file ....o's arch flag ck860 conflict with target ck810,set target arch flag to ck860
-        if: matrix.rust == 'nightly' && !(contains(matrix.target, '-darwin') || matrix.target == 'aarch64-pc-windows-msvc' || matrix.target == 'csky-unknown-linux-gnuabiv2')
+        if: matrix.rust == 'nightly' && !(contains(matrix.target, '-darwin') || startsWith(matrix.target, 'aarch64-pc-windows-') || matrix.target == 'csky-unknown-linux-gnuabiv2')
       # Old LLVM bug: Undefined temporary symbol error when building std.
       - name: Workaround for old LLVM bug about MIPS32
         run: printf 'RELEASE=--release\n' >>"${GITHUB_ENV}"
@@ -788,6 +788,7 @@ jobs:
       - run: tools/build.sh
         env:
           TESTS: ${{ matrix.tests }}
+          ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
 
   no-std:
     needs: tidy
@@ -884,6 +885,8 @@ jobs:
       - run: rm -- tests/avr/rust-toolchain.toml
         if: startsWith(matrix.rust, 'nightly-')
       - run: tools/no-std.sh
+        env:
+          ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
       - run: tools/build.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
         if: matrix.rust == 'stable'
       # TODO: exit with 1 without message
@@ -1026,7 +1029,7 @@ jobs:
           target: ${{ matrix.target }}
           runner: valgrind
       - run: |
-          printf '%s\n' "debug-assertions = true" >>./Cargo.toml
+          export CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=true
           # Skip debug mode because it's slow.
           binary_path=$(
             ./tools/test.sh build-valgrind --target "${{ matrix.target }}" --release
