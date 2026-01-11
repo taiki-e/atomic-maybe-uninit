@@ -84,7 +84,6 @@ msync
 muldi
 noat
 nostartfiles
-opensbi
 orrs
 partword
 powerpcspe
