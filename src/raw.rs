@@ -9,7 +9,7 @@ use core::{
 };
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
-// TODO: merge AtomicLoad and AtomicStore and rename to AtomicLoadStore?
+// TODO(semver): merge AtomicLoad and AtomicStore and rename to AtomicLoadStore?
 
 /// Primitive types that may support atomic operations.
 ///

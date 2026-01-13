@@ -779,7 +779,7 @@ macro_rules! int {
             /// Creates a new atomic value from a potentially uninitialized value.
             #[inline]
             #[must_use]
-            // TODO: remove in the next breaking release.
+            // TODO(semver): remove in the next breaking release.
             #[deprecated(
                 since = "0.3.10",
                 note = "use `new` instead because it is now always `const fn`"

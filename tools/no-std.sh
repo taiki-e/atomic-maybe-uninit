@@ -24,7 +24,7 @@ default_targets=(
   thumbv8m.main-none-eabihf
   # v6
   # armv6-none-eabi # TODO(arm): Hang on 64-bit atomics
-  # thumbv6-none-eabi # TODO: "rustc-LLVM ERROR: Cannot select: intrinsic %llvm.arm.hint" will be fixed in https://github.com/rust-lang/rust/pull/150138
+  # thumbv6-none-eabi # TODO(arm): "rustc-LLVM ERROR: Cannot select: intrinsic %llvm.arm.hint" will be fixed in https://github.com/rust-lang/rust/pull/150138
 
   # riscv32
   riscv32i-unknown-none-elf
