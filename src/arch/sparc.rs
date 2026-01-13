@@ -36,7 +36,12 @@ cfg_sel!({
         // Bicc instructions are deprecated in V9.
         macro_rules! bne {
             ($cc:tt, $label:tt) => {
-                concat!("bne ", $cc, ", ", $label, "\n", "nop")
+                concat!("bne ", $cc, ", ", $label)
+            };
+        }
+        macro_rules! bne_a {
+            ($cc:tt, $label:tt) => {
+                concat!("bne,a ", $cc, ", ", $label)
             };
         }
         // MOVcc instructions are unavailable in V8.
@@ -62,12 +67,23 @@ cfg_sel!({
     {
         macro_rules! bne {
             ("%icc", $label:tt) => {
-                concat!("bne ", $label, "\n", "nop")
+                concat!("bne ", $label)
             };
         }
+        macro_rules! bne_a {
+            ("%icc", $label:tt) => {
+                concat!("bne,a ", $label)
+            };
+        }
+        #[rustfmt::skip]
         macro_rules! move_ {
             ($cc:tt, $val:tt, $rd:tt) => {
-                concat!(bne!($cc, "99f"), "\n", "mov ", $val, ", ", $rd, "\n", "99:")
+                concat!(
+                    bne!($cc, "99f"), "\n",
+                    "nop", "\n",
+                    "mov ", $val, ", ", $rd, "\n",
+                    "99:"
+                )
             };
         }
         macro_rules! atomic_rmw {
@@ -282,13 +298,13 @@ macro_rules! atomic {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 $release,                                       // fence
-                                concat!("ld", $suffix, " [{dst}], {out}"),      // atomic { out = *dst }
+                                concat!("ld", $suffix, " [{dst}], {tmp}"),      // atomic { tmp = *dst }
                                 "2:", // 'retry:
-                                    "mov {out}, {tmp}",                         // tmp = out
                                     "mov {val}, {out}",                         // out = val
                                     cas!($suffix, "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = _x }
                                     "cmp {out}, {tmp}",                         // if out == tmp { cc.Z = true } else { cc.Z = false }
-                                    bne!($cc, "2b"),                            // if !cc.Z { jump 'retry }
+                                    bne_a!($cc, "2b"),                          // if !cc.Z {
+                                        "mov {out}, {tmp}",                     //   tmp = out; jump 'retry }
                                 $acquire,                                       // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
@@ -373,14 +389,14 @@ macro_rules! atomic_sub_word {
                                 "sll {mask}, {shift}, {mask}",             // mask <<= shift & 31
                                 "sll {val}, {shift}, {val}",               // val <<= shift & 31
                                 $release,                                  // fence
-                                "ld [{dst}], {out}",                       // atomic { out = *dst }
+                                "ld [{dst}], {tmp}",                       // atomic { tmp = *dst }
                                 "2:", // 'retry:
-                                    "mov {out}, {tmp}",                    // tmp = out
-                                    "andn {out}, {mask}, {out}",           // out &= !mask
+                                    "andn {tmp}, {mask}, {out}",           // out = tmp & !mask
                                     "or {out}, {val}, {out}",              // out |= val
                                     cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = _x }
                                     "cmp {out}, {tmp}",                    // if out == tmp { cc.Z = true } else { cc.Z = false }
-                                    bne!("%icc", "2b"),                    // if !cc.Z { jump 'retry }
+                                    bne_a!("%icc", "2b"),                  // if !cc.Z {
+                                        "mov {out}, {tmp}",                //   tmp = out; jump 'retry }
                                 "srl {out}, {shift}, {out}",               // out >>= shift & 31
                                 $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
@@ -429,16 +445,16 @@ macro_rules! atomic_sub_word {
                                 "2:", // 'retry:
                                     "and {out}, {mask}, {tmp}",            // tmp = out & mask
                                     "cmp {old}, {tmp}",                    // if old == tmp { cc.Z = true } else { cc.Z = false }
-                                    bne!("%icc", "3f"),                    // if !cc.Z { jump 'cmp-fail }
+                                    bne_a!("%icc", "3f"),                  // if !cc.Z {
+                                        "mov %g0, {tmp}",                  //   tmp = 0; jump 'cmp-fail }
                                     "mov {out}, {tmp}",                    // tmp = out
                                     "andn {out}, {mask}, {out}",           // out &= !mask
                                     "or {out}, {new}, {out}",              // out |= new
                                     cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = _x }
                                     "cmp {out}, {tmp}",                    // if out == tmp { cc.Z = true } else { cc.Z = false }
-                                    bne!("%icc", "2b"),                    // if !cc.Z { jump 'retry }
+                                    bne!("%icc", "2b"),                    // if !cc.Z {
+                                        "mov 1, {tmp}",                    //   tmp = 1; jump 'retry } else { tmp = 1 }
                                 "3:", // 'cmp-fail:
-                                "mov %g0, {tmp}",                          // tmp = 0
-                                move_!("%icc", "1", "{tmp}"),              // if cc.Z { tmp = 1 }
                                 "srl {out}, {shift}, {out}",               // out >>= shift & 31
                                 $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
