@@ -19,7 +19,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, C-SKY, and Xtensa are supported.
+Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, C-SKY, and Xtensa) are supported.
 (You can use `cfg_{has,no}_*` macros to write code based on whether or not which size of primitives is available.)
 
 | target_arch                                 | primitives                                          | load/store | swap/CAS |

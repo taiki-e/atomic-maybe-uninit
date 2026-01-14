@@ -14,10 +14,12 @@ This document describes the operations that are considered atomic by architectur
 - [M68k](#m68k)
 - [MIPS](#mips)
 - [MSP430](#msp430)
+- [NVPTX](#nvptx)
 - [PowerPC](#powerpc)
 - [RISC-V](#risc-v)
 - [s390x](#s390x)
 - [SPARC](#sparc)
+- [SPIR-V](#spir-v)
 - [x86](#x86)
 - [Xtensa](#xtensa)
 
@@ -27,7 +29,7 @@ target_arch: aarch64, arm64ec<br>
 Implementation: [aarch64.rs](aarch64.rs)<br>
 Refs: [Arm® Architecture Reference Manual for A-profile architecture](https://developer.arm.com/documentation/ddi0487/latest)
 
-TODO: overview
+TODO: document overview
 
 (Refs: Section B2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture)
 
@@ -37,7 +39,7 @@ target_arch: arm<br>
 Implementation: [arm.rs](arm.rs), [armv8.rs](armv8.rs), [arm_linux.rs](arm_linux.rs)<br>
 Refs: [Arm® Architecture Reference Manual for A-profile architecture](https://developer.arm.com/documentation/ddi0487/latest), [Arm® v8-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0553/latest), [ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition](https://developer.arm.com/documentation/ddi0406/latest), [Arm® v7-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0403/latest), [ARM® v6-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0419/latest)
 
-TODO: overview
+TODO: document overview
 
 (Refs: Section E2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture, Section B7.2 "Atomicity" of Arm® v8-M Architecture Reference Manual, Section A3.5.3 "Atomicity in the ARM architecture" of ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition, Section A3.5.3 "Atomicity in the Arm architecture" of Arm® v7-M Architecture Reference Manual, Section A3.5.1 "Atomicity in the ARM architecture" of ARM® v6-M Architecture Reference Manual)
 
@@ -67,21 +69,21 @@ This architecture is always single-core and the following operations are atomic:
 target_arch: csky<br>
 Implementation: [csky.rs](csky.rs)<br>
 
-TODO: reference and overview
+TODO: add reference link and document overview
 
 ## Hexagon
 
 target_arch: hexagon<br>
 Implementation: [hexagon.rs](hexagon.rs)<br>
 
-TODO: reference and overview
+TODO: add reference link and document overview
 
 ## LoongArch
 
 target_arch: loongarch32, loongarch64<br>
 Implementation: [loongarch.rs](loongarch.rs)<br>
 
-TODO: reference and overview
+TODO: add reference link and document overview
 
 ## M68k
 
@@ -146,6 +148,16 @@ This architecture is always single-core and the following operations are atomic:
   However, pure operations that are not affected by compiler fences (Note: the correct interrupt
   disabling and restoring implementation must imply compiler fences, e.g., asm without nomem/readonly)
   may be moved out of the critical section by compiler optimizations.
+
+## NVPTX
+
+target_arch: nvptx64<br>
+Implementation: TODO<br>
+Refs: [Parallel Thread Execution ISA](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html)
+
+TODO: add implementation and document overview
+
+(Refs: [Section 8 "Memory Consistency Model" of Parallel Thread Execution ISA Version 9.1](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#memory-consistency-model), [libcu++ Memory model](https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_model.html))
 
 ## PowerPC
 
@@ -347,16 +359,26 @@ Memory Order (RMO). V8 has only TSO and PSO. Implementation of TSO (or a more st
 which implies TSO) is mandatory, and PSO and RMO are optional.<br>
 (Refs: Section 8.4.4 "Memory Models" of the SPARC Architecture Manual, Version 9)
 
+## SPIR-V
+
+target_arch: nvptx64<br>
+Implementation: TODO<br>
+Refs: [SPIR-V Specification](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html)
+
+TODO: add implementation and document overview
+
+(Refs: [Section 3.3.18. "Atomic Instructions" of SPIR-V Specification version 1.6, Revision 6](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_atomic_instructions))
+
 ## x86
 
 target_arch: x86, x86_64<br>
 Implementation: [x86.rs](x86.rs)<br>
 
-TODO: reference and overview
+TODO: add reference link and document overview
 
 ## Xtensa
 
 target_arch: xtensa<br>
 Implementation: [xtensa.rs](xtensa.rs)<br>
 
-TODO: reference and overview
+TODO: add reference link and document overview

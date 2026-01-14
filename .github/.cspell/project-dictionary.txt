@@ -58,6 +58,7 @@ ldxp
 leoncasa
 lgcc
 libatomic
+libcu
 libnspr
 linkall
 LLDP
@@ -107,6 +108,7 @@ simavr
 simio
 slli
 sllv
+SPIR
 srai
 sreg
 srlv
