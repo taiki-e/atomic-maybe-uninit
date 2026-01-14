@@ -27,6 +27,7 @@ fn test() {
             .rustc_args(["-C", "target-feature=+lse2,+lse128"]),
         Revision::new("aarch64_lse2_lse128_rcpc3", "aarch64-unknown-linux-gnu")
             .rustc_args(["-C", "target-feature=+lse2,+lse128,+rcpc3"]),
+        // TODO: AArch64EC
         // Arm
         Revision::new("armv4t", "armv4t-unknown-linux-gnueabi"),
         Revision::new("armv5te", "armv5te-unknown-linux-gnueabi"),
@@ -66,13 +67,12 @@ fn test() {
         Revision::new("powerpc", "powerpc-unknown-linux-gnu"),
         Revision::new("powerpc_pwr8", "powerpc-unknown-linux-gnu")
             .rustc_args(["-C", "target-cpu=pwr8"]),
-        Revision::new("powerpcspe", "powerpc-unknown-linux-gnu")
-            .rustc_args(["-C", "target-feature=+msync"]),
-        Revision::new("powerpc64", "powerpc-unknown-linux-gnu"),
-        Revision::new("powerpc64_pwr8", "powerpc-unknown-linux-gnu")
+        Revision::new("powerpcspe", "powerpc-unknown-linux-gnuspe"),
+        Revision::new("powerpc64", "powerpc64-unknown-linux-gnu"),
+        Revision::new("powerpc64_pwr8", "powerpc64-unknown-linux-gnu")
             .rustc_args(["-C", "target-cpu=pwr8"]),
-        Revision::new("powerpc64le", "powerpc-unknown-linux-gnu"),
-        Revision::new("powerpc64le_pwr7", "powerpc-unknown-linux-gnu")
+        Revision::new("powerpc64le", "powerpc64le-unknown-linux-gnu"),
+        Revision::new("powerpc64le_pwr7", "powerpc64le-unknown-linux-gnu")
             .rustc_args(["-C", "target-cpu=pwr7"]),
         // RISC-V
         Revision::new("riscv64gc", "riscv64gc-unknown-linux-gnu"),

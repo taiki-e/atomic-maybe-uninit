@@ -1297,6 +1297,853 @@ asm_test::compare_exchange::u32::release_relaxed:
         isel              4, 5, 4, 20
         blr
 
+asm_test::compare_exchange::u64::acqrel_seqcst:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 1f
+        lwsync
+        nop
+        nop
+        nop
+0:
+        stdcx.            5, 0, 6
+        bt                2, 2f
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bt                2, 0b
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+2:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::seqcst_seqcst:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 1f
+        sync
+        nop
+        nop
+        nop
+0:
+        stdcx.            5, 0, 6
+        bt                2, 2f
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bt                2, 0b
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+2:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::acqrel_acquire:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 1f
+        lwsync
+        nop
+        nop
+        nop
+0:
+        stdcx.            5, 0, 6
+        bt                2, 2f
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bt                2, 0b
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+2:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::acqrel_relaxed:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 1f
+        lwsync
+        nop
+        nop
+        nop
+0:
+        stdcx.            5, 0, 6
+        bt                2, 2f
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bt                2, 0b
+1:
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+2:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::acquire_seqcst:
+        mr                6, 3
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+0:
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bf                2, 1f
+        stdcx.            5, 0, 6
+        bf                2, 0b
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::relaxed_seqcst:
+        mr                6, 3
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+0:
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bf                2, 1f
+        stdcx.            5, 0, 6
+        bf                2, 0b
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::release_seqcst:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 1f
+        lwsync
+        nop
+        nop
+        nop
+0:
+        stdcx.            5, 0, 6
+        bt                2, 2f
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bt                2, 0b
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+2:
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::seqcst_acquire:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 1f
+        sync
+        nop
+        nop
+        nop
+0:
+        stdcx.            5, 0, 6
+        bt                2, 2f
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bt                2, 0b
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+2:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::seqcst_relaxed:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 1f
+        sync
+        nop
+        nop
+        nop
+0:
+        stdcx.            5, 0, 6
+        bt                2, 2f
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bt                2, 0b
+1:
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+2:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::acquire_acquire:
+        mr                6, 3
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+0:
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bf                2, 1f
+        stdcx.            5, 0, 6
+        bf                2, 0b
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::acquire_relaxed:
+        mr                6, 3
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+0:
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bf                2, 1f
+        stdcx.            5, 0, 6
+        bf                2, 0b
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::relaxed_acquire:
+        mr                6, 3
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+0:
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bf                2, 1f
+        stdcx.            5, 0, 6
+        bf                2, 0b
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::relaxed_relaxed:
+        mr                6, 3
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+0:
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bf                2, 1f
+        stdcx.            5, 0, 6
+        bf                2, 0b
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::release_acquire:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 1f
+        lwsync
+        nop
+        nop
+        nop
+0:
+        stdcx.            5, 0, 6
+        bt                2, 2f
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bt                2, 0b
+1:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+2:
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u64::release_relaxed:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 1f
+        lwsync
+        nop
+        nop
+        nop
+0:
+        stdcx.            5, 0, 6
+        bt                2, 2f
+        ldarx             3, 0, 6
+        cmpld             3, 4
+        bt                2, 0b
+1:
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+2:
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange::u128::acqrel_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::seqcst_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::acqrel_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+        lwsync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::acqrel_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+        lwsync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::acquire_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::relaxed_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::release_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::seqcst_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::seqcst_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::acquire_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::acquire_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::relaxed_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::relaxed_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::release_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+        lwsync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange::u128::release_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+        lwsync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         mr                6, 3
         lbarx             3, 0, 3
@@ -2341,10 +3188,752 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
         isel              4, 5, 4, 20
         blr
 
+asm_test::compare_exchange_weak::u64::acqrel_seqcst:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        lwsync
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::seqcst_seqcst:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        sync
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::acqrel_acquire:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        lwsync
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::acqrel_relaxed:
+        mr                6, 3
+        ldarx             3, 0, 3
+        crclr             20
+        cmpld             3, 4
+        bf                2, 0f
+        lwsync
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::acquire_seqcst:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::relaxed_seqcst:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::release_seqcst:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        lwsync
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::seqcst_acquire:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        sync
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::seqcst_relaxed:
+        mr                6, 3
+        ldarx             3, 0, 3
+        crclr             20
+        cmpld             3, 4
+        bf                2, 0f
+        sync
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::acquire_acquire:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::acquire_relaxed:
+        mr                6, 3
+        ldarx             3, 0, 3
+        crclr             20
+        cmpld             3, 4
+        bf                2, 0f
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        lwsync
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::relaxed_acquire:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::relaxed_relaxed:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::release_acquire:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        lwsync
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        lwsync
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u64::release_relaxed:
+        mr                6, 3
+        ldarx             3, 0, 3
+        cmpld             3, 4
+        bf                2, 0f
+        lwsync
+        stdcx.            5, 0, 6
+        bt                2, 1f
+0:
+        crclr             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+1:
+        crset             20
+        li                4, 0
+        li                5, 1
+        isel              4, 5, 4, 20
+        blr
+
+asm_test::compare_exchange_weak::u128::acqrel_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::seqcst_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::acqrel_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+        lwsync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::acqrel_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+        lwsync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::acquire_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::relaxed_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::release_seqcst:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::seqcst_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::seqcst_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+        sync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::acquire_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::acquire_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::relaxed_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::relaxed_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::release_acquire:
+        std               28, -32(1)
+        std               29, -24(1)
+        lwsync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        lwsync
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
+asm_test::compare_exchange_weak::u128::release_relaxed:
+        std               28, -32(1)
+        std               29, -24(1)
+        lwsync
+0:
+        lqarx             10, 0, 4
+        xor               29, 11, 6
+        xor               28, 10, 5
+        or.               29, 29, 28
+        bf                2, 1f
+        mr                29, 8
+        mr                28, 7
+        stqcx.            28, 0, 4
+        bf                2, 0b
+1:
+        ld                29, -24(1)
+        ld                28, -32(1)
+        xor               4, 5, 10
+        xor               5, 6, 11
+        std               11, 8(3)
+        std               10, 0(3)
+        or                4, 5, 4
+        cntlzd            4, 4
+        rldicl            4, 4, 58, 63
+        stb               4, 16(3)
+        blr
+
 asm_test::load::u8::seqcst:
         sync
         lbz               3, 0(3)
-        cmpw              7, 3, 3
+        cmpd              7, 3, 3
         bf-               30, 0f
 0:
         isync
@@ -2352,7 +3941,7 @@ asm_test::load::u8::seqcst:
 
 asm_test::load::u8::acquire:
         lbz               3, 0(3)
-        cmpw              7, 3, 3
+        cmpd              7, 3, 3
         bf-               30, 0f
 0:
         isync
@@ -2365,7 +3954,7 @@ asm_test::load::u8::relaxed:
 asm_test::load::u16::seqcst:
         sync
         lhz               3, 0(3)
-        cmpw              7, 3, 3
+        cmpd              7, 3, 3
         bf-               30, 0f
 0:
         isync
@@ -2373,7 +3962,7 @@ asm_test::load::u16::seqcst:
 
 asm_test::load::u16::acquire:
         lhz               3, 0(3)
-        cmpw              7, 3, 3
+        cmpd              7, 3, 3
         bf-               30, 0f
 0:
         isync
@@ -2386,7 +3975,7 @@ asm_test::load::u16::relaxed:
 asm_test::load::u32::seqcst:
         sync
         lwz               3, 0(3)
-        cmpw              7, 3, 3
+        cmpd              7, 3, 3
         bf-               30, 0f
 0:
         isync
@@ -2394,7 +3983,7 @@ asm_test::load::u32::seqcst:
 
 asm_test::load::u32::acquire:
         lwz               3, 0(3)
-        cmpw              7, 3, 3
+        cmpd              7, 3, 3
         bf-               30, 0f
 0:
         isync
@@ -2402,6 +3991,54 @@ asm_test::load::u32::acquire:
 
 asm_test::load::u32::relaxed:
         lwz               3, 0(3)
+        blr
+
+asm_test::load::u64::seqcst:
+        sync
+        ld                3, 0(3)
+        cmpd              7, 3, 3
+        bf-               30, 0f
+0:
+        isync
+        blr
+
+asm_test::load::u64::acquire:
+        ld                3, 0(3)
+        cmpd              7, 3, 3
+        bf-               30, 0f
+0:
+        isync
+        blr
+
+asm_test::load::u64::relaxed:
+        ld                3, 0(3)
+        blr
+
+asm_test::load::u128::seqcst:
+        sync
+        lq                4, 0(3)
+        cmpd              7, 5, 5
+        mr                3, 4
+        bf-               30, 0f
+0:
+        isync
+        mr                4, 5
+        blr
+
+asm_test::load::u128::acquire:
+        lq                4, 0(3)
+        cmpd              7, 5, 5
+        mr                3, 4
+        mr                4, 5
+        bf-               30, 0f
+0:
+        isync
+        blr
+
+asm_test::load::u128::relaxed:
+        lq                4, 0(3)
+        mr                3, 4
+        mr                4, 5
         blr
 
 asm_test::swap::u8::acqrel:
@@ -2542,6 +4179,113 @@ asm_test::swap::u32::release:
         mr                3, 5
         blr
 
+asm_test::swap::u64::acqrel:
+        lwsync
+0:
+        ldarx             5, 0, 3
+        stdcx.            4, 0, 3
+        bf                2, 0b
+        lwsync
+        mr                3, 5
+        blr
+
+asm_test::swap::u64::seqcst:
+        sync
+0:
+        ldarx             5, 0, 3
+        stdcx.            4, 0, 3
+        bf                2, 0b
+        lwsync
+        mr                3, 5
+        blr
+
+asm_test::swap::u64::acquire:
+        mr                5, 3
+0:
+        ldarx             3, 0, 5
+        stdcx.            4, 0, 5
+        bf                2, 0b
+        lwsync
+        blr
+
+asm_test::swap::u64::relaxed:
+0:
+        ldarx             5, 0, 3
+        stdcx.            4, 0, 3
+        bf                2, 0b
+        mr                3, 5
+        blr
+
+asm_test::swap::u64::release:
+        lwsync
+0:
+        ldarx             5, 0, 3
+        stdcx.            4, 0, 3
+        bf                2, 0b
+        mr                3, 5
+        blr
+
+asm_test::swap::u128::acqrel:
+        lwsync
+0:
+        lqarx             6, 0, 3
+        mr                9, 5
+        mr                8, 4
+        stqcx.            8, 0, 3
+        bf                2, 0b
+        lwsync
+        mr                3, 6
+        mr                4, 7
+        blr
+
+asm_test::swap::u128::seqcst:
+        sync
+0:
+        lqarx             6, 0, 3
+        mr                9, 5
+        mr                8, 4
+        stqcx.            8, 0, 3
+        bf                2, 0b
+        lwsync
+        mr                3, 6
+        mr                4, 7
+        blr
+
+asm_test::swap::u128::acquire:
+0:
+        lqarx             6, 0, 3
+        mr                9, 5
+        mr                8, 4
+        stqcx.            8, 0, 3
+        bf                2, 0b
+        lwsync
+        mr                3, 6
+        mr                4, 7
+        blr
+
+asm_test::swap::u128::relaxed:
+0:
+        lqarx             6, 0, 3
+        mr                9, 5
+        mr                8, 4
+        stqcx.            8, 0, 3
+        bf                2, 0b
+        mr                3, 6
+        mr                4, 7
+        blr
+
+asm_test::swap::u128::release:
+        lwsync
+0:
+        lqarx             6, 0, 3
+        mr                9, 5
+        mr                8, 4
+        stqcx.            8, 0, 3
+        bf                2, 0b
+        mr                3, 6
+        mr                4, 7
+        blr
+
 asm_test::store::u8::seqcst:
         sync
         stb               4, 0(3)
@@ -2582,5 +4326,33 @@ asm_test::store::u32::relaxed:
 asm_test::store::u32::release:
         lwsync
         stw               4, 0(3)
+        blr
+
+asm_test::store::u64::seqcst:
+        sync
+        std               4, 0(3)
+        blr
+
+asm_test::store::u64::relaxed:
+        std               4, 0(3)
+        blr
+
+asm_test::store::u64::release:
+        lwsync
+        std               4, 0(3)
+        blr
+
+asm_test::store::u128::seqcst:
+        sync
+        stq               4, 0(3)
+        blr
+
+asm_test::store::u128::relaxed:
+        stq               4, 0(3)
+        blr
+
+asm_test::store::u128::release:
+        lwsync
+        stq               4, 0(3)
         blr
 
