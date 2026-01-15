@@ -27,7 +27,9 @@ fn test() {
             .rustc_args(["-C", "target-feature=+lse2,+lse128"]),
         Revision::new("aarch64_lse2_lse128_rcpc3", "aarch64-unknown-linux-gnu")
             .rustc_args(["-C", "target-feature=+lse2,+lse128,+rcpc3"]),
-        // TODO: AArch64EC
+        // Arm64EC
+        Revision::new("arm64ec", "arm64ec-pc-windows-msvc")
+            .rustc_args(["-C", "target-feature=-outline-atomics"]),
         // Arm
         Revision::new("armv4t", "armv4t-unknown-linux-gnueabi"),
         Revision::new("armv5te", "armv5te-unknown-linux-gnueabi"),
@@ -52,7 +54,7 @@ fn test() {
         // Hexagon
         Revision::new("hexagon", "hexagon-unknown-linux-musl"),
         // LoongArch32 and LoongArch64
-        // Revision::new("loongarch32", "loongarch32-unknown-none"),
+        Revision::new("loongarch32", "loongarch32-unknown-none"),
         Revision::new("loongarch64", "loongarch64-unknown-linux-gnu"),
         // M68k
         Revision::new("m68k", "m68k-unknown-linux-gnu"),
