@@ -861,6 +861,12 @@ jobs:
               retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused "https://download.gaisler.com/products/TSIM3/bin/tsim-eval/tsim-eval-${tsim3_version}.tar.gz" \
                 | tar xzf - --strip-components 1 -C "${HOME}"/tsim
               printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
+              # Patched QEMU 10.1.3 for LoongArch
+              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-connrefused https://github.com/taiki-e/qemu/releases/download/loongarch-semi-10.1.3/qemu-ubuntu-24.04.tar.xz \
+                | tar xJf -
+              sudo mv -- qemu /usr/local/qemu-loongarch-semi
+              /usr/local/qemu-loongarch-semi/bin/qemu-system-loongarch64 --version
+              printf '%s\n' "LOONGARCH_QEMU_BIN_DIR=/usr/local/qemu-loongarch-semi/bin" >>"${GITHUB_ENV}"
             fi
             # https://github.com/taiki-e/dockerfiles/pkgs/container/qemu-user
             retry docker create --name qemu-user ghcr.io/taiki-e/qemu-user

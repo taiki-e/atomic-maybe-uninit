@@ -42,6 +42,9 @@ default_targets=(
   riscv64imac-unknown-none-elf
   riscv64gc-unknown-none-elf
 
+  # loongarch32
+  loongarch32-unknown-none
+
   # sparc
   sparc-unknown-none-elf
 
@@ -197,7 +200,21 @@ run() {
 
   local test_dir
   case "${target}" in
-    arm* | thumb* | riscv*)
+    arm* | thumb* | riscv* | loongarch*)
+      case "${target}" in
+        loongarch*)
+          # TODO: The patched QEMU needed (see semihosting crate's README.md for details).
+          if [[ -z "${LOONGARCH_QEMU_BIN_DIR:-}" ]]; then
+            info "LoongArch semihosting support doesn't yet merged in upstream (skipped)"
+            return 0
+          fi
+          local cpu=''
+          case "${target}" in
+            loongarch32*) cpu=' -cpu la132' ;;
+          esac
+          export "CARGO_TARGET_${target_upper}_RUNNER"="${LOONGARCH_QEMU_BIN_DIR}/qemu-system-loongarch64 -M virt${cpu} -display none -semihosting -kernel"
+          ;;
+      esac
       test_dir=tests/no-std-qemu
       linker=link.x
       target_rustflags+=" -C link-arg=-T${linker}"
