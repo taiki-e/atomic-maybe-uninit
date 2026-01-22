@@ -199,7 +199,7 @@ atomic!(u32, reg, reg, identity, "", ":e", ":e", ":e", "dword", "eax");
 atomic!(u64, reg, reg, identity, "", "", "", "", "qword", "rax");
 
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE)/FILD&FISTP(x87) instead of CMPXCHG8B.
-// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
+// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 macro_rules! atomic64 {
