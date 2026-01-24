@@ -580,11 +580,11 @@ atomic64!(u64);
 macro_rules! atomic128 {
     ($ty:ident) => {
         #[cfg(target_pointer_width = "32")]
-        atomic128!($ty, "edi");
+        atomic128!($ty, "edi", "esi");
         #[cfg(target_pointer_width = "64")]
-        atomic128!($ty, "rdi");
+        atomic128!($ty, "rdi", "rsi");
     };
-    ($ty:ident, $rdi:tt) => {
+    ($ty:ident, $rdi:tt, $rsi:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -792,14 +792,14 @@ macro_rules! atomic128 {
                     // compare_exchange is always SeqCst.
                     asm!(
                         "xchg r8, rbx", // save rbx which is reserved by LLVM
-                        concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                        concat!("lock cmpxchg16b xmmword ptr [", $rsi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                         "sete cl",                                           // cl = ZF
                         "mov rbx, r8", // restore rbx
                         inout("r8") new.pair.lo => _,
                         in("rcx") new.pair.hi,
                         inout("rax") old.pair.lo => prev_lo,
                         inout("rdx") old.pair.hi => prev_hi,
-                        in($rdi) dst,
+                        in($rsi) dst,
                         lateout("cl") r,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
