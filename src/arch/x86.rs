@@ -96,7 +96,7 @@ macro_rules! atomic {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
+                mut val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
@@ -113,12 +113,13 @@ macro_rules! atomic {
                                 options(nostack, preserves_flags),
                             );
                         }
+                        #[allow(unused_assignments)] // TODO(gcc): Workaround for rustc_codegen_gcc bug
                         Ordering::SeqCst => {
                             asm!(
                                 // SeqCst store is xchg, not mov
                                 concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"), // atomic { _x = *dst; *dst = val; val = _x }
                                 dst = in(reg) dst,
-                                val = inout($val_reg) val => _,
+                                val = inout($val_reg) val,
                                 options(nostack, preserves_flags),
                             );
                         }
@@ -623,12 +624,12 @@ macro_rules! atomic128 {
                     let (prev_lo, prev_hi);
                     // atomic load is always SeqCst.
                     asm!(
-                        "mov {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
+                        "mov rsi, rbx", // save rbx which is reserved by LLVM
                         "xor rbx, rbx",       // zeroed rbx
                         concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
-                        "mov rbx, {rbx_tmp}", // restore rbx
+                        "mov rbx, rsi", // restore rbx
                         // set old/new args of CMPXCHG16B to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
-                        rbx_tmp = out(reg) _,
+                        out("rsi") _,
                         in("rcx") 0_u64,
                         inout("rax") 0_u64 => prev_lo,
                         inout("rdx") 0_u64 => prev_hi,
@@ -682,8 +683,8 @@ macro_rules! atomic128 {
                                 concat!("xchg qword ptr [{p", ptr_modifier!(), "}], {tmp}"),        // fence
                                 dst = in(reg) dst,
                                 val = in(xmm_reg) val,
-                                p = inout(reg) p.get() => _,
-                                tmp = lateout(reg) _,
+                                p = in(reg) p.get(),
+                                tmp = out(reg) _,
                                 options(nostack, preserves_flags),
                             );
                         }
@@ -701,7 +702,7 @@ macro_rules! atomic128 {
                     let _ = order;
                     // atomic store is always SeqCst.
                     asm!(
-                        "xchg {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
+                        "xchg rsi, rbx", // save rbx which is reserved by LLVM
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
@@ -712,8 +713,8 @@ macro_rules! atomic128 {
                         "2:", // 'retry:
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                             "jne 2b",                                            // if ZF == 0 { jump 'retry }
-                        "mov rbx, {rbx_tmp}", // restore rbx
-                        rbx_tmp = inout(reg) val.pair.lo => _,
+                        "mov rbx, rsi", // restore rbx
+                        inout("rsi") val.pair.lo => _,
                         in("rcx") val.pair.hi,
                         out("rax") _,
                         out("rdx") _,
@@ -743,7 +744,7 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
-                        "xchg {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
+                        "xchg rsi, rbx", // save rbx which is reserved by LLVM
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
@@ -754,8 +755,8 @@ macro_rules! atomic128 {
                         "2:", // 'retry:
                             concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                             "jne 2b",                                            // if ZF == 0 { jump 'retry }
-                        "mov rbx, {rbx_tmp}", // restore rbx
-                        rbx_tmp = inout(reg) val.pair.lo => _,
+                        "mov rbx, rsi", // restore rbx
+                        inout("rsi") val.pair.lo => _,
                         in("rcx") val.pair.hi,
                         out("rax") prev_lo,
                         out("rdx") prev_hi,
@@ -790,11 +791,11 @@ macro_rules! atomic128 {
                     let r: u8;
                     // compare_exchange is always SeqCst.
                     asm!(
-                        "xchg {rbx_tmp}, rbx", // save rbx which is reserved by LLVM
+                        "xchg r8, rbx", // save rbx which is reserved by LLVM
                         concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                         "sete cl",                                           // cl = ZF
-                        "mov rbx, {rbx_tmp}", // restore rbx
-                        rbx_tmp = inout(reg) new.pair.lo => _,
+                        "mov rbx, r8", // restore rbx
+                        inout("r8") new.pair.lo => _,
                         in("rcx") new.pair.hi,
                         inout("rax") old.pair.lo => prev_lo,
                         inout("rdx") old.pair.hi => prev_hi,

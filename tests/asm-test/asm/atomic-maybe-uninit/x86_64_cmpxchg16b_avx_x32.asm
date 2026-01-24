@@ -1695,83 +1695,83 @@ asm_test::swap::u64::release:
         ret
 
 asm_test::swap::u128::acqrel:
-        mov               r8, rdx
-        mov               r9, rdi
+        mov               r8, rdi
         mov               edi, esi
-        xchg              r8, rbx
+        mov               rsi, rdx
+        xchg              rsi, rbx
         mov               rax, qword ptr [edi]
         mov               rdx, qword ptr [edi + 0x8]
 0:
         lock cmpxchg16b   xmmword ptr [edi]
         jne               0b
-        mov               rbx, r8
-        mov               qword ptr [r9d + 0x8], rdx
-        mov               qword ptr [r9d], rax
-        mov               eax, r9d
+        mov               rbx, rsi
+        mov               qword ptr [r8d + 0x8], rdx
+        mov               qword ptr [r8d], rax
+        mov               eax, r8d
         ret
 
 asm_test::swap::u128::seqcst:
-        mov               r8, rdx
-        mov               r9, rdi
+        mov               r8, rdi
         mov               edi, esi
-        xchg              r8, rbx
+        mov               rsi, rdx
+        xchg              rsi, rbx
         mov               rax, qword ptr [edi]
         mov               rdx, qword ptr [edi + 0x8]
 0:
         lock cmpxchg16b   xmmword ptr [edi]
         jne               0b
-        mov               rbx, r8
-        mov               qword ptr [r9d + 0x8], rdx
-        mov               qword ptr [r9d], rax
-        mov               eax, r9d
+        mov               rbx, rsi
+        mov               qword ptr [r8d + 0x8], rdx
+        mov               qword ptr [r8d], rax
+        mov               eax, r8d
         ret
 
 asm_test::swap::u128::acquire:
-        mov               r8, rdx
-        mov               r9, rdi
+        mov               r8, rdi
         mov               edi, esi
-        xchg              r8, rbx
+        mov               rsi, rdx
+        xchg              rsi, rbx
         mov               rax, qword ptr [edi]
         mov               rdx, qword ptr [edi + 0x8]
 0:
         lock cmpxchg16b   xmmword ptr [edi]
         jne               0b
-        mov               rbx, r8
-        mov               qword ptr [r9d + 0x8], rdx
-        mov               qword ptr [r9d], rax
-        mov               eax, r9d
+        mov               rbx, rsi
+        mov               qword ptr [r8d + 0x8], rdx
+        mov               qword ptr [r8d], rax
+        mov               eax, r8d
         ret
 
 asm_test::swap::u128::relaxed:
-        mov               r8, rdx
-        mov               r9, rdi
+        mov               r8, rdi
         mov               edi, esi
-        xchg              r8, rbx
+        mov               rsi, rdx
+        xchg              rsi, rbx
         mov               rax, qword ptr [edi]
         mov               rdx, qword ptr [edi + 0x8]
 0:
         lock cmpxchg16b   xmmword ptr [edi]
         jne               0b
-        mov               rbx, r8
-        mov               qword ptr [r9d + 0x8], rdx
-        mov               qword ptr [r9d], rax
-        mov               eax, r9d
+        mov               rbx, rsi
+        mov               qword ptr [r8d + 0x8], rdx
+        mov               qword ptr [r8d], rax
+        mov               eax, r8d
         ret
 
 asm_test::swap::u128::release:
-        mov               r8, rdx
-        mov               r9, rdi
+        mov               r8, rdi
         mov               edi, esi
-        xchg              r8, rbx
+        mov               rsi, rdx
+        xchg              rsi, rbx
         mov               rax, qword ptr [edi]
         mov               rdx, qword ptr [edi + 0x8]
 0:
         lock cmpxchg16b   xmmword ptr [edi]
         jne               0b
-        mov               rbx, r8
-        mov               qword ptr [r9d + 0x8], rdx
-        mov               qword ptr [r9d], rax
-        mov               eax, r9d
+        mov               rbx, rsi
+        mov               qword ptr [r8d + 0x8], rdx
+        mov               qword ptr [r8d], rax
+        mov               eax, r8d
         ret
 
 asm_test::store::u8::seqcst:
