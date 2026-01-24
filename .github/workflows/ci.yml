@@ -74,6 +74,9 @@ jobs:
           - rust: nightly
             target: x86_64-unknown-linux-gnu
             flags: -Z codegen-backend=cranelift
+          - rust: nightly
+            target: x86_64-unknown-linux-gnu
+            flags: -Z codegen-backend=gcc
           # ------------------------------------------------------------
           # x86_64-apple-darwin
           # We test only one version because we do not have macOS-specific code and
@@ -470,7 +473,7 @@ jobs:
           #   target: riscv64gc-unknown-linux-gnu
           - rust: nightly
             target: riscv64gc-unknown-linux-gnu
-          # TODO: cranelift doesn't support cfg(target_feature): https://github.com/rust-lang/rustc_codegen_cranelift/issues/1400
+          # TODO(cranelift): cranelift doesn't support cfg(target_feature): https://github.com/rust-lang/rustc_codegen_cranelift/issues/1400
           # - rust: nightly
           #   target: riscv64gc-unknown-linux-gnu
           #   flags: -Z codegen-backend=cranelift
@@ -488,6 +491,10 @@ jobs:
           #   target: s390x-unknown-linux-gnu
           - rust: nightly
             target: s390x-unknown-linux-gnu
+          # TODO(cranelift): cranelift doesn't support inline assembly on s390x yet
+          # - rust: nightly
+          #   target: s390x-unknown-linux-gnu
+          #   flags: -Z codegen-backend=cranelift
           # ------------------------------------------------------------
           # sparc64-unknown-linux-gnu
           - rust: nightly-2024-11-08 # Rust 1.84, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
