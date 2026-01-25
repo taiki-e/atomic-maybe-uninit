@@ -89,8 +89,21 @@ jobs:
             os: macos-latest # Rosetta on AArch64
           # ------------------------------------------------------------
           # x86_64-pc-windows-msvc
-          # We test only one version because we do not have Windows-specific code and
-          # x86_64-specific code is also tested on Linux using multiple versions.
+          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
+            target: x86_64-pc-windows-msvc
+            os: windows-latest
+          # - rust: '1.81' # LLVM 18
+          #   target: x86_64-pc-windows-msvc
+          #   os: windows-latest
+          # - rust: '1.86' # LLVM 19
+          #   target: x86_64-pc-windows-msvc
+          #   os: windows-latest
+          - rust: stable
+            target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - rust: beta
+            target: x86_64-pc-windows-msvc
+            os: windows-latest
           - rust: nightly
             target: x86_64-pc-windows-msvc
             os: windows-latest

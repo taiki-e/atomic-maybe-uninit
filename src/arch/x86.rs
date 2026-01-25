@@ -579,12 +579,21 @@ atomic64!(u64);
 #[cfg(target_feature = "cmpxchg16b")]
 macro_rules! atomic128 {
     ($ty:ident) => {
+        // rdi and rsi are call-preserved on Windows.
+        #[cfg(not(windows))]
         #[cfg(target_pointer_width = "32")]
-        atomic128!($ty, "edi", "esi");
+        atomic128!($ty, "edi", "esi", "rsi");
+        #[cfg(not(windows))]
         #[cfg(target_pointer_width = "64")]
-        atomic128!($ty, "rdi", "rsi");
+        atomic128!($ty, "rdi", "rsi", "rsi");
+        #[cfg(windows)]
+        #[cfg(target_pointer_width = "32")]
+        atomic128!($ty, "r9d", "r11d", "r8");
+        #[cfg(windows)]
+        #[cfg(target_pointer_width = "64")]
+        atomic128!($ty, "r9", "r11", "r8");
     };
-    ($ty:ident, $rdi:tt, $rsi:tt) => {
+    ($ty:ident, $dst:tt, $cas_dst:tt, $save:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -624,16 +633,16 @@ macro_rules! atomic128 {
                     let (prev_lo, prev_hi);
                     // atomic load is always SeqCst.
                     asm!(
-                        "mov rsi, rbx", // save rbx which is reserved by LLVM
+                        concat!("mov ", $save, ", rbx"), // save rbx which is reserved by LLVM
                         "xor rbx, rbx",       // zeroed rbx
-                        concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
-                        "mov rbx, rsi", // restore rbx
+                        concat!("lock cmpxchg16b xmmword ptr [", $dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                        concat!("mov rbx, ", $save), // restore rbx
                         // set old/new args of CMPXCHG16B to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
-                        out("rsi") _,
+                        out($save) _,
                         in("rcx") 0_u64,
                         inout("rax") 0_u64 => prev_lo,
                         inout("rdx") 0_u64 => prev_hi,
-                        in($rdi) src,
+                        in($dst) src,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
@@ -702,23 +711,23 @@ macro_rules! atomic128 {
                     let _ = order;
                     // atomic store is always SeqCst.
                     asm!(
-                        "xchg rsi, rbx", // save rbx which is reserved by LLVM
+                        concat!("xchg ", $save, ", rbx"), // save rbx which is reserved by LLVM
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
-                        concat!("mov rax, qword ptr [", $rdi, "]"),              // atomic { rax = *$rdi }
-                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),          // atomic { rdx = *$rdi.byte_add(8) }
+                        concat!("mov rax, qword ptr [", $dst, "]"),              // atomic { rax = *$rdi }
+                        concat!("mov rdx, qword ptr [", $dst, " + 8]"),          // atomic { rdx = *$rdi.byte_add(8) }
                         "2:", // 'retry:
-                            concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                            concat!("lock cmpxchg16b xmmword ptr [", $dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                             "jne 2b",                                            // if ZF == 0 { jump 'retry }
-                        "mov rbx, rsi", // restore rbx
-                        inout("rsi") val.pair.lo => _,
+                        concat!("mov rbx, ", $save), // restore rbx
+                        inout($save) val.pair.lo => _,
                         in("rcx") val.pair.hi,
                         out("rax") _,
                         out("rdx") _,
-                        in($rdi) dst,
+                        in($dst) dst,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
@@ -744,23 +753,23 @@ macro_rules! atomic128 {
                 unsafe {
                     // atomic swap is always SeqCst.
                     asm!(
-                        "xchg rsi, rbx", // save rbx which is reserved by LLVM
+                        concat!("xchg ", $save, ", rbx"), // save rbx which is reserved by LLVM
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
                         //
                         // This is not single-copy atomic reads, but this is ok because subsequent
                         // CAS will check for consistency.
-                        concat!("mov rax, qword ptr [", $rdi, "]"),              // atomic { rax = *$rdi }
-                        concat!("mov rdx, qword ptr [", $rdi, " + 8]"),          // atomic { rdx = *$rdi.byte_add(8) }
+                        concat!("mov rax, qword ptr [", $dst, "]"),              // atomic { rax = *$rdi }
+                        concat!("mov rdx, qword ptr [", $dst, " + 8]"),          // atomic { rdx = *$rdi.byte_add(8) }
                         "2:", // 'retry:
-                            concat!("lock cmpxchg16b xmmword ptr [", $rdi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                            concat!("lock cmpxchg16b xmmword ptr [", $dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                             "jne 2b",                                            // if ZF == 0 { jump 'retry }
-                        "mov rbx, rsi", // restore rbx
-                        inout("rsi") val.pair.lo => _,
+                        concat!("mov rbx, ", $save), // restore rbx
+                        inout($save) val.pair.lo => _,
                         in("rcx") val.pair.hi,
                         out("rax") prev_lo,
                         out("rdx") prev_hi,
-                        in($rdi) dst,
+                        in($dst) dst,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
                     );
@@ -792,14 +801,14 @@ macro_rules! atomic128 {
                     // compare_exchange is always SeqCst.
                     asm!(
                         "xchg r8, rbx", // save rbx which is reserved by LLVM
-                        concat!("lock cmpxchg16b xmmword ptr [", $rsi, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                        concat!("lock cmpxchg16b xmmword ptr [", $cas_dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                         "sete cl",                                           // cl = ZF
                         "mov rbx, r8", // restore rbx
                         inout("r8") new.pair.lo => _,
                         in("rcx") new.pair.hi,
                         inout("rax") old.pair.lo => prev_lo,
                         inout("rdx") old.pair.hi => prev_hi,
-                        in($rsi) dst,
+                        in($cas_dst) dst,
                         lateout("cl") r,
                         // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                         options(nostack),
