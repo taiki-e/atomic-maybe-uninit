@@ -125,7 +125,6 @@ stwcx
 stxp
 subarch
 swpp
-systeminfo
 tsim
 uart
 ultrasparc
