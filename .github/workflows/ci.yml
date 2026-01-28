@@ -490,6 +490,8 @@ jobs:
   valgrind:
     needs: tidy
     name: valgrind (${{ matrix.target }})
+    env:
+      VALGRIND_INCLUDE: /usr/include/valgrind
     strategy:
       fail-fast: false
       matrix:
@@ -603,6 +605,8 @@ jobs:
   valgrind-cross:
     needs: tidy
     name: valgrind (${{ matrix.target }})
+    env:
+      VALGRIND_INCLUDE: /usr/include/valgrind
     strategy:
       fail-fast: false
       matrix:
