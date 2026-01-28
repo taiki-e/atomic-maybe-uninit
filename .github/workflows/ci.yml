@@ -162,7 +162,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
           FLAGS: ${{ matrix.flags }}
-          RUST: ${{ matrix.rust  }}
+          RUST: ${{ matrix.rust }}
       # Old LLVM bug: Undefined temporary symbol error when building std.
       - name: Workaround for old LLVM bug about MIPS32
         run: printf 'RELEASE=--release\n' >>"${GITHUB_ENV}"
@@ -460,7 +460,8 @@ jobs:
             sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
             rm -rf -- ./qemu-user
           elif [[ "${{ matrix.rust }}" == "stable" ]]; then
-            retry espup install --targets esp32,esp32s2,esp32s3
+            # Use the latest toolchain once upstream bug fixed.
+            retry espup install --targets esp32,esp32s2,esp32s3 --toolchain-version 1.90.0
           fi
           # https://github.com/taiki-e/dockerfiles/pkgs/container/qemu-system
           retry docker create --name qemu-system ghcr.io/taiki-e/qemu-system
@@ -713,6 +714,7 @@ jobs:
             done
             "$@"
           }
-          retry espup install --targets esp32
+          # Use the latest toolchain once upstream bug fixed.
+          retry espup install --targets esp32 --toolchain-version 1.90.0
       - run: cargo test --manifest-path tests/asm-test/Cargo.toml
       - run: cargo +esp test --manifest-path tests/asm-test/Cargo.toml
