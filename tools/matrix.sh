@@ -86,6 +86,7 @@ targets=(
   # sparc-unknown-linux-gnu # TODO(sparc): ld: unknown architecture of input file `.../symbols.o' is incompatible with sparc:v8plus output
   sparc64-unknown-linux-gnu
 )
+
 # See also LLVM version table in https://github.com/taiki-e/portable-atomic/blob/HEAD/.github/workflows/ci.yml.
 toolchains=(
   1.81 # LLVM 18
@@ -102,7 +103,9 @@ min_stable_toolchain() {
   fi
   case "${target}" in
     arm64ec* | s390x*) toolchain=1.84 ;; # LLVM 19
-    *) toolchain=1.74 ;;                 # LLVM 17 (oldest version that MaybeUninit register is supported)
+    # TODO: uncomment once 1.95 is stable
+    # powerpc*) toolchain=1.95 ;; # LLVM 21
+    *) toolchain=1.74 ;; # LLVM 17 (oldest version that MaybeUninit register is supported)
   esac
 }
 min_nightly_toolchain() {
@@ -153,6 +156,12 @@ add_matrix() {
         1.7[4-9] | 1.8[0-3]) convert_toolchain_for_unstable_asm ;;
       esac
       ;;
+    # TODO: uncomment once 1.95 is stable
+    # powerpc*)
+    #   case "${toolchain}" in
+    #     1.7[4-9] | 1.8[0-9] | 1.9[0-4]) convert_toolchain_for_unstable_asm ;;
+    #   esac
+    #   ;;
     *) [[ -z "${require_nightly}" ]] || convert_toolchain_for_unstable_asm ;;
   esac
   if [[ -z "${toolchain}" ]]; then
@@ -227,7 +236,6 @@ for target in "${targets[@]}"; do
   for toolchain in "${toolchains[@]}"; do
     # To test other Rust/LLVM versions, comment out the following and test_only_on_nightly above:
     case "${toolchain}" in
-      1.*) continue ;;
       beta)
         case "${target}" in
           # 64-bit tier 1 only
@@ -237,6 +245,7 @@ for target in "${targets[@]}"; do
           *) continue ;;
         esac
         ;;
+      1.*) continue ;;
       nightly) ;;
       *) [[ -z "${test_only_on_nightly}" ]] || continue ;;
     esac
@@ -245,6 +254,11 @@ for target in "${targets[@]}"; do
       arm64ec* | s390x*)
         case "${toolchain}" in
           1.8[4-6]) toolchain='' ;; # Handled in min stable toolchain
+        esac
+        ;;
+      powerpc*)
+        case "${toolchain}" in
+          1.95) toolchain='' ;; # Handled in min stable toolchain
         esac
         ;;
       arm-unknown-linux-gnueabi | armv7-unknown-linux-gnueabi | armeb-unknown-linux-gnueabi)
