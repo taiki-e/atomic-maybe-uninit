@@ -1094,7 +1094,7 @@ pub(crate) const IMP_EMU_SUB_WORD_CAS: bool = cfg!(target_arch = "s390x") || IMP
 #[cfg(valgrind)]
 #[inline(always)]
 pub(crate) fn mark_no_access<T: ?Sized>(a: &T) {
-    memcheck::mark_mem(
+    memcheck::mark_memory(
         a as *const T as *mut core::ffi::c_void,
         size_of_val(a),
         memcheck::MemState::NoAccess,
@@ -1104,7 +1104,7 @@ pub(crate) fn mark_no_access<T: ?Sized>(a: &T) {
 #[cfg(valgrind)]
 #[inline(always)]
 pub(crate) fn mark_defined<T: ?Sized>(a: &T) {
-    memcheck::mark_mem(
+    memcheck::mark_memory(
         a as *const T as *mut core::ffi::c_void,
         size_of_val(a),
         memcheck::MemState::Defined,
@@ -1115,7 +1115,7 @@ pub(crate) fn mark_defined<T: ?Sized>(a: &T) {
 #[inline(always)]
 pub(crate) fn mark_aligned_defined<T: ?Sized>(a: &T) {
     assert!(size_of_val(a) <= 2);
-    memcheck::mark_mem(
+    memcheck::mark_memory(
         (a as *const T as *mut core::ffi::c_void).map_addr(|a| a & !3),
         4,
         memcheck::MemState::Defined,
@@ -1126,7 +1126,7 @@ pub(crate) fn mark_aligned_defined<T: ?Sized>(a: &T) {
 #[inline(always)]
 pub(crate) fn mark_aligned_undefined<T: ?Sized>(a: &T) {
     assert!(size_of_val(a) <= 2);
-    memcheck::mark_mem(
+    memcheck::mark_memory(
         (a as *const T as *mut core::ffi::c_void).map_addr(|a| a & !3),
         4,
         memcheck::MemState::Undefined,
