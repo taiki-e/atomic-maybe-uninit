@@ -12,6 +12,18 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Update to stabilized [PowerPC](https://github.com/rust-lang/rust/pull/147996) inline assembly. ([c4cb5b1](https://github.com/taiki-e/atomic-maybe-uninit/commit/c4cb5b1f10857004852307c4a78ceec7ddeccd4f))
+
+- Work around [rustc_codegen_gcc bugs on x86_64](https://github.com/rust-lang/rustc_codegen_gcc/issues/821#issuecomment-3793567607). ([97a9190](https://github.com/taiki-e/atomic-maybe-uninit/commit/97a9190a2d877371bfb4c8f1b3f8624d030eaf12))
+
+- Optimize x86_64 128-bit atomics. ([d20f462](https://github.com/taiki-e/atomic-maybe-uninit/commit/d20f46213995b153dc2b71be52829ab893bc793a), [ca271a3](https://github.com/taiki-e/atomic-maybe-uninit/commit/ca271a38250f4f1ca7546ba1be758cb77866cb3f))
+
+- Optimize swap and {8,16}-bit CAS on SPARC/SPARC64. ([fc697c3](https://github.com/taiki-e/atomic-maybe-uninit/commit/fc697c3f29c0d288740d54c24a9bd7ab25490bf2))
+
+- Improve compile-time detection of RISC-V target features. ([de420f6](https://github.com/taiki-e/atomic-maybe-uninit/commit/de420f6a374a5916c22898d8ca7c005f8766bcab))
+
+- Enable [release immutability](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/immutable-releases).
+
 ## [0.3.14] - 2025-12-28
 
 - Support thumbv6k. ([c5e93f5](https://github.com/taiki-e/atomic-maybe-uninit/commit/c5e93f58e511bc34cdcd398470a14d7afc4712f6))
@@ -145,7 +157,7 @@ This release includes improvements to platform support, various optimizations, [
 
 - Make `into_inner` `const fn` on Rust 1.61+. (align to the [std atomic change in Rust 1.79](https://github.com/rust-lang/rust/pull/123522)) ([9c253dc](https://github.com/taiki-e/atomic-maybe-uninit/commit/9c253dcc6590f27f7d896400d07ac862fae5e712))
 
-- Improve loongarch64 support. ([358360c](https://github.com/taiki-e/atomic-maybe-uninit/commit/358360c2d6b89cdd3315eae6ec6a3b0c6d3abff4))
+- Improve LoongArch64 support. ([358360c](https://github.com/taiki-e/atomic-maybe-uninit/commit/358360c2d6b89cdd3315eae6ec6a3b0c6d3abff4))
 
 - Make rustc version detection robust for custom toolchains. ([c034611](https://github.com/taiki-e/atomic-maybe-uninit/commit/c0346119bf7e9e07cf9887c1acf10413c529f266))
 
