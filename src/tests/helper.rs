@@ -5,9 +5,6 @@
 use std::boxed::Box;
 pub(crate) use std::sync::atomic::Ordering;
 
-#[cfg(valgrind)]
-use crabgrind::memcheck;
-
 use crate::*;
 
 macro_rules! test_common {
@@ -1093,45 +1090,237 @@ pub(crate) const IMP_EMU_SUB_WORD_CAS: bool = cfg!(target_arch = "s390x") || IMP
 
 #[cfg(valgrind)]
 #[inline(always)]
+unsafe fn valgrind_do_client_request(
+    default: usize,
+    request: usize,
+    arg1: usize,
+    arg2: usize,
+    arg3: usize,
+    arg4: usize,
+    arg5: usize,
+) -> usize {
+    use core::arch::asm;
+
+    let args = [request, arg1, arg2, arg3, arg4, arg5];
+    let mut result;
+    unsafe {
+        // Refs: https://sourceware.org/git/?p=valgrind.git;a=blob;f=include/valgrind.h.in;t=VALGRIND_3_26_0
+        #[cfg(target_arch = "x86")]
+        asm!(
+            "
+            rol edi, 3
+            rol edi, 13
+            rol edi, 29
+            rol edi, 19
+            xchg ebx, ebx
+            ",
+            inout("edx") default => result,
+            in("eax") args.as_ptr(),
+            options(nostack),
+        );
+        #[cfg(target_arch = "x86_64")]
+        asm!(
+            "
+            rol rdi, 3
+            rol rdi, 13
+            rol rdi, 61
+            rol rdi, 51
+            xchg rbx, rbx
+            ",
+            inout("rdx") default => result,
+            in("rax") args.as_ptr(),
+            options(nostack),
+        );
+        #[cfg(target_arch = "powerpc")]
+        asm!(
+            "
+            rlwinm 0, 0, 3, 0, 31
+            rlwinm 0, 0, 13, 0, 31
+            rlwinm 0, 0, 29, 0, 31
+            rlwinm 0, 0, 19, 0, 31
+            or %r1, %r1, %r1
+            ",
+            inout("r3") default => result,
+            in("r4") args.as_ptr(),
+            out("cr0") _,
+            options(nostack),
+        );
+        #[cfg(target_arch = "powerpc64")]
+        asm!(
+            "
+            rotldi 0, 0, 3
+            rotldi 0, 0, 13
+            rotldi 0, 0, 61
+            rotldi 0, 0, 51
+            or %r1, %r1, %r1
+            ",
+            inout("r3") default => result,
+            in("r4") args.as_ptr(),
+            out("cr0") _,
+            options(nostack),
+        );
+        #[cfg(target_arch = "arm")]
+        asm!(
+            "
+            mov r12, r12, ror #3
+            mov r12, r12, ror #13
+            mov r12, r12, ror #29
+            mov r12, r12, ror #19
+            orr r10, r10, r10
+            ",
+            inout("r3") default => result,
+            in("r4") args.as_ptr(),
+            options(nostack),
+        );
+        #[cfg(target_arch = "aarch64")]
+        asm!(
+            "
+            ror x12, x12, #3
+            ror x12, x12, #13
+            ror x12, x12, #51
+            ror x12, x12, #61
+            orr x10, x10, x10
+            ",
+            inout("x3") default => result,
+            in("x4") args.as_ptr(),
+            options(nostack),
+        );
+        #[cfg(target_arch = "s390x")]
+        asm!(
+            "
+            lr %r15, %r15
+            lr %r1, %r1
+            lr %r2, %r2
+            lr %r3, %r3
+            lr %r2, %r2
+            ",
+            inout("r3") default => result,
+            in("r2") args.as_ptr(),
+            options(nostack),
+        );
+        #[cfg(any(target_arch = "mips", target_arch = "mips32r6"))]
+        asm!(
+            "
+            srl $0, $0, 13
+            srl $0, $0, 29
+            srl $0, $0, 3
+            srl $0, $0, 19
+            or $13, $13, $13
+            ",
+            inout("$11") default => result,
+            in("$12") args.as_ptr(),
+            options(nostack, preserves_flags),
+        );
+        #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
+        asm!(
+            "
+            dsll $0, $0, 3
+            dsll $0, $0, 13
+            dsll $0, $0, 29
+            dsll $0, $0, 19
+            or $13, $13, $13
+            ",
+            inout("$11") default => result,
+            in("$12") args.as_ptr(),
+            options(nostack, preserves_flags),
+        );
+        #[cfg(target_arch = "riscv64")]
+        asm!(
+            "
+            .option push
+            .option norvc
+            srli zero, zero, 3
+            srli zero, zero, 13
+            srli zero, zero, 51
+            srli zero, zero, 61
+            or a0, a0, a0
+            .option pop
+            ",
+            inout("a3") default => result,
+            in("a4") args.as_ptr(),
+            options(nostack, preserves_flags),
+        );
+        // Refs: https://github.com/FreeFlyingSheep/valgrind-loongarch64/blob/131f7852b25c79e0279347f0801bc0075de23640/include/valgrind.h.in#L1219
+        #[cfg(target_arch = "loongarch64")]
+        asm!(
+            "
+            srli.d $zero, $zero, 3
+            srli.d $zero, $zero, 13
+            srli.d $zero, $zero, 29
+            srli.d $zero, $zero, 19
+            or $t1, $t1, $t1
+            ",
+            inout("a7") default => result,
+            in("t0") args.as_ptr(),
+            options(nostack, preserves_flags),
+        );
+        // Refs: https://github.com/glaubitz/valgrind-sparc/blob/3155f4fc3f1779e505d09490c2678921cfbb7c71/include/valgrind.h#L1051
+        #[cfg(target_arch = "sparc64")]
+        asm!(
+            "
+            .register %g6, #ignore
+            .register %g7, #ignore
+            srax %g6, %g7, %g0
+            or %o0, %o1, %g0
+            ",
+            options(nostack),
+        );
+    }
+    result
+}
+
+#[cfg(valgrind)]
+const fn vg_userreq_tool_base(a: u8, b: u8) -> u32 {
+    (a as u32) << 24 | (b as u32) << 16
+}
+#[cfg(valgrind)]
+#[allow(non_upper_case_globals)]
+const VG_USERREQ__MAKE_MEM_NOACCESS: u32 = vg_userreq_tool_base(b'M', b'C') + 0;
+#[cfg(valgrind)]
+#[allow(non_upper_case_globals)]
+const VG_USERREQ__MAKE_MEM_UNDEFINED: u32 = vg_userreq_tool_base(b'M', b'C') + 1;
+#[cfg(valgrind)]
+#[allow(non_upper_case_globals)]
+const VG_USERREQ__MAKE_MEM_DEFINED: u32 = vg_userreq_tool_base(b'M', b'C') + 2;
+// #[cfg(valgrind)]
+// #[allow(non_upper_case_globals)]
+// const VG_USERREQ__MAKE_MEM_DEFINED_IF_ADDRESSABLE: u32 = vg_userreq_tool_base(b'M', b'C') + 11;
+#[cfg(valgrind)]
+#[inline(always)]
+fn mark_mem(req: u32, addr: *mut core::ffi::c_void, num_bytes: usize) {
+    let res =
+        unsafe { valgrind_do_client_request(0, req as usize, addr as usize, num_bytes, 0, 0, 0) };
+    assert_eq!(res, !0)
+}
+#[cfg(valgrind)]
+#[inline(always)]
 pub(crate) fn mark_no_access<T: ?Sized>(a: &T) {
-    memcheck::mark_mem(
-        a as *const T as *mut core::ffi::c_void,
-        size_of_val(a),
-        memcheck::MemState::NoAccess,
-    )
-    .unwrap();
+    mark_mem(VG_USERREQ__MAKE_MEM_NOACCESS, a as *const T as *mut core::ffi::c_void, size_of_val(a))
 }
 #[cfg(valgrind)]
 #[inline(always)]
 pub(crate) fn mark_defined<T: ?Sized>(a: &T) {
-    memcheck::mark_mem(
-        a as *const T as *mut core::ffi::c_void,
-        size_of_val(a),
-        memcheck::MemState::Defined,
-    )
-    .unwrap();
+    mark_mem(VG_USERREQ__MAKE_MEM_DEFINED, a as *const T as *mut core::ffi::c_void, size_of_val(a))
 }
 #[cfg(valgrind)]
 #[inline(always)]
 pub(crate) fn mark_aligned_defined<T: ?Sized>(a: &T) {
     assert!(size_of_val(a) <= 2);
-    memcheck::mark_mem(
+    mark_mem(
+        VG_USERREQ__MAKE_MEM_DEFINED,
         (a as *const T as *mut core::ffi::c_void).map_addr(|a| a & !3),
         4,
-        memcheck::MemState::Defined,
-    )
-    .unwrap();
+    );
 }
 #[cfg(valgrind)]
 #[inline(always)]
 pub(crate) fn mark_aligned_undefined<T: ?Sized>(a: &T) {
     assert!(size_of_val(a) <= 2);
-    memcheck::mark_mem(
+    mark_mem(
+        VG_USERREQ__MAKE_MEM_UNDEFINED,
         (a as *const T as *mut core::ffi::c_void).map_addr(|a| a & !3),
         4,
-        memcheck::MemState::Undefined,
-    )
-    .unwrap();
+    );
 }
 
 fn skip_should_panic_test() -> bool {

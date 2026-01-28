@@ -28,6 +28,7 @@ cskyv
 cxchg
 cxchgweak
 dbar
+dsll
 DWCAS
 espup
 fild
@@ -83,7 +84,9 @@ movq
 mspdebug
 msync
 muldi
+NOACCESS
 noat
+norvc
 nostartfiles
 orrs
 partword
@@ -94,6 +97,7 @@ qbsp
 quadword
 rcpc
 risbg
+rotldi
 rsbegin
 rsend
 RVWMO
@@ -110,6 +114,7 @@ slli
 sllv
 SPIR
 srai
+srax
 sreg
 srlv
 stbar
@@ -131,6 +136,7 @@ ultrasparc
 umax
 umin
 usart
+userreq
 uwrite
 uwriteln
 uxtb
