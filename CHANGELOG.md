@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.15] - 2026-01-28
+
 - Update to stabilized [PowerPC](https://github.com/rust-lang/rust/pull/147996) inline assembly. ([c4cb5b1](https://github.com/taiki-e/atomic-maybe-uninit/commit/c4cb5b1f10857004852307c4a78ceec7ddeccd4f))
 
 - Work around [rustc_codegen_gcc bugs on x86_64](https://github.com/rust-lang/rustc_codegen_gcc/issues/821#issuecomment-3793567607). ([97a9190](https://github.com/taiki-e/atomic-maybe-uninit/commit/97a9190a2d877371bfb4c8f1b3f8624d030eaf12))
@@ -403,7 +405,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.14...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.15...HEAD
+[0.3.15]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.14...v0.3.15
 [0.3.14]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.13...v0.3.14
 [0.3.13]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.12...v0.3.13
 [0.3.12]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.11...v0.3.12
