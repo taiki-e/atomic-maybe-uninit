@@ -604,8 +604,6 @@ jobs:
   valgrind-cross:
     needs: tidy
     name: valgrind (${{ matrix.target }})
-    env:
-      VALGRIND_INCLUDE: /usr/include
     strategy:
       fail-fast: false
       matrix:
