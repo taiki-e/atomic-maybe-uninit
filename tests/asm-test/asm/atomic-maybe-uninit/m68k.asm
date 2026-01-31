@@ -466,7 +466,9 @@ asm_test::compare_exchange::u64::acqrel_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -493,7 +495,9 @@ asm_test::compare_exchange::u64::seqcst_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -520,7 +524,9 @@ asm_test::compare_exchange::u64::acqrel_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -547,7 +553,9 @@ asm_test::compare_exchange::u64::acqrel_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -574,7 +582,9 @@ asm_test::compare_exchange::u64::acquire_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -601,7 +611,9 @@ asm_test::compare_exchange::u64::relaxed_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -628,7 +640,9 @@ asm_test::compare_exchange::u64::release_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -655,7 +669,9 @@ asm_test::compare_exchange::u64::seqcst_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -682,7 +698,9 @@ asm_test::compare_exchange::u64::seqcst_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -709,7 +727,9 @@ asm_test::compare_exchange::u64::acquire_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -736,7 +756,9 @@ asm_test::compare_exchange::u64::acquire_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -763,7 +785,9 @@ asm_test::compare_exchange::u64::relaxed_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -790,7 +814,9 @@ asm_test::compare_exchange::u64::relaxed_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -817,7 +843,9 @@ asm_test::compare_exchange::u64::release_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -844,7 +872,9 @@ asm_test::compare_exchange::u64::release_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1321,7 +1351,9 @@ asm_test::compare_exchange_weak::u64::acqrel_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1348,7 +1380,9 @@ asm_test::compare_exchange_weak::u64::seqcst_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1375,7 +1409,9 @@ asm_test::compare_exchange_weak::u64::acqrel_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1402,7 +1438,9 @@ asm_test::compare_exchange_weak::u64::acqrel_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1429,7 +1467,9 @@ asm_test::compare_exchange_weak::u64::acquire_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1456,7 +1496,9 @@ asm_test::compare_exchange_weak::u64::relaxed_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1483,7 +1525,9 @@ asm_test::compare_exchange_weak::u64::release_seqcst:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1510,7 +1554,9 @@ asm_test::compare_exchange_weak::u64::seqcst_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1537,7 +1583,9 @@ asm_test::compare_exchange_weak::u64::seqcst_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1564,7 +1612,9 @@ asm_test::compare_exchange_weak::u64::acquire_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1591,7 +1641,9 @@ asm_test::compare_exchange_weak::u64::acquire_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1618,7 +1670,9 @@ asm_test::compare_exchange_weak::u64::relaxed_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1645,7 +1699,9 @@ asm_test::compare_exchange_weak::u64::relaxed_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1672,7 +1728,9 @@ asm_test::compare_exchange_weak::u64::release_acquire:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
@@ -1699,7 +1757,9 @@ asm_test::compare_exchange_weak::u64::release_relaxed:
         movel             %d0,%a2@(4)
         movel             %d1,%a2@
         cmpib             #0,%d2
-        sne               %a2@(8)
+        sne               %d0
+        andb              #1,%d0
+        moveb             %d0,%a2@(8)
         movel             %a2,%d0
         moveml            %sp@(0),%d2-%d5/%a2
         addal             #20,%sp
