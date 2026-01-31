@@ -9,7 +9,6 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
 asm_test::compare_exchange::u8::seqcst_seqcst:
         mov               w8, w1
         casalb            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxtb
         mov               w0, w8
         cset              w1, eq
@@ -58,7 +57,6 @@ asm_test::compare_exchange::u8::release_seqcst:
 asm_test::compare_exchange::u8::seqcst_acquire:
         mov               w8, w1
         casalb            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxtb
         mov               w0, w8
         cset              w1, eq
@@ -67,7 +65,6 @@ asm_test::compare_exchange::u8::seqcst_acquire:
 asm_test::compare_exchange::u8::seqcst_relaxed:
         mov               w8, w1
         casalb            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxtb
         mov               w0, w8
         cset              w1, eq
@@ -132,7 +129,6 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
 asm_test::compare_exchange::u16::seqcst_seqcst:
         mov               w8, w1
         casalh            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxth
         mov               w0, w8
         cset              w1, eq
@@ -181,7 +177,6 @@ asm_test::compare_exchange::u16::release_seqcst:
 asm_test::compare_exchange::u16::seqcst_acquire:
         mov               w8, w1
         casalh            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxth
         mov               w0, w8
         cset              w1, eq
@@ -190,7 +185,6 @@ asm_test::compare_exchange::u16::seqcst_acquire:
 asm_test::compare_exchange::u16::seqcst_relaxed:
         mov               w8, w1
         casalh            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxth
         mov               w0, w8
         cset              w1, eq
@@ -255,7 +249,6 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
 asm_test::compare_exchange::u32::seqcst_seqcst:
         mov               w8, w1
         casal             w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1
         mov               w0, w8
         cset              w1, eq
@@ -304,7 +297,6 @@ asm_test::compare_exchange::u32::release_seqcst:
 asm_test::compare_exchange::u32::seqcst_acquire:
         mov               w8, w1
         casal             w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1
         mov               w0, w8
         cset              w1, eq
@@ -313,7 +305,6 @@ asm_test::compare_exchange::u32::seqcst_acquire:
 asm_test::compare_exchange::u32::seqcst_relaxed:
         mov               w8, w1
         casal             w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1
         mov               w0, w8
         cset              w1, eq
@@ -378,7 +369,6 @@ asm_test::compare_exchange::u64::acqrel_seqcst:
 asm_test::compare_exchange::u64::seqcst_seqcst:
         mov               x8, x1
         casal             x8, x2, [x0]
-        dmb               ish
         cmp               x8, x1
         mov               x0, x8
         cset              w1, eq
@@ -427,7 +417,6 @@ asm_test::compare_exchange::u64::release_seqcst:
 asm_test::compare_exchange::u64::seqcst_acquire:
         mov               x8, x1
         casal             x8, x2, [x0]
-        dmb               ish
         cmp               x8, x1
         mov               x0, x8
         cset              w1, eq
@@ -436,7 +425,6 @@ asm_test::compare_exchange::u64::seqcst_acquire:
 asm_test::compare_exchange::u64::seqcst_relaxed:
         mov               x8, x1
         casal             x8, x2, [x0]
-        dmb               ish
         cmp               x8, x1
         mov               x0, x8
         cset              w1, eq
@@ -505,7 +493,6 @@ asm_test::compare_exchange::u128::seqcst_seqcst:
         mov               x6, x2
         mov               x7, x3
         caspal            x6, x7, x4, x5, [x0]
-        dmb               ish
         cmp               x6, x2
         stp               x6, x7, [x8]
         ccmp              x7, x3, #0x0, eq
@@ -572,7 +559,6 @@ asm_test::compare_exchange::u128::seqcst_acquire:
         mov               x6, x2
         mov               x7, x3
         caspal            x6, x7, x4, x5, [x0]
-        dmb               ish
         cmp               x6, x2
         stp               x6, x7, [x8]
         ccmp              x7, x3, #0x0, eq
@@ -584,7 +570,6 @@ asm_test::compare_exchange::u128::seqcst_relaxed:
         mov               x6, x2
         mov               x7, x3
         caspal            x6, x7, x4, x5, [x0]
-        dmb               ish
         cmp               x6, x2
         stp               x6, x7, [x8]
         ccmp              x7, x3, #0x0, eq
@@ -669,7 +654,6 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         mov               w8, w1
         casalb            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxtb
         mov               w0, w8
         cset              w1, eq
@@ -718,7 +702,6 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
         mov               w8, w1
         casalb            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxtb
         mov               w0, w8
         cset              w1, eq
@@ -727,7 +710,6 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         mov               w8, w1
         casalb            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxtb
         mov               w0, w8
         cset              w1, eq
@@ -792,7 +774,6 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         mov               w8, w1
         casalh            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxth
         mov               w0, w8
         cset              w1, eq
@@ -841,7 +822,6 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
         mov               w8, w1
         casalh            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxth
         mov               w0, w8
         cset              w1, eq
@@ -850,7 +830,6 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         mov               w8, w1
         casalh            w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1, uxth
         mov               w0, w8
         cset              w1, eq
@@ -915,7 +894,6 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         mov               w8, w1
         casal             w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1
         mov               w0, w8
         cset              w1, eq
@@ -964,7 +942,6 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
         mov               w8, w1
         casal             w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1
         mov               w0, w8
         cset              w1, eq
@@ -973,7 +950,6 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         mov               w8, w1
         casal             w8, w2, [x0]
-        dmb               ish
         cmp               w8, w1
         mov               w0, w8
         cset              w1, eq
@@ -1038,7 +1014,6 @@ asm_test::compare_exchange_weak::u64::acqrel_seqcst:
 asm_test::compare_exchange_weak::u64::seqcst_seqcst:
         mov               x8, x1
         casal             x8, x2, [x0]
-        dmb               ish
         cmp               x8, x1
         mov               x0, x8
         cset              w1, eq
@@ -1087,7 +1062,6 @@ asm_test::compare_exchange_weak::u64::release_seqcst:
 asm_test::compare_exchange_weak::u64::seqcst_acquire:
         mov               x8, x1
         casal             x8, x2, [x0]
-        dmb               ish
         cmp               x8, x1
         mov               x0, x8
         cset              w1, eq
@@ -1096,7 +1070,6 @@ asm_test::compare_exchange_weak::u64::seqcst_acquire:
 asm_test::compare_exchange_weak::u64::seqcst_relaxed:
         mov               x8, x1
         casal             x8, x2, [x0]
-        dmb               ish
         cmp               x8, x1
         mov               x0, x8
         cset              w1, eq
@@ -1165,7 +1138,6 @@ asm_test::compare_exchange_weak::u128::seqcst_seqcst:
         mov               x6, x2
         mov               x7, x3
         caspal            x6, x7, x4, x5, [x0]
-        dmb               ish
         cmp               x6, x2
         stp               x6, x7, [x8]
         ccmp              x7, x3, #0x0, eq
@@ -1232,7 +1204,6 @@ asm_test::compare_exchange_weak::u128::seqcst_acquire:
         mov               x6, x2
         mov               x7, x3
         caspal            x6, x7, x4, x5, [x0]
-        dmb               ish
         cmp               x6, x2
         stp               x6, x7, [x8]
         ccmp              x7, x3, #0x0, eq
@@ -1244,7 +1215,6 @@ asm_test::compare_exchange_weak::u128::seqcst_relaxed:
         mov               x6, x2
         mov               x7, x3
         caspal            x6, x7, x4, x5, [x0]
-        dmb               ish
         cmp               x6, x2
         stp               x6, x7, [x8]
         ccmp              x7, x3, #0x0, eq
@@ -1396,7 +1366,6 @@ asm_test::swap::u8::acqrel:
 
 asm_test::swap::u8::seqcst:
         swpalb            w1, w0, [x0]
-        dmb               ish
         ret
 
 asm_test::swap::u8::acquire:
@@ -1417,7 +1386,6 @@ asm_test::swap::u16::acqrel:
 
 asm_test::swap::u16::seqcst:
         swpalh            w1, w0, [x0]
-        dmb               ish
         ret
 
 asm_test::swap::u16::acquire:
@@ -1438,7 +1406,6 @@ asm_test::swap::u32::acqrel:
 
 asm_test::swap::u32::seqcst:
         swpal             w1, w0, [x0]
-        dmb               ish
         ret
 
 asm_test::swap::u32::acquire:
@@ -1459,7 +1426,6 @@ asm_test::swap::u64::acqrel:
 
 asm_test::swap::u64::seqcst:
         swpal             x1, x0, [x0]
-        dmb               ish
         ret
 
 asm_test::swap::u64::acquire:
@@ -1495,13 +1461,11 @@ asm_test::swap::u128::seqcst:
         mov               x6, x4
         mov               x5, x7
         caspal            x4, x5, x2, x3, [x0]
-        dmb               ish
         cmp               x5, x7
         ccmp              x4, x6, #0x0, eq
         b.ne              0b
         mov               x0, x4
         mov               x1, x5
-        dmb               ish
         ret
 
 asm_test::swap::u128::acquire:
@@ -1604,7 +1568,6 @@ asm_test::store::u128::seqcst:
         mov               x6, x4
         mov               x7, x5
         caspal            x6, x7, x2, x3, [x0]
-        dmb               ish
         cmp               x7, x5
         ccmp              x6, x4, #0x0, eq
         mov               x4, x6

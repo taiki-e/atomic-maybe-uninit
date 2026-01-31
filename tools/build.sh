@@ -76,7 +76,7 @@ default_targets=(
 
   # hexagon
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
-  # TODO(hexagon): error: symbol 'fma' is already defined
+  # TODO(hexagon): error: symbol 'fma' is already defined https://github.com/rust-lang/compiler-builtins/pull/1066
   # hexagon-unknown-linux-musl
 
   # loongarch
@@ -95,15 +95,17 @@ default_targets=(
   # mips32r2
   mips-unknown-linux-gnu
   mipsel-unknown-linux-gnu
-  # mips32r6
-  mipsisa32r6-unknown-linux-gnu
-  mipsisa32r6el-unknown-linux-gnu
+  # TODO(mips): compiler SIGILL with LLVM 22
+  # # mips32r6
+  # mipsisa32r6-unknown-linux-gnu
+  # mipsisa32r6el-unknown-linux-gnu
   # mips64r2
   mips64-unknown-linux-gnuabi64
   mips64el-unknown-linux-gnuabi64
-  # mips64r6
-  mipsisa64r6-unknown-linux-gnuabi64
-  mipsisa64r6el-unknown-linux-gnuabi64
+  # TODO(mips): compiler SIGILL with LLVM 22
+  # # mips64r6
+  # mipsisa64r6-unknown-linux-gnuabi64
+  # mipsisa64r6el-unknown-linux-gnuabi64
 
   # msp430
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "msp430" then .key else empty end'

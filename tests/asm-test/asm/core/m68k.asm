@@ -1405,9 +1405,10 @@ asm_test::swap::u8::acqrel:
         moveb             %d0,%d3
         subb              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         moveb             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1424,9 +1425,10 @@ asm_test::swap::u8::seqcst:
         moveb             %d0,%d3
         subb              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         moveb             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1443,9 +1445,10 @@ asm_test::swap::u8::acquire:
         moveb             %d0,%d3
         subb              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         moveb             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1462,9 +1465,10 @@ asm_test::swap::u8::relaxed:
         moveb             %d0,%d3
         subb              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         moveb             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1481,9 +1485,10 @@ asm_test::swap::u8::release:
         moveb             %d0,%d3
         subb              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         moveb             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1500,9 +1505,10 @@ asm_test::swap::u16::acqrel:
         movew             %d0,%d3
         subw              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movew             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1519,9 +1525,10 @@ asm_test::swap::u16::seqcst:
         movew             %d0,%d3
         subw              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movew             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1538,9 +1545,10 @@ asm_test::swap::u16::acquire:
         movew             %d0,%d3
         subw              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movew             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1557,9 +1565,10 @@ asm_test::swap::u16::relaxed:
         movew             %d0,%d3
         subw              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movew             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1576,9 +1585,10 @@ asm_test::swap::u16::release:
         movew             %d0,%d3
         subw              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movew             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1595,9 +1605,10 @@ asm_test::swap::u32::acqrel:
         movel             %d0,%d3
         subl              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movel             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1614,9 +1625,10 @@ asm_test::swap::u32::seqcst:
         movel             %d0,%d3
         subl              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movel             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1633,9 +1645,10 @@ asm_test::swap::u32::acquire:
         movel             %d0,%d3
         subl              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movel             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1652,9 +1665,10 @@ asm_test::swap::u32::relaxed:
         movel             %d0,%d3
         subl              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movel             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
@@ -1671,9 +1685,10 @@ asm_test::swap::u32::release:
         movel             %d0,%d3
         subl              %d2,%d3
         seq               %d2
-        subb              #1,%d2
+        andb              #1,%d2
+        cmpib             #0,%d2
         movel             %d0,%d2
-        bnes              0b
+        beqs              0b
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts

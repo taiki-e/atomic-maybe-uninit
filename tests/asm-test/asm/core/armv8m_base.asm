@@ -802,12 +802,11 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
@@ -819,12 +818,11 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
@@ -836,12 +834,11 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
@@ -853,12 +850,11 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
@@ -870,12 +866,11 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
@@ -887,12 +882,11 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
@@ -904,12 +898,11 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
@@ -921,12 +914,11 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
@@ -938,12 +930,11 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acquire_acquire:
@@ -955,12 +946,11 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         cmp               r0, r1
         bne               0f
         strexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acquire_relaxed:
@@ -972,12 +962,11 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         cmp               r0, r1
         bne               0f
         strexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::relaxed_acquire:
@@ -989,12 +978,11 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         cmp               r0, r1
         bne               0f
         strexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::relaxed_relaxed:
@@ -1006,12 +994,11 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         cmp               r0, r1
         bne               0f
         strexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::release_acquire:
@@ -1023,12 +1010,11 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
@@ -1040,12 +1026,11 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         cmp               r0, r1
         bne               0f
         stlexb            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acqrel_seqcst:
@@ -1057,12 +1042,11 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
@@ -1074,12 +1058,11 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
@@ -1091,12 +1074,11 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
@@ -1108,12 +1090,11 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
@@ -1125,12 +1106,11 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
@@ -1142,12 +1122,11 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::release_seqcst:
@@ -1159,12 +1138,11 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
@@ -1176,12 +1154,11 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
@@ -1193,12 +1170,11 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acquire_acquire:
@@ -1210,12 +1186,11 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         cmp               r0, r1
         bne               0f
         strexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acquire_relaxed:
@@ -1227,12 +1202,11 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         cmp               r0, r1
         bne               0f
         strexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::relaxed_acquire:
@@ -1244,12 +1218,11 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         cmp               r0, r1
         bne               0f
         strexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::relaxed_relaxed:
@@ -1261,12 +1234,11 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         cmp               r0, r1
         bne               0f
         strexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::release_acquire:
@@ -1278,12 +1250,11 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::release_relaxed:
@@ -1295,12 +1266,11 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         cmp               r0, r1
         bne               0f
         stlexh            r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
@@ -1311,12 +1281,11 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
@@ -1327,12 +1296,11 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
@@ -1343,12 +1311,11 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
@@ -1359,12 +1326,11 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
@@ -1375,12 +1341,11 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
@@ -1391,12 +1356,11 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::release_seqcst:
@@ -1407,12 +1371,11 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
@@ -1423,12 +1386,11 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
@@ -1439,12 +1401,11 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::acquire_acquire:
@@ -1455,12 +1416,11 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         cmp               r0, r1
         bne               0f
         strex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
@@ -1471,12 +1431,11 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         cmp               r0, r1
         bne               0f
         strex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
@@ -1487,12 +1446,11 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         cmp               r0, r1
         bne               0f
         strex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
@@ -1503,12 +1461,11 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         cmp               r0, r1
         bne               0f
         strex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::release_acquire:
@@ -1519,12 +1476,11 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
@@ -1535,12 +1491,11 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
         cmp               r0, r1
         bne               0f
         stlex             r1, r2, [r3]
-        cbz               r1, 1f
+        cbnz              r1, 0f
+        movs              r1, #0x1
+        pop               {r7, pc}
 0:
         movs              r1, #0x0
-        pop               {r7, pc}
-1:
-        movs              r1, #0x1
         pop               {r7, pc}
 
 asm_test::load::u8::seqcst:

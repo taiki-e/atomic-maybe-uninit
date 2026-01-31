@@ -1,5 +1,5 @@
 asm_test::compare_exchange::u8::acqrel_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -29,12 +29,12 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -64,12 +64,12 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u8::acqrel_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -99,12 +99,12 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -134,12 +134,12 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u8::acquire_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -169,12 +169,12 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -204,12 +204,12 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u8::release_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -239,12 +239,12 @@ asm_test::compare_exchange::u8::release_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u8::seqcst_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -274,12 +274,12 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -309,7 +309,7 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -343,7 +343,7 @@ asm_test::compare_exchange::u8::acquire_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -377,7 +377,7 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -411,7 +411,7 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -448,7 +448,7 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::release_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -478,12 +478,12 @@ asm_test::compare_exchange::u8::release_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u8::release_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -516,7 +516,7 @@ asm_test::compare_exchange::u8::release_relaxed:
         srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::acqrel_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -547,12 +547,12 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u16::seqcst_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -583,12 +583,12 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u16::acqrel_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -619,12 +619,12 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u16::acqrel_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -655,12 +655,12 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u16::acquire_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -691,12 +691,12 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u16::relaxed_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -727,12 +727,12 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u16::release_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -763,12 +763,12 @@ asm_test::compare_exchange::u16::release_seqcst:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u16::seqcst_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -799,12 +799,12 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u16::seqcst_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -835,7 +835,7 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -870,7 +870,7 @@ asm_test::compare_exchange::u16::acquire_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -905,7 +905,7 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -940,7 +940,7 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -978,7 +978,7 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::release_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1009,12 +1009,12 @@ asm_test::compare_exchange::u16::release_acquire:
         mov               %g4, %g2
 1:
         srl               %g3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange::u16::release_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1048,100 +1048,100 @@ asm_test::compare_exchange::u16::release_relaxed:
         srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::seqcst_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::acqrel_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::acquire_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::relaxed_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::release_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::seqcst_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::seqcst_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
@@ -1151,7 +1151,7 @@ asm_test::compare_exchange::u32::acquire_acquire:
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
@@ -1161,7 +1161,7 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
@@ -1171,7 +1171,7 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
@@ -1186,18 +1186,18 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::release_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange::u32::release_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
@@ -1207,7 +1207,7 @@ asm_test::compare_exchange::u32::release_relaxed:
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1227,12 +1227,12 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1252,12 +1252,12 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1277,12 +1277,12 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1302,12 +1302,12 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1327,12 +1327,12 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1352,12 +1352,12 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1377,12 +1377,12 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1402,12 +1402,12 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1427,7 +1427,7 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -1451,7 +1451,7 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -1475,7 +1475,7 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -1499,7 +1499,7 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -1526,7 +1526,7 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::release_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1546,12 +1546,12 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         mov               3, %o4
         andn              %o4, %o0, %o0
@@ -1574,7 +1574,7 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::acqrel_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1595,12 +1595,12 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1621,12 +1621,12 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1647,12 +1647,12 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1673,12 +1673,12 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1699,12 +1699,12 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1725,12 +1725,12 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u16::release_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1751,12 +1751,12 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1777,12 +1777,12 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1803,7 +1803,7 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -1828,7 +1828,7 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -1853,7 +1853,7 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -1878,7 +1878,7 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -1906,7 +1906,7 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::release_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1927,12 +1927,12 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         cmp               %o2, %o4
         move              %icc, 1, %o1
         srl               %o2, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::compare_exchange_weak::u16::release_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o3
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -1956,100 +1956,100 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::release_seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
@@ -2059,7 +2059,7 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
@@ -2069,7 +2069,7 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
@@ -2079,7 +2079,7 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
@@ -2094,18 +2094,18 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::release_acquire:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
         move              %icc, 1, %o3
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         mov               %o2, %o0
         retl
         mov               %o3, %o1
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         cas               [ %o0 ], %o1, %o2
         mov               %g0, %o3
         cmp               %o2, %o1
@@ -2116,13 +2116,13 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
 
 asm_test::load::u8::seqcst:
         ldub              [ %o0 ], %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::load::u8::acquire:
         ldub              [ %o0 ], %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -2132,13 +2132,13 @@ asm_test::load::u8::relaxed:
 
 asm_test::load::u16::seqcst:
         lduh              [ %o0 ], %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::load::u16::acquire:
         lduh              [ %o0 ], %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -2148,13 +2148,13 @@ asm_test::load::u16::relaxed:
 
 asm_test::load::u32::seqcst:
         ld                [ %o0 ], %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::load::u32::acquire:
         ld                [ %o0 ], %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -2163,7 +2163,7 @@ asm_test::load::u32::relaxed:
         ld                [ %o0 ], %o0
 
 asm_test::swap::u8::acqrel:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o2
         mov               3, %o3
         andn              %o3, %o0, %o0
@@ -2186,12 +2186,12 @@ asm_test::swap::u8::acqrel:
         bne               %icc, 0b
         nop
         srl               %o3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::swap::u8::seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o2
         mov               3, %o3
         andn              %o3, %o0, %o0
@@ -2214,7 +2214,7 @@ asm_test::swap::u8::seqcst:
         bne               %icc, 0b
         nop
         srl               %o3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -2241,7 +2241,7 @@ asm_test::swap::u8::acquire:
         bne               %icc, 0b
         nop
         srl               %o3, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -2271,7 +2271,7 @@ asm_test::swap::u8::relaxed:
         srl               %o3, %o0, %o0
 
 asm_test::swap::u8::release:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o2
         mov               3, %o3
         andn              %o3, %o0, %o0
@@ -2297,7 +2297,7 @@ asm_test::swap::u8::release:
         srl               %o3, %o0, %o0
 
 asm_test::swap::u16::acqrel:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o2
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -2321,12 +2321,12 @@ asm_test::swap::u16::acqrel:
         bne               %icc, 0b
         nop
         srl               %o1, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
 asm_test::swap::u16::seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o2
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -2350,7 +2350,7 @@ asm_test::swap::u16::seqcst:
         bne               %icc, 0b
         nop
         srl               %o1, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -2378,7 +2378,7 @@ asm_test::swap::u16::acquire:
         bne               %icc, 0b
         nop
         srl               %o1, %o0, %o0
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         nop
 
@@ -2409,7 +2409,7 @@ asm_test::swap::u16::relaxed:
         srl               %o1, %o0, %o0
 
 asm_test::swap::u16::release:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         and               %o0, -4, %o2
         and               %o0, 3, %o0
         xor               %o0, 2, %o0
@@ -2436,22 +2436,22 @@ asm_test::swap::u16::release:
         srl               %o1, %o0, %o0
 
 asm_test::swap::u32::acqrel:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         swap              [ %o0 ], %o1
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         mov               %o1, %o0
 
 asm_test::swap::u32::seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         swap              [ %o0 ], %o1
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         mov               %o1, %o0
 
 asm_test::swap::u32::acquire:
         swap              [ %o0 ], %o1
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #LoadStore|#LoadLoad
         retl
         mov               %o1, %o0
 
@@ -2461,13 +2461,13 @@ asm_test::swap::u32::relaxed:
         mov               %o1, %o0
 
 asm_test::swap::u32::release:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         swap              [ %o0 ], %o1
         retl
         mov               %o1, %o0
 
 asm_test::store::u8::seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         stb               %o1, [ %o0 ]
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         retl
@@ -2478,12 +2478,12 @@ asm_test::store::u8::relaxed:
         stb               %o1, [ %o0 ]
 
 asm_test::store::u8::release:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         retl
         stb               %o1, [ %o0 ]
 
 asm_test::store::u16::seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         sth               %o1, [ %o0 ]
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         retl
@@ -2494,12 +2494,12 @@ asm_test::store::u16::relaxed:
         sth               %o1, [ %o0 ]
 
 asm_test::store::u16::release:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         retl
         sth               %o1, [ %o0 ]
 
 asm_test::store::u32::seqcst:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         st                %o1, [ %o0 ]
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         retl
@@ -2510,7 +2510,7 @@ asm_test::store::u32::relaxed:
         st                %o1, [ %o0 ]
 
 asm_test::store::u32::release:
-        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        membar            #StoreStore|#LoadStore
         retl
         st                %o1, [ %o0 ]
 

@@ -37,10 +37,8 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
         stbar
@@ -81,10 +79,8 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::acqrel_acquire:
         stbar
@@ -125,10 +121,8 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
         stbar
@@ -169,10 +163,8 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::acquire_seqcst:
         stbar
@@ -213,10 +205,8 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
         stbar
@@ -257,10 +247,8 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::release_seqcst:
         stbar
@@ -301,10 +289,8 @@ asm_test::compare_exchange::u8::release_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::seqcst_acquire:
         stbar
@@ -345,10 +331,8 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
         stbar
@@ -389,10 +373,8 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::acquire_acquire:
         and               %o0, -4, %o3
@@ -432,10 +414,8 @@ asm_test::compare_exchange::u8::acquire_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::acquire_relaxed:
         and               %o0, -4, %o3
@@ -475,10 +455,8 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::relaxed_acquire:
         and               %o0, -4, %o3
@@ -518,10 +496,8 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::relaxed_relaxed:
         and               %o0, -4, %o3
@@ -603,10 +579,8 @@ asm_test::compare_exchange::u8::release_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u8::release_relaxed:
         stbar
@@ -690,10 +664,8 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::seqcst_seqcst:
         stbar
@@ -735,10 +707,8 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::acqrel_acquire:
         stbar
@@ -780,10 +750,8 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::acqrel_relaxed:
         stbar
@@ -825,10 +793,8 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::acquire_seqcst:
         stbar
@@ -870,10 +836,8 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::relaxed_seqcst:
         stbar
@@ -915,10 +879,8 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::release_seqcst:
         stbar
@@ -960,10 +922,8 @@ asm_test::compare_exchange::u16::release_seqcst:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::seqcst_acquire:
         stbar
@@ -1005,10 +965,8 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::seqcst_relaxed:
         stbar
@@ -1050,10 +1008,8 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::acquire_acquire:
         and               %o0, -4, %o3
@@ -1094,10 +1050,8 @@ asm_test::compare_exchange::u16::acquire_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::acquire_relaxed:
         and               %o0, -4, %o3
@@ -1138,10 +1092,8 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::relaxed_acquire:
         and               %o0, -4, %o3
@@ -1182,10 +1134,8 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::relaxed_relaxed:
         and               %o0, -4, %o3
@@ -1269,10 +1219,8 @@ asm_test::compare_exchange::u16::release_acquire:
         bne               0b
         mov               %g4, %g2
 3:
-        srl               %g3, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %g3, %o0, %o0
 
 asm_test::compare_exchange::u16::release_relaxed:
         stbar
@@ -1324,12 +1272,10 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1340,12 +1286,10 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1356,12 +1300,10 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1372,12 +1314,10 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1388,12 +1328,10 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1404,12 +1342,10 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1420,12 +1356,10 @@ asm_test::compare_exchange::u32::release_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1436,12 +1370,10 @@ asm_test::compare_exchange::u32::seqcst_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1452,12 +1384,10 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1467,12 +1397,10 @@ asm_test::compare_exchange::u32::acquire_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1482,12 +1410,10 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1497,12 +1423,10 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1526,12 +1450,10 @@ asm_test::compare_exchange::u32::release_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -1570,16 +1492,12 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::acqrel_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         stbar
@@ -1602,16 +1520,12 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::seqcst_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
         stbar
@@ -1634,16 +1548,12 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::acqrel_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         stbar
@@ -1666,16 +1576,12 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::acqrel_relaxed+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
         stbar
@@ -1698,16 +1604,12 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::acquire_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         stbar
@@ -1730,16 +1632,12 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::relaxed_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
         stbar
@@ -1762,16 +1660,12 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::release_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
         stbar
@@ -1794,16 +1688,12 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::seqcst_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         stbar
@@ -1826,16 +1716,12 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::seqcst_relaxed+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::acquire_acquire:
         and               %o0, -4, %o3
@@ -1857,16 +1743,12 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::acquire_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::acquire_relaxed:
         and               %o0, -4, %o3
@@ -1888,16 +1770,12 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::acquire_relaxed+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::relaxed_acquire:
         and               %o0, -4, %o3
@@ -1919,16 +1797,12 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::relaxed_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         and               %o0, -4, %o3
@@ -1978,16 +1852,12 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u8::release_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
         stbar
@@ -2039,16 +1909,12 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::acqrel_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         stbar
@@ -2072,16 +1938,12 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::seqcst_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
         stbar
@@ -2105,16 +1967,12 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::acqrel_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         stbar
@@ -2138,16 +1996,12 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::acqrel_relaxed+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
         stbar
@@ -2171,16 +2025,12 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::acquire_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         stbar
@@ -2204,16 +2054,12 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::relaxed_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::release_seqcst:
         stbar
@@ -2237,16 +2083,12 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::release_seqcst+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
         stbar
@@ -2270,16 +2112,12 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::seqcst_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         stbar
@@ -2303,16 +2141,12 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::seqcst_relaxed+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::acquire_acquire:
         and               %o0, -4, %o3
@@ -2335,16 +2169,12 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::acquire_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::acquire_relaxed:
         and               %o0, -4, %o3
@@ -2367,16 +2197,12 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::acquire_relaxed+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::relaxed_acquire:
         and               %o0, -4, %o3
@@ -2399,16 +2225,12 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::relaxed_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         and               %o0, -4, %o3
@@ -2460,16 +2282,12 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        srl               %o2, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o2, %o0, %o0
 0:
-        mov               1, %o1	! 1 <asm_test::compare_exchange_weak::u16::release_acquire+0x1>
-        srl               %o2, %o0, %o0
-        stbar
+        mov               1, %o1
         retl
-        nop
+        srl               %o2, %o0, %o0
 
 asm_test::compare_exchange_weak::u16::release_relaxed:
         stbar
@@ -2507,12 +2325,10 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2523,12 +2339,10 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2539,12 +2353,10 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2555,12 +2367,10 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2571,12 +2381,10 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2587,12 +2395,10 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2603,12 +2409,10 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2619,12 +2423,10 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2635,12 +2437,10 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2650,12 +2450,10 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2665,12 +2463,10 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2680,12 +2476,10 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2709,12 +2503,10 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         be                0f
         nop
         mov               %g0, %o1
-        stbar
         retl
         mov               %o2, %o0
 0:
         mov               1, %o1
-        stbar
         retl
         mov               %o2, %o0
 
@@ -2733,48 +2525,36 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
         mov               %o2, %o0
 
 asm_test::load::u8::seqcst:
-        ldub              [ %o0 ], %o0
-        stbar
         retl
-        nop
+        ldub              [ %o0 ], %o0
 
 asm_test::load::u8::acquire:
-        ldub              [ %o0 ], %o0
-        stbar
         retl
-        nop
+        ldub              [ %o0 ], %o0
 
 asm_test::load::u8::relaxed:
         retl
         ldub              [ %o0 ], %o0
 
 asm_test::load::u16::seqcst:
-        lduh              [ %o0 ], %o0
-        stbar
         retl
-        nop
+        lduh              [ %o0 ], %o0
 
 asm_test::load::u16::acquire:
-        lduh              [ %o0 ], %o0
-        stbar
         retl
-        nop
+        lduh              [ %o0 ], %o0
 
 asm_test::load::u16::relaxed:
         retl
         lduh              [ %o0 ], %o0
 
 asm_test::load::u32::seqcst:
-        ld                [ %o0 ], %o0
-        stbar
         retl
-        nop
+        ld                [ %o0 ], %o0
 
 asm_test::load::u32::acquire:
-        ld                [ %o0 ], %o0
-        stbar
         retl
-        nop
+        ld                [ %o0 ], %o0
 
 asm_test::load::u32::relaxed:
         retl
@@ -2811,10 +2591,8 @@ asm_test::swap::u8::acqrel:
         bne               1b
         nop
 2:
-        srl               %o4, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o4, %o0, %o0
 
 asm_test::swap::u8::seqcst:
         stbar
@@ -2847,10 +2625,8 @@ asm_test::swap::u8::seqcst:
         bne               1b
         nop
 2:
-        srl               %o4, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o4, %o0, %o0
 
 asm_test::swap::u8::acquire:
         and               %o0, -4, %o2
@@ -2882,10 +2658,8 @@ asm_test::swap::u8::acquire:
         bne               1b
         nop
 2:
-        srl               %o4, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o4, %o0, %o0
 
 asm_test::swap::u8::relaxed:
         and               %o0, -4, %o2
@@ -2986,10 +2760,8 @@ asm_test::swap::u16::acqrel:
         bne               1b
         nop
 2:
-        srl               %o4, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o4, %o0, %o0
 
 asm_test::swap::u16::seqcst:
         stbar
@@ -3023,10 +2795,8 @@ asm_test::swap::u16::seqcst:
         bne               1b
         nop
 2:
-        srl               %o4, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o4, %o0, %o0
 
 asm_test::swap::u16::acquire:
         and               %o0, -4, %o2
@@ -3059,10 +2829,8 @@ asm_test::swap::u16::acquire:
         bne               1b
         nop
 2:
-        srl               %o4, %o0, %o0
-        stbar
         retl
-        nop
+        srl               %o4, %o0, %o0
 
 asm_test::swap::u16::relaxed:
         and               %o0, -4, %o2
@@ -3136,20 +2904,17 @@ asm_test::swap::u16::release:
 asm_test::swap::u32::acqrel:
         stbar
         swap              [ %o0 ], %o1
-        stbar
         retl
         mov               %o1, %o0
 
 asm_test::swap::u32::seqcst:
         stbar
         swap              [ %o0 ], %o1
-        stbar
         retl
         mov               %o1, %o0
 
 asm_test::swap::u32::acquire:
         swap              [ %o0 ], %o1
-        stbar
         retl
         mov               %o1, %o0
 
@@ -3168,6 +2933,7 @@ asm_test::store::u8::seqcst:
         stbar
         stb               %o1, [ %o0 ]
         stbar
+        ldstub            [ %sp + -1 ], %g0
         retl
         nop
 
@@ -3184,6 +2950,7 @@ asm_test::store::u16::seqcst:
         stbar
         sth               %o1, [ %o0 ]
         stbar
+        ldstub            [ %sp + -1 ], %g0
         retl
         nop
 
@@ -3200,6 +2967,7 @@ asm_test::store::u32::seqcst:
         stbar
         st                %o1, [ %o0 ]
         stbar
+        ldstub            [ %sp + -1 ], %g0
         retl
         nop
 

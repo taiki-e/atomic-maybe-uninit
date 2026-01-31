@@ -87,11 +87,12 @@ targets=(
   sparc64-unknown-linux-gnu
 )
 
-# See also LLVM version table in https://github.com/taiki-e/portable-atomic/blob/HEAD/.github/workflows/ci.yml.
+# See also LLVM version table in https://github.com/taiki-e/portable-atomic/blob/HEAD/tools/matrix.sh.
 toolchains=(
   1.81 # LLVM 18
   1.86 # LLVM 19
   1.90 # LLVM 20
+  # 1.94 # LLVM 21
   stable
   beta
   nightly
@@ -104,17 +105,17 @@ min_stable_toolchain() {
   case "${target}" in
     arm64ec* | s390x*) toolchain=1.84 ;; # LLVM 19
     # TODO: uncomment once 1.95 is stable
-    # powerpc*) toolchain=1.95 ;; # LLVM 21
+    # powerpc*) toolchain=1.95 ;; # LLVM 22
     *) toolchain=1.74 ;; # LLVM 17 (oldest version that MaybeUninit register is supported)
   esac
 }
 min_nightly_toolchain() {
   case "${target}" in
-    arm64ec*) toolchain=nightly-2024-04-19 ;; # Rust 1.79, LLVM 18
-    s390x*) toolchain=nightly-2024-01-05 ;;   # Rust 1.77, LLVM 17
-    csky*) toolchain=nightly-2025-02-14 ;;    # Rust 1.86, LLVM 19
-    hexagon*) toolchain=nightly-2024-11-29 ;; # Rust 1.85, LLVM 19
-    sparc*) toolchain=nightly-2024-11-08 ;;   # Rust 1.84, LLVM 19
+    arm64ec*) toolchain=nightly-2024-04-19 ;; # Rust 1.79, LLVM 18 (https://github.com/rust-lang/rust/pull/123144)
+    s390x*) toolchain=nightly-2024-01-05 ;;   # Rust 1.77, LLVM 17 (oldest version we can use asm_experimental_arch on this target)
+    csky*) toolchain=nightly-2025-02-14 ;;    # Rust 1.86, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
+    hexagon*) toolchain=nightly-2024-11-29 ;; # Rust 1.85, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
+    sparc*) toolchain=nightly-2024-11-08 ;;   # Rust 1.84, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
     mipsisa*) toolchain=nightly-2023-09-20 ;; # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
     *) toolchain=nightly-2023-08-24 ;;        # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
   esac
@@ -271,7 +272,7 @@ for target in "${targets[@]}"; do
         ;;
       hexagon-unknown-linux-musl)
         case "${toolchain}" in
-          nightly) toolchain=nightly-2025-03-07 ;; # TODO(hexagon): error: symbol 'fma' is already defined
+          nightly) toolchain=nightly-2025-03-07 ;; # TODO(hexagon): error: symbol 'fma' is already defined https://github.com/rust-lang/compiler-builtins/pull/1066
         esac
         ;;
       sparc64-unknown-linux-gnu)
@@ -280,6 +281,11 @@ for target in "${targets[@]}"; do
           # TODO(sprac): "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-21
           stable | beta) toolchain='' ;;
           nightly) toolchain=nightly-2025-02-17 ;;
+        esac
+        ;;
+      mipsisa*)
+        case "${toolchain}" in
+          nightly) toolchain=nightly-2026-01-28 ;; # TODO(mips): compiler SIGILL with LLVM 22
         esac
         ;;
     esac
