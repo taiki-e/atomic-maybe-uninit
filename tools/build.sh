@@ -256,6 +256,7 @@ build() {
   shift
   local args=("${base_args[@]}")
   local target_rustflags="${base_rustflags}"
+  local rustc_target_flags=()
   if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
     if [[ "${target}" == "avr-none" ]]; then
       target=avr-unknown-gnu-atmega2560 # custom target
@@ -275,23 +276,25 @@ build() {
       info "target '${target}' requires 1.91-nightly or later (skipped)"
       return 0
     fi
-    local target_flags=(--target "${workspace_dir}/target-specs/${target}.json")
     if { cargo ${pre_args[@]+"${pre_args[@]}"} -Z help || true; } | grep -Fq json-target-spec; then
       args+=(-Z json-target-spec)
+      rustc_target_flags+=(-Z unstable-options)
     fi
+    args+=(--target "${workspace_dir}/target-specs/${target}.json")
+    rustc_target_flags+=(--target "${workspace_dir}/target-specs/${target}.json")
   elif [[ "${target}" != "${host}" ]]; then
-    local target_flags=(--target "${target}")
+    args+=(--target "${target}")
+    rustc_target_flags+=(--target "${target}")
   fi
-  args+=(${target_flags[@]+"${target_flags[@]}"})
   local cfgs
   if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
-    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${target_flags[@]+"${target_flags[@]}"})
+    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${rustc_target_flags[@]+"${rustc_target_flags[@]}"})
     retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
     # core/alloc/std sets feature(strict_provenance_lints), so we cannot use
     # -Z crate-attr=feature(strict_provenance_lints) when -Z build-std is needed.
     target_rustflags+="${strict_provenance_lints}"
   elif [[ -n "${nightly}" ]]; then
-    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${target_flags[@]+"${target_flags[@]}"})
+    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${rustc_target_flags[@]+"${rustc_target_flags[@]}"})
     if [[ -n "${TESTS:-}" ]]; then
       if is_no_std "${target}"; then
         args+=(-Z build-std="core,alloc")
