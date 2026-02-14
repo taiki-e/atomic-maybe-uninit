@@ -11,6 +11,7 @@
 
 #[macro_use]
 pub(crate) mod helper;
+mod memcpy;
 
 use crate::*;
 

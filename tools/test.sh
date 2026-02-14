@@ -174,7 +174,7 @@ fi
 args+=(--all-features)
 case "${cmd}" in
   build*) ;;
-  *) args+=(--workspace) ;;
+  *) args+=(--workspace --exclude bench) ;;
 esac
 target="${target:-"${host}"}"
 target_lower="${target//-/_}"

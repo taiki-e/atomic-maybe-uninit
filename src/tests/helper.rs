@@ -947,7 +947,7 @@ macro_rules! __test_atomic {
 
 #[allow(unused_unsafe)] // for old rustc
 #[track_caller]
-fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::String {
+pub(crate) fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::String {
     let backtrace = std::env::var_os("RUST_BACKTRACE");
     let hook = std::panic::take_hook();
     // set_var/remove_var is fine as we run tests with RUST_TEST_THREADS=1
@@ -1135,7 +1135,7 @@ pub(crate) fn mark_aligned_undefined<T: ?Sized>(a: &T) {
     .unwrap();
 }
 
-fn skip_should_panic_test() -> bool {
+pub(crate) fn skip_should_panic_test() -> bool {
     is_panic_abort()
 }
 
