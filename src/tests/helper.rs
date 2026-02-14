@@ -2,8 +2,8 @@
 
 #![allow(dead_code, unused_macros)]
 
-use std::boxed::Box;
 pub(crate) use std::sync::atomic::Ordering;
+use std::{boxed::Box, eprintln};
 
 #[cfg(valgrind)]
 use crabgrind::memcheck;
@@ -136,6 +136,7 @@ macro_rules! __test_atomic {
     (load_store, $ty:ident) => {
         use std::{
             collections::BTreeSet,
+            eprintln,
             mem::{self, MaybeUninit},
             thread,
             time::Instant,
@@ -276,7 +277,7 @@ macro_rules! __test_atomic {
                         for i in 0..iterations {
                             a.store(MaybeUninit::new(data1[i]), rand_store_ordering(&mut rng));
                         }
-                        std::eprintln!("store end={:?}", now.elapsed());
+                        eprintln!("store end={:?}", now.elapsed());
                     });
                     s.spawn(|| {
                         let mut rng = fastrand::Rng::new();
@@ -287,7 +288,7 @@ macro_rules! __test_atomic {
                                 v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                             }
                         }
-                        std::eprintln!("load end={:?}", now.elapsed());
+                        eprintln!("load end={:?}", now.elapsed());
                         for v in v {
                             assert!(set.contains(&v), "v={}", v);
                         }
@@ -436,7 +437,7 @@ macro_rules! __test_atomic {
                                     rand_store_ordering(&mut rng),
                                 );
                             }
-                            std::eprintln!("store end={:?}", now.elapsed());
+                            eprintln!("store end={:?}", now.elapsed());
                         });
                     } else {
                         s.spawn(|| {
@@ -448,7 +449,7 @@ macro_rules! __test_atomic {
                                     v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                             }
-                            std::eprintln!("load end={:?}", now.elapsed());
+                            eprintln!("load end={:?}", now.elapsed());
                             for v in v {
                                 assert!(set.contains(&v), "v={}", v);
                             }
@@ -468,7 +469,7 @@ macro_rules! __test_atomic {
                                     .assume_init();
                             }
                         }
-                        std::eprintln!("swap end={:?}", now.elapsed());
+                        eprintln!("swap end={:?}", now.elapsed());
                         for v in v {
                             assert!(set.contains(&v), "v={}", v);
                         }
@@ -814,7 +815,7 @@ macro_rules! __test_atomic {
                                     rand_store_ordering(&mut rng),
                                 );
                             }
-                            std::eprintln!("store end={:?}", now.elapsed());
+                            eprintln!("store end={:?}", now.elapsed());
                         });
                     } else {
                         s.spawn(|| {
@@ -826,7 +827,7 @@ macro_rules! __test_atomic {
                                     v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                             }
-                            std::eprintln!("load end={:?}", now.elapsed());
+                            eprintln!("load end={:?}", now.elapsed());
                             for v in v {
                                 assert!(set.contains(&v), "v={}", v);
                             }
@@ -851,7 +852,7 @@ macro_rules! __test_atomic {
                                 }
                             }
                         }
-                        std::eprintln!("compare_exchange end={:?}", now.elapsed());
+                        eprintln!("compare_exchange end={:?}", now.elapsed());
                         for v in v {
                             assert!(set.contains(&v), "v={}", v);
                         }
@@ -899,7 +900,7 @@ macro_rules! __test_atomic {
                                     rand_store_ordering(&mut rng),
                                 );
                             }
-                            std::eprintln!("store end={:?}", now.elapsed());
+                            eprintln!("store end={:?}", now.elapsed());
                         });
                     } else {
                         s.spawn(|| {
@@ -911,7 +912,7 @@ macro_rules! __test_atomic {
                                     v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                             }
-                            std::eprintln!("load end={:?}", now.elapsed());
+                            eprintln!("load end={:?}", now.elapsed());
                             for v in v {
                                 assert!(set.contains(&v), "v={}", v);
                             }
@@ -933,7 +934,7 @@ macro_rules! __test_atomic {
                                     .assume_init();
                             }
                         }
-                        std::eprintln!("swap end={:?}", now.elapsed());
+                        eprintln!("swap end={:?}", now.elapsed());
                         for v in v {
                             assert!(set.contains(&v), "v={}", v);
                         }
@@ -1068,7 +1069,7 @@ pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
 pub(crate) fn stress_test_config(rng: &mut fastrand::Rng) -> (usize, usize) {
     let iterations = if cfg!(debug_assertions) { 5_000 } else { 25_000 };
     let threads = if cfg!(debug_assertions) { 2 } else { rng.usize(2..=8) };
-    std::eprintln!("threads={threads}");
+    eprintln!("threads={threads}");
     (iterations, threads)
 }
 
