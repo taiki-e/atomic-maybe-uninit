@@ -97,7 +97,7 @@ cfg_sel!({
                 core::arch::asm!(
                     $($asm)*
                     // __kuser_memory_barrier (see also arm_linux.rs)
-                    // https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/arm/kernel_user_helpers.rst
+                    // https://github.com/torvalds/linux/blob/v6.19/Documentation/arch/arm/kernel_user_helpers.rst
                     kuser_memory_barrier = inout(reg) 0xFFFF0FA0_usize => _,
                     out("lr") _,
                 )

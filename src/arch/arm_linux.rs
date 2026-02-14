@@ -8,7 +8,7 @@ https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#arm
 
 Refs:
 - Kernel-provided User Helpers
-  https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/arm/kernel_user_helpers.rst
+  https://github.com/torvalds/linux/blob/v6.19/Documentation/arch/arm/kernel_user_helpers.rst
 - https://github.com/rust-lang/compiler-builtins/blob/compiler_builtins-v0.1.124/src/arm_linux.rs
 - ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition
   ARMv4 and ARMv5 Differences
@@ -30,13 +30,13 @@ use crate::{
     utils::MaybeUninit64,
 };
 
-// https://github.com/torvalds/linux/blob/v6.16/Documentation/arch/arm/kernel_user_helpers.rst
+// https://github.com/torvalds/linux/blob/v6.19/Documentation/arch/arm/kernel_user_helpers.rst
 // __kuser_helper_version
 const KUSER_HELPER_VERSION: usize = 0xFFFF0FFC;
 // __kuser_cmpxchg
 // __kuser_helper_version >= 2 (kernel version 2.6.12+)
 // https://github.com/torvalds/linux/blob/v2.6.12/arch/arm/kernel/entry-armv.S#L617-L660
-// https://github.com/torvalds/linux/blob/v6.16/arch/arm/kernel/entry-armv.S#L769-L827
+// https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L769-L827
 // Note:
 // - always SeqCst (smp_dmb arm)
 // - push to the stack when kuser_cmpxchg32_fixup called
@@ -48,7 +48,7 @@ const KUSER_MEMORY_BARRIER: usize = 0xFFFF0FA0;
 // __kuser_cmpxchg64
 // __kuser_helper_version >= 5 (kernel version 3.1+)
 // https://github.com/torvalds/linux/blob/v3.1/arch/arm/kernel/entry-armv.S#L730-L814
-// https://github.com/torvalds/linux/blob/v6.16/arch/arm/kernel/entry-armv.S#L693-L761
+// https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L693-L761
 // Note:
 // - always SeqCst (smp_dmb arm)
 // - push to the stack in both cases
