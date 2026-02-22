@@ -605,8 +605,6 @@ pub(crate) mod ptr {
         }
         #[cfg(else)]
         {
-            use core::mem;
-
             #[inline(always)]
             #[must_use]
             pub(crate) const fn without_provenance_mut<T>(addr: usize) -> *mut T {
@@ -615,7 +613,15 @@ pub(crate) mod ptr {
                 // semantics, it relies on sysroot crates having special status.
                 // SAFETY: every valid integer is also a valid pointer (as long as you don't dereference that
                 // pointer).
-                unsafe { mem::transmute(addr) }
+                #[cfg(miri)]
+                unsafe {
+                    core::mem::transmute(addr)
+                }
+                // Using transmute doesn't work with CHERI: https://github.com/kent-weak-memory/rust/blob/0c0ca909de877f889629057e1ddf139527446d75/library/core/src/ptr/mod.rs#L607
+                #[cfg(not(miri))]
+                {
+                    addr as *mut T
+                }
             }
             #[inline(always)]
             #[must_use]
@@ -645,7 +651,15 @@ pub(crate) mod ptr {
                     // transmute semantics, it relies on sysroot crates having special status.
                     // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
                     // provenance).
-                    unsafe { mem::transmute(self.cast::<()>()) }
+                    #[cfg(miri)]
+                    unsafe {
+                        core::mem::transmute(self.cast::<()>())
+                    }
+                    // Using transmute doesn't work with CHERI: https://github.com/kent-weak-memory/rust/blob/0c0ca909de877f889629057e1ddf139527446d75/library/core/src/ptr/mut_ptr.rs#L210
+                    #[cfg(not(miri))]
+                    {
+                        self.cast::<()>() as usize
+                    }
                 }
             }
             impl<T: ?Sized> MutPtrExt<T> for *mut T {
@@ -657,7 +671,15 @@ pub(crate) mod ptr {
                     // transmute semantics, it relies on sysroot crates having special status.
                     // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
                     // provenance).
-                    unsafe { mem::transmute(self.cast::<()>()) }
+                    #[cfg(miri)]
+                    unsafe {
+                        core::mem::transmute(self.cast::<()>())
+                    }
+                    // Using transmute doesn't work with CHERI: https://github.com/kent-weak-memory/rust/blob/0c0ca909de877f889629057e1ddf139527446d75/library/core/src/ptr/mut_ptr.rs#L210
+                    #[cfg(not(miri))]
+                    {
+                        self.cast::<()>() as usize
+                    }
                 }
                 #[inline]
                 #[must_use]
