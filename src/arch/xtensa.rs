@@ -19,15 +19,17 @@ delegate_size!(delegate_load_store);
 #[cfg(target_feature = "s32c1i")]
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
 #[cfg(target_feature = "s32c1i")]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
-use crate::raw::{AtomicLoad, AtomicStore};
+use crate::raw::{AtomicLoad, AtomicMemcpy, AtomicStore};
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -43,7 +45,7 @@ macro_rules! atomic_rmw {
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $bits:tt, $narrow:tt, $unsigned:tt) => {
+    ($ty:ident, $size:literal, $bits:tt, $narrow:tt, $unsigned:tt) => {
         #[cfg(not(target_feature = "s32c1i"))]
         delegate_signed!(delegate_load_store, $ty);
         #[cfg(target_feature = "s32c1i")]
@@ -103,13 +105,47 @@ macro_rules! atomic_load_store {
                 }
             }
         }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("l", $bits, $unsigned, "i", $narrow, " {tmp0}, {src}, 0"), // atomic { tmp0 = *src }
+                    src = in(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("l", $bits, $unsigned, "i", $narrow, " {tmp1}, {src}, ", $size), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("l", $bits, $unsigned, "i", $narrow, " {tmp0}, {src}, 0"),       // atomic { tmp0 = *src }
+                    src = in(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("s", $bits, "i", $narrow, " {tmp0}, {dst}, 0"), // atomic { *dst = tmp0 }
+                    dst = in(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("s", $bits, "i", $narrow, " {tmp1}, {dst}, ", $size), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("s", $bits, "i", $narrow, " {tmp0}, {dst}, 0"),       // atomic { *dst = tmp0 }
+                    dst = in(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
     };
 }
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident) => {
-        atomic_load_store!($ty, "32", ".n", "");
+    ($ty:ident, $size:literal) => {
+        atomic_load_store!($ty, $size, "32", ".n", "");
         #[cfg(target_feature = "s32c1i")]
         impl AtomicSwap for $ty {
             #[inline]
@@ -194,8 +230,8 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $bits:tt) => {
-        atomic_load_store!($ty, $bits, "", "u");
+    ($ty:ident, $size:literal, $bits:tt) => {
+        atomic_load_store!($ty, $size, $bits, "", "u");
         #[cfg(target_feature = "s32c1i")]
         impl AtomicSwap for $ty {
             #[inline]
@@ -313,9 +349,9 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(u8, "8");
-atomic_sub_word!(u16, "16");
-atomic!(u32);
+atomic_sub_word!(u8, "1", "8");
+atomic_sub_word!(u16, "2", "16");
+atomic!(u32, "4");
 
 // -----------------------------------------------------------------------------
 // cfg macros
@@ -379,4 +415,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }

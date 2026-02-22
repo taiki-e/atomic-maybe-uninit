@@ -43,6 +43,7 @@ workspace = true
 
 [workspace]
 resolver = "2"
+members = ["bench"]
 
 # This table is shared by projects under github.com/taiki-e.
 # Expect for unexpected_cfgs.check-cfg, it is not intended for manual editing.
