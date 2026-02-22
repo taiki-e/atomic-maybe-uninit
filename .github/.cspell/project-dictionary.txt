@@ -1,4 +1,6 @@
 abiv
+addi
+addiu
 amocas
 amoswap
 amswap
@@ -27,6 +29,7 @@ cset
 cskyv
 cxchg
 cxchgweak
+daddiu
 dbar
 DWCAS
 espup

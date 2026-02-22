@@ -285,9 +285,14 @@ run() {
 
   (
     cd -- "${test_dir}"
-    CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-      RUSTFLAGS="${target_rustflags}" \
-      x_cargo "${args[@]}" "$@"
+    case "${target}" in
+      avr*) ;; # TODO
+      *)
+        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+          RUSTFLAGS="${target_rustflags}" \
+          x_cargo "${args[@]}" "$@"
+        ;;
+    esac
     CARGO_TARGET_DIR="${target_dir}/no-std-test" \
       RUSTFLAGS="${target_rustflags}" \
       x_cargo "${args[@]}" --release "$@"
@@ -330,9 +335,15 @@ run() {
         # Run with qemu-system-avr.
         subcmd=run
         export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh qemu-system ${target}"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-          RUSTFLAGS="${target_rustflags}" \
-          x_cargo "${args[@]}" "$@"
+
+        case "${target}" in
+          avr*) ;; # TODO
+          *)
+            CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+              RUSTFLAGS="${target_rustflags}" \
+              x_cargo "${args[@]}" "$@"
+            ;;
+        esac
         CARGO_TARGET_DIR="${target_dir}/no-std-test" \
           RUSTFLAGS="${target_rustflags}" \
           x_cargo "${args[@]}" --release "$@"
@@ -350,15 +361,16 @@ run() {
         ;;
       m68k*)
         # Note: We cannot test everything at once due to size.
-        # isize, usize, i8, u8 are covered by the run with the default feature.
-        # NB: Sync feature list with tests/m68k/Cargo.toml
-        feature=i16,u16,i32,u32,i64,u64
-        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-          RUSTFLAGS="${target_rustflags}" \
-          x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-          RUSTFLAGS="${target_rustflags}" \
-          x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        # isize, usize are covered by the run with the default feature.
+        # NB: Sync feature list with tests/no-std-linux/Cargo.toml
+        for feature in 'i8,u8' 'i16,u16' 'i32,u32' 'i64,u64'; do
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        done
         ;;
     esac
   )

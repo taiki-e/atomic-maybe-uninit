@@ -24,14 +24,17 @@ See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
+    cell::UnsafeCell,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
 use crate::{
-    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap},
     utils::{MaybeUninit128, Pair},
 };
 
@@ -58,7 +61,7 @@ macro_rules! atomic_rmw {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
+    ($ty:ident, $($size:literal)?, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -132,6 +135,42 @@ macro_rules! atomic {
                 }
             }
         }
+        $(
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("ldr", $suffix, " {tmp0", $val_modifier, "}, [{src}], #", $size), // atomic { tmp0 = *src }; src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("ldr", $suffix, " {tmp1", $val_modifier, "}, [{src}, #", $size, "]"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("ldr", $suffix, " {tmp0", $val_modifier, "}, [{src}], #2*", $size),   // atomic { tmp0 = *src }; src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("str", $suffix, " {tmp0", $val_modifier, "}, [{dst}], #", $size), // atomic { *dst = tmp0 }; dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("str", $suffix, " {tmp1", $val_modifier, "}, [{dst}, #", $size, "]"), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("str", $suffix, " {tmp0", $val_modifier, "}, [{dst}], #2*", $size),   // atomic { *dst = tmp0 }; dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
+        )?
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -309,10 +348,85 @@ macro_rules! atomic {
     };
 }
 
-atomic!(u8, "b", ":w", ", uxtb");
-atomic!(u16, "h", ":w", ", uxth");
-atomic!(u32, "", ":w", "");
-atomic!(u64, "", "", "");
+atomic!(u8, "1", "b", ":w", ", uxtb");
+atomic!(u16, "2", "h", ":w", ", uxth");
+atomic!(u32, "4", "", ":w", "");
+atomic!(u64,    , "", "", "");
+
+impl AtomicMemcpy for u64 {
+    load_memcpy_opt64! { |src, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7|
+        asm!(
+            "ldr {tmp0}, [{src}], #8", // atomic { tmp0 = *src }; src = src.byte_add(8)
+            src = inout(reg) src,
+            tmp0 = out(reg) tmp0,
+            options(nostack, preserves_flags),
+        ),
+        asm!(
+            "ldr {tmp1}, [{src}, #8]",   // atomic { tmp1 = *src.byte_add(8) }
+            "ldr {tmp0}, [{src}], #2*8", // atomic { tmp0 = *src }; src = src.byte_add(2*8)
+            src = inout(reg) src,
+            tmp0 = out(reg) tmp0,
+            tmp1 = out(reg) tmp1,
+            options(nostack, preserves_flags),
+        ),
+        asm!(
+            "ldr {tmp7}, [{src}, #8*7]",    // tmp7 = src.byte_add(8*7).read()
+            "ldr {tmp6}, [{src}, #8*6]",    // tmp6 = src.byte_add(8*6).read()
+            "ldr {tmp5}, [{src}, #8*5]",    // tmp5 = src.byte_add(8*5).read()
+            "ldr {tmp4}, [{src}, #8*4]",    // tmp4 = src.byte_add(8*4).read()
+            "ldr {tmp3}, [{src}, #8*3]",    // tmp3 = src.byte_add(8*3).read()
+            "ldr {tmp2}, [{src}, #8*2]",    // tmp2 = src.byte_add(8*2).read()
+            "ldr {tmp1}, [{src}, #8*1]",    // tmp1 = src.byte_add(8*1).read()
+            "ldr {tmp0}, [{src}], #8*8",    // tmp0 = src.read(); src = src.byte_add(8*8)
+            src = inout(reg) src,
+            tmp0 = out(reg) tmp0,
+            tmp1 = out(reg) tmp1,
+            tmp2 = out(reg) tmp2,
+            tmp3 = out(reg) tmp3,
+            tmp4 = out(reg) tmp4,
+            tmp5 = out(reg) tmp5,
+            tmp6 = out(reg) tmp6,
+            tmp7 = out(reg) tmp7,
+            options(nostack, preserves_flags),
+        ),
+    }
+    store_memcpy_opt64! { |dst, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7|
+        asm!(
+            "str {tmp0}, [{dst}], #8", // atomic { *dst = tmp0 }; dst = dst.byte_add(8)
+            dst = inout(reg) dst,
+            tmp0 = in(reg) tmp0,
+            options(nostack, preserves_flags),
+        ),
+        asm!(
+            "str {tmp1}, [{dst}, #8]",   // atomic { *dst.byte_add(8) = tmp1 }
+            "str {tmp0}, [{dst}], #2*8", // atomic { *dst = tmp0 }; dst = dst.byte_add(2*8)
+            dst = inout(reg) dst,
+            tmp0 = in(reg) tmp0,
+            tmp1 = in(reg) tmp1,
+            options(nostack, preserves_flags),
+        ),
+        asm!(
+            "str {tmp7}, [{dst}, #8*7]",    // dst.byte_add(8*7).write(tmp7)
+            "str {tmp6}, [{dst}, #8*6]",    // dst.byte_add(8*6).write(tmp6)
+            "str {tmp5}, [{dst}, #8*5]",    // dst.byte_add(8*5).write(tmp5)
+            "str {tmp4}, [{dst}, #8*4]",    // dst.byte_add(8*4).write(tmp4)
+            "str {tmp3}, [{dst}, #8*3]",    // dst.byte_add(8*3).write(tmp3)
+            "str {tmp2}, [{dst}, #8*2]",    // dst.byte_add(8*2).write(tmp2)
+            "str {tmp1}, [{dst}, #8*1]",    // dst.byte_add(8*1).write(tmp1)
+            "str {tmp0}, [{dst}], #8*8",    // dst.write(tmp0); dst = dst.byte_add(8*8)
+            dst = inout(reg) dst,
+            tmp0 = in(reg) tmp0,
+            tmp1 = in(reg) tmp1,
+            tmp2 = in(reg) tmp2,
+            tmp3 = in(reg) tmp3,
+            tmp4 = in(reg) tmp4,
+            tmp5 = in(reg) tmp5,
+            tmp6 = in(reg) tmp6,
+            tmp7 = in(reg) tmp7,
+            options(nostack, preserves_flags),
+        ),
+    }
+}
 
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //
@@ -759,5 +873,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => {};
 }

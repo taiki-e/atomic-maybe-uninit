@@ -6,7 +6,7 @@ rust-version = "1.74" # Prevent clippy from suggesting a code that requires a ne
 publish = false
 
 [features]
-default = ["isize", "usize", "i8", "u8"]
+default = ["isize", "usize"]
 # NB: Sync feature list with tools/no-std.sh
 isize = []
 usize = []
