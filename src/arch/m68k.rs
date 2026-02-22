@@ -20,13 +20,15 @@ delegate_size!(delegate_load_store);
 #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicLoad, AtomicStore};
+use crate::raw::{AtomicLoad, AtomicMemcpy, AtomicStore};
 #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
 use crate::{
     raw::{AtomicCompareExchange, AtomicSwap},
@@ -77,6 +79,44 @@ macro_rules! atomic {
                         options(nostack),
                     );
                 }
+            }
+        }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("move.", $suffix, " ({src})+, {tmp0}"), // atomic { tmp0 = *src }; src = src.byte_add(size_of($ty))
+                    src = inout(reg_addr) src,
+                    tmp0 = out(reg_data) tmp0,
+                    // Do not use `preserves_flags` because MOVE modifies N, Z, V, and C bits in the condition codes.
+                    options(nostack),
+                ),
+                asm!(
+                    concat!("move.", $suffix, " ({src})+, {tmp0}"), // atomic { tmp0 = *src }; src = src.byte_add(size_of($ty))
+                    concat!("move.", $suffix, " ({src})+, {tmp1}"), // atomic { tmp1 = *src }; src = src.byte_add(size_of($ty))
+                    src = inout(reg_addr) src,
+                    tmp0 = out(reg_data) tmp0,
+                    tmp1 = out(reg_data) tmp1,
+                    // Do not use `preserves_flags` because MOVE modifies N, Z, V, and C bits in the condition codes.
+                    options(nostack),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("move.", $suffix, " {tmp0}, ({dst})+"), // atomic { *dst = tmp0 }; dst = dst.byte_add(size_of($ty))
+                    dst = inout(reg_addr) dst,
+                    tmp0 = in(reg_data) tmp0,
+                    // Do not use `preserves_flags` because MOVE modifies N, Z, V, and C bits in the condition codes.
+                    options(nostack),
+                ),
+                asm!(
+                    concat!("move.", $suffix, " {tmp0}, ({dst})+"), // atomic { *dst = tmp0 }; dst = dst.byte_add(size_of($ty))
+                    concat!("move.", $suffix, " {tmp1}, ({dst})+"), // atomic { *dst = tmp1 }; dst = dst.byte_add(size_of($ty))
+                    dst = inout(reg_addr) dst,
+                    tmp0 = in(reg_data) tmp0,
+                    tmp1 = in(reg_data) tmp1,
+                    // Do not use `preserves_flags` because MOVE modifies N, Z, V, and C bits in the condition codes.
+                    options(nostack),
+                ),
             }
         }
         #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
@@ -381,4 +421,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }

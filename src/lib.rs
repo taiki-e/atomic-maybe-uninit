@@ -14,6 +14,8 @@ is [undefined behavior because the copy goes through integers][undefined-behavio
 
 This crate provides a way to soundly perform such operations.
 
+This crate also provides byte-wise atomic memcpy which is sound for the type being copied contains uninitialized bytes.
+
 ## Platform Support
 
 Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, C-SKY, and Xtensa) are supported.
@@ -112,6 +114,7 @@ This crate uses inline assembly to implement atomic operations (this is currentl
 #![cfg_attr(atomic_maybe_uninit_no_strict_provenance, allow(unstable_name_collisions))]
 #![allow(clippy::inline_always)]
 #![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
+#![allow(clippy::undocumented_unsafe_blocks)] // TODO
 
 // There are currently no 128-bit or higher builtin targets.
 // (Although some of our generic code is written with the future
@@ -213,6 +216,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///
     /// // Equivalent to:
     /// let v = AtomicMaybeUninit::from(5_i32);
+    /// let v = AtomicMaybeUninit::<i32>::from(MaybeUninit::new(5_i32));
     /// ```
     #[inline]
     #[must_use]
@@ -814,6 +818,462 @@ pub use {cfg_has_atomic_64 as cfg_has_atomic_ptr, cfg_no_atomic_64 as cfg_no_ato
 pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_atomic_ptr};
 
 // -----------------------------------------------------------------------------
+// PerByteAtomicMaybeUninit
+
+/// TODO: doc
+///
+/// This type has the same in-memory representation as the underlying
+/// value type, `MaybeUninit<T>`.
+#[repr(transparent)]
+pub struct PerByteAtomicMaybeUninit<T> {
+    v: UnsafeCell<MaybeUninit<T>>,
+}
+
+impl<T> From<MaybeUninit<T>> for PerByteAtomicMaybeUninit<T> {
+    /// Creates a new per-byte atomic value from a potentially uninitialized value.
+    #[inline]
+    fn from(v: MaybeUninit<T>) -> Self {
+        Self::new(v)
+    }
+}
+
+impl<T> From<T> for PerByteAtomicMaybeUninit<T> {
+    /// Creates a new per-byte atomic value from an initialized value.
+    #[inline]
+    fn from(v: T) -> Self {
+        Self::new(MaybeUninit::new(v))
+    }
+}
+
+impl<T> fmt::Debug for PerByteAtomicMaybeUninit<T> {
+    #[inline] // fmt is not hot path, but #[inline] on fmt seems to still be useful: https://github.com/rust-lang/rust/pull/117727
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(core::any::type_name::<Self>())
+    }
+}
+
+// Send is implicitly implemented.
+// SAFETY: `T` is `Send` and any data races are prevented by atomic intrinsics.
+// Reading and writing may be torn, but MaybeUninit can properly represent such values.
+unsafe impl<T: Send> Sync for PerByteAtomicMaybeUninit<T> {}
+
+// UnwindSafe is implicitly implemented.
+impl<T: core::panic::RefUnwindSafe> core::panic::RefUnwindSafe for PerByteAtomicMaybeUninit<T> {}
+
+impl<T> PerByteAtomicMaybeUninit<T> {
+    /// Creates a new per-byte atomic value from a potentially uninitialized value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::mem::MaybeUninit;
+    ///
+    /// use atomic_maybe_uninit::PerByteAtomicMaybeUninit;
+    ///
+    /// let v = PerByteAtomicMaybeUninit::new(MaybeUninit::new(5_i32));
+    ///
+    /// // Equivalent to:
+    /// let v = PerByteAtomicMaybeUninit::from(5_i32);
+    /// let v = PerByteAtomicMaybeUninit::<i32>::from(MaybeUninit::new(5_i32));
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn new(v: MaybeUninit<T>) -> Self {
+        Self { v: UnsafeCell::new(v) }
+    }
+
+    // TODO: update docs based on https://github.com/rust-lang/rust/pull/116762
+    const_fn! {
+        const_if: #[cfg(not(atomic_maybe_uninit_no_const_mut_refs))];
+        /// Creates a new reference to a per-byte atomic value from a pointer.
+        ///
+        /// This is `const fn` on Rust 1.83+.
+        ///
+        /// # Safety
+        ///
+        /// * `ptr` must be aligned to `align_of::<PerByteAtomicMaybeUninit<T>>()` (note that on some platforms this
+        ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
+        /// * `ptr` must be [valid] for both reads and writes for the whole lifetime `'a`.
+        /// * Non-atomic accesses to the value behind `ptr` must have a happens-before
+        ///   relationship with atomic accesses via the returned value (or vice-versa).
+        ///   * In other words, time periods where the value is accessed atomically may not
+        ///     overlap with periods where the value is accessed non-atomically.
+        ///   * This requirement is trivially satisfied if `ptr` is never used non-atomically
+        ///     for the duration of lifetime `'a`. Most use cases should be able to follow
+        ///     this guideline.
+        ///   * This requirement is also trivially satisfied if all accesses (atomic or not) are
+        ///     done from the same thread.
+        /// * This method must not be used to create overlapping or mixed-size atomic
+        ///   accesses, as these are not supported by the memory model.
+        ///
+        /// [valid]: core::ptr#safety
+        #[inline]
+        #[must_use]
+        pub const unsafe fn from_ptr<'a>(ptr: *mut MaybeUninit<T>) -> &'a Self {
+            // SAFETY: guaranteed by the caller
+            unsafe { &*ptr.cast::<Self>() }
+        }
+    }
+
+    const_fn! {
+        const_if: #[cfg(not(atomic_maybe_uninit_no_const_mut_refs))];
+        /// Returns a mutable reference to the underlying value.
+        ///
+        /// This is safe because the mutable reference guarantees that no other threads are
+        /// concurrently accessing the atomic data.
+        ///
+        /// This is `const fn` on Rust 1.83+.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// use std::mem::MaybeUninit;
+        ///
+        /// use atomic_maybe_uninit::PerByteAtomicMaybeUninit;
+        ///
+        /// let mut v = PerByteAtomicMaybeUninit::from(5_i32);
+        /// unsafe { assert_eq!((*v.get_mut()).assume_init(), 5) }
+        /// *v.get_mut() = MaybeUninit::new(10);
+        /// unsafe { assert_eq!((*v.get_mut()).assume_init(), 10) }
+        /// ```
+        #[inline]
+        pub const fn get_mut(&mut self) -> &mut MaybeUninit<T> {
+            // SAFETY: the mutable reference guarantees unique ownership.
+            // (core::cell::UnsafeCell::get_mut requires newer nightly)
+            unsafe { &mut *self.as_ptr() }
+        }
+    }
+
+    /// Consumes the atomic and returns the contained value.
+    ///
+    /// This is safe because passing `self` by value guarantees that no other threads are
+    /// concurrently accessing the atomic data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use atomic_maybe_uninit::PerByteAtomicMaybeUninit;
+    ///
+    /// let v = PerByteAtomicMaybeUninit::from(5_i32);
+    /// unsafe { assert_eq!(v.into_inner().assume_init(), 5) }
+    /// ```
+    #[inline]
+    pub const fn into_inner(self) -> MaybeUninit<T> {
+        // SAFETY: PerByteAtomicMaybeUninit<T> and MaybeUninit<T> have the same size
+        // and in-memory representations, so they can be safely transmuted.
+        // (Equivalent to UnsafeCell::into_inner which is unstable in const context.)
+        unsafe { utils::transmute_copy_by_val::<Self, MaybeUninit<T>>(self) }
+    }
+
+    cfg_has_atomic_memcpy! {
+    /// Loads a value from the per-byte atomic value.
+    ///
+    /// `load` takes an [`Ordering`] argument which describes the memory ordering of this operation.
+    /// Possible values are [`Acquire`] and [`Relaxed`].
+    ///
+    /// If you want to load value to a reference, consider using [`load_to`](Self::load_to).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `order` is [`Release`], [`AcqRel`], or [`SeqCst`].
+    ///
+    /// # Examples
+    ///
+    /// TODO
+    #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn load(&self, order: Ordering) -> MaybeUninit<T> {
+        utils::assert_load_memcpy_ordering(order);
+        let src = self.v.get();
+
+        // Optimization for small values.
+        cfg_has_atomic_64! {
+            if const_eval!(T => bool {
+                mem::size_of::<T>() == 8 && mem::align_of::<T>() >= 8
+                    && mem::size_of::<utils::RegSize>() >= 8 // Skip 32-bit architectures since 64-bit atomics are usually slow on them.
+            }) {
+                return unsafe {
+                    mem::transmute_copy(&u64::atomic_load(src.cast::<MaybeUninit<u64>>(), order))
+                };
+            }
+        }
+        cfg_has_atomic_32! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 4 && mem::align_of::<T>() >= 4 }) {
+                return unsafe {
+                    mem::transmute_copy(&u32::atomic_load(src.cast::<MaybeUninit<u32>>(), order))
+                };
+            }
+        }
+        #[cfg(not(target_arch = "avr"))] // AVR's 16-bit load disable interrupts, but it's needless for atomic memcpy.
+        cfg_has_atomic_16! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 2 && mem::align_of::<T>() >= 2 }) {
+                return unsafe {
+                    mem::transmute_copy(&u16::atomic_load(src.cast::<MaybeUninit<u16>>(), order))
+                };
+            }
+        }
+        cfg_has_atomic_8! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 1 }) {
+                return unsafe {
+                    mem::transmute_copy(&u8::atomic_load(src.cast::<MaybeUninit<u8>>(), order))
+                };
+            }
+        }
+
+        let mut val = MaybeUninit::uninit();
+        unsafe { raw::atomic_load_memcpy(&mut val, src, 1) }
+        match order {
+            Ordering::Relaxed => { /* no-op */ }
+            _ => arch::fence(order),
+        }
+        val
+    }
+
+    /// Stores a value into the per-byte atomic value.
+    ///
+    /// `store` takes an [`Ordering`] argument which describes the memory ordering of this operation.
+    ///  Possible values are [`Release`] and [`Relaxed`].
+    ///
+    /// If you want to store value from a reference, consider using [`store_from`](Self::store_from).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `order` is [`Acquire`], [`AcqRel`], or [`SeqCst`].
+    ///
+    /// # Examples
+    ///
+    /// TODO
+    #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
+    #[allow(clippy::needless_pass_by_value)] // covered by store_from
+    pub fn store(&self, val: MaybeUninit<T>, order: Ordering) {
+        utils::assert_store_memcpy_ordering(order);
+        let dst = self.v.get();
+
+        // Optimization for small values.
+        cfg_has_atomic_64! {
+            if const_eval!(T => bool {
+                mem::size_of::<T>() == 8 && mem::align_of::<T>() >= 8
+                    && mem::size_of::<utils::RegSize>() >= 8 // Skip 32-bit architectures since 64-bit atomics are usually slow on them.
+            }) {
+                unsafe {
+                    u64::atomic_store(
+                        dst.cast::<MaybeUninit<u64>>(),
+                        mem::transmute_copy(&val),
+                        order,
+                    );
+                }
+                return;
+            }
+        }
+        cfg_has_atomic_32! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 4 && mem::align_of::<T>() >= 4 }) {
+                unsafe {
+                    u32::atomic_store(
+                        dst.cast::<MaybeUninit<u32>>(),
+                        mem::transmute_copy(&val),
+                        order,
+                    );
+                }
+                return;
+            }
+        }
+        #[cfg(not(target_arch = "avr"))] // AVR's 16-bit load disable interrupts, but it's needless for atomic memcpy.
+        cfg_has_atomic_16! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 2 && mem::align_of::<T>() >= 2 }) {
+                unsafe {
+                    u16::atomic_store(
+                        dst.cast::<MaybeUninit<u16>>(),
+                        mem::transmute_copy(&val),
+                        order,
+                    );
+                }
+                return;
+            }
+        }
+        cfg_has_atomic_8! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 1 }) {
+                unsafe {
+                    u8::atomic_store(
+                        dst.cast::<MaybeUninit<u8>>(),
+                        mem::transmute_copy(&val),
+                        order,
+                    );
+                }
+                return;
+            }
+        }
+
+        match order {
+            Ordering::Relaxed => { /* no-op */ }
+            _ => arch::fence(order),
+        }
+        unsafe { raw::atomic_store_memcpy(dst, &val, 1) }
+    }
+
+    /// Loads a value from the per-byte atomic value to `dst`.
+    ///
+    /// `load` takes an [`Ordering`] argument which describes the memory ordering of this operation.
+    /// Possible values are [`Acquire`] and [`Relaxed`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `order` is [`Release`], [`AcqRel`], or [`SeqCst`].
+    ///
+    /// # Examples
+    ///
+    /// TODO
+    #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn load_to(&self, dst: &mut MaybeUninit<T>, order: Ordering) {
+        utils::assert_load_memcpy_ordering(order);
+        let src = self.v.get();
+
+        // Optimization for small values.
+        cfg_has_atomic_64! {
+            if const_eval!(T => bool {
+                mem::size_of::<T>() == 8 && mem::align_of::<T>() >= 8
+                    && mem::size_of::<utils::RegSize>() >= 8 // Skip 32-bit architectures since 64-bit atomics are usually slow on them.
+            }) {
+                *dst = unsafe {
+                    mem::transmute_copy(&u64::atomic_load(src.cast::<MaybeUninit<u64>>(), order))
+                };
+                return;
+            }
+        }
+        cfg_has_atomic_32! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 4 && mem::align_of::<T>() >= 4 }) {
+                *dst = unsafe {
+                    mem::transmute_copy(&u32::atomic_load(src.cast::<MaybeUninit<u32>>(), order))
+                };
+                return;
+            }
+        }
+        #[cfg(not(target_arch = "avr"))] // AVR's 16-bit load disable interrupts, but it's needless for atomic memcpy.
+        cfg_has_atomic_16! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 2 && mem::align_of::<T>() >= 2 }) {
+                *dst = unsafe {
+                    mem::transmute_copy(&u16::atomic_load(src.cast::<MaybeUninit<u16>>(), order))
+                };
+                return;
+            }
+        }
+        cfg_has_atomic_8! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 1 }) {
+                *dst = unsafe {
+                    mem::transmute_copy(&u8::atomic_load(src.cast::<MaybeUninit<u8>>(), order))
+                };
+                return;
+            }
+        }
+
+        unsafe { raw::atomic_load_memcpy(dst, src, 1) }
+        match order {
+            Ordering::Relaxed => { /* no-op */ }
+            _ => arch::fence(order),
+        }
+    }
+
+    /// Stores a value from `src` into the per-byte atomic value.
+    ///
+    /// `store` takes an [`Ordering`] argument which describes the memory ordering of this operation.
+    ///  Possible values are [`Release`] and [`Relaxed`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `order` is [`Acquire`], [`AcqRel`], or [`SeqCst`].
+    ///
+    /// # Examples
+    ///
+    /// TODO
+    #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn store_from(&self, src: &MaybeUninit<T>, order: Ordering) {
+        utils::assert_store_memcpy_ordering(order);
+        let dst = self.v.get();
+
+        // Optimization for small values.
+        cfg_has_atomic_64! {
+            if const_eval!(T => bool {
+                mem::size_of::<T>() == 8 && mem::align_of::<T>() >= 8
+                    && mem::size_of::<utils::RegSize>() >= 8 // Skip 32-bit architectures since 64-bit atomics are usually slow on them.
+            }) {
+                unsafe {
+                    u64::atomic_store(
+                        dst.cast::<MaybeUninit<u64>>(),
+                        mem::transmute_copy(src),
+                        order,
+                    );
+                }
+                return;
+            }
+        }
+        cfg_has_atomic_32! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 4 && mem::align_of::<T>() >= 4 }) {
+                unsafe {
+                    u32::atomic_store(
+                        dst.cast::<MaybeUninit<u32>>(),
+                        mem::transmute_copy(src),
+                        order,
+                    );
+                }
+                return;
+            }
+        }
+        #[cfg(not(target_arch = "avr"))] // AVR's 16-bit load disable interrupts, but it's needless for atomic memcpy.
+        cfg_has_atomic_16! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 2 && mem::align_of::<T>() >= 2 }) {
+                unsafe {
+                    u16::atomic_store(
+                        dst.cast::<MaybeUninit<u16>>(),
+                        mem::transmute_copy(src),
+                        order,
+                    );
+                }
+                return;
+            }
+        }
+        cfg_has_atomic_8! {
+            if const_eval!(T => bool { mem::size_of::<T>() == 1 }) {
+                unsafe {
+                    u8::atomic_store(
+                        dst.cast::<MaybeUninit<u8>>(),
+                        mem::transmute_copy(src),
+                        order,
+                    );
+                }
+                return;
+            }
+        }
+
+        match order {
+            Ordering::Relaxed => { /* no-op */ }
+            _ => arch::fence(order),
+        }
+        unsafe { raw::atomic_store_memcpy(dst, src, 1) }
+    }
+
+    // TODO
+    // pub fn store_from_slice(this: &[Self], src: &[MaybeUninit<T>], order: Ordering);
+    // pub fn load_to_slice(this: &[Self], dest: &mut [MaybeUninit<T>], order: Ordering);
+    }
+
+    /// Returns a mutable pointer to the underlying value.
+    ///
+    /// Returning an `*mut` pointer from a shared reference to this atomic is safe because the
+    /// atomic types work with interior mutability. All modifications of an atomic change the value
+    /// through a shared reference, and can do so safely as long as they use atomic operations. Any
+    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the same
+    /// restriction: operations on it must be atomic.
+    ///
+    /// TODO: different granularity
+    #[inline]
+    pub const fn as_ptr(&self) -> *mut MaybeUninit<T> {
+        self.v.get()
+    }
+}
+
+// -----------------------------------------------------------------------------
 // Internals
 
 #[cfg_attr(
@@ -934,6 +1394,8 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[allow(missing_docs)] // For cfg_* macros.
 mod arch;
 
+#[allow(unused_imports)]
+use self::private::{Align4, Align8, Align16, Align32, Align64};
 mod private {
     #![allow(missing_debug_implementations)]
 
@@ -968,6 +1430,12 @@ mod private {
     #[repr(align(16))]
     #[allow(unknown_lints, unnameable_types)] // Not public API. unnameable_types is available on Rust 1.79+
     pub struct Align16(#[allow(dead_code)] u128);
+    #[allow(dead_code)]
+    #[repr(align(32))]
+    pub(crate) struct Align32(#[allow(dead_code)] [u64; 4]);
+    #[allow(dead_code)]
+    #[repr(align(64))]
+    pub(crate) struct Align64(#[allow(dead_code)] [u64; 8]);
     #[cfg(target_pointer_width = "16")]
     pub(crate) type AlignPtr = Align2;
     #[cfg(target_pointer_width = "32")]
@@ -981,9 +1449,9 @@ mod private {
     #[allow(unused_imports)]
     use crate::{
         AtomicMaybeUninit, cfg_has_atomic_8, cfg_has_atomic_16, cfg_has_atomic_32,
-        cfg_has_atomic_64, cfg_has_atomic_128, cfg_has_atomic_cas, cfg_has_atomic_ptr,
-        cfg_no_atomic_8, cfg_no_atomic_16, cfg_no_atomic_32, cfg_no_atomic_64, cfg_no_atomic_128,
-        cfg_no_atomic_cas, cfg_no_atomic_ptr,
+        cfg_has_atomic_64, cfg_has_atomic_128, cfg_has_atomic_cas, cfg_has_atomic_memcpy,
+        cfg_has_atomic_ptr, cfg_no_atomic_8, cfg_no_atomic_16, cfg_no_atomic_32, cfg_no_atomic_64,
+        cfg_no_atomic_128, cfg_no_atomic_cas, cfg_no_atomic_memcpy, cfg_no_atomic_ptr,
     };
     // TODO: make these type aliases public?
     cfg_has_atomic_8! {
@@ -1041,5 +1509,15 @@ mod private {
     cfg_no_atomic_cas! {
         type __AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
         type __AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
+    }
+    cfg_has_atomic_memcpy! {
+        #[allow(unused_imports)]
+        use crate::raw::{atomic_load_memcpy, atomic_store_memcpy};
+        type ___AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
+        type ___AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
+    }
+    cfg_no_atomic_memcpy! {
+        type ___AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
+        type ___AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
     }
 }

@@ -287,7 +287,7 @@ run() {
     *) bail "unrecognized target '${target}'" ;;
   esac
   case "${target}" in
-    m68k*) ;;
+    avr* | m68k*) ;;
     *) args+=(--all-features) ;;
   esac
 
@@ -335,6 +335,18 @@ run() {
         fi
         ;;
       avr*)
+        # Note: We cannot test everything at once due to size.
+        # isize, usize are covered by the run with the default feature.
+        # NB: Sync feature list with tests/avr/Cargo.toml
+        for feature in 'i8,u8' 'i16,u16'; do
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        done
+
         # Run with qemu-system-avr.
         subcmd=run
         export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh qemu-system ${target}"
@@ -344,6 +356,17 @@ run() {
         CARGO_TARGET_DIR="${target_dir}/no-std-test" \
           RUSTFLAGS="${target_rustflags}" \
           x_cargo "${args[@]}" --release "$@"
+        # Note: We cannot test everything at once due to size.
+        # isize, usize are covered by the run with the default feature.
+        # NB: Sync feature list with tests/avr/Cargo.toml
+        for feature in 'i8,u8' 'i16,u16'; do
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        done
         ;;
       sparc*)
         # Run with qemu-system-sparc.
@@ -358,15 +381,16 @@ run() {
         ;;
       m68k*)
         # Note: We cannot test everything at once due to size.
-        # isize, usize, i8, u8 are covered by the run with the default feature.
-        # NB: Sync feature list with tests/m68k/Cargo.toml
-        feature=i16,u16,i32,u32,i64,u64
-        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-          RUSTFLAGS="${target_rustflags}" \
-          x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-          RUSTFLAGS="${target_rustflags}" \
-          x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        # isize, usize are covered by the run with the default feature.
+        # NB: Sync feature list with tests/no-std-linux/Cargo.toml
+        for feature in 'i8,u8' 'i16,u16' 'i32,u32' 'i64,u64'; do
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        done
         ;;
     esac
   )

@@ -34,8 +34,11 @@ delegate_size!(delegate_load_store);
 ))]
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
+    arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
@@ -44,7 +47,7 @@ use core::{
     not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
 ))]
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
-use crate::raw::{AtomicLoad, AtomicStore};
+use crate::raw::{AtomicLoad, AtomicMemcpy, AtomicStore};
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 use crate::utils::{MaybeUninit64, Pair};
 
@@ -74,7 +77,7 @@ cfg_sel!({
         }
         macro_rules! asm_use_dmb {
             ($($asm:tt)*) => {
-                core::arch::asm!($($asm)*)
+                asm!($($asm)*)
             };
         }
     }
@@ -94,7 +97,7 @@ cfg_sel!({
         macro_rules! asm_use_dmb {
             ($($asm:tt)*) => {
                 // In this case, dmb! calls __kuser_memory_barrier.
-                core::arch::asm!(
+                asm!(
                     $($asm)*
                     // __kuser_memory_barrier (see also arm_linux.rs)
                     // https://github.com/torvalds/linux/blob/v6.19/Documentation/arch/arm/kernel_user_helpers.rst
@@ -120,7 +123,7 @@ cfg_sel!({
             ($($asm:tt)*) => {
                 // In this case, dmb! calls `mcr p15, 0, <Rd>, c7, c10, 5`, and
                 // the value in the Rd register should be zero (SBZ).
-                core::arch::asm!(
+                asm!(
                     $($asm)*
                     zero = inout(reg) 0_u32 => _,
                 )
@@ -130,7 +133,7 @@ cfg_sel!({
 });
 macro_rules! asm_no_dmb {
     ($($asm:tt)*) => {
-        core::arch::asm!($($asm)*)
+        asm!($($asm)*)
     };
 }
 
@@ -1059,6 +1062,8 @@ macro_rules! atomic64 {
 
 atomic64!(u64);
 
+include!("arm_common.rs");
+
 // -----------------------------------------------------------------------------
 // cfg macros
 
@@ -1145,4 +1150,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }
