@@ -5,7 +5,10 @@
 #[cfg(doc)]
 use core::{
     cell::UnsafeCell,
-    sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst},
+    sync::atomic::{
+        Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst},
+        fence,
+    },
 };
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -245,4 +248,344 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
         // SAFETY: the caller must uphold the safety contract.
         unsafe { Self::atomic_compare_exchange(dst, current, new, success, failure) }
     }
+}
+
+crate::cfg_has_atomic_memcpy! {
+#[cfg(not(doc))]
+#[cfg(not(target_arch = "avr"))]
+use core::cell::UnsafeCell;
+use core::{mem, num::NonZeroUsize};
+
+#[cfg(doc)]
+use crate::PerByteAtomicMaybeUninit;
+#[cfg(not(target_arch = "avr"))]
+use crate::{private::PrimitivePriv, utils::RegSize};
+
+pub(crate) trait AtomicMemcpy: Primitive {
+    unsafe fn atomic_load_memcpy<const DST_ALIGNED: bool>(
+        dst: *mut MaybeUninit<Self>,
+        src: *const MaybeUninit<Self>,
+        count: NonZeroUsize,
+    );
+    unsafe fn atomic_store_memcpy<const SRC_ALIGNED: bool>(
+        dst: *mut MaybeUninit<Self>,
+        src: *const MaybeUninit<Self>,
+        count: NonZeroUsize,
+    );
+}
+
+#[cfg_attr(target_arch = "avr", allow(clippy::extra_unused_type_parameters))]
+#[inline]
+unsafe fn atomic_memcpy_aligned<const IS_LOAD: bool, T>(
+    dst: *mut MaybeUninit<u8>,
+    src: *const MaybeUninit<u8>,
+    count_in_byte: NonZeroUsize,
+) {
+    const ALIGNED: bool = true;
+
+    #[cfg(any(
+        target_arch = "aarch64",
+        target_arch = "amdgpu",
+        target_arch = "arm64ec",
+        target_arch = "bpf",
+        target_arch = "loongarch64",
+        target_arch = "mips64",
+        target_arch = "mips64r6",
+        target_arch = "nvptx64",
+        target_arch = "powerpc64",
+        target_arch = "riscv64",
+        target_arch = "s390x",
+        target_arch = "sparc64",
+        target_arch = "wasm64",
+        target_arch = "x86_64",
+    ))] // NB: Sync with gen/utils.rs
+    if const_eval!(T => bool { mem::align_of::<T>() >= 8 }) {
+        #[allow(clippy::cast_ptr_alignment)] // we've checked the alignment
+        let dst = dst.cast::<MaybeUninit<u64>>();
+        #[allow(clippy::cast_ptr_alignment)] // we've checked the alignment
+        let src = src.cast::<MaybeUninit<u64>>();
+        let count = unsafe { NonZeroUsize::new_unchecked(count_in_byte.get() >> 3) };
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            if IS_LOAD {
+                u64::atomic_load_memcpy::<ALIGNED>(dst, src, count);
+            } else {
+                u64::atomic_store_memcpy::<ALIGNED>(dst, src, count);
+            }
+        }
+        return;
+    }
+
+    #[cfg(not(any(target_arch = "avr", target_arch = "msp430")))]
+    if const_eval!(T => bool { mem::align_of::<T>() >= 4 }) {
+        #[allow(clippy::cast_ptr_alignment)] // we've checked the alignment
+        let dst = dst.cast::<MaybeUninit<u32>>();
+        #[allow(clippy::cast_ptr_alignment)] // we've checked the alignment
+        let src = src.cast::<MaybeUninit<u32>>();
+        let count = unsafe { NonZeroUsize::new_unchecked(count_in_byte.get() >> 2) };
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            if IS_LOAD {
+                u32::atomic_load_memcpy::<ALIGNED>(dst, src, count);
+            } else {
+                u32::atomic_store_memcpy::<ALIGNED>(dst, src, count);
+            }
+        }
+        return;
+    }
+
+    #[cfg(not(target_arch = "avr"))] // AVR's actual register size is 8-bit.
+    if const_eval!(T => bool { mem::align_of::<T>() >= 2 }) {
+        #[allow(clippy::cast_ptr_alignment)] // we've checked the alignment
+        let dst = dst.cast::<MaybeUninit<u16>>();
+        #[allow(clippy::cast_ptr_alignment)] // we've checked the alignment
+        let src = src.cast::<MaybeUninit<u16>>();
+        let count = unsafe { NonZeroUsize::new_unchecked(count_in_byte.get() >> 1) };
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            if IS_LOAD {
+                u16::atomic_load_memcpy::<ALIGNED>(dst, src, count);
+            } else {
+                u16::atomic_store_memcpy::<ALIGNED>(dst, src, count);
+            }
+        }
+        return;
+    }
+
+    let count = count_in_byte;
+    // SAFETY: the caller must uphold the safety contract.
+    unsafe {
+        if IS_LOAD {
+            u8::atomic_load_memcpy::<ALIGNED>(dst, src, count);
+        } else {
+            u8::atomic_store_memcpy::<ALIGNED>(dst, src, count);
+        }
+    }
+}
+
+/// Loads `count * size_of::<T>()` bytes from `src` into `dst`.
+///
+/// The memory ordering of this operation is always [`Relaxed`].
+/// If [`Acquire`] memory ordering is needed, emit the [`fence(Acquire)`](fence)
+/// *after* this operation.
+///
+/// **Note:** There is *no* guarantee that all elements have been copied at
+/// the same time, so if `src` is updated by a concurrent write operation,
+/// the elements at `dst` may be a mix of elements before and after the update.
+///
+/// # Safety
+///
+/// Behavior is undefined if any of the following conditions are violated:
+///
+/// - `src` must be valid for reads.
+/// - `src` must go through [`UnsafeCell::get`].
+/// - `dst` must be valid for writes.
+/// - Both `src` and `dst` must be properly aligned.
+/// - The region of memory beginning at `src` with a size of `count *
+///   size_of::<T>()` bytes must *not* overlap with the region of memory
+///   beginning at `dst` with the same size.
+/// - `count * size_of::<T>()` must not overflow.
+/// - There are no concurrent non-atomic write operations.
+/// - There are no concurrent atomic write operations of different
+///   granularity. The granularity of atomic operations is an implementation
+///   detail and may changed in the future, so the concurrent write operation
+///   that can always safely be used together with this function is only
+///   [`PerByteAtomicMaybeUninit`] and [`atomic_store_memcpy`].
+///
+/// The rules for the validity of pointer follow [the rules applied to
+/// functions exposed by the standard library's `ptr` module][validity],
+/// except that concurrent atomic operations of the same granularity on `src`
+/// are allowed.
+///
+/// [validity]: core::ptr#safety
+#[allow(clippy::missing_panics_doc)] // see the comment on unwrap
+#[inline]
+pub unsafe fn atomic_load_memcpy<T>(
+    dst: *mut MaybeUninit<T>,
+    src: *const MaybeUninit<T>,
+    count: usize,
+) {
+    const IS_LOAD: bool = true;
+
+    // Handle zero-sized cases.
+    let Some(size) =
+        const_eval!(T => Option<NonZeroUsize> { NonZeroUsize::new(mem::size_of::<T>()) })
+    else {
+        return;
+    };
+    let Some(count) = NonZeroUsize::new(count) else { return };
+
+    // SAFETY: the caller must guarantee that `count * size_of::<T>()` doesn't overflow.
+    let count = unsafe { count.checked_mul(size).unwrap_unchecked() };
+
+    #[cfg_attr(target_arch = "avr", allow(unused_mut))]
+    let mut dst = dst.cast::<MaybeUninit<u8>>();
+    let src = src.cast::<MaybeUninit<u8>>();
+
+    // Handle cases where the alignment is smaller than the register size.
+    #[cfg(not(target_arch = "avr"))] // AVR's actual register size is 8-bit.
+    if const_eval!(T => bool { mem::align_of::<T>() < mem::size_of::<RegSize>() })
+        && (
+            // If RegSize is 32-bit:
+            //    0 1 2 3 4 5 6
+            // 0  ^ ^ ^ ^
+            // 1    ^ ^ ^ ^
+            // 2      ^ ^ ^ ^
+            // 3        ^ ^ ^ ^
+            const_eval!(T => bool { mem::size_of::<T>() >= mem::size_of::<RegSize>() << 1 })
+                || count.get() >= const_eval!(=> usize { mem::size_of::<RegSize>() << 1 })
+        )
+    {
+        // TODO: avoid conversion to slice
+        let src = unsafe {
+            core::slice::from_raw_parts(src.cast::<UnsafeCell<MaybeUninit<u8>>>(), count.get())
+        };
+        let (first, mid, last) =
+            unsafe { src.align_to::<UnsafeCell<MaybeUninit<<RegSize as PrimitivePriv>::Align>>>() };
+        if let Some(count) = NonZeroUsize::new(first.len()) {
+            let src = first.as_ptr().cast::<MaybeUninit<u8>>();
+            unsafe {
+                atomic_memcpy_aligned::<IS_LOAD, T>(dst, src, count);
+                dst = dst.add(count.get());
+            }
+        }
+        {
+            // unwrap is okay because the length check above.
+            let count = NonZeroUsize::new(mid.len()).unwrap();
+            let src = mid.as_ptr().cast::<MaybeUninit<RegSize>>();
+            #[allow(clippy::cast_ptr_alignment)] // unaligned dst is okay since DST_ALIGNED is false
+            unsafe {
+                RegSize::atomic_load_memcpy::</* DST_ALIGNED */ false>(
+                    dst.cast::<MaybeUninit<RegSize>>(),
+                    src,
+                    count,
+                );
+                dst = dst.add(
+                    count.get().wrapping_mul(mem::size_of::<RegSize>()) /* can use unchecked_mul */
+                );
+            }
+        }
+        if let Some(count) = NonZeroUsize::new(last.len()) {
+            let src = last.as_ptr().cast::<MaybeUninit<u8>>();
+            unsafe { atomic_memcpy_aligned::<IS_LOAD, T>(dst, src, count) }
+        }
+        return;
+    }
+
+    // SAFETY: the caller must uphold the safety contract.
+    unsafe { atomic_memcpy_aligned::<IS_LOAD, T>(dst, src, count) }
+}
+
+/// Stores `count * size_of::<T>()` bytes from `src` into `dst`.
+///
+/// The memory ordering of this operation is always [`Relaxed`].
+/// If [`Release`] memory ordering is needed, emit the [`fence(Release)`](fence)
+/// *before* this operation.
+///
+/// **Note:** There is *no* guarantee that all elements have been copied at
+/// the same time, so if `dst` is updated by a concurrent write operation,
+/// the elements at `dst` may be a mix of elements before and after the update.
+///
+/// # Safety
+///
+/// Behavior is undefined if any of the following conditions are violated:
+///
+/// - `dst` must be valid for writes.
+/// - `dst` must go through [`UnsafeCell::get`].
+/// - `src` must be valid for reads.
+/// - Both `src` and `dst` must be properly aligned.
+/// - The region of memory beginning at `src` with a size of `count *
+///   size_of::<T>()` bytes must *not* overlap with the region of memory
+///   beginning at `dst` with the same size.
+/// - `count * size_of::<T>()` must not overflow.
+/// - There are no concurrent non-atomic operations.
+/// - There are no concurrent atomic operations of different
+///   granularity. The granularity of atomic operations is an implementation
+///   detail and may changed in the future, so the concurrent operation
+///   that can always safely be used together with this function is only
+///   [`PerByteAtomicMaybeUninit`] and [`atomic_load_memcpy`].
+///
+/// The rules for the validity of pointer follow [the rules applied to
+/// functions exposed by the standard library's `ptr` module][validity],
+/// except that concurrent atomic operations of the same granularity on `dst`
+/// are allowed.
+///
+/// [validity]: core::ptr#safety
+#[allow(clippy::missing_panics_doc)] // see the comment on unwrap
+#[inline]
+pub unsafe fn atomic_store_memcpy<T>(
+    dst: *mut MaybeUninit<T>,
+    src: *const MaybeUninit<T>,
+    count: usize,
+) {
+    const IS_LOAD: bool = false;
+
+    // Handle zero-sized cases.
+    let Some(size) =
+        const_eval!(T => Option<NonZeroUsize> { NonZeroUsize::new(mem::size_of::<T>()) })
+    else {
+        return;
+    };
+    let Some(count) = NonZeroUsize::new(count) else { return };
+
+    // SAFETY: the caller must guarantee that `count * size_of::<T>()` doesn't overflow.
+    let count = unsafe { count.checked_mul(size).unwrap_unchecked() };
+
+    let dst = dst.cast::<MaybeUninit<u8>>();
+    #[cfg_attr(target_arch = "avr", allow(unused_mut))]
+    let mut src = src.cast::<MaybeUninit<u8>>();
+
+    // Handle cases where the alignment is smaller than the register size.
+    #[cfg(not(target_arch = "avr"))] // AVR's actual register size is 8-bit.
+    if const_eval!(T => bool { mem::align_of::<T>() < mem::size_of::<RegSize>() })
+        && (
+            // If RegSize is 32-bit:
+            //    0 1 2 3 4 5 6
+            // 0  ^ ^ ^ ^
+            // 1    ^ ^ ^ ^
+            // 2      ^ ^ ^ ^
+            // 3        ^ ^ ^ ^
+            const_eval!(T => bool { mem::size_of::<T>() >= mem::size_of::<RegSize>() << 1 })
+                || count.get() >= const_eval!(=> usize { mem::size_of::<RegSize>() << 1 })
+        )
+    {
+        // TODO: avoid conversion to slice
+        let dst = unsafe {
+            core::slice::from_raw_parts(dst.cast::<UnsafeCell<MaybeUninit<u8>>>(), count.get())
+        };
+        let (first, mid, last) =
+            unsafe { dst.align_to::<UnsafeCell<MaybeUninit<<RegSize as PrimitivePriv>::Align>>>() };
+        if let Some(count) = NonZeroUsize::new(first.len()) {
+            let dst = UnsafeCell::raw_get(first.as_ptr());
+            unsafe {
+                atomic_memcpy_aligned::<IS_LOAD, T>(dst, src, count);
+                src = src.add(count.get());
+            }
+        }
+        {
+            // unwrap is okay because the length check above.
+            let count = NonZeroUsize::new(mid.len()).unwrap();
+            let dst = UnsafeCell::raw_get(mid.as_ptr()).cast::<MaybeUninit<RegSize>>();
+            #[allow(clippy::cast_ptr_alignment)] // unaligned src is okay since SRC_ALIGNED is false
+            unsafe {
+                RegSize::atomic_store_memcpy::</* SRC_ALIGNED */ false>(
+                    dst,
+                    src.cast::<MaybeUninit<RegSize>>(),
+                    count,
+                );
+                src = src.add(
+                    count.get().wrapping_mul(mem::size_of::<RegSize>()) /* can use unchecked_mul */
+                );
+            }
+        }
+        if let Some(count) = NonZeroUsize::new(last.len()) {
+            let dst = UnsafeCell::raw_get(last.as_ptr());
+            unsafe { atomic_memcpy_aligned::<IS_LOAD, T>(dst, src, count) }
+        }
+        return;
+    }
+
+    // SAFETY: the caller must uphold the safety contract.
+    unsafe { atomic_memcpy_aligned::<IS_LOAD, T>(dst, src, count) }
+}
 }
