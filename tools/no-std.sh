@@ -165,19 +165,19 @@ run() {
   if [[ -z "${CI:-}" ]]; then
     case "${target}" in
       sparc*)
-        if ! type -P tsim-leon3 >/dev/null; then
+        if ! type -P "${TSIM_LEON3:-tsim-leon3}" >/dev/null; then
           info "no-std test for ${target} requires tsim-leon3 (switched to build-only)"
           subcmd=build
         fi
         ;;
       avr*)
-        if ! type -P simavr >/dev/null; then
+        if ! type -P "${SIMAVR:-simavr}" >/dev/null; then
           info "no-std test for ${target} requires simavr (switched to build-only)"
           subcmd=build
         fi
         ;;
       msp430*)
-        if ! type -P mspdebug >/dev/null; then
+        if ! type -P "${MSPDEBUG:-mspdebug}" >/dev/null; then
           info "no-std test for ${target} requires mspdebug (switched to build-only)"
           subcmd=build
         fi
@@ -187,8 +187,8 @@ run() {
   case "${target}" in
     xtensa*)
       # TODO(xtensa): run test with simulator on CI
-      if ! type -P wokwi-server >/dev/null; then
-        info "no-std test for ${target} requires wokwi-server (switched to build-only)"
+      if ! type -P "${WOKWI_CLI:-wokwi-cli}" >/dev/null; then
+        info "no-std test for ${target} requires wokwi-cli (switched to build-only)"
         subcmd=build
       fi
       ;;
@@ -261,12 +261,20 @@ run() {
       ;;
     xtensa*)
       test_dir=tests/xtensa
-      export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh wokwi-server ${target}"
+      export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh wokwi-cli ${target}"
       linker=linkall.x
       target_rustflags+=" -C link-arg=-Wl,-T${linker} -C link-arg=-nostartfiles"
       local cpu
       cpu=$(cut -d- -f2 <<<"${target}")
       args+=(--features "esp-println/${cpu},esp-hal/${cpu}")
+      if [[ "${subcmd}" != "build" ]]; then
+        export WOKWI_TMPDIR="${workspace_dir}/tmp/wokwi"
+        export WOKWI_WORKSPACE_DIR="${workspace_dir}"
+        rm -rf -- "${WOKWI_TMPDIR}"
+        mkdir -p -- "${WOKWI_TMPDIR}"
+        cp -- "${test_dir}/diagram-${cpu}.json" "${WOKWI_TMPDIR}/diagram.json"
+        cp -- "${test_dir}/wokwi-base.toml" "${WOKWI_TMPDIR}/wokwi-base.toml"
+      fi
       ;;
     m68k*)
       if [[ "${llvm_version}" -lt 20 ]]; then

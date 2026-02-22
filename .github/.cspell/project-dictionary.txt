@@ -28,6 +28,8 @@ cskyv
 cxchg
 cxchgweak
 dbar
+devkitc
+devkitm
 DWCAS
 espup
 fild
