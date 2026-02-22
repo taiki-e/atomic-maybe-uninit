@@ -373,8 +373,11 @@ TODO: add implementation and document overview
 
 target_arch: x86, x86_64<br>
 Implementation: [x86.rs](x86.rs)<br>
+Refs: [Intel® 64 and IA-32 Architectures Software Developer Manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
 
-TODO: add reference link and document overview
+TODO: document overview
+
+(Refs: Section 10.1.1 "Guaranteed Atomic Operations" of Intel® 64 and IA-32 Architectures Software Developers Manual)
 
 ## Xtensa
 

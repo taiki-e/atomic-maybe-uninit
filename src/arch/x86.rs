@@ -604,7 +604,7 @@ macro_rules! atomic128 {
                 debug_assert_atomic_unsafe_precondition!(src, $ty);
 
                 // VMOVDQA is atomic when AVX is available.
-                // See https://gcc.gnu.org/bugzilla//show_bug.cgi?id=104688 for details.
+                // See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104688 for details.
                 //
                 // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
                 #[cfg(target_feature = "avx")]
@@ -660,7 +660,7 @@ macro_rules! atomic128 {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
 
                 // VMOVDQA is atomic when AVX is available.
-                // See https://gcc.gnu.org/bugzilla//show_bug.cgi?id=104688 for details.
+                // See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104688 for details.
                 //
                 // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
                 #[cfg(target_feature = "avx")]
