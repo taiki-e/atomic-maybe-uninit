@@ -388,6 +388,9 @@ build() {
           RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
           x_cargo "${args[@]}" "$@"
       fi
+      CARGO_TARGET_DIR="${target_dir}/cmpxchg16b-no-outline-atomics" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics" \
+        x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/cmpxchg16b-avx" \
         RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b,+avx" \
         x_cargo "${args[@]}" "$@"

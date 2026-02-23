@@ -95,6 +95,71 @@ macro_rules! cfg_sel {
     };
 }
 
+// Adapted from https://github.com/BurntSushi/memchr/blob/2.4.1/src/memchr/x86/mod.rs#L9-L71.
+/// # Safety
+///
+/// - the caller must uphold the safety contract for the function returned by $detect_body.
+/// - the memory pointed by the function pointer returned by $detect_body must be visible from any threads.
+///
+/// The second requirement is always met if the function pointer is to the function definition.
+/// (Currently, all uses of this macro in our code are in this case.)
+#[allow(unused_macros)]
+#[cfg(not(atomic_maybe_uninit_no_outline_atomics))]
+#[cfg(all(target_arch = "x86_64", not(target_env = "sgx")))]
+macro_rules! ifunc {
+    (unsafe fn($($arg_pat:ident: $arg_ty:ty),* $(,)?) $(-> $ret_ty:ty)? { $($init_body:tt)* }) => {{
+        type FnTy = unsafe fn($($arg_ty),*) $(-> $ret_ty)?;
+        static FUNC: core::sync::atomic::AtomicPtr<()>
+            = core::sync::atomic::AtomicPtr::new(init as *mut ());
+        #[cold]
+        unsafe fn init($($arg_pat: $arg_ty),*) $(-> $ret_ty)? {
+            let func: FnTy = { $($init_body)* };
+            FUNC.store(func as *mut (), core::sync::atomic::Ordering::Relaxed);
+            // SAFETY: the caller must uphold the safety contract for the function returned by $init_body.
+            unsafe { func($($arg_pat),*) }
+        }
+        // SAFETY: `FnTy` is a function pointer, which is always safe to transmute with a `*mut ()`.
+        // (To force the caller to use unsafe block for this macro, do not use
+        // unsafe block here.)
+        let func = {
+            core::mem::transmute::<*mut (), FnTy>(FUNC.load(core::sync::atomic::Ordering::Relaxed))
+        };
+        // SAFETY: the caller must uphold the safety contract for the function returned by $init_body.
+        // (To force the caller to use unsafe block for this macro, do not use
+        // unsafe block here.)
+        func($($arg_pat),*)
+    }};
+}
+
+#[allow(unused_macros)]
+#[cfg(not(atomic_maybe_uninit_no_outline_atomics))]
+#[cfg(all(target_arch = "x86_64", not(target_env = "sgx")))]
+macro_rules! fn_alias {
+    (
+        $(#[$($fn_attr:tt)*])*
+        $vis:vis unsafe fn($($arg_pat:ident: $arg_ty:ty),*) $(-> $ret_ty:ty)?;
+        $(#[$($alias_attr:tt)*])*
+        $new:ident = $from:ident($($last_args:tt)*);
+        $($rest:tt)*
+    ) => {
+        $(#[$($fn_attr)*])*
+        $(#[$($alias_attr)*])*
+        $vis unsafe fn $new($($arg_pat: $arg_ty),*) $(-> $ret_ty)? {
+            // SAFETY: the caller must uphold the safety contract.
+            unsafe { $from($($arg_pat,)* $($last_args)*) }
+        }
+        fn_alias! {
+            $(#[$($fn_attr)*])*
+            $vis unsafe fn($($arg_pat: $arg_ty),*) $(-> $ret_ty)?;
+            $($rest)*
+        }
+    };
+    (
+        $(#[$($attr:tt)*])*
+        $vis:vis unsafe fn($($arg_pat:ident: $arg_ty:ty),*) $(-> $ret_ty:ty)?;
+    ) => {}
+}
+
 // HACK: This is equivalent to transmute_copy by value, but available in const
 // context even on older rustc (const transmute_copy requires Rust 1.74), and
 // can work around "cannot borrow here, since the borrowed element may contain

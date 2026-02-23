@@ -110,7 +110,7 @@ This crate uses inline assembly to implement atomic operations (this is currentl
     clippy::arithmetic_side_effects,
 )]
 #![cfg_attr(atomic_maybe_uninit_no_strict_provenance, allow(unstable_name_collisions))]
-#![allow(clippy::inline_always)]
+#![allow(clippy::inline_always, clippy::used_underscore_items)]
 #![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
 
 // There are currently no 128-bit or higher builtin targets.

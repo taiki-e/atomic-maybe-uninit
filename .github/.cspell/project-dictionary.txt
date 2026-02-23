@@ -22,6 +22,7 @@ clrex
 cmpne
 cmpw
 cmpxchg
+cpuid
 csel
 cset
 cskyv
@@ -88,6 +89,7 @@ muldi
 noat
 nostartfiles
 orrs
+osxsave
 partword
 powerpcspe
 pstq
@@ -143,8 +145,10 @@ vmovdqa
 wokwi
 xadd
 xchg
+xgetbv
 xmegau
 xmmword
+xsave
 xsub
 zaamo
 zabha

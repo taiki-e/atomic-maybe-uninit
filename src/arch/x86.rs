@@ -14,6 +14,27 @@ Refs:
 See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
+#[cfg(target_arch = "x86_64")]
+#[cfg(target_feature = "cmpxchg16b")]
+#[cfg(not(atomic_maybe_uninit_no_outline_atomics))]
+#[cfg(not(target_env = "sgx"))]
+#[cfg_attr(
+    not(test),
+    cfg(not(any(
+        target_feature = "avx",
+        all(
+            not(target_feature = "avx"),
+            any(
+                atomic_maybe_uninit_no_outline_atomics,
+                target_env = "sgx",
+                not(target_feature = "sse"),
+            ),
+        ),
+    )))
+)]
+#[path = "../detect/x86_64.rs"]
+mod detect;
+
 delegate_size!(delegate_load_store);
 delegate_size!(delegate_swap);
 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
@@ -609,51 +630,95 @@ macro_rules! atomic128 {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(src, $ty);
-
                 // VMOVDQA is atomic when AVX is available.
                 // See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104688 for details.
                 //
                 // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
-                #[cfg(target_feature = "avx")]
-                // SAFETY: the caller must guarantee that `src` is valid for reads,
-                // 16-byte aligned, and that there are no concurrent non-atomic operations.
-                // cfg guarantees that the CPU supports AVX.
-                // load by VMOVDQA has SeqCst semantics.
-                unsafe {
-                    let out;
-                    asm!(
-                        concat!("vmovdqa {out}, xmmword ptr [{src", ptr_modifier!(), "}]"), // atomic { out = *src }
-                        src = in(reg) src,
-                        out = lateout(xmm_reg) out,
-                        options(nostack, preserves_flags),
-                    );
-                    mem::transmute::<MaybeUninit<__m128i>, MaybeUninit<Self>>(out)
+                #[cfg(not(all(
+                    not(target_feature = "avx"),
+                    any(atomic_maybe_uninit_no_outline_atomics, target_env = "sgx", not(target_feature = "sse")),
+                )))]
+                #[target_feature(enable = "avx")]
+                #[inline]
+                unsafe fn atomic_load_avx(
+                    src: *const MaybeUninit<$ty>,
+                ) -> MaybeUninit<$ty> {
+                    // SAFETY: the caller must guarantee that `src` is valid for reads,
+                    // 16-byte aligned, and that there are no concurrent non-atomic operations.
+                    // load by VMOVDQA has SeqCst semantics.
+                    unsafe {
+                        let out;
+                        asm!(
+                            concat!("vmovdqa {out}, xmmword ptr [{src", ptr_modifier!(), "}]"), // atomic { out = *src }
+                            src = in(reg) src,
+                            out = lateout(xmm_reg) out,
+                            options(nostack, preserves_flags),
+                        );
+                        mem::transmute::<MaybeUninit<__m128i>, MaybeUninit<$ty>>(out)
+                    }
                 }
                 #[cfg(not(target_feature = "avx"))]
-                // SAFETY: the caller must guarantee that `src` is valid for both writes and
-                // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
-                // cfg guarantees that the CPU supports CMPXCHG16B.
-                // CMPXCHG16B has SeqCst semantics.
-                //
-                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+                #[inline]
+                unsafe fn atomic_load_cmpxchg16b(
+                    src: *const MaybeUninit<$ty>,
+                ) -> MaybeUninit<$ty> {
+                    // SAFETY: the caller must guarantee that `src` is valid for both writes and
+                    // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
+                    // CMPXCHG16B has SeqCst semantics.
+                    //
+                    // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+                    unsafe {
+                        let (prev_lo, prev_hi);
+                        asm!(
+                            concat!("mov ", $save, ", rbx"), // save rbx which is reserved by LLVM
+                            "xor rbx, rbx",       // zeroed rbx
+                            concat!("lock cmpxchg16b xmmword ptr [", $dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                            concat!("mov rbx, ", $save), // restore rbx
+                            // set old/new args of CMPXCHG16B to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
+                            out($save) _,
+                            in("rcx") 0_u64,
+                            inout("rax") 0_u64 => prev_lo,
+                            inout("rdx") 0_u64 => prev_hi,
+                            in($dst) src,
+                            // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
+                            options(nostack),
+                        );
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+                    }
+                }
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+
+                #[cfg(target_feature = "avx")]
+                // SAFETY: the caller must uphold the safety contract.
+                // cfg guarantees that the CPU supports AVX.
                 unsafe {
-                    let (prev_lo, prev_hi);
-                    asm!(
-                        concat!("mov ", $save, ", rbx"), // save rbx which is reserved by LLVM
-                        "xor rbx, rbx",       // zeroed rbx
-                        concat!("lock cmpxchg16b xmmword ptr [", $dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
-                        concat!("mov rbx, ", $save), // restore rbx
-                        // set old/new args of CMPXCHG16B to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
-                        out($save) _,
-                        in("rcx") 0_u64,
-                        inout("rax") 0_u64 => prev_lo,
-                        inout("rdx") 0_u64 => prev_hi,
-                        in($dst) src,
-                        // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
-                        options(nostack),
-                    );
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+                    atomic_load_avx(src)
+                }
+                #[cfg(not(target_feature = "avx"))]
+                #[cfg(not(all(
+                    not(target_feature = "avx"),
+                    any(atomic_maybe_uninit_no_outline_atomics, target_env = "sgx", not(target_feature = "sse")),
+                )))]
+                // SAFETY: the caller must uphold the safety contract.
+                // cfg guarantees that the CPU supports CMPXCHG16B.
+                unsafe {
+                    ifunc!(unsafe fn(src: *const MaybeUninit<$ty>) -> MaybeUninit<$ty> {
+                        if detect::detect().avx() {
+                            atomic_load_avx
+                        } else {
+                            atomic_load_cmpxchg16b
+                        }
+                    })
+                }
+                #[cfg(not(target_feature = "avx"))]
+                #[cfg(all(
+                    not(target_feature = "avx"),
+                    any(atomic_maybe_uninit_no_outline_atomics, target_env = "sgx", not(target_feature = "sse")),
+                ))]
+                // SAFETY: the caller must uphold the safety contract.
+                // cfg guarantees that the CPU supports CMPXCHG16B.
+                unsafe {
+                    atomic_load_cmpxchg16b(src)
                 }
             }
         }
@@ -664,80 +729,153 @@ macro_rules! atomic128 {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-
                 // VMOVDQA is atomic when AVX is available.
                 // See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104688 for details.
                 //
                 // Refs: https://www.felixcloutier.com/x86/movdqa:vmovdqa32:vmovdqa64
+                #[cfg(not(all(
+                    not(target_feature = "avx"),
+                    any(atomic_maybe_uninit_no_outline_atomics, target_env = "sgx", not(target_feature = "sse")),
+                )))]
+                #[target_feature(enable = "avx")]
+                #[inline]
+                unsafe fn atomic_store_avx(
+                    dst: *mut MaybeUninit<$ty>,
+                    val: MaybeUninit<$ty>,
+                    order: Ordering,
+                ) {
+                    // SAFETY: the caller must guarantee that `dst` is valid for writes,
+                    // 16-byte aligned, and that there are no concurrent non-atomic operations.
+                    // cfg guarantees that the CPU supports AVX.
+                    unsafe {
+                        let val: MaybeUninit<__m128i> = mem::transmute(val);
+                        match order {
+                            // Relaxed and Release stores are equivalent.
+                            Ordering::Relaxed | Ordering::Release => {
+                                asm!(
+                                    concat!("vmovdqa xmmword ptr [{dst", ptr_modifier!(), "}], {val}"), // atomic { *dst = val }
+                                    dst = in(reg) dst,
+                                    val = in(xmm_reg) val,
+                                    options(nostack, preserves_flags),
+                                );
+                            }
+                            Ordering::SeqCst => {
+                                let p = core::cell::UnsafeCell::new(MaybeUninit::<u64>::uninit());
+                                asm!(
+                                    concat!("vmovdqa xmmword ptr [{dst", ptr_modifier!(), "}], {val}"), // atomic { *dst = val }
+                                    // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
+                                    // - https://github.com/taiki-e/portable-atomic/pull/156
+                                    // - LLVM uses `lock or` https://godbolt.org/z/vv6rjzfYd
+                                    // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
+                                    // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
+                                    // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
+                                    concat!("xchg qword ptr [{p", ptr_modifier!(), "}], {tmp}"),        // fence
+                                    dst = in(reg) dst,
+                                    val = in(xmm_reg) val,
+                                    p = in(reg) p.get(),
+                                    tmp = out(reg) _,
+                                    options(nostack, preserves_flags),
+                                );
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                }
+                #[cfg(not(target_feature = "avx"))]
+                #[inline]
+                unsafe fn atomic_store_cmpxchg16b(
+                    dst: *mut MaybeUninit<$ty>,
+                    val: MaybeUninit<$ty>,
+                ) {
+                    // SAFETY: the caller must guarantee that `dst` is valid for both writes and
+                    // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
+                    // cfg guarantees that the CPU supports CMPXCHG16B.
+                    // CMPXCHG16B has SeqCst semantics.
+                    //
+                    // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+                    unsafe {
+                        let val = MaybeUninit128 { whole: val };
+                        asm!(
+                            concat!("xchg ", $save, ", rbx"), // save rbx which is reserved by LLVM
+                            // This is based on the code generated for the first load in DW RMWs by LLVM,
+                            // but it is interesting that they generate code that does mixed-sized atomic access.
+                            //
+                            // This is not single-copy atomic reads, but this is ok because subsequent
+                            // CAS will check for consistency.
+                            concat!("mov rax, qword ptr [", $dst, "]"),              // atomic { rax = *$rdi }
+                            concat!("mov rdx, qword ptr [", $dst, " + 8]"),          // atomic { rdx = *$rdi.byte_add(8) }
+                            "2:", // 'retry:
+                                concat!("lock cmpxchg16b xmmword ptr [", $dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
+                                "jne 2b",                                            // if ZF == 0 { jump 'retry }
+                            concat!("mov rbx, ", $save), // restore rbx
+                            inout($save) val.pair.lo => _,
+                            in("rcx") val.pair.hi,
+                            out("rax") _,
+                            out("rdx") _,
+                            in($dst) dst,
+                            // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
+                            options(nostack),
+                        );
+                    }
+                }
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
+
                 #[cfg(target_feature = "avx")]
-                // SAFETY: the caller must guarantee that `dst` is valid for writes,
-                // 16-byte aligned, and that there are no concurrent non-atomic operations.
+                // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports AVX.
                 unsafe {
-                    let val: MaybeUninit<__m128i> = mem::transmute(val);
+                    atomic_store_avx(dst, val, order);
+                }
+                #[cfg(not(target_feature = "avx"))]
+                #[cfg(not(all(
+                    not(target_feature = "avx"),
+                    any(atomic_maybe_uninit_no_outline_atomics, target_env = "sgx", not(target_feature = "sse")),
+                )))]
+                // SAFETY: the caller must uphold the safety contract.
+                // cfg guarantees that the CPU supports CMPXCHG16B.
+                unsafe {
+                    fn_alias! {
+                        #[target_feature(enable = "avx")]
+                        unsafe fn(dst: *mut MaybeUninit<$ty>, val: MaybeUninit<$ty>);
+                        // atomic store by vmovdqa has at least release semantics.
+                        atomic_store_avx_non_seqcst = atomic_store_avx(Ordering::Release);
+                        atomic_store_avx_seqcst = atomic_store_avx(Ordering::SeqCst);
+                    }
                     match order {
-                        // Relaxed and Release stores are equivalent.
+                        // Relaxed and Release stores are equivalent in all implementations
+                        // that may be called here.
                         Ordering::Relaxed | Ordering::Release => {
-                            asm!(
-                                concat!("vmovdqa xmmword ptr [{dst", ptr_modifier!(), "}], {val}"), // atomic { *dst = val }
-                                dst = in(reg) dst,
-                                val = in(xmm_reg) val,
-                                options(nostack, preserves_flags),
-                            );
+                            ifunc!(unsafe fn(dst: *mut MaybeUninit<$ty>, val: MaybeUninit<$ty>) {
+                                if detect::detect().avx() {
+                                    atomic_store_avx_non_seqcst
+                                } else {
+                                    atomic_store_cmpxchg16b
+                                }
+                            });
                         }
                         Ordering::SeqCst => {
-                            let p = core::cell::UnsafeCell::new(MaybeUninit::<u64>::uninit());
-                            asm!(
-                                concat!("vmovdqa xmmword ptr [{dst", ptr_modifier!(), "}], {val}"), // atomic { *dst = val }
-                                // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
-                                // - https://github.com/taiki-e/portable-atomic/pull/156
-                                // - LLVM uses `lock or` https://godbolt.org/z/vv6rjzfYd
-                                // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
-                                // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
-                                // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
-                                concat!("xchg qword ptr [{p", ptr_modifier!(), "}], {tmp}"),        // fence
-                                dst = in(reg) dst,
-                                val = in(xmm_reg) val,
-                                p = in(reg) p.get(),
-                                tmp = out(reg) _,
-                                options(nostack, preserves_flags),
-                            );
+                            ifunc!(unsafe fn(dst: *mut MaybeUninit<$ty>, val: MaybeUninit<$ty>) {
+                                if detect::detect().avx() {
+                                    atomic_store_avx_seqcst
+                                } else {
+                                    atomic_store_cmpxchg16b
+                                }
+                            });
                         }
                         _ => unreachable!(),
                     }
                 }
                 #[cfg(not(target_feature = "avx"))]
-                // SAFETY: the caller must guarantee that `dst` is valid for both writes and
-                // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
+                #[cfg(all(
+                    not(target_feature = "avx"),
+                    any(atomic_maybe_uninit_no_outline_atomics, target_env = "sgx", not(target_feature = "sse")),
+                ))]
+                // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
-                //
-                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    let val = MaybeUninit128 { whole: val };
                     // CMPXCHG16B has SeqCst semantics.
                     let _ = order;
-                    asm!(
-                        concat!("xchg ", $save, ", rbx"), // save rbx which is reserved by LLVM
-                        // This is based on the code generated for the first load in DW RMWs by LLVM,
-                        // but it is interesting that they generate code that does mixed-sized atomic access.
-                        //
-                        // This is not single-copy atomic reads, but this is ok because subsequent
-                        // CAS will check for consistency.
-                        concat!("mov rax, qword ptr [", $dst, "]"),              // atomic { rax = *$rdi }
-                        concat!("mov rdx, qword ptr [", $dst, " + 8]"),          // atomic { rdx = *$rdi.byte_add(8) }
-                        "2:", // 'retry:
-                            concat!("lock cmpxchg16b xmmword ptr [", $dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
-                            "jne 2b",                                            // if ZF == 0 { jump 'retry }
-                        concat!("mov rbx, ", $save), // restore rbx
-                        inout($save) val.pair.lo => _,
-                        in("rcx") val.pair.hi,
-                        out("rax") _,
-                        out("rdx") _,
-                        in($dst) dst,
-                        // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
-                        options(nostack),
-                    );
+                    atomic_store_cmpxchg16b(dst, val);
                 }
             }
         }

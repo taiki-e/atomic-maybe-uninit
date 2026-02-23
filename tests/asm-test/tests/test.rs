@@ -132,8 +132,10 @@ fn test() {
     };
     Tester::new()
         .cargo_args(["-Z", "build-std=core", "--features", "atomic-maybe-uninit"])
+        .rustc_args(["--cfg", "atomic_maybe_uninit_no_outline_atomics"])
         .dump(env!("CARGO_MANIFEST_DIR"), "asm/atomic-maybe-uninit", revisions);
     Tester::new()
         .cargo_args(["-Z", "build-std=core", "--features", "core"])
+        .rustc_args(["--cfg", "atomic_maybe_uninit_no_outline_atomics"])
         .dump(env!("CARGO_MANIFEST_DIR"), "asm/core", revisions);
 }

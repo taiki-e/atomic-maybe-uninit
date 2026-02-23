@@ -34,6 +34,7 @@ doc-scrape-examples = false
 fastrand = "2"
 paste = "1"
 quickcheck = { version = "1", default-features = false, git = "https://github.com/taiki-e/quickcheck.git", rev = "f0c7237" } # https://github.com/BurntSushi/quickcheck/pull/304 + https://github.com/BurntSushi/quickcheck/pull/282 + https://github.com/BurntSushi/quickcheck/pull/296 + rand -> fastrand + lower MSRV
+test-helper = { features = ["std", "sys"], git = "https://github.com/taiki-e/test-helper.git", rev = "46ff7ac" }
 
 [target.'cfg(valgrind)'.dev-dependencies]
 crabgrind = "0.2"
@@ -68,6 +69,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(target_pointer_width,values("128"))',
     # Known custom cfgs, excluding those that may be set by build script.
     # Public APIs, considered unstable unless documented in readme.
+    'cfg(atomic_maybe_uninit_no_outline_atomics)',
     # arm: Use cp15_barrier instead of __kuser_memory_barrier on Armv6 Linux/Android.
     # Armv6 binaries compiled with this cfg may cause problems when run on Armv7+ chips:
     # https://github.com/rust-lang/rust/issues/60605
@@ -91,7 +93,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # This is a cfg for compatibility with MIPS I.
     # 'cfg(atomic_maybe_uninit_no_sync)', // check-cfg is already set by build script
     # Not public API.
-    'cfg(atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_kuser_memory_barrier,atomic_maybe_uninit_test_prefer_kuser_cmpxchg,atomic_maybe_uninit_test_prefer_bx,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,qemu,valgrind)',
+    'cfg(atomic_maybe_uninit_test_detect_false,atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_kuser_memory_barrier,atomic_maybe_uninit_test_prefer_kuser_cmpxchg,atomic_maybe_uninit_test_prefer_bx,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,qemu,valgrind)',
 ] }
 unnameable_types = "warn"
 unreachable_pub = "warn"

@@ -179,6 +179,18 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
         if: startsWith(matrix.target, 'x86_64') && !contains(matrix.target, '-darwin')
+      # x86_64 +cmpxchg16b (no avx detection)
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
+        if: startsWith(matrix.target, 'x86_64')
+      # x86_64 +cmpxchg16b (no avx)
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_test_detect_false
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_test_detect_false
+        if: startsWith(matrix.target, 'x86_64')
       # x86_64 +cmpxchg16b,+avx
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-} ${RELEASE:-}
         env:
@@ -530,8 +542,8 @@ jobs:
       # x86_64 +cmpxchg16b
       - run: tools/test.sh valgrind -vv ${TARGET:-}
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
         if: startsWith(matrix.target, 'x86_64')
       # x86_64 +cmpxchg16b,+avx
       - run: tools/test.sh valgrind -vv ${TARGET:-}
