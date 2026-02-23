@@ -25,19 +25,6 @@ macro_rules! println {
 
 #[no_mangle]
 extern "C" fn main() -> i32 {
-    macro_rules! test_atomic {
-        ($ty:ident) => {
-            paste::paste! {
-                fn [<test_atomic_ $ty>]() {
-                    __test_atomic!($ty);
-                }
-                print!("test test_atomic_{} ... ", stringify!($ty));
-                [<test_atomic_ $ty>]();
-                println!("ok");
-            }
-        };
-    }
-
     cfg_has_atomic_cas! {
         println!("target_has_cas: true");
     }

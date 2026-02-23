@@ -28,19 +28,6 @@ fn main() -> ! {
         }};
     }
 
-    macro_rules! test_atomic {
-        ($ty:ident) => {
-            paste::paste! {
-                fn [<test_atomic_ $ty>]() {
-                    __test_atomic!($ty);
-                }
-                print!("test test_atomic_{} ... ", stringify!($ty));
-                [<test_atomic_ $ty>]();
-                println!("ok");
-            }
-        };
-    }
-
     test_atomic!(isize);
     test_atomic!(usize);
     test_atomic!(i8);

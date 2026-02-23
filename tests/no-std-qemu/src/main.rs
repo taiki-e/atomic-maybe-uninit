@@ -13,19 +13,6 @@ use semihosting::{print, println};
 
 semihosting_no_std_test_rt::entry!(run);
 fn run() {
-    macro_rules! test_atomic {
-        ($ty:ident) => {
-            paste::paste! {
-                fn [<test_atomic_ $ty>]() {
-                    __test_atomic!($ty);
-                }
-                print!("test test_atomic_{} ... ", stringify!($ty));
-                [<test_atomic_ $ty>]();
-                println!("ok");
-            }
-        };
-    }
-
     cfg_has_atomic_cas! {
         println!("target_has_cas: true");
     }

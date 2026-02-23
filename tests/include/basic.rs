@@ -1,5 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#[cfg(not(target_arch = "m68k"))]
+macro_rules! test_atomic {
+    ($ty:ident) => {
+        paste::paste! {
+            fn [<test_atomic_ $ty>]() {
+                __test_atomic!($ty);
+            }
+            print!("{}", concat!("test test_atomic_", stringify!($ty), " ... "));
+            [<test_atomic_ $ty>]();
+            println!("ok");
+        }
+    };
+}
+
 macro_rules! __test_atomic {
     ($ty:ident) => {
         load_store();
