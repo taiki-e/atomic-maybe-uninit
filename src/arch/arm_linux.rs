@@ -38,7 +38,7 @@ const KUSER_HELPER_VERSION: usize = 0xFFFF0FFC;
 // https://github.com/torvalds/linux/blob/v2.6.12/arch/arm/kernel/entry-armv.S#L617-L660
 // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L769-L827
 // Note:
-// - always SeqCst (smp_dmb arm)
+// - has SeqCst semantics (smp_dmb arm)
 // - push to the stack when kuser_cmpxchg32_fixup called
 // - inout: r0, in: r1, r2, lr, clobbered: r3, ip, flags
 const KUSER_CMPXCHG: usize = 0xFFFF0FC0;
@@ -50,7 +50,7 @@ const KUSER_MEMORY_BARRIER: usize = 0xFFFF0FA0;
 // https://github.com/torvalds/linux/blob/v3.1/arch/arm/kernel/entry-armv.S#L730-L814
 // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L693-L761
 // Note:
-// - always SeqCst (smp_dmb arm)
+// - has SeqCst semantics (smp_dmb arm)
 // - push to the stack in both cases
 // - inout: r0, r1, lr, in: r2, clobbered: r3, flags
 const KUSER_CMPXCHG64: usize = 0xFFFF0F60;
@@ -209,6 +209,7 @@ macro_rules! atomic {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // __kuser_cmpxchg has SeqCst semantics.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
@@ -246,6 +247,7 @@ macro_rules! atomic {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // __kuser_cmpxchg has SeqCst semantics.
                 unsafe {
                     let mut r: i32;
                     asm!(
@@ -304,6 +306,7 @@ macro_rules! atomic_sub_word {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // __kuser_cmpxchg has SeqCst semantics.
                 unsafe {
                     // Implement sub-word atomic operations using word-sized CAS loop.
                     // See also create_sub_word_mask_values.
@@ -351,6 +354,7 @@ macro_rules! atomic_sub_word {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // __kuser_cmpxchg has SeqCst semantics.
                 unsafe {
                     let mut r: i32;
                     // Implement sub-word atomic operations using word-sized CAS loop.
@@ -422,6 +426,7 @@ macro_rules! atomic64 {
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
 
                 // SAFETY: the caller must uphold the safety contract.
+                // __kuser_cmpxchg64 has SeqCst semantics.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
@@ -460,6 +465,7 @@ macro_rules! atomic64 {
                 let mut out_tmp = MaybeUninit::<Self>::uninit();
 
                 // SAFETY: the caller must uphold the safety contract.
+                // __kuser_cmpxchg64 has SeqCst semantics.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
@@ -498,6 +504,7 @@ macro_rules! atomic64 {
                 let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
 
                 // SAFETY: the caller must uphold the safety contract.
+                // __kuser_cmpxchg64 has SeqCst semantics.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
@@ -542,6 +549,7 @@ macro_rules! atomic64 {
                 let new = new.as_ptr();
 
                 // SAFETY: the caller must uphold the safety contract.
+                // __kuser_cmpxchg64 has SeqCst semantics.
                 unsafe {
                     let mut r: i32;
                     asm!(

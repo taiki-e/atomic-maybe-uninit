@@ -48,6 +48,7 @@ macro_rules! atomic {
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MOVE has SeqCst semantics.
                 unsafe {
                     asm!(
                         concat!("move.", $suffix, " ({src}), {out}"), // atomic { out = *src }
@@ -68,6 +69,7 @@ macro_rules! atomic {
                 _order: Ordering,
             ) {
                 // SAFETY: the caller must uphold the safety contract.
+                // MOVE has SeqCst semantics.
                 unsafe {
                     asm!(
                         concat!("move.", $suffix, " {val}, ({dst})"), // atomic { *dst = val }
@@ -89,6 +91,7 @@ macro_rules! atomic {
             ) -> MaybeUninit<Self> {
                 let mut out: MaybeUninit<Self>;
                 // SAFETY: the caller must uphold the safety contract.
+                // CAS2 has SeqCst semantics.
                 unsafe {
                     asm!(
                         concat!("move.", $suffix, " ({dst}), {out}"),           // atomic { out = *dst }
@@ -117,6 +120,7 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 let out: MaybeUninit<Self>;
                 // SAFETY: the caller must uphold the safety contract.
+                // CAS has SeqCst semantics.
                 unsafe {
                     let r: u8;
                     asm!(
@@ -154,6 +158,7 @@ macro_rules! atomic64 {
             ) -> MaybeUninit<Self> {
                 let (prev_hi, prev_lo);
                 // SAFETY: the caller must uphold the safety contract.
+                // CAS2 has SeqCst semantics.
                 unsafe {
                     let src1 = src.cast::<u32>();
                     let src2 = src1.add(1);
@@ -211,6 +216,7 @@ macro_rules! atomic64 {
                 let val = MaybeUninit64 { whole: val };
                 let (mut prev_lo, mut prev_hi);
                 // SAFETY: the caller must uphold the safety contract.
+                // CAS2 has SeqCst semantics.
                 unsafe {
                     let dst1 = dst.cast::<u32>();
                     let dst2 = dst1.add(1);
@@ -265,6 +271,7 @@ macro_rules! atomic64 {
                 let new = MaybeUninit64 { whole: new };
                 let (prev_hi, prev_lo);
                 // SAFETY: the caller must uphold the safety contract.
+                // CAS2 has SeqCst semantics.
                 unsafe {
                     let dst1 = dst.cast::<u32>();
                     let dst2 = dst1.add(1);

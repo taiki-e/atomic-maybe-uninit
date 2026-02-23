@@ -154,6 +154,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    // successful LL/SC has SeqCst semantics.
                     #[cfg(any(
                         target_arch = "loongarch32",
                         atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
@@ -170,7 +171,7 @@ macro_rules! atomic {
                         tmp = out(reg) _,
                         options(nostack, preserves_flags),
                     );
-                    // AMO is always SeqCst.
+                    // AMO has SeqCst semantics.
                     #[cfg(not(any(
                         target_arch = "loongarch32",
                         atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
@@ -224,7 +225,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    // LL/SC is always SeqCst, and fence is needed for branch that doesn't call sc.
+                    // successful LL/SC has SeqCst semantics, and fence is needed for branch that doesn't call sc.
                     match failure {
                         Ordering::Relaxed => cmpxchg!("dbar 1792"),
                         Ordering::Acquire => cmpxchg!("dbar 20"),
@@ -256,6 +257,7 @@ macro_rules! atomic_sub_word {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // successful LL/SC has SeqCst semantics.
                 unsafe {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
@@ -330,7 +332,7 @@ macro_rules! atomic_sub_word {
                             )
                         };
                     }
-                    // LL/SC is always SeqCst, and fence is needed for branch that doesn't call sc.
+                    // successful LL/SC has SeqCst semantics, and fence is needed for branch that doesn't call sc.
                     match failure {
                         Ordering::Relaxed => cmpxchg!("dbar 1792"),
                         Ordering::Acquire => cmpxchg!("dbar 20"),

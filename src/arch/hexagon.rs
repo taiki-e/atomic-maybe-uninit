@@ -36,6 +36,7 @@ macro_rules! atomic_load_store {
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEM{UB,UH,W} has SeqCst semantics.
                 unsafe {
                     asm!(
                         concat!("{out} = mem", $load_ext, $suffix, "({src})"), // atomic { out = *src }
@@ -57,6 +58,7 @@ macro_rules! atomic_load_store {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEM{UB,UH,W} has SeqCst semantics.
                 unsafe {
                     asm!(
                         concat!("mem", $suffix, "({dst}) = {val}"), // atomic { *dst = val }
@@ -84,6 +86,7 @@ macro_rules! atomic {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEMW_LOCKED has SeqCst semantics.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
@@ -113,6 +116,7 @@ macro_rules! atomic {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEMW_LOCKED has SeqCst semantics.
                 unsafe {
                     let mut r: i32 = 0;
                     asm!(
@@ -155,6 +159,7 @@ macro_rules! atomic_sub_word {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEMW_LOCKED has SeqCst semantics.
                 unsafe {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
@@ -194,6 +199,7 @@ macro_rules! atomic_sub_word {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEMW_LOCKED has SeqCst semantics.
                 unsafe {
                     let mut r: i32 = 0;
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
@@ -249,6 +255,7 @@ macro_rules! atomic64 {
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEMD has SeqCst semantics.
                 unsafe {
                     asm!(
                         "{{ r3:2 = memd({src}) }}", // atomic { r2:r3 = *src }
@@ -272,6 +279,7 @@ macro_rules! atomic64 {
                 let val = MaybeUninit64 { whole: val };
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEMD has SeqCst semantics.
                 unsafe {
                     asm!(
                         "memd({dst}) = r3:2", // atomic { *dst = r2:r3 }
@@ -295,6 +303,7 @@ macro_rules! atomic64 {
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEMD_LOCKED has SeqCst semantics.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
@@ -328,6 +337,7 @@ macro_rules! atomic64 {
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
+                // MEMD_LOCKED has SeqCst semantics.
                 unsafe {
                     let mut r: i32 = 0;
                     asm!(

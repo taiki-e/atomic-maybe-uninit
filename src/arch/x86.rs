@@ -80,8 +80,8 @@ macro_rules! atomic {
                 let out;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // load by MOV has SeqCst semantics.
                 unsafe {
-                    // atomic load is always SeqCst.
                     asm!(
                         concat!("mov", $zx, " {out", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"), // atomic { out = *src }
                         src = in(reg) src,
@@ -139,8 +139,8 @@ macro_rules! atomic {
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // XCHG has SeqCst semantics.
                 unsafe {
-                    // atomic swap is always SeqCst.
                     asm!(
                         concat!("xchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {val", $val_modifier, "}"), // atomic { _x = *dst; *dst = val; val = _x }
                         dst = in(reg) dst,
@@ -165,11 +165,11 @@ macro_rules! atomic {
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // CMPXCHG has SeqCst semantics.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg
                 unsafe {
                     let r: MaybeUninit<u32>;
-                    // compare_exchange is always SeqCst.
                     asm!(
                         concat!("lock cmpxchg ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {new", $reg_val_modifier, "}"), // atomic { if *dst == $cmpxchg_cmp_reg { ZF = 1; *dst = new } else { ZF = 0; $cmpxchg_cmp_reg = *dst } }
                         "sete {r:l}",                                                                                           // r = ZF
@@ -220,13 +220,13 @@ macro_rules! atomic64 {
                 ))]
                 // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
+                // load by MOVQ has SeqCst semantics.
                 //
                 // Refs:
                 // - https://www.felixcloutier.com/x86/movq (SSE2)
                 // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
                 unsafe {
                     let out;
-                    // atomic load is always SeqCst.
                     asm!(
                         "movq {out}, qword ptr [{src}]", // atomic { out[:] = *src }
                         src = in(reg) src,
@@ -245,12 +245,12 @@ macro_rules! atomic64 {
                 ))]
                 // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports SSE.
+                // load by MOVLPS has SeqCst semantics.
                 //
                 // Refs:
                 // - https://www.felixcloutier.com/x86/movlps (SSE)
                 unsafe {
                     let out;
-                    // atomic load is always SeqCst.
                     asm!(
                         "movlps {out}, qword ptr [{src}]", // atomic { out[:] = *src }
                         src = in(reg) src,
@@ -273,13 +273,13 @@ macro_rules! atomic64 {
                     ),
                 ))]
                 // SAFETY: the caller must uphold the safety contract.
+                // load by FILD has SeqCst semantics.
                 //
                 // Refs:
                 // - https://www.felixcloutier.com/x86/fild
                 // - https://www.felixcloutier.com/x86/fist:fistp
                 unsafe {
                     let mut out = MaybeUninit::<Self>::uninit();
-                    // atomic load is always SeqCst.
                     asm!(
                         "fild qword ptr [{src}]",  // atomic { st.push(*src) }
                         "fistp qword ptr [{out}]", // *out = st.pop()
@@ -309,11 +309,11 @@ macro_rules! atomic64 {
                     )),
                 ))]
                 // SAFETY: the caller must uphold the safety contract.
+                // CMPXCHG8B has SeqCst semantics.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     let (prev_lo, prev_hi);
-                    // atomic load is always SeqCst.
                     asm!(
                         "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
                         // set old/new args of CMPXCHG8B to 0
@@ -465,7 +465,7 @@ macro_rules! atomic64 {
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     let val = MaybeUninit64 { whole: val };
-                    // atomic store by CMPXCHG8B is always SeqCst.
+                    // CMPXCHG8B has SeqCst semantics.
                     let _ = order;
                     asm!(
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
@@ -501,10 +501,10 @@ macro_rules! atomic64 {
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
+                // CMPXCHG8B has SeqCst semantics.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    // atomic swap is always SeqCst.
                     asm!(
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
                         // but it is interesting that they generate code that does mixed-sized atomic access.
@@ -543,11 +543,11 @@ macro_rules! atomic64 {
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
+                // CMPXCHG8B has SeqCst semantics.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     let r: u8;
-                    // compare_exchange is always SeqCst.
                     asm!(
                         "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
                         "sete cl",                        // cl = ZF
@@ -611,6 +611,7 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must guarantee that `src` is valid for reads,
                 // 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports AVX.
+                // load by VMOVDQA has SeqCst semantics.
                 unsafe {
                     let out;
                     asm!(
@@ -627,11 +628,11 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must guarantee that `src` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
+                // CMPXCHG16B has SeqCst semantics.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     let (prev_lo, prev_hi);
-                    // atomic load is always SeqCst.
                     asm!(
                         concat!("mov ", $save, ", rbx"), // save rbx which is reserved by LLVM
                         "xor rbx, rbx",       // zeroed rbx
@@ -708,8 +709,8 @@ macro_rules! atomic128 {
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     let val = MaybeUninit128 { whole: val };
+                    // CMPXCHG16B has SeqCst semantics.
                     let _ = order;
-                    // atomic store is always SeqCst.
                     asm!(
                         concat!("xchg ", $save, ", rbx"), // save rbx which is reserved by LLVM
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
@@ -748,10 +749,10 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
+                // CMPXCHG16B has SeqCst semantics.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    // atomic swap is always SeqCst.
                     asm!(
                         concat!("xchg ", $save, ", rbx"), // save rbx which is reserved by LLVM
                         // This is based on the code generated for the first load in DW RMWs by LLVM,
@@ -794,11 +795,11 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
+                // CMPXCHG16B has SeqCst semantics.
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
                     let r: u8;
-                    // compare_exchange is always SeqCst.
                     asm!(
                         "xchg r8, rbx", // save rbx which is reserved by LLVM
                         concat!("lock cmpxchg16b xmmword ptr [", $cas_dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
