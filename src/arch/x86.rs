@@ -19,6 +19,21 @@ delegate_size!(delegate_swap);
 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 delegate_size!(delegate_cas);
 
+#[cfg(target_arch = "x86")]
+#[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
+#[cfg(all(target_feature = "sse", not(atomic_maybe_uninit_test_prefer_x87_over_sse)))]
+use core::arch::x86::__m128;
+#[cfg(target_arch = "x86")]
+#[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
+#[cfg(all(target_feature = "sse2", not(atomic_maybe_uninit_test_prefer_x87_over_sse)))]
+use core::arch::x86::__m128i;
+#[cfg(target_arch = "x86_64")]
+#[cfg(target_feature = "cmpxchg16b")]
+#[cfg(not(all(
+    not(target_feature = "avx"),
+    any(atomic_maybe_uninit_no_outline_atomics, target_env = "sgx", not(target_feature = "sse")),
+)))]
+use core::arch::x86_64::__m128i;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
@@ -233,10 +248,7 @@ macro_rules! atomic64 {
                         out = out(xmm_reg) out,
                         options(nostack, preserves_flags),
                     );
-                    mem::transmute::<
-                        MaybeUninit<core::arch::x86::__m128i>,
-                        [MaybeUninit<Self>; 2],
-                    >(out)[0]
+                    mem::transmute::<MaybeUninit<__m128i>, [MaybeUninit<Self>; 2]>(out)[0]
                 }
                 #[cfg(all(
                     not(target_feature = "sse2"),
@@ -257,10 +269,7 @@ macro_rules! atomic64 {
                         out = out(xmm_reg) out,
                         options(nostack, preserves_flags),
                     );
-                    mem::transmute::<
-                        MaybeUninit<core::arch::x86::__m128>,
-                        [MaybeUninit<Self>; 2],
-                    >(out)[0]
+                    mem::transmute::<MaybeUninit<__m128>, [MaybeUninit<Self>; 2]>(out)[0]
                 }
                 #[cfg(all(
                     any(
@@ -350,8 +359,7 @@ macro_rules! atomic64 {
                 // - https://www.felixcloutier.com/x86/lock
                 // - https://www.felixcloutier.com/x86/or
                 unsafe {
-                    let val: MaybeUninit<core::arch::x86::__m128>
-                        = mem::transmute([val, MaybeUninit::uninit()]);
+                    let val: MaybeUninit<__m128> = mem::transmute([val, MaybeUninit::uninit()]);
                     match order {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => {
@@ -620,9 +628,7 @@ macro_rules! atomic128 {
                         out = lateout(xmm_reg) out,
                         options(nostack, preserves_flags),
                     );
-                    mem::transmute::<MaybeUninit<core::arch::x86_64::__m128i>, MaybeUninit<Self>>(
-                        out
-                    )
+                    mem::transmute::<MaybeUninit<__m128i>, MaybeUninit<Self>>(out)
                 }
                 #[cfg(not(target_feature = "avx"))]
                 // SAFETY: the caller must guarantee that `src` is valid for both writes and
@@ -669,7 +675,7 @@ macro_rules! atomic128 {
                 // 16-byte aligned, and that there are no concurrent non-atomic operations.
                 // cfg guarantees that the CPU supports AVX.
                 unsafe {
-                    let val: MaybeUninit<core::arch::x86_64::__m128i> = mem::transmute(val);
+                    let val: MaybeUninit<__m128i> = mem::transmute(val);
                     match order {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => {

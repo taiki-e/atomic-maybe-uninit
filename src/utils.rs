@@ -461,7 +461,10 @@ pub(crate) mod extend32 {
 #[cfg(target_pointer_width = "32")]
 #[allow(dead_code)]
 pub(crate) mod zero_extend64 {
-    use core::mem::{self, MaybeUninit};
+    use core::{
+        mem::{self, MaybeUninit},
+        ptr,
+    };
 
     use super::Extended;
 
@@ -474,7 +477,7 @@ pub(crate) mod zero_extend64 {
     /// See ptr_reg! macro in src/gen/utils.rs for details.
     #[inline]
     pub(crate) const fn ptr(v: *mut ()) -> MaybeUninit<u64> {
-        const PAD: [MaybeUninit<*mut ()>; 1] = [MaybeUninit::new(core::ptr::null_mut()); 1];
+        const PAD: [MaybeUninit<*mut ()>; 1] = [MaybeUninit::new(ptr::null_mut()); 1];
         // SAFETY: we can safely transmute any 64-bit value to MaybeUninit<u64>.
         unsafe { mem::transmute(Extended::<*mut (), 1> { v: MaybeUninit::new(v), pad: PAD }) }
     }
