@@ -28,11 +28,17 @@ fn main() -> ! {
         }};
     }
 
+    #[cfg(feature = "isize")]
     test_atomic!(isize);
+    #[cfg(feature = "usize")]
     test_atomic!(usize);
+    #[cfg(feature = "i8")]
     test_atomic!(i8);
+    #[cfg(feature = "u8")]
     test_atomic!(u8);
+    #[cfg(feature = "i16")]
     test_atomic!(i16);
+    #[cfg(feature = "u16")]
     test_atomic!(u16);
 
     println!("Tests finished successfully");
