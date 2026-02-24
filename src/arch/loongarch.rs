@@ -18,7 +18,41 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::{
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+    utils::RegSize,
+};
+
+macro_rules! sll_w {
+    ($val:expr, $shift:expr) => {{
+        let mut val = $val;
+        let shift: RegSize = $shift;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling SLL.W is safe
+        unsafe {
+            asm!(
+                "sll.w {val}, {val}, {shift}", // val <<= shift & 31
+                val = inout(reg) val,
+                shift = in(reg) shift,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        val
+    }};
+}
+#[inline(always)]
+fn srl_w(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
+    // SAFETY: calling SRL.W is safe
+    unsafe {
+        asm!(
+            "srl.w {val}, {val}, {shift}", // val >>= shift & 31
+            val = inout(reg) val,
+            shift = in(reg) shift,
+            options(pure, nomem, nostack, preserves_flags),
+        );
+    }
+    val
+}
 
 #[rustfmt::skip]
 macro_rules! atomic_load {
@@ -201,7 +235,7 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: crate::utils::RegSize;
+                    let mut r: RegSize;
                     macro_rules! cmpxchg {
                         ($failure_fence:tt) => {
                             asm!(
@@ -254,7 +288,7 @@ macro_rules! atomic_sub_word {
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 // successful LL/SC has SeqCst semantics.
@@ -262,25 +296,21 @@ macro_rules! atomic_sub_word {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     asm!(
-                        "sll.w {mask}, {mask}, {shift}", // mask <<= shift & 31
-                        "sll.w {val}, {val}, {shift}",   // val <<= shift & 31
                         "2:", // 'retry:
                             "ll.w {out}, {dst}, 0",      // atomic { out = *dst; LL = dst }
                             "andn {tmp}, {out}, {mask}", // tmp = out & !mask
                             "or {tmp}, {tmp}, {val}",    // tmp |= val
                             "sc.w {tmp}, {dst}, 0",      // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
                             "beqz {tmp}, 2b",            // if tmp == 0 { jump 'retry }
-                        "srl.w {out}, {out}, {shift}",   // out >>= shift & 31
                         dst = in(reg) ptr_reg!(dst),
-                        val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                        val = in(reg) sll_w!(crate::utils::extend32::$ty::zero(val), shift),
                         out = out(reg) out,
-                        shift = in(reg) shift,
-                        mask = inout(reg) mask => _,
+                        mask = in(reg) sll_w!(mask, shift),
                         tmp = out(reg) _,
                         options(nostack, preserves_flags),
                     );
                 }
-                out
+                crate::utils::extend32::$ty::extract(srl_w(out, shift))
             }
         }
         impl AtomicCompareExchange for $ty {
@@ -294,19 +324,16 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: crate::utils::RegSize;
+                    let mut r: RegSize;
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg {
                         ($failure_fence:tt) => {
                             asm!(
-                                "sll.w {mask}, {mask}, {shift}", // mask <<= shift & 31
-                                "sll.w {old}, {old}, {shift}",   // old <<= shift & 31
-                                "sll.w {new}, {new}, {shift}",   // new <<= shift & 31
                                 "2:", // 'retry:
                                     "ll.w {out}, {dst}, 0",      // atomic { tmp = *dst; LL = dst }
                                     "and {tmp}, {out}, {mask}",  // tmp = out & mask
@@ -320,13 +347,11 @@ macro_rules! atomic_sub_word {
                                     $failure_fence,              // fence
                                     "move {tmp}, $zero",         // tmp = 0
                                 "4:", // 'success:
-                                "srl.w {out}, {out}, {shift}",   // out >>= shift & 31
                                 dst = in(reg) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                old = in(reg) sll_w!(crate::utils::extend32::$ty::zero(old), shift),
+                                new = in(reg) sll_w!(crate::utils::extend32::$ty::zero(new), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
-                                mask = inout(reg) mask => _,
+                                mask = in(reg) sll_w!(mask, shift),
                                 tmp = out(reg) r,
                                 options(nostack, preserves_flags),
                             )
@@ -341,7 +366,7 @@ macro_rules! atomic_sub_word {
                         _ => unreachable!(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
+                    (crate::utils::extend32::$ty::extract(srl_w(out, shift)), r != 0)
                 }
             }
         }

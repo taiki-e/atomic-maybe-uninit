@@ -117,10 +117,12 @@ simavr
 simio
 slli
 sllv
+sllw
 SPIR
 srai
 sreg
 srlv
+srlw
 stbar
 stdcx
 stex

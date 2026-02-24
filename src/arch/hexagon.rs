@@ -23,6 +23,33 @@ use crate::{
     utils::{MaybeUninit64, Pair},
 };
 
+#[inline(always)]
+fn asl(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+    // SAFETY: calling ASL is safe
+    unsafe {
+        asm!(
+            "{val} = asl({val},{shift})", // val <<= shift
+            val = inout(reg) val,
+            shift = in(reg) shift,
+            options(pure, nomem, nostack, preserves_flags),
+        );
+    }
+    val
+}
+#[inline(always)]
+fn asr(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+    // SAFETY: calling ASR is safe
+    unsafe {
+        asm!(
+            "{val} = asr({val},{shift})", // val >>= shift
+            val = inout(reg) val,
+            shift = in(reg) shift,
+            options(pure, nomem, nostack, preserves_flags),
+        );
+    }
+    val
+}
+
 macro_rules! atomic_load_store {
     ($ty:ident, $suffix:tt, $load_ext:tt) => {
         delegate_signed!(delegate_all, $ty);
@@ -156,7 +183,7 @@ macro_rules! atomic_sub_word {
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 // MEMW_LOCKED has SeqCst semantics.
@@ -164,25 +191,22 @@ macro_rules! atomic_sub_word {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     asm!(
-                        "{val} = asl({val},{shift})",        // val <<= shift
                         "2:", // 'retry:
                             "{out} = memw_locked({dst})",    // atomic { out = *dst; RESERVE = dst }
                             "{tmp} = and({out},~{mask})",    // tmp = out & !mask
                             "{tmp} = or({tmp},{val})",       // tmp |= new
                             "memw_locked({dst},p0) = {tmp}", // atomic { if RESERVE == dst { *dst = tmp; p0 = true } else { p0 = false }; RESERVE = None }
                             "if (!p0) jump 2b",              // if !p0 { jump 'retry }
-                        "{out} = asr({out},{shift})",        // out >>= shift
                         dst = in(reg) dst,
-                        val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                        val = in(reg) asl(crate::utils::extend32::$ty::zero(val), shift),
                         out = out(reg) out,
-                        shift = in(reg) shift,
                         mask = in(reg) mask,
                         tmp = out(reg) _,
                         out("p0") _,
                         options(nostack, preserves_flags),
                     );
                 }
-                out
+                crate::utils::extend32::$ty::extract(asr(out, shift))
             }
         }
         impl AtomicCompareExchange for $ty {
@@ -196,7 +220,7 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 // MEMW_LOCKED has SeqCst semantics.
@@ -205,8 +229,6 @@ macro_rules! atomic_sub_word {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     asm!(
-                        "{old} = asl({old},{shift})",         // old <<= shift
-                        "{new} = asl({new},{shift})",         // new <<= shift
                         "2:", // 'retry:
                             "{out} = memw_locked({dst})",     // atomic { out = *dst; RESERVE = dst }
                             "{tmp} = and({out},{mask})",      // tmp = out & mask
@@ -218,12 +240,10 @@ macro_rules! atomic_sub_word {
                             "if (!p0) jump 2b",               // if !p0 { jump 'retry }
                             "{r} = #1",                       // r = 0
                         "3:", // 'cmp-fail:
-                        "{out} = asr({out},{shift})",         // out >>= shift
                         dst = in(reg) dst,
-                        old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                        new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                        old = in(reg) asl(crate::utils::extend32::$ty::zero(old), shift),
+                        new = in(reg) asl(crate::utils::extend32::$ty::zero(new), shift),
                         out = out(reg) out,
-                        shift = in(reg) shift,
                         mask = in(reg) mask,
                         tmp = out(reg) _,
                         r = inout(reg) r,
@@ -231,7 +251,7 @@ macro_rules! atomic_sub_word {
                         options(nostack, preserves_flags),
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
+                    (crate::utils::extend32::$ty::extract(asr(out, shift)), r != 0)
                 }
             }
         }

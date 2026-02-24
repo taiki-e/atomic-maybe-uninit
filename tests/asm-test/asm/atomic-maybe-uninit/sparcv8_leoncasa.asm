@@ -1,37 +1,37 @@
 asm_test::compare_exchange::u8::acqrel_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -42,38 +42,38 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -84,38 +84,38 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
 
 asm_test::compare_exchange::u8::acqrel_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -126,38 +126,38 @@ asm_test::compare_exchange::u8::acqrel_acquire:
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -168,38 +168,38 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
 
 asm_test::compare_exchange::u8::acquire_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -210,38 +210,38 @@ asm_test::compare_exchange::u8::acquire_seqcst:
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -252,38 +252,38 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
 
 asm_test::compare_exchange::u8::release_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -294,38 +294,38 @@ asm_test::compare_exchange::u8::release_seqcst:
 
 asm_test::compare_exchange::u8::seqcst_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -336,38 +336,38 @@ asm_test::compare_exchange::u8::seqcst_acquire:
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -378,34 +378,34 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
 
 asm_test::compare_exchange::u8::acquire_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -416,34 +416,34 @@ asm_test::compare_exchange::u8::acquire_acquire:
 
 asm_test::compare_exchange::u8::acquire_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -454,34 +454,34 @@ asm_test::compare_exchange::u8::acquire_relaxed:
 
 asm_test::compare_exchange::u8::relaxed_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -492,33 +492,33 @@ asm_test::compare_exchange::u8::relaxed_acquire:
 
 asm_test::compare_exchange::u8::relaxed_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -529,38 +529,38 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
 
 asm_test::compare_exchange::u8::release_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -571,37 +571,37 @@ asm_test::compare_exchange::u8::release_acquire:
 
 asm_test::compare_exchange::u8::release_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -612,38 +612,38 @@ asm_test::compare_exchange::u8::release_relaxed:
 
 asm_test::compare_exchange::u16::acqrel_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acqrel_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acqrel_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -654,38 +654,38 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
 
 asm_test::compare_exchange::u16::seqcst_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::seqcst_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::seqcst_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -696,38 +696,38 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
 
 asm_test::compare_exchange::u16::acqrel_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acqrel_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acqrel_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -738,38 +738,38 @@ asm_test::compare_exchange::u16::acqrel_acquire:
 
 asm_test::compare_exchange::u16::acqrel_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acqrel_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acqrel_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -780,38 +780,38 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
 
 asm_test::compare_exchange::u16::acquire_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acquire_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acquire_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -822,38 +822,38 @@ asm_test::compare_exchange::u16::acquire_seqcst:
 
 asm_test::compare_exchange::u16::relaxed_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::relaxed_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::relaxed_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -864,38 +864,38 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
 
 asm_test::compare_exchange::u16::release_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::release_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::release_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -906,38 +906,38 @@ asm_test::compare_exchange::u16::release_seqcst:
 
 asm_test::compare_exchange::u16::seqcst_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::seqcst_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::seqcst_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -948,38 +948,38 @@ asm_test::compare_exchange::u16::seqcst_acquire:
 
 asm_test::compare_exchange::u16::seqcst_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::seqcst_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::seqcst_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -990,34 +990,34 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
 
 asm_test::compare_exchange::u16::acquire_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acquire_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acquire_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1028,34 +1028,34 @@ asm_test::compare_exchange::u16::acquire_acquire:
 
 asm_test::compare_exchange::u16::acquire_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acquire_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acquire_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1066,34 +1066,34 @@ asm_test::compare_exchange::u16::acquire_relaxed:
 
 asm_test::compare_exchange::u16::relaxed_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::relaxed_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::relaxed_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1104,33 +1104,33 @@ asm_test::compare_exchange::u16::relaxed_acquire:
 
 asm_test::compare_exchange::u16::relaxed_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::relaxed_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::relaxed_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1141,38 +1141,38 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
 
 asm_test::compare_exchange::u16::release_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::release_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::release_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1183,37 +1183,37 @@ asm_test::compare_exchange::u16::release_acquire:
 
 asm_test::compare_exchange::u16::release_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::release_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::release_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1626,38 +1626,38 @@ asm_test::compare_exchange::u32::release_relaxed:
 
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1668,38 +1668,38 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1710,38 +1710,38 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1752,38 +1752,38 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1794,38 +1794,38 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1836,38 +1836,38 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1878,38 +1878,38 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1920,38 +1920,38 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -1962,38 +1962,38 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2004,34 +2004,34 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
 
 asm_test::compare_exchange_weak::u8::acquire_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2042,34 +2042,34 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
 
 asm_test::compare_exchange_weak::u8::acquire_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2080,34 +2080,34 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
 
 asm_test::compare_exchange_weak::u8::relaxed_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2118,33 +2118,33 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
 
 asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2155,38 +2155,38 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
 
 asm_test::compare_exchange_weak::u8::release_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2197,37 +2197,37 @@ asm_test::compare_exchange_weak::u8::release_acquire:
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i4
+        sll               %i0, 3, %i3
+        xor               %i3, 0x18, %i3
         and               %i1, 0xff, %i1
         and               %i2, 0xff, %i2
-        mov               0xff, %i5
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        mov               0xff, %i4
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2238,38 +2238,38 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
 
 asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acqrel_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acqrel_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2280,38 +2280,38 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
 
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::seqcst_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::seqcst_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2322,38 +2322,38 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
 
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acqrel_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acqrel_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2364,38 +2364,38 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
 
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acqrel_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acqrel_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2406,38 +2406,38 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
 
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acquire_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acquire_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2448,38 +2448,38 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
 
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::relaxed_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::relaxed_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2490,38 +2490,38 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
 
 asm_test::compare_exchange_weak::u16::release_seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::release_seqcst+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::release_seqcst+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2532,38 +2532,38 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::seqcst_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::seqcst_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2574,38 +2574,38 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::seqcst_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::seqcst_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2616,34 +2616,34 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
 
 asm_test::compare_exchange_weak::u16::acquire_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acquire_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acquire_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2654,34 +2654,34 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
 
 asm_test::compare_exchange_weak::u16::acquire_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acquire_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acquire_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2692,34 +2692,34 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
 
 asm_test::compare_exchange_weak::u16::relaxed_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::relaxed_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::relaxed_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2730,33 +2730,33 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
 
 asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::relaxed_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
-        ld                [ %i3 ], %i0
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::relaxed_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2767,38 +2767,38 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
 
 asm_test::compare_exchange_weak::u16::release_acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::release_acquire+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::release_acquire+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         stbar
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -2809,37 +2809,37 @@ asm_test::compare_exchange_weak::u16::release_acquire:
 
 asm_test::compare_exchange_weak::u16::release_relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i3
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i4
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::release_relaxed+0xffff>
-        and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
+        sll               %i0, 3, %i3
+        xor               %i3, 0x10, %i3
+        sethi             %hi(0xfc00), %i4
+        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::release_relaxed+0xffff>
+        and               %i1, %i4, %i1
+        and               %i2, %i4, %i2
+        and               %i0, -4, %i5
+        sll               %i1, %i3, %i1
+        sll               %i2, %i3, %i2
+        sll               %i4, %i3, %i4
         stbar
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i3 ], %i0
+        ld                [ %i5 ], %i0
 0:
-        and               %i0, %i5, %g2
+        and               %i0, %i4, %g2
         cmp               %i1, %g2
         bne,a             1f
         mov               %g0, %g2
         mov               %i0, %g2
-        andn              %i0, %i5, %i0
+        andn              %i0, %i4, %i0
         or                %i0, %i2, %i0
         nop
         nop
         nop
-        casa              [ %i3 ] (10), %g2, %i0
+        casa              [ %i5 ] (10), %g2, %i0
         cmp               %i0, %g2
         bne               0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         cmp               %g2, 0
+        srl               %i0, %i3, %i0
         bne               2f
         nop
         ret
@@ -3324,251 +3324,251 @@ asm_test::load::u32::relaxed:
 
 asm_test::swap::u8::acqrel:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i3
+        sll               %i0, 3, %i2
+        xor               %i2, 0x18, %i2
         and               %i1, 0xff, %i1
-        mov               0xff, %i4
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
+        mov               0xff, %i3
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
         stbar
         nop
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i2 ], %i5
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         stbar
+        srl               %i0, %i2, %i0
         ret
         restore
 
 asm_test::swap::u8::seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i3
+        sll               %i0, 3, %i2
+        xor               %i2, 0x18, %i2
         and               %i1, 0xff, %i1
-        mov               0xff, %i4
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
+        mov               0xff, %i3
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
         stbar
         nop
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i2 ], %i5
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         stbar
+        srl               %i0, %i2, %i0
         ret
         restore
 
 asm_test::swap::u8::acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i3
+        sll               %i0, 3, %i2
+        xor               %i2, 0x18, %i2
         and               %i1, 0xff, %i1
-        mov               0xff, %i4
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
-        ld                [ %i2 ], %i5
+        mov               0xff, %i3
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
         nop
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         stbar
+        srl               %i0, %i2, %i0
         ret
         restore
 
 asm_test::swap::u8::relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i3
+        sll               %i0, 3, %i2
+        xor               %i2, 0x18, %i2
         and               %i1, 0xff, %i1
-        mov               0xff, %i4
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
-        ld                [ %i2 ], %i5
+        mov               0xff, %i3
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
         nop
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
+        srl               %i0, %i2, %i0
         ret
         restore
 
 asm_test::swap::u8::release:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x18, %i3
+        sll               %i0, 3, %i2
+        xor               %i2, 0x18, %i2
         and               %i1, 0xff, %i1
-        mov               0xff, %i4
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
+        mov               0xff, %i3
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
         stbar
         nop
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i2 ], %i5
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
+        srl               %i0, %i2, %i0
         ret
         restore
 
 asm_test::swap::u16::acqrel:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i3
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::acqrel+0xffff>
-        and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
+        sll               %i0, 3, %i2
+        xor               %i2, 0x10, %i2
+        sethi             %hi(0xfc00), %i3
+        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::acqrel+0xffff>
+        and               %i1, %i3, %i1
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
         stbar
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i2 ], %i5
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         stbar
+        srl               %i0, %i2, %i0
         ret
         restore
 
 asm_test::swap::u16::seqcst:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i3
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::seqcst+0xffff>
-        and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
+        sll               %i0, 3, %i2
+        xor               %i2, 0x10, %i2
+        sethi             %hi(0xfc00), %i3
+        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::seqcst+0xffff>
+        and               %i1, %i3, %i1
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
         stbar
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i2 ], %i5
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         stbar
+        srl               %i0, %i2, %i0
         ret
         restore
 
 asm_test::swap::u16::acquire:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i3
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::acquire+0xffff>
-        and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
-        ld                [ %i2 ], %i5
+        sll               %i0, 3, %i2
+        xor               %i2, 0x10, %i2
+        sethi             %hi(0xfc00), %i3
+        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::acquire+0xffff>
+        and               %i1, %i3, %i1
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         stbar
+        srl               %i0, %i2, %i0
         ret
         restore
 
 asm_test::swap::u16::relaxed:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i3
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::relaxed+0xffff>
-        and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
-        ld                [ %i2 ], %i5
+        sll               %i0, 3, %i2
+        xor               %i2, 0x10, %i2
+        sethi             %hi(0xfc00), %i3
+        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::relaxed+0xffff>
+        and               %i1, %i3, %i1
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
+        srl               %i0, %i2, %i0
         ret
         restore
 
 asm_test::swap::u16::release:
         save              %sp, -96, %sp
-        and               %i0, -4, %i2
-        sll               %i0, 3, %i0
-        xor               %i0, 0x10, %i3
-        sethi             %hi(0xfc00), %i0
-        or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::release+0xffff>
-        and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
+        sll               %i0, 3, %i2
+        xor               %i2, 0x10, %i2
+        sethi             %hi(0xfc00), %i3
+        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::release+0xffff>
+        and               %i1, %i3, %i1
+        and               %i0, -4, %i4
+        sll               %i1, %i2, %i1
+        sll               %i3, %i2, %i3
         stbar
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i2 ], %i5
+        ld                [ %i4 ], %i5
 0:
-        andn              %i5, %i4, %i0
+        andn              %i5, %i3, %i0
         or                %i0, %i1, %i0
-        casa              [ %i2 ] (10), %i5, %i0
+        casa              [ %i4 ] (10), %i5, %i0
         cmp               %i0, %i5
         bne,a             0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
+        srl               %i0, %i2, %i0
         ret
         restore
 

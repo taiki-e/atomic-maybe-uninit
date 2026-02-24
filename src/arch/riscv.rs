@@ -62,75 +62,103 @@ use crate::raw::AtomicCompareExchange;
 ))]
 use crate::raw::AtomicSwap;
 use crate::raw::{AtomicLoad, AtomicStore};
+#[cfg(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zalrsc",
+    atomic_maybe_uninit_target_feature = "zalrsc",
+    target_feature = "zacas",
+    atomic_maybe_uninit_target_feature = "zacas",
+))]
+use crate::utils::RegSize;
+#[cfg(target_arch = "riscv32")]
+#[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+use crate::utils::{MaybeUninit64 as MaybeUninitDw, Pair};
+#[cfg(target_arch = "riscv64")]
+#[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
+use crate::utils::{MaybeUninit128 as MaybeUninitDw, Pair};
 
+#[cfg(not(all(
+    not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
+    any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+    any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+)))]
 cfg_sel!({
-    #[cfg(target_arch = "riscv32")]
+    #[cfg(any(
+        target_feature = "a",
+        atomic_maybe_uninit_target_feature = "a",
+        target_feature = "zalrsc",
+        atomic_maybe_uninit_target_feature = "zalrsc",
+        target_feature = "zacas",
+        atomic_maybe_uninit_target_feature = "zacas",
+    ))]
     {
-        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
-        use crate::utils::{MaybeUninit64 as MaybeUninitDw, Pair};
-
-        #[cfg(all(
-            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
-            any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
-        ))]
-        macro_rules! xlen {
-            () => {
-                "32"
-            };
-        }
-        #[cfg(not(all(
-            not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
-            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
-            any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
-        )))]
-        #[cfg(any(
-            target_feature = "a",
-            atomic_maybe_uninit_target_feature = "a",
-            target_feature = "zalrsc",
-            atomic_maybe_uninit_target_feature = "zalrsc",
-            target_feature = "zacas",
-            atomic_maybe_uninit_target_feature = "zacas",
-        ))]
+        #[cfg(target_arch = "riscv32")]
         macro_rules! w {
             () => {
                 ""
             };
         }
-    }
-    #[cfg(target_arch = "riscv64")]
-    {
-        #[cfg(any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"))]
-        use crate::utils::{MaybeUninit128 as MaybeUninitDw, Pair};
-
-        #[cfg(all(
-            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
-            any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
-        ))]
-        macro_rules! xlen {
-            () => {
-                "64"
-            };
-        }
-        #[cfg(not(all(
-            not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
-            any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
-            any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
-        )))]
-        #[cfg(any(
-            target_feature = "a",
-            atomic_maybe_uninit_target_feature = "a",
-            target_feature = "zalrsc",
-            atomic_maybe_uninit_target_feature = "zalrsc",
-            target_feature = "zacas",
-            atomic_maybe_uninit_target_feature = "zacas",
-        ))]
+        #[cfg(target_arch = "riscv64")]
         macro_rules! w {
             () => {
                 "w"
             };
         }
+
+        macro_rules! sllw {
+            ($val:expr, $shift:expr) => {{
+                let mut val = $val;
+                let shift: RegSize = $shift;
+                #[allow(unused_unsafe)]
+                // SAFETY: calling SLL{,W} is safe
+                unsafe {
+                    asm!(
+                        concat!("sll", w!(), " {val}, {val}, {shift}"), // val <<= shift & 31
+                        val = inout(reg) val,
+                        shift = in(reg) shift,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
+                val
+            }};
+        }
+        #[inline(always)]
+        fn srlw(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
+            // SAFETY: calling SRL{,W} is safe
+            unsafe {
+                asm!(
+                    concat!("srl", w!(), " {val}, {val}, {shift}"), // val >>= shift & 31
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    options(pure, nomem, nostack, preserves_flags),
+                );
+            }
+            val
+        }
     }
 });
+
+#[cfg(all(
+    any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+    any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+))]
+#[cfg(target_arch = "riscv32")]
+macro_rules! xlen {
+    () => {
+        "32"
+    };
+}
+#[cfg(all(
+    any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
+    any(target_feature = "zacas", atomic_maybe_uninit_target_feature = "zacas"),
+))]
+#[cfg(target_arch = "riscv64")]
+macro_rules! xlen {
+    () => {
+        "64"
+    };
+}
 
 #[cfg(all(
     not(atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo),
@@ -400,7 +428,7 @@ macro_rules! atomic {
                         // SAFETY: the caller must uphold the safety contract,
                         // the cfg guarantee that the CPU supports Zacas extension.
                         unsafe {
-                            let mut r: crate::utils::RegSize;
+                            let mut r: RegSize;
                             macro_rules! cmpxchg {
                                 ($fence:tt, $asm_order:tt) => {
                                     asm!(
@@ -450,7 +478,7 @@ macro_rules! atomic {
                         // SAFETY: the caller must uphold the safety contract,
                         // the cfg guarantee that the CPU supports Zalrsc extension.
                         unsafe {
-                            let mut r: crate::utils::RegSize;
+                            let mut r: RegSize;
                             macro_rules! cmpxchg {
                                 ($acquire:tt, $release:tt) => {
                                     asm!(
@@ -519,7 +547,7 @@ macro_rules! atomic_sub_word {
                     ) -> MaybeUninit<Self> {
                         debug_assert_atomic_unsafe_precondition!(dst, $ty);
                         let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                        let mut out: MaybeUninit<Self>;
+                        let mut out: MaybeUninit<u32>;
 
                         // SAFETY: the caller must uphold the safety contract,
                         // the cfg guarantee that the CPU supports Zalrsc extension.
@@ -529,21 +557,16 @@ macro_rules! atomic_sub_word {
                             macro_rules! swap {
                                 ($acquire:tt, $release:tt) => {
                                     asm!(
-                                        concat!("sll", w!(), " {mask}, {mask}, {shift}"),         // mask <<= shift & 31
-                                        concat!("sll", w!(), " {val}, {val}, {shift}"),           // val <<= shift & 31
-                                        "not {mask}, {mask}",                                     // mask = !mask
                                         "2:", // 'retry:
                                             concat!("lr.w", $acquire, " {out}, 0({dst})"),        // atomic { out = *dst; RS = dst }
                                             "and {tmp}, {out}, {mask}",                           // tmp = out & mask
                                             "or {tmp}, {tmp}, {val}",                             // tmp |= val
                                             concat!("sc.w", $release, " {tmp}, {tmp}, 0({dst})"), // atomic { if RS == dst { *dst = tmp; tmp = 0 } else { tmp = nonzero }; RS = None }
                                             "bnez {tmp}, 2b",                                     // if tmp != 0 { jump 'retry }
-                                        concat!("srl", w!(), " {out}, {out}, {shift}"),           // out >>= shift & 31
                                         dst = in(reg) ptr_reg!(dst),
-                                        val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                                        val = in(reg) sllw!(crate::utils::extend32::$ty::zero(val), shift),
                                         out = out(reg) out,
-                                        shift = in(reg) shift,
-                                        mask = inout(reg) mask => _,
+                                        mask = in(reg) !sllw!(mask, shift),
                                         tmp = out(reg) _,
                                         options(nostack, preserves_flags),
                                     )
@@ -551,7 +574,7 @@ macro_rules! atomic_sub_word {
                             }
                             atomic_rmw_lr_sc!(swap, order);
                         }
-                        out
+                        crate::utils::extend32::$ty::extract(srlw(out, shift))
                     }
                 }
             }
@@ -567,7 +590,7 @@ macro_rules! atomic_sub_word {
                     ) -> MaybeUninit<Self> {
                         debug_assert_atomic_unsafe_precondition!(dst, $ty);
                         let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                        let mut out: MaybeUninit<Self>;
+                        let mut out: MaybeUninit<u32>;
 
                         // SAFETY: the caller must uphold the safety contract.
                         unsafe {
@@ -577,9 +600,6 @@ macro_rules! atomic_sub_word {
                                 // fence is not emitted because we retry until CAS success
                                 ($_fence:tt, $asm_order:tt) => {
                                     asm!(
-                                        concat!("sll", w!(), " {mask}, {mask}, {shift}"),               // mask <<= shift & 31
-                                        concat!("sll", w!(), " {val}, {val}, {shift}"),                 // val <<= shift & 31
-                                        "not {mask}, {mask}",                                           // mask = !mask
                                         "lw {out}, 0({dst})",                                           // atomic { out = *dst }
                                         "2:", // 'retry:
                                             // out_tmp will be used for later comparison.
@@ -588,12 +608,10 @@ macro_rules! atomic_sub_word {
                                             "or {tmp}, {tmp}, {val}",                                   // tmp |= val
                                             concat!("amocas.w", $asm_order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = *dst } }
                                             "bne {out}, {out_tmp}, 2b",                                 // if out != out_tmp { jump 'retry }
-                                        concat!("srl", w!(), " {out}, {out}, {shift}"),                 // out >>= shift & 31
                                         dst = in(reg) ptr_reg!(dst),
-                                        val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                                        val = in(reg) sllw!(crate::utils::extend32::$ty::zero(val), shift),
                                         out = out(reg) out,
-                                        shift = in(reg) shift,
-                                        mask = inout(reg) mask => _,
+                                        mask = in(reg) !sllw!(mask, shift),
                                         tmp = out(reg) _,
                                         out_tmp = out(reg) _,
                                         options(nostack, preserves_flags),
@@ -602,7 +620,7 @@ macro_rules! atomic_sub_word {
                             }
                             atomic_rmw_amocas!(swap, order);
                         }
-                        out
+                        crate::utils::extend32::$ty::extract(srlw(out, shift))
                     }
                 }
             }
@@ -632,7 +650,7 @@ macro_rules! atomic_sub_word {
                         // SAFETY: the caller must uphold the safety contract,
                         // the cfg guarantee that the CPU supports Zacas extension.
                         unsafe {
-                            let mut r: crate::utils::RegSize;
+                            let mut r: RegSize;
                             macro_rules! cmpxchg {
                                 ($fence:tt, $asm_order:tt) => {
                                     asm!(
@@ -686,41 +704,36 @@ macro_rules! atomic_sub_word {
                         debug_assert_atomic_unsafe_precondition!(dst, $ty);
                         let order = crate::utils::upgrade_success_ordering(success, failure);
                         let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                        let mut out: MaybeUninit<Self>;
+                        let mut out: MaybeUninit<u32>;
 
                         // SAFETY: the caller must uphold the safety contract,
                         // the cfg guarantee that the CPU supports Zalrsc extension.
                         unsafe {
-                            let mut r: crate::utils::RegSize;
+                            let mut r: RegSize;
                             // Implement sub-word atomic operations using word-sized LL/SC loop.
                             // Based on assemblies generated by rustc/LLVM.
                             // See also create_sub_word_mask_values.
                             macro_rules! cmpxchg {
                                 ($acquire:tt, $release:tt) => {
                                     asm!(
-                                        concat!("sll", w!(), " {mask}, {mask}, {shift}"),         // mask <<= shift & 31
-                                        concat!("sll", w!(), " {old}, {old}, {shift}"),           // old <<= shift & 31
-                                        concat!("sll", w!(), " {new}, {new}, {shift}"),           // new <<= shift & 31
                                         "2:", // 'retry:
-                                            concat!("lr.w", $acquire, " {tmp}, 0({dst})"),        // atomic { tmp = *dst; RS = dst }
-                                            "and {out}, {tmp}, {mask}",                           // out = tmp & mask
-                                            "bne {out}, {old}, 3f",                               // if out != old { jump 'cmp-fail }
-                                            "xor {out}, {tmp}, {new}",                            // out = tmp ^ new
-                                            "and {out}, {out}, {mask}",                           // out &= mask
-                                            "xor {out}, {out}, {tmp}",                            // out ^= tmp
-                                            concat!("sc.w", $release, " {out}, {out}, 0({dst})"), // atomic { if RS == dst { *dst = out; out = 0 } else { out = nonzero }; RS = None }
-                                            "bnez {out}, 2b",                                     // if out != 0 { jump 'retry }
+                                            concat!("lr.w", $acquire, " {out}, 0({dst})"),        // atomic { out = *dst; RS = dst }
+                                            "and {tmp}, {out}, {mask}",                           // tmp = out & mask
+                                            "bne {tmp}, {old}, 3f",                               // if tmp != old { jump 'cmp-fail }
+                                            "xor {tmp}, {out}, {new}",                            // tmp = out ^ new
+                                            "and {tmp}, {tmp}, {mask}",                           // tmp &= mask
+                                            "xor {tmp}, {tmp}, {out}",                            // tmp ^= out
+                                            concat!("sc.w", $release, " {tmp}, {tmp}, 0({dst})"), // atomic { if RS == dst { *dst = tmp; tmp = 0 } else { tmp = nonzero }; RS = None }
+                                            "bnez {tmp}, 2b",                                     // if tmp != 0 { jump 'retry }
                                         "3:", // 'cmp-fail:
-                                        concat!("srl", w!(), " {out}, {tmp}, {shift}"),           // out = tmp >> shift & 31
-                                        "and {tmp}, {tmp}, {mask}",                               // tmp &= mask
-                                        "xor {tmp}, {old}, {tmp}",                                // tmp ^= old
+                                        "and {tmp}, {out}, {mask}",                               // tmp = out & mask
+                                        "xor {tmp}, {tmp}, {old}",                                // tmp ^= old
                                         "seqz {tmp}, {tmp}",                                      // if tmp == 0 { tmp = 1 } else { tmp = 0 }
                                         dst = in(reg) ptr_reg!(dst),
-                                        old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                        new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                        old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old), shift),
+                                        new = in(reg) sllw!(crate::utils::extend32::$ty::zero(new), shift),
                                         out = out(reg) out,
-                                        shift = in(reg) shift,
-                                        mask = inout(reg) mask => _,
+                                        mask = in(reg) sllw!(mask, shift),
                                         tmp = out(reg) r,
                                         options(nostack, preserves_flags),
                                     )
@@ -728,7 +741,7 @@ macro_rules! atomic_sub_word {
                             }
                             atomic_rmw_lr_sc!(cmpxchg, order);
                             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            (out, r != 0)
+                            (crate::utils::extend32::$ty::extract(srlw(out, shift)), r != 0)
                         }
                     }
                 }
@@ -748,43 +761,38 @@ macro_rules! atomic_sub_word {
                         debug_assert_atomic_unsafe_precondition!(dst, $ty);
                         let order = crate::utils::upgrade_success_ordering(success, failure);
                         let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                        let mut out: MaybeUninit<Self>;
+                        let mut out: MaybeUninit<u32>;
 
                         // SAFETY: the caller must uphold the safety contract.
                         unsafe {
                             use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
-                            let mut r: crate::utils::RegSize;
+                            let mut r: RegSize;
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             macro_rules! cmpxchg_fail_relaxed {
                                 ($failure_release:tt, $asm_order:tt) => {
                                     asm!(
-                                        concat!("sll", w!(), " {mask}, {mask}, {shift}"),               // mask <<= shift & 31
-                                        concat!("sll", w!(), " {old}, {old}, {shift}"),                 // old <<= shift & 31
-                                        concat!("sll", w!(), " {new}, {new}, {shift}"),                 // new <<= shift & 31
                                         $failure_release,                                               // fence
-                                        "lw {tmp}, 0({dst})",                                           // atomic { tmp = *dst }
+                                        "lw {out}, 0({dst})",                                           // atomic { out = *dst }
                                         "2:", // 'retry:
                                             // out_tmp will be used for later comparison.
-                                            "mv {out_tmp}, {tmp}",                                      // out_tmp = tmp
-                                            "and {out}, {tmp}, {mask}",                                 // out = tmp & mask
-                                            "bne {out}, {old}, 3f",                                     // if out != old { jump 'cmp-fail }
-                                            "xor {out}, {tmp}, {new}",                                  // out = tmp ^ new
-                                            "and {out}, {out}, {mask}",                                 // out &= mask
-                                            "xor {out}, {out}, {tmp}",                                  // out ^= tmp
-                                            concat!("amocas.w", $asm_order, " {tmp}, {out}, 0({dst})"), // atomic { if *dst == tmp { *dst = out } else { out = *dst } }
-                                            "bne {tmp}, {out_tmp}, 2b",                                 // if tmp != out_tmp { jump 'retry }
+                                            "mv {out_tmp}, {out}",                                      // out_tmp = out
+                                            "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
+                                            "bne {tmp}, {old}, 3f",                                     // if tmp != old { jump 'cmp-fail }
+                                            "xor {tmp}, {out}, {new}",                                  // tmp = out ^ new
+                                            "and {tmp}, {tmp}, {mask}",                                 // tmp &= mask
+                                            "xor {tmp}, {tmp}, {out}",                                  // tmp ^= out
+                                            concat!("amocas.w", $asm_order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { tmp = *dst } }
+                                            "bne {out}, {out_tmp}, 2b",                                 // if out != out_tmp { jump 'retry }
                                         "3:", // 'cmp-fail:
-                                        concat!("srl", w!(), " {out}, {tmp}, {shift}"),                 // out = tmp >> shift & 31
-                                        "and {tmp}, {tmp}, {mask}",                                     // tmp &= mask
+                                        "and {tmp}, {out}, {mask}",                                     // tmp = out & mask
                                         "xor {tmp}, {old}, {tmp}",                                      // tmp ^= old
                                         "seqz {tmp}, {tmp}",                                            // if tmp == 0 { tmp = 1 } else { tmp = 0 }
                                         dst = in(reg) ptr_reg!(dst),
-                                        old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                        new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                        old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old), shift),
+                                        new = in(reg) sllw!(crate::utils::extend32::$ty::zero(new), shift),
                                         out = out(reg) out,
-                                        shift = in(reg) shift,
-                                        mask = inout(reg) mask => _,
+                                        mask = in(reg) sllw!(mask, shift),
                                         tmp = out(reg) r,
                                         out_tmp = out(reg) _,
                                         options(nostack, preserves_flags),
@@ -794,35 +802,30 @@ macro_rules! atomic_sub_word {
                             macro_rules! cmpxchg {
                                 ($failure_release:tt, $asm_order:tt) => {
                                     asm!(
-                                        concat!("sll", w!(), " {mask}, {mask}, {shift}"),               // mask <<= shift & 31
-                                        concat!("sll", w!(), " {old}, {old}, {shift}"),                 // old <<= shift & 31
-                                        concat!("sll", w!(), " {new}, {new}, {shift}"),                 // new <<= shift & 31
                                         $failure_release,                                               // fence
-                                        "lw {tmp}, 0({dst})",                                           // atomic { tmp = *dst }
+                                        "lw {out}, 0({dst})",                                           // atomic { out = *dst }
                                         "2:", // 'retry:
                                             // out_tmp will be used for later comparison.
-                                            "mv {out_tmp}, {tmp}",                                      // out_tmp = tmp
-                                            "and {out}, {tmp}, {mask}",                                 // out = tmp & mask
-                                            "bne {out}, {old}, 3f",                                     // if out != old { jump 'cmp-fail }
-                                            "xor {out}, {tmp}, {new}",                                  // out = tmp ^ new
-                                            "and {out}, {out}, {mask}",                                 // out &= mask
-                                            "xor {out}, {out}, {tmp}",                                  // out ^= tmp
-                                            concat!("amocas.w", $asm_order, " {tmp}, {out}, 0({dst})"), // atomic { if *dst == tmp { *dst = out } else { out = *dst } }
-                                            "bne {tmp}, {out_tmp}, 2b",                                 // if tmp != out_tmp { jump 'retry }
+                                            "mv {out_tmp}, {out}",                                      // out_tmp = out
+                                            "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
+                                            "bne {tmp}, {old}, 3f",                                     // if tmp != old { jump 'cmp-fail }
+                                            "xor {tmp}, {out}, {new}",                                  // tmp = out ^ new
+                                            "and {tmp}, {tmp}, {mask}",                                 // tmp &= mask
+                                            "xor {tmp}, {tmp}, {out}",                                  // tmp ^= out
+                                            concat!("amocas.w", $asm_order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { tmp = *dst } }
+                                            "bne {out}, {out_tmp}, 2b",                                 // if out != out_tmp { jump 'retry }
                                             "j 4f",                                                     // jump 'success
                                         "3:", // 'cmp-fail:
                                             "fence r, rw",                                              // fence
                                         "4:", // 'success:
-                                        concat!("srl", w!(), " {out}, {tmp}, {shift}"),                 // out = tmp >> shift & 31
-                                        "and {tmp}, {tmp}, {mask}",                                     // tmp &= mask
+                                        "and {tmp}, {out}, {mask}",                                     // tmp = out & mask
                                         "xor {tmp}, {old}, {tmp}",                                      // tmp ^= old
                                         "seqz {tmp}, {tmp}",                                            // if tmp == 0 { tmp = 1 } else { tmp = 0 }
                                         dst = in(reg) ptr_reg!(dst),
-                                        old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                        new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                        old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old), shift),
+                                        new = in(reg) sllw!(crate::utils::extend32::$ty::zero(new), shift),
                                         out = out(reg) out,
-                                        shift = in(reg) shift,
-                                        mask = inout(reg) mask => _,
+                                        mask = in(reg) sllw!(mask, shift),
                                         tmp = out(reg) r,
                                         out_tmp = out(reg) _,
                                         options(nostack, preserves_flags),
@@ -840,7 +843,7 @@ macro_rules! atomic_sub_word {
                                 _ => unreachable!(),
                             }
                             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            (out, r != 0)
+                            (crate::utils::extend32::$ty::extract(srlw(out, shift)), r != 0)
                         }
                     }
                 }
@@ -878,8 +881,8 @@ macro_rules! atomic_dw {
                                 $fence,                                                       // fence
                                 concat!("amocas.", $suffix, $asm_order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
                                 src = in(reg) ptr_reg!(src),
-                                inout("a2") 0 as crate::utils::RegSize => out_lo,
-                                inout("a3") 0 as crate::utils::RegSize => out_hi,
+                                inout("a2") 0 as RegSize => out_lo,
+                                inout("a3") 0 as RegSize => out_hi,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -969,7 +972,7 @@ macro_rules! atomic_dw {
                 // SAFETY: the caller must uphold the safety contract,
                 // the cfg guarantee that the CPU supports Zacas extension.
                 unsafe {
-                    let mut r: crate::utils::RegSize;
+                    let mut r: RegSize;
                     macro_rules! cmpxchg {
                         ($fence:tt, $asm_order:tt) => {
                             asm!(

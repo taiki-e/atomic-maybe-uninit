@@ -3,10 +3,11 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -27,10 +28,11 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -51,10 +53,11 @@ asm_test::compare_exchange::u8::acqrel_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -75,10 +78,11 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -99,10 +103,11 @@ asm_test::compare_exchange::u8::acquire_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -123,10 +128,11 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -147,10 +153,11 @@ asm_test::compare_exchange::u8::release_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -171,10 +178,11 @@ asm_test::compare_exchange::u8::seqcst_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -195,10 +203,11 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -219,10 +228,11 @@ asm_test::compare_exchange::u8::acquire_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -243,10 +253,11 @@ asm_test::compare_exchange::u8::acquire_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -267,10 +278,11 @@ asm_test::compare_exchange::u8::relaxed_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -291,10 +303,11 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -315,10 +328,11 @@ asm_test::compare_exchange::u8::release_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -339,10 +353,11 @@ asm_test::compare_exchange::u8::release_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -364,10 +379,11 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -389,10 +405,11 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -414,10 +431,11 @@ asm_test::compare_exchange::u16::acqrel_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -439,10 +457,11 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -464,10 +483,11 @@ asm_test::compare_exchange::u16::acquire_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -489,10 +509,11 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -514,10 +535,11 @@ asm_test::compare_exchange::u16::release_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -539,10 +561,11 @@ asm_test::compare_exchange::u16::seqcst_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -564,10 +587,11 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -589,10 +613,11 @@ asm_test::compare_exchange::u16::acquire_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -614,10 +639,11 @@ asm_test::compare_exchange::u16::acquire_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -639,10 +665,11 @@ asm_test::compare_exchange::u16::relaxed_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -664,10 +691,11 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -689,10 +717,11 @@ asm_test::compare_exchange::u16::release_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -714,10 +743,11 @@ asm_test::compare_exchange::u16::release_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1143,10 +1173,11 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1167,10 +1198,11 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1191,10 +1223,11 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1215,10 +1248,11 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1239,10 +1273,11 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1263,10 +1298,11 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1287,10 +1323,11 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1311,10 +1348,11 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1335,10 +1373,11 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1359,10 +1398,11 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1383,10 +1423,11 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1407,10 +1448,11 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1431,10 +1473,11 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1455,10 +1498,11 @@ asm_test::compare_exchange_weak::u8::release_acquire:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1479,10 +1523,11 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
           r3 = and(r0,#-0x4)
           r4 = #0xff
           r5 = and(r1,#0xff) }
-        { r4 = asl(r4,r0)
-          r6 = #0x0; 	r2 = and(r2,#255) }
+        { r4 = asl(r4,r0) }
         { r5 = asl(r5,r0) }
+        { r2 = and(r2,#0xff) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1504,10 +1549,11 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1529,10 +1575,11 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1554,10 +1601,11 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1579,10 +1627,11 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1604,10 +1653,11 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1629,10 +1679,11 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1654,10 +1705,11 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1679,10 +1731,11 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1704,10 +1757,11 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1729,10 +1783,11 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1754,10 +1809,11 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1779,10 +1835,11 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1804,10 +1861,11 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1829,10 +1887,11 @@ asm_test::compare_exchange_weak::u16::release_acquire:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
@@ -1854,10 +1913,11 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
           immext(#0xffc0)
           r4 = ##0xffff }
         { r4 = asl(r4,r0)
-          r2 = zxth(r2)
-          r6 = #0x0; 	r5 = zxth(r1) }
+          r5 = zxth(r1) }
         { r5 = asl(r5,r0) }
+        { r2 = zxth(r2) }
         { r2 = asl(r2,r0) }
+        { r6 = #0x0 }
 0:
         { r1 = memw_locked(r3) }
         { r7 = and(r1,r4) }
