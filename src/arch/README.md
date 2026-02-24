@@ -36,7 +36,7 @@ TODO: document overview
 ## Arm
 
 target_arch: arm<br>
-Implementation: [arm.rs](arm.rs), [armv8.rs](armv8.rs), [arm_linux.rs](arm_linux.rs)<br>
+Implementation: [arm.rs](arm.rs), [armv8.rs](armv8.rs)<br>
 Refs: [Arm® Architecture Reference Manual for A-profile architecture](https://developer.arm.com/documentation/ddi0487/latest), [Arm® v8-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0553/latest), [ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition](https://developer.arm.com/documentation/ddi0406/latest), [Arm® v7-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0403/latest), [ARM® v6-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0419/latest)
 
 TODO: document overview

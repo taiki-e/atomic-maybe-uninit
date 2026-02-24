@@ -823,24 +823,11 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(
         target_arch = "arm",
-        any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-        not(any(
-            target_feature = "v8",
-            atomic_maybe_uninit_target_feature = "v8",
-            target_feature = "v8m",
-            atomic_maybe_uninit_target_feature = "v8m",
-            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
-        )),
-    ),
-    path = "arch/arm.rs"
-)]
-#[cfg_attr(
-    all(
-        target_arch = "arm",
-        any(target_os = "linux", target_os = "android"),
         any(
-            not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
-            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
+            target_feature = "v6",
+            atomic_maybe_uninit_target_feature = "v6",
+            target_os = "linux",
+            target_os = "android",
         ),
         not(any(
             target_feature = "v8",
@@ -849,7 +836,7 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
             atomic_maybe_uninit_target_feature = "v8m",
         )),
     ),
-    path = "arch/arm_linux.rs"
+    path = "arch/arm.rs"
 )]
 #[cfg_attr(
     all(
