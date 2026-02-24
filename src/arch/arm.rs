@@ -23,30 +23,43 @@ Refs:
 See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
-#[cfg(not(any(
-    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
-)))]
-delegate_size!(delegate_load_store);
-#[cfg(any(
-    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
-))]
-delegate_size!(delegate_all);
-
 use core::{
+    arch::{asm, asm as asm_no_dmb},
     mem::{self, MaybeUninit},
     sync::atomic::Ordering,
 };
 
-#[cfg(any(
-    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
-))]
-use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 use crate::utils::{MaybeUninit64, Pair};
+
+cfg_sel!({
+    #[cfg(any(
+        any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
+        not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
+    ))]
+    {
+        use crate::raw::{AtomicCompareExchange, AtomicSwap};
+
+        delegate_size!(delegate_all);
+        #[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
+        macro_rules! clrex {
+            () => {
+                "clrex"
+            };
+        }
+        #[cfg(not(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")))]
+        macro_rules! clrex {
+            () => {
+                ""
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        delegate_size!(delegate_load_store);
+    }
+});
 
 cfg_sel!({
     #[cfg(all(
@@ -74,7 +87,7 @@ cfg_sel!({
         }
         macro_rules! asm_use_dmb {
             ($($asm:tt)*) => {
-                core::arch::asm!($($asm)*)
+                asm!($($asm)*)
             };
         }
     }
@@ -94,7 +107,7 @@ cfg_sel!({
         macro_rules! asm_use_dmb {
             ($($asm:tt)*) => {
                 // In this case, dmb! calls __kuser_memory_barrier.
-                core::arch::asm!(
+                asm!(
                     $($asm)*
                     // __kuser_memory_barrier (see also arm_linux.rs)
                     // https://github.com/torvalds/linux/blob/v6.19/Documentation/arch/arm/kernel_user_helpers.rst
@@ -120,7 +133,7 @@ cfg_sel!({
             ($($asm:tt)*) => {
                 // In this case, dmb! calls `mcr p15, 0, <Rd>, c7, c10, 5`, and
                 // the value in the Rd register should be zero (SBZ).
-                core::arch::asm!(
+                asm!(
                     $($asm)*
                     zero = inout(reg) 0_u32 => _,
                 )
@@ -128,32 +141,6 @@ cfg_sel!({
         }
     }
 });
-macro_rules! asm_no_dmb {
-    ($($asm:tt)*) => {
-        core::arch::asm!($($asm)*)
-    };
-}
-
-#[cfg(any(
-    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
-))]
-#[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
-macro_rules! clrex {
-    () => {
-        "clrex"
-    };
-}
-#[cfg(any(
-    any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"),
-    not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")),
-))]
-#[cfg(not(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7")))]
-macro_rules! clrex {
-    () => {
-        ""
-    };
-}
 
 #[rustfmt::skip]
 macro_rules! atomic {
@@ -581,12 +568,11 @@ atomic!(u32, "");
 // Refs:
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/LDREXD
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/STREXD
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 #[rustfmt::skip]
 macro_rules! atomic64 {
     ($ty:ident) => {
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         delegate_signed!(delegate_all, $ty);
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicLoad for $ty {
             #[cfg_attr(
                 all(
@@ -632,7 +618,6 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicStore for $ty {
             #[cfg_attr(
                 all(
@@ -686,7 +671,6 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicSwap for $ty {
             #[cfg_attr(
                 all(
@@ -745,7 +729,6 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicCompareExchange for $ty {
             #[cfg_attr(
                 all(
@@ -1057,6 +1040,7 @@ macro_rules! atomic64 {
     };
 }
 
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 atomic64!(u64);
 
 // -----------------------------------------------------------------------------

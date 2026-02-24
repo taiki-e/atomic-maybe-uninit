@@ -15,11 +15,6 @@ Refs:
 See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
-#[cfg(not(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020")))]
-delegate_size!(delegate_load_store);
-#[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
-delegate_size!(delegate_all);
-
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
@@ -27,11 +22,22 @@ use core::{
 };
 
 use crate::raw::{AtomicLoad, AtomicStore};
-#[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
-use crate::{
-    raw::{AtomicCompareExchange, AtomicSwap},
-    utils::{MaybeUninit64, Pair},
-};
+
+cfg_sel!({
+    #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
+    {
+        use crate::{
+            raw::{AtomicCompareExchange, AtomicSwap},
+            utils::{MaybeUninit64, Pair},
+        };
+
+        delegate_size!(delegate_all);
+    }
+    #[cfg(else)]
+    {
+        delegate_size!(delegate_load_store);
+    }
+});
 
 macro_rules! atomic {
     ($ty:ident, $suffix:tt) => {
@@ -145,11 +151,10 @@ atomic!(u16, "w");
 atomic!(u32, "l");
 
 // Use .2byte directive because CAS2 is not yet supported in LLVM (as of 21): https://godbolt.org/z/eWaT9Mbfe
+#[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
 macro_rules! atomic64 {
     ($ty:ident) => {
-        #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
         delegate_signed!(delegate_all, $ty);
-        #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -191,7 +196,6 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
         impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
@@ -205,7 +209,6 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -257,7 +260,6 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
         impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -312,6 +314,7 @@ macro_rules! atomic64 {
     };
 }
 
+#[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
 atomic64!(u64);
 
 // -----------------------------------------------------------------------------

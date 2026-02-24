@@ -35,19 +35,25 @@ use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 ))]
 use crate::utils::{MaybeUninit128, Pair};
 
-// https://gcc.gnu.org/legacy-ml/gcc-patches/2006-11/msg01238.html
-#[cfg(any(target_feature = "msync", atomic_maybe_uninit_target_feature = "msync"))]
-macro_rules! lwsync {
-    () => {
-        "sync"
-    };
-}
-#[cfg(not(any(target_feature = "msync", atomic_maybe_uninit_target_feature = "msync")))]
-macro_rules! lwsync {
-    () => {
-        "lwsync"
-    };
-}
+cfg_sel!({
+    #[cfg(any(target_feature = "msync", atomic_maybe_uninit_target_feature = "msync"))]
+    {
+        // https://gcc.gnu.org/legacy-ml/gcc-patches/2006-11/msg01238.html
+        macro_rules! lwsync {
+            () => {
+                "sync"
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        macro_rules! lwsync {
+            () => {
+                "lwsync"
+            };
+        }
+    }
+});
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {

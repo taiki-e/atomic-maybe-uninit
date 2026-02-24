@@ -146,6 +146,7 @@ wokwi
 xadd
 xchg
 xgetbv
+xlen
 xmegau
 xmmword
 xsave

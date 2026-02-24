@@ -54,24 +54,30 @@ macro_rules! atomic_rmw {
 
 // Adds S suffix if needed. We prefer instruction without S suffix,
 // but Armv8-M Baseline doesn't support thumb2 instructions.
-#[cfg(any(
-    not(any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode")),
-    any(target_feature = "thumb2", atomic_maybe_uninit_target_feature = "thumb2"),
-))]
-macro_rules! s {
-    ($op:tt, $operand:tt) => {
-        concat!($op, " ", $operand)
-    };
-}
-#[cfg(not(any(
-    not(any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode")),
-    any(target_feature = "thumb2", atomic_maybe_uninit_target_feature = "thumb2"),
-)))]
-macro_rules! s {
-    ($op:tt, $operand:tt) => {
-        concat!($op, "s ", $operand)
-    };
-}
+cfg_sel!({
+    #[cfg(any(
+        not(any(
+            target_feature = "thumb-mode",
+            atomic_maybe_uninit_target_feature = "thumb-mode",
+        )),
+        any(target_feature = "thumb2", atomic_maybe_uninit_target_feature = "thumb2"),
+    ))]
+    {
+        macro_rules! s {
+            ($op:tt, $operand:tt) => {
+                concat!($op, " ", $operand)
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        macro_rules! s {
+            ($op:tt, $operand:tt) => {
+                concat!($op, "s ", $operand)
+            };
+        }
+    }
+});
 
 #[rustfmt::skip]
 macro_rules! atomic {
@@ -270,12 +276,11 @@ atomic!(u8, "b");
 atomic!(u16, "h");
 atomic!(u32, "");
 
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 #[rustfmt::skip]
 macro_rules! atomic64 {
     ($ty:ident) => {
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         delegate_signed!(delegate_all, $ty);
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -310,7 +315,6 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
@@ -347,7 +351,6 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -387,7 +390,6 @@ macro_rules! atomic64 {
                 }
             }
         }
-        #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
         impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -502,6 +504,7 @@ macro_rules! atomic64 {
     };
 }
 
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 atomic64!(u64);
 
 // -----------------------------------------------------------------------------
