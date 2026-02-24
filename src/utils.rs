@@ -490,7 +490,6 @@ pub(crate) mod extend32 {
                     unsafe { mem::transmute(Extended::<$ty, LEN> { v, pad: PAD }) }
                 }
                 /// Inverse of extend.
-                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
                 #[inline(always)]
                 pub(crate) const fn extract(v: MaybeUninit<$out>) -> MaybeUninit<$ty> {
                     // SAFETY: Extended is repr(C) and all fields are MaybeUninit<$ty> or its array,
