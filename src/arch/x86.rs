@@ -14,7 +14,6 @@ Refs:
 See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
-#[cfg(target_arch = "x86_64")]
 #[cfg(not(atomic_maybe_uninit_no_outline_atomics))]
 #[cfg(not(target_env = "sgx"))]
 #[cfg_attr(
@@ -31,7 +30,7 @@ See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
         ),
     )))
 )]
-#[path = "../detect/x86_64.rs"]
+#[path = "../detect/x86.rs"]
 mod detect;
 
 delegate_size!(delegate_load_store);
@@ -281,27 +280,11 @@ atomic!(u64,    , reg, reg, identity, "", "", "", "", "qword", "rax");
 impl AtomicMemcpy for u64 {
     #[inline]
     unsafe fn atomic_load_memcpy<const DST_ALIGNED: bool>(
-        mut dst: *mut MaybeUninit<Self>,
+        dst: *mut MaybeUninit<Self>,
         src: *const MaybeUninit<Self>,
         count: NonZeroUsize,
     ) {
-        #[cfg(atomic_maybe_uninit_test_prefer_movsb)]
-        if count.get() >= 32 {
-            // SAFETY: the caller must uphold the safety contract.
-            unsafe {
-                asm!(
-                    // https://doc.rust-lang.org/nightly/reference/inline-assembly.html#r-asm.rules.x86-df
-                    "cld",
-                    "rep movsb",
-                    inout("rdi") ptr_reg!(dst) => _,
-                    inout("rsi") ptr_reg!(src) => _,
-                    inout("rcx") count.get() as u64 => _,
-                    options(nostack, preserves_flags),
-                );
-            }
-            return;
-        }
-        load_memcpy_opt_pre! { u64, Align64, dst, count, last, |src, tmp0, tmp1|
+        load_memcpy! { u64, |src, tmp0, tmp1|
             asm!(
                 concat!("mov {tmp0}, qword ptr [{src", ptr_modifier!(), "}]"),                  // atomic { tmp0 = *src }
                 concat!("lea {src", ptr_modifier!(), "}, [{src", ptr_modifier!(), "} + 8]"),    // src = src.byte_add(8)
@@ -319,6 +302,23 @@ impl AtomicMemcpy for u64 {
                 options(nostack, preserves_flags),
             ),
         }
+        // if count.get() >= 32
+        //     && (cfg!(atomic_maybe_uninit_test_prefer_movsb) || detect::detect().fsrm())
+        // {
+        //     // SAFETY: the caller must uphold the safety contract.
+        //     unsafe {
+        //         asm!(
+        //             // https://doc.rust-lang.org/nightly/reference/inline-assembly.html#r-asm.rules.x86-df
+        //             "cld",
+        //             "rep movsb",
+        //             inout("rdi") ptr_reg!(dst) => _,
+        //             inout("rsi") ptr_reg!(src) => _,
+        //             inout("rcx") (count.get() as u64) << 3 => _,
+        //             options(nostack, preserves_flags),
+        //         );
+        //     }
+        //     return;
+        // }
         #[cfg(not(all(
             not(target_feature = "avx"),
             any(
@@ -331,41 +331,140 @@ impl AtomicMemcpy for u64 {
         #[inline]
         unsafe fn atomic_load_memcpy_large_avx(
             mut dst: *mut MaybeUninit<u64>,
-            mut src: *const MaybeUninit<u64>,
-            mut count: usize,
-        ) -> *mut MaybeUninit<u64> {
+            src: *const MaybeUninit<u64>,
+            count: NonZeroUsize,
+        ) {
+            const DST_ALIGNED: bool = false;
+            load_memcpy_opt_pre!(u64, crate::Align32, dst, src, count, last);
             // SAFETY: the caller must uphold the safety contract.
             unsafe {
-                loop {
-                    asm!(
-                        concat!("vmovdqa ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),      // ymm0 = *src
-                        concat!("vmovdqa ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32]"), // ymm1 = *src.byte_add(32)
-                        concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),      // *dst = ymm0
-                        concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32], ymm1"), // *dst.byte_add(32) = ymm1
-                        dst = in(reg) dst,
-                        src = in(reg) src,
-                        out("ymm0") _,
-                        out("ymm1") _,
-                        options(nostack, preserves_flags),
-                    );
-                    src = src.add(8);
-                    dst = dst.add(8);
-                    count = count.wrapping_sub(1); // can use unchecked_sub
-                    if count == 0 {
-                        break;
+                'mid: {
+                    // 1 (0b0001): -          ->  x
+                    // 2 (0b0010): - -        ->  - -
+                    // 3 (0b0011): - - -      ->  x - -
+                    // 4 (0b0100): - - - -    ->  - - - -
+                    // 5 (0b0101): - - - - -  ->  x - - - -
+                    if count & 0b1 != 0 {
+                        asm!(
+                            concat!("vmovdqa ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"), // ymm0 = *src
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"), // *dst = ymm0
+                            dst = in(reg) dst,
+                            src = in(reg) src,
+                            out("ymm0") _,
+                            options(nostack, preserves_flags),
+                        );
+                        src = src.add(4);
+                        dst = dst.add(4);
+                        count = count.wrapping_sub(1); // can use unchecked_sub
+                        if count == 0 {
+                            break 'mid;
+                        }
+                    }
+                    // 2x
+                    // 2 (0b0010): - -        ->  x x
+                    // 3 (0b0011): x - -      ->  x x x
+                    // 4 (0b0100): - - - -    ->  - - - -
+                    // 5 (0b0101): x - - - -  ->  x - - - -
+                    if count & 0b10 != 0 {
+                        asm!(
+                            concat!("vmovdqa ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),        // ymm0 = *src
+                            concat!("vmovdqa ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32*1]"), // ymm1 = *src.byte_add(32*1)
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),        // *dst = ymm0
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*1], ymm1"), // *dst.byte_add(32*1) = ymm1
+                            dst = in(reg) dst,
+                            src = in(reg) src,
+                            out("ymm0") _,
+                            out("ymm1") _,
+                            options(nostack, preserves_flags),
+                        );
+                        src = src.add(8);
+                        dst = dst.add(8);
+                        count = count.wrapping_sub(2); // can use unchecked_sub
+                        if count == 0 {
+                            break 'mid;
+                        }
+                    }
+                    // 4x
+                    // 4 (0b0100): - - - -    ->  x x x x
+                    // 5 (0b0101): x - - - -  ->  x x x x x
+                    if count & 0b100 != 0 {
+                        asm!(
+                            concat!("vmovdqa ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),        // ymm0 = *src
+                            concat!("vmovdqa ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32*1]"), // ymm1 = *src.byte_add(32*1)
+                            concat!("vmovdqa ymm2, ymmword ptr [{src", ptr_modifier!(), "} + 32*2]"), // ymm1 = *src.byte_add(32*2)
+                            concat!("vmovdqa ymm3, ymmword ptr [{src", ptr_modifier!(), "} + 32*3]"), // ymm1 = *src.byte_add(32*3)
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),        // *dst = ymm0
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*1], ymm1"), // *dst.byte_add(32*1) = ymm1
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*2], ymm2"), // *dst.byte_add(32*2) = ymm1
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*3], ymm3"), // *dst.byte_add(32*3) = ymm1
+                            dst = in(reg) dst,
+                            src = in(reg) src,
+                            out("ymm0") _,
+                            out("ymm1") _,
+                            out("ymm2") _,
+                            out("ymm3") _,
+                            options(nostack, preserves_flags),
+                        );
+                        src = src.add(16);
+                        dst = dst.add(16);
+                        count = count.wrapping_sub(4); // can use unchecked_sub
+                        if count == 0 {
+                            break 'mid;
+                        }
+                    }
+                    // 8x
+                    count >>= 3;
+                    loop {
+                        asm!(
+                            concat!("vmovdqa ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),        // ymm0 = *src
+                            concat!("vmovdqa ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32*1]"), // ymm1 = *src.byte_add(32*1)
+                            concat!("vmovdqa ymm2, ymmword ptr [{src", ptr_modifier!(), "} + 32*2]"), // ymm1 = *src.byte_add(32*2)
+                            concat!("vmovdqa ymm3, ymmword ptr [{src", ptr_modifier!(), "} + 32*3]"), // ymm1 = *src.byte_add(32*3)
+                            concat!("vmovdqa ymm4, ymmword ptr [{src", ptr_modifier!(), "} + 32*4]"), // ymm1 = *src.byte_add(32*4)
+                            concat!("vmovdqa ymm5, ymmword ptr [{src", ptr_modifier!(), "} + 32*5]"), // ymm1 = *src.byte_add(32*5)
+                            concat!("vmovdqa ymm6, ymmword ptr [{src", ptr_modifier!(), "} + 32*6]"), // ymm1 = *src.byte_add(32*6)
+                            concat!("vmovdqa ymm7, ymmword ptr [{src", ptr_modifier!(), "} + 32*7]"), // ymm1 = *src.byte_add(32*7)
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),        // *dst = ymm0
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*1], ymm1"), // *dst.byte_add(32*1) = ymm1
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*2], ymm2"), // *dst.byte_add(32*2) = ymm1
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*3], ymm3"), // *dst.byte_add(32*3) = ymm1
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*4], ymm4"), // *dst.byte_add(32*4) = ymm1
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*5], ymm5"), // *dst.byte_add(32*5) = ymm1
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*6], ymm6"), // *dst.byte_add(32*6) = ymm1
+                            concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32*7], ymm7"), // *dst.byte_add(32*7) = ymm1
+                            dst = in(reg) dst,
+                            src = in(reg) src,
+                            out("ymm0") _,
+                            out("ymm1") _,
+                            out("ymm2") _,
+                            out("ymm3") _,
+                            out("ymm4") _,
+                            out("ymm5") _,
+                            out("ymm6") _,
+                            out("ymm7") _,
+                            options(nostack, preserves_flags),
+                        );
+                        src = src.add(32);
+                        dst = dst.add(32);
+                        count = count.wrapping_sub(1); // can use unchecked_sub
+                        if count == 0 {
+                            break 'mid;
+                        }
                     }
                 }
                 core::arch::x86_64::_mm256_zeroupper();
             }
-            dst
+            load_memcpy_opt_post!(dst, last);
         }
         #[cfg(not(target_feature = "avx"))]
         #[inline]
         unsafe fn atomic_load_memcpy_large_scalar<const DST_ALIGNED: bool>(
             mut dst: *mut MaybeUninit<u64>,
-            mut src: *const MaybeUninit<u64>,
-            mut count: usize,
-        ) -> *mut MaybeUninit<u64> {
+            src: *const MaybeUninit<u64>,
+            count: NonZeroUsize,
+        ) {
+            const DST_ALIGNED: bool = false;
+            load_memcpy_opt_pre!(u64, [crate::Align8; 8], dst, src, count, last);
             // SAFETY: the caller must uphold the safety contract.
             unsafe {
                 let mut tmp0;
@@ -425,13 +524,13 @@ impl AtomicMemcpy for u64 {
                     }
                 }
             }
-            dst
+            load_memcpy_opt_post!(dst, last);
         }
         #[cfg(target_feature = "avx")]
         // SAFETY: the caller must uphold the safety contract.
         // cfg guarantees that the CPU supports AVX.
         unsafe {
-            dst = atomic_load_memcpy_large_avx(dst, src, count);
+            atomic_load_memcpy_large_avx(dst, src, count);
         }
         #[cfg(not(target_feature = "avx"))]
         #[cfg(not(all(
@@ -444,31 +543,17 @@ impl AtomicMemcpy for u64 {
         )))]
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
-            dst = if DST_ALIGNED {
-                ifunc!(unsafe fn(
-                    dst: *mut MaybeUninit<u64>,
-                    src: *const MaybeUninit<u64>,
-                    count: usize,
-                ) -> *mut MaybeUninit<u64> {
-                    if detect::detect().avx() {
-                        atomic_load_memcpy_large_avx
-                    } else {
-                        atomic_load_memcpy_large_scalar::<true>
-                    }
-                })
-            } else {
-                ifunc!(unsafe fn(
-                    dst: *mut MaybeUninit<u64>,
-                    src: *const MaybeUninit<u64>,
-                    count: usize,
-                ) -> *mut MaybeUninit<u64> {
-                    if detect::detect().avx() {
-                        atomic_load_memcpy_large_avx
-                    } else {
-                        atomic_load_memcpy_large_scalar::<false>
-                    }
-                })
-            };
+            ifunc!(unsafe fn(
+                dst: *mut MaybeUninit<u64>,
+                src: *const MaybeUninit<u64>,
+                count: NonZeroUsize,
+            ) {
+                if detect::detect().avx2() {
+                    atomic_load_memcpy_large_avx
+                } else {
+                    atomic_load_memcpy_large_scalar::<true>
+                }
+            })
         };
         #[cfg(not(target_feature = "avx"))]
         #[cfg(all(
@@ -481,33 +566,16 @@ impl AtomicMemcpy for u64 {
         ))]
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
-            dst = atomic_load_memcpy_large_scalar::<{ DST_ALIGNED }>(dst, src, count);
+            atomic_load_memcpy_large_scalar::<{ DST_ALIGNED }>(dst, src, count);
         }
-        load_memcpy_opt_post!(dst, last);
     }
     #[inline]
     unsafe fn atomic_store_memcpy<const SRC_ALIGNED: bool>(
         dst: *mut MaybeUninit<Self>,
-        mut src: *const MaybeUninit<Self>,
+        src: *const MaybeUninit<Self>,
         count: NonZeroUsize,
     ) {
-        #[cfg(atomic_maybe_uninit_test_prefer_movsb)]
-        if count.get() >= 32 {
-            // SAFETY: the caller must uphold the safety contract.
-            unsafe {
-                asm!(
-                    // https://doc.rust-lang.org/nightly/reference/inline-assembly.html#r-asm.rules.x86-df
-                    "cld",
-                    "rep movsb",
-                    inout("rdi") ptr_reg!(dst) => _,
-                    inout("rsi") ptr_reg!(src) => _,
-                    inout("rcx") count.get() as u64 => _,
-                    options(nostack, preserves_flags),
-                );
-            }
-            return;
-        }
-        store_memcpy_opt_pre! { u64, Align64, src, count, last, |dst, tmp0, tmp1|
+        store_memcpy! { u64, |dst, tmp0, tmp1|
             asm!(
                 concat!("mov qword ptr [{dst", ptr_modifier!(), "}], {tmp0}"),                  // atomic { *dst = tmp0 }
                 concat!("lea {dst", ptr_modifier!(), "}, [{dst", ptr_modifier!(), "} + 8]"),    // dst = dst.byte_add(8)
@@ -525,6 +593,23 @@ impl AtomicMemcpy for u64 {
                 options(nostack, preserves_flags),
             ),
         }
+        // if count.get() >= 32
+        //     && (cfg!(atomic_maybe_uninit_test_prefer_movsb) || detect::detect().fsrm())
+        // {
+        //     // SAFETY: the caller must uphold the safety contract.
+        //     unsafe {
+        //         asm!(
+        //             // https://doc.rust-lang.org/nightly/reference/inline-assembly.html#r-asm.rules.x86-df
+        //             "cld",
+        //             "rep movsb",
+        //             inout("rdi") ptr_reg!(dst) => _,
+        //             inout("rsi") ptr_reg!(src) => _,
+        //             inout("rcx") (count.get() as u64) << 3 => _,
+        //             options(nostack, preserves_flags),
+        //         );
+        //     }
+        //     return;
+        // }
         #[cfg(not(all(
             not(target_feature = "avx"),
             any(
@@ -536,42 +621,141 @@ impl AtomicMemcpy for u64 {
         #[target_feature(enable = "avx")]
         #[inline]
         unsafe fn atomic_store_memcpy_large_avx(
-            mut dst: *mut MaybeUninit<u64>,
+            dst: *mut MaybeUninit<u64>,
             mut src: *const MaybeUninit<u64>,
-            mut count: usize,
-        ) -> *const MaybeUninit<u64> {
+            count: NonZeroUsize,
+        ) {
+            const SRC_ALIGNED: bool = false;
+            store_memcpy_opt_pre!(u64, crate::Align32, dst, src, count, last);
             // SAFETY: the caller must uphold the safety contract.
             unsafe {
-                loop {
-                    asm!(
-                        concat!("vmovdqu ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),      // ymm0 = *src
-                        concat!("vmovdqu ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32]"), // ymm1 = *src.byte_add(32)
-                        concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),      // *dst = ymm0
-                        concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32], ymm1"), // *dst.byte_add(32) = ymm1
-                        dst = in(reg) dst,
-                        src = in(reg) src,
-                        out("ymm0") _,
-                        out("ymm1") _,
-                        options(nostack, preserves_flags),
-                    );
-                    src = src.add(8);
-                    dst = dst.add(8);
-                    count = count.wrapping_sub(1); // can use unchecked_sub
-                    if count == 0 {
-                        break;
+                'mid: {
+                    // 1 (0b0001): -          ->  x
+                    // 2 (0b0010): - -        ->  - -
+                    // 3 (0b0011): - - -      ->  x - -
+                    // 4 (0b0100): - - - -    ->  - - - -
+                    // 5 (0b0101): - - - - -  ->  x - - - -
+                    if count & 0b1 != 0 {
+                        asm!(
+                            concat!("vmovdqu ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"), // ymm0 = *src
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"), // *dst = ymm0
+                            dst = in(reg) dst,
+                            src = in(reg) src,
+                            out("ymm0") _,
+                            options(nostack, preserves_flags),
+                        );
+                        src = src.add(4);
+                        dst = dst.add(4);
+                        count = count.wrapping_sub(1); // can use unchecked_sub
+                        if count == 0 {
+                            break 'mid;
+                        }
+                    }
+                    // 2x
+                    // 2 (0b0010): - -        ->  x x
+                    // 3 (0b0011): x - -      ->  x x x
+                    // 4 (0b0100): - - - -    ->  - - - -
+                    // 5 (0b0101): x - - - -  ->  x - - - -
+                    if count & 0b10 != 0 {
+                        asm!(
+                            concat!("vmovdqu ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),        // ymm0 = *src
+                            concat!("vmovdqu ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32*1]"), // ymm1 = *src.byte_add(32*1)
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),        // *dst = ymm0
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*1], ymm1"), // *dst.byte_add(32*1) = ymm1
+                            dst = in(reg) dst,
+                            src = in(reg) src,
+                            out("ymm0") _,
+                            out("ymm1") _,
+                            options(nostack, preserves_flags),
+                        );
+                        src = src.add(8);
+                        dst = dst.add(8);
+                        count = count.wrapping_sub(2); // can use unchecked_sub
+                        if count == 0 {
+                            break 'mid;
+                        }
+                    }
+                    // 4x
+                    // 4 (0b0100): - - - -    ->  x x x x
+                    // 5 (0b0101): x - - - -  ->  x x x x x
+                    if count & 0b100 != 0 {
+                        asm!(
+                            concat!("vmovdqu ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),        // ymm0 = *src
+                            concat!("vmovdqu ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32*1]"), // ymm1 = *src.byte_add(32*1)
+                            concat!("vmovdqu ymm2, ymmword ptr [{src", ptr_modifier!(), "} + 32*2]"), // ymm1 = *src.byte_add(32*2)
+                            concat!("vmovdqu ymm3, ymmword ptr [{src", ptr_modifier!(), "} + 32*3]"), // ymm1 = *src.byte_add(32*3)
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),        // *dst = ymm0
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*1], ymm1"), // *dst.byte_add(32*1) = ymm1
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*2], ymm2"), // *dst.byte_add(32*2) = ymm1
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*3], ymm3"), // *dst.byte_add(32*3) = ymm1
+                            dst = in(reg) dst,
+                            src = in(reg) src,
+                            out("ymm0") _,
+                            out("ymm1") _,
+                            out("ymm2") _,
+                            out("ymm3") _,
+                            options(nostack, preserves_flags),
+                        );
+                        src = src.add(16);
+                        dst = dst.add(16);
+                        count = count.wrapping_sub(4); // can use unchecked_sub
+                        if count == 0 {
+                            break 'mid;
+                        }
+                    }
+                    // 8x
+                    count >>= 3;
+                    loop {
+                        asm!(
+                            concat!("vmovdqu ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),        // ymm0 = *src
+                            concat!("vmovdqu ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32*1]"), // ymm1 = *src.byte_add(32*1)
+                            concat!("vmovdqu ymm2, ymmword ptr [{src", ptr_modifier!(), "} + 32*2]"), // ymm1 = *src.byte_add(32*2)
+                            concat!("vmovdqu ymm3, ymmword ptr [{src", ptr_modifier!(), "} + 32*3]"), // ymm1 = *src.byte_add(32*3)
+                            concat!("vmovdqu ymm4, ymmword ptr [{src", ptr_modifier!(), "} + 32*4]"), // ymm1 = *src.byte_add(32*4)
+                            concat!("vmovdqu ymm5, ymmword ptr [{src", ptr_modifier!(), "} + 32*5]"), // ymm1 = *src.byte_add(32*5)
+                            concat!("vmovdqu ymm6, ymmword ptr [{src", ptr_modifier!(), "} + 32*6]"), // ymm1 = *src.byte_add(32*6)
+                            concat!("vmovdqu ymm7, ymmword ptr [{src", ptr_modifier!(), "} + 32*7]"), // ymm1 = *src.byte_add(32*7)
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),        // *dst = ymm0
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*1], ymm1"), // *dst.byte_add(32*1) = ymm1
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*2], ymm2"), // *dst.byte_add(32*2) = ymm1
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*3], ymm3"), // *dst.byte_add(32*3) = ymm1
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*4], ymm4"), // *dst.byte_add(32*4) = ymm1
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*5], ymm5"), // *dst.byte_add(32*5) = ymm1
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*6], ymm6"), // *dst.byte_add(32*6) = ymm1
+                            concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32*7], ymm7"), // *dst.byte_add(32*7) = ymm1
+                            dst = in(reg) dst,
+                            src = in(reg) src,
+                            out("ymm0") _,
+                            out("ymm1") _,
+                            out("ymm2") _,
+                            out("ymm3") _,
+                            out("ymm4") _,
+                            out("ymm5") _,
+                            out("ymm6") _,
+                            out("ymm7") _,
+                            options(nostack, preserves_flags),
+                        );
+                        src = src.add(32);
+                        dst = dst.add(32);
+                        count = count.wrapping_sub(1); // can use unchecked_sub
+                        if count == 0 {
+                            break 'mid;
+                        }
                     }
                 }
                 core::arch::x86_64::_mm256_zeroupper();
             }
-            src
+            store_memcpy_opt_post!(src, last);
         }
         #[cfg(not(target_feature = "avx"))]
         #[inline]
-        unsafe fn atomic_store_memcpy_large_scalar<const SRC_ALIGNED: bool>(
-            mut dst: *mut MaybeUninit<u64>,
+        unsafe fn atomic_store_memcpy_large_scalar(
+            dst: *mut MaybeUninit<u64>,
             mut src: *const MaybeUninit<u64>,
-            mut count: usize,
-        ) -> *const MaybeUninit<u64> {
+            count: NonZeroUsize,
+        ) {
+            const SRC_ALIGNED: bool = false;
+            store_memcpy_opt_pre!(u64, [crate::Align8; 8], dst, src, count, last);
             // SAFETY: the caller must uphold the safety contract.
             unsafe {
                 let mut tmp0;
@@ -631,13 +815,13 @@ impl AtomicMemcpy for u64 {
                     }
                 }
             }
-            src
+            store_memcpy_opt_post!(src, last);
         }
         #[cfg(target_feature = "avx")]
         // SAFETY: the caller must uphold the safety contract.
         // cfg guarantees that the CPU supports AVX.
         unsafe {
-            src = atomic_store_memcpy_large_avx(dst, src, count);
+            atomic_store_memcpy_large_avx(dst, src, count);
         }
         #[cfg(not(target_feature = "avx"))]
         #[cfg(not(all(
@@ -650,31 +834,17 @@ impl AtomicMemcpy for u64 {
         )))]
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
-            src = if SRC_ALIGNED {
-                ifunc!(unsafe fn(
-                    dst: *mut MaybeUninit<u64>,
-                    src: *const MaybeUninit<u64>,
-                    count: usize,
-                ) -> *const MaybeUninit<u64> {
-                    if detect::detect().avx() {
-                        atomic_store_memcpy_large_avx
-                    } else {
-                        atomic_store_memcpy_large_scalar::<true>
-                    }
-                })
-            } else {
-                ifunc!(unsafe fn(
-                    dst: *mut MaybeUninit<u64>,
-                    src: *const MaybeUninit<u64>,
-                    count: usize,
-                ) -> *const MaybeUninit<u64> {
-                    if detect::detect().avx() {
-                        atomic_store_memcpy_large_avx
-                    } else {
-                        atomic_store_memcpy_large_scalar::<false>
-                    }
-                })
-            };
+            ifunc!(unsafe fn(
+                dst: *mut MaybeUninit<u64>,
+                src: *const MaybeUninit<u64>,
+                count: NonZeroUsize,
+            ) {
+                if detect::detect().avx2() {
+                    atomic_store_memcpy_large_avx
+                } else {
+                    atomic_store_memcpy_large_scalar
+                }
+            })
         }
         #[cfg(not(target_feature = "avx"))]
         #[cfg(all(
@@ -687,9 +857,8 @@ impl AtomicMemcpy for u64 {
         ))]
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
-            src = atomic_store_memcpy_large_scalar::<{ SRC_ALIGNED }>(dst, src, count);
+            atomic_store_memcpy_large_scalar::<{ SRC_ALIGNED }>(dst, src, count);
         }
-        store_memcpy_opt_post!(src, last);
     }
 }
 
@@ -1161,7 +1330,7 @@ macro_rules! atomic128 {
                 // cfg guarantees that the CPU supports CMPXCHG16B.
                 unsafe {
                     ifunc!(unsafe fn(src: *const MaybeUninit<$ty>) -> MaybeUninit<$ty> {
-                        if detect::detect().avx() {
+                        if detect::detect().avx2() {
                             atomic_load_avx
                         } else {
                             atomic_load_cmpxchg16b
@@ -1304,7 +1473,7 @@ macro_rules! atomic128 {
                         // that may be called here.
                         Ordering::Relaxed | Ordering::Release => {
                             ifunc!(unsafe fn(dst: *mut MaybeUninit<$ty>, val: MaybeUninit<$ty>) {
-                                if detect::detect().avx() {
+                                if detect::detect().avx2() {
                                     atomic_store_avx_non_seqcst
                                 } else {
                                     atomic_store_cmpxchg16b
@@ -1313,7 +1482,7 @@ macro_rules! atomic128 {
                         }
                         Ordering::SeqCst => {
                             ifunc!(unsafe fn(dst: *mut MaybeUninit<$ty>, val: MaybeUninit<$ty>) {
-                                if detect::detect().avx() {
+                                if detect::detect().avx2() {
                                     atomic_store_avx_seqcst
                                 } else {
                                     atomic_store_cmpxchg16b
@@ -1430,6 +1599,388 @@ macro_rules! atomic128 {
 #[cfg(target_arch = "x86_64")]
 #[cfg(target_feature = "cmpxchg16b")]
 atomic128!(u128);
+
+#[cfg(target_feature = "sse2")]
+#[inline]
+pub(crate) unsafe fn atomic_memcpy<const IS_LOAD: bool>(
+    dst: *mut MaybeUninit<u8>,
+    src: *const MaybeUninit<u8>,
+    count: NonZeroUsize, // in bytes
+) {
+    debug_assert!(count.get() >= 16);
+    if count.get() <= 32 {
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            if IS_LOAD {
+                atomic_load_memcpy_sse2(dst, src, count)
+            } else {
+                atomic_store_memcpy_sse2(dst, src, count)
+            }
+        }
+        return;
+    }
+    if count.get() <= 64 {
+        // SAFETY: the caller must uphold the safety contract.
+        #[cfg(target_feature = "avx2")]
+        unsafe {
+            if IS_LOAD {
+                atomic_load_memcpy_avx(dst, src, count)
+            } else {
+                atomic_store_memcpy_avx(dst, src, count)
+            }
+        }
+        #[cfg(not(target_feature = "avx2"))]
+        unsafe {
+            if IS_LOAD {
+                atomic_load_memcpy_sse2(dst, src, count)
+            } else {
+                atomic_store_memcpy_sse2(dst, src, count)
+            }
+        }
+        return;
+    }
+
+    #[cfg(target_feature = "avx")]
+    // SAFETY: the caller must uphold the safety contract.
+    // cfg guarantees that the CPU supports AVX.
+    unsafe {
+        if IS_LOAD {
+            atomic_load_memcpy_avx(dst, src, count);
+        } else {
+            atomic_store_memcpy_avx(dst, src, count);
+        }
+    }
+    #[cfg(not(target_feature = "avx"))]
+    #[cfg(not(all(
+        not(target_feature = "avx"),
+        any(
+            atomic_maybe_uninit_no_outline_atomics,
+            target_env = "sgx",
+            not(target_feature = "sse")
+        ),
+    )))]
+    // SAFETY: the caller must uphold the safety contract.
+    unsafe {
+        if IS_LOAD {
+            ifunc!(unsafe fn(
+                dst: *mut MaybeUninit<u8>,
+                src: *const MaybeUninit<u8>,
+                count: NonZeroUsize,
+            ) {
+                let cpuinfo = detect::detect();
+                if cpuinfo.icelake_or_later() {
+                    atomic_load_memcpy_avx512f
+                } else if cpuinfo.avx2() {
+                    atomic_load_memcpy_avx
+                } else {
+                    atomic_load_memcpy_sse2
+                }
+            })
+        } else {
+            ifunc!(unsafe fn(
+                dst: *mut MaybeUninit<u8>,
+                src: *const MaybeUninit<u8>,
+                count: NonZeroUsize,
+            ) {
+                let cpuinfo = detect::detect();
+                if cpuinfo.icelake_or_later() {
+                    atomic_store_memcpy_avx512f
+                } else if cpuinfo.avx2() {
+                    atomic_store_memcpy_avx
+                } else {
+                    atomic_store_memcpy_sse2
+                }
+            })
+        }
+    }
+    #[cfg(not(target_feature = "avx"))]
+    #[cfg(all(
+        not(target_feature = "avx"),
+        any(
+            atomic_maybe_uninit_no_outline_atomics,
+            target_env = "sgx",
+            not(target_feature = "sse")
+        ),
+    ))]
+    // SAFETY: the caller must uphold the safety contract.
+    unsafe {
+        if IS_LOAD {
+            atomic_load_memcpy_sse2(dst, src, count)
+        } else {
+            atomic_store_memcpy_sse2(dst, src, count)
+        }
+    }
+}
+
+macro_rules! atomic_memcpy_vec {
+    (
+        $(#[$attrs:meta])*
+        $load_name:ident, $store_name:ident, $vec_size:tt, $align:ty, $movdqa:tt, $movdqu:tt,
+        $word:tt, $mm0:tt, $mm1:tt, $mm2:tt, $mm3:tt, $mm4:tt, $mm5:tt, $mm6:tt, $mm7:tt,
+    ) => {
+        atomic_memcpy_vec! {@
+            $load_name, $vec_size, $align, $movdqa, $movdqu, $movdqu, true,
+            $word, $mm0, $mm1, $mm2, $mm3, $mm4, $mm5, $mm6, $mm7,
+        }
+        atomic_memcpy_vec! {@
+            $store_name, $vec_size, $align, $movdqu, $movdqa, $movdqu, false,
+            $word, $mm0, $mm1, $mm2, $mm3, $mm4, $mm5, $mm6, $mm7,
+        }
+    };
+    (@
+        $(#[$attrs:meta])*
+        $name:ident, $vec_size:tt, $align:ty, $load:tt, $store:tt, $movdqu:tt, $is_load:tt,
+        $word:tt, $mm0:tt, $mm1:tt, $mm2:tt, $mm3:tt, $mm4:tt, $mm5:tt, $mm6:tt, $mm7:tt,
+    ) => {
+        $(#[$attrs])*
+        #[inline]
+        unsafe fn $name(
+            mut dst: *mut MaybeUninit<u8>,
+            mut src: *const MaybeUninit<u8>,
+            count: NonZeroUsize,
+        ) {
+            let count = count.get();
+            debug_assert!(count >= $vec_size);
+            if count <= $vec_size << 1 {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        concat!($movdqu, " ", $mm0, ", ", $word, " ptr [{src", ptr_modifier!(), "}]"), // ymm0 = *src
+                        concat!($movdqu, " ", $mm1, ", ", $word, " ptr [{src_end", ptr_modifier!(), "} - ", $vec_size, "]"), // ymm0 = *src
+                        concat!($movdqu, " ", $word, " ptr [{dst", ptr_modifier!(), "}], ", $mm0), // *dst = ymm0
+                        concat!($movdqu, " ", $word, " ptr [{dst_end", ptr_modifier!(), "} - ", $vec_size, "], ", $mm1), // *dst = ymm0
+                        dst = in(reg) dst,
+                        src = in(reg) src,
+                        dst_end = in(reg) dst.add(count),
+                        src_end = in(reg) src.add(count),
+                        out($mm0) _,
+                        out($mm1) _,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                if $vec_size >= 32 {
+                    #[cfg(target_arch = "x86")]
+                    unsafe { core::arch::x86::_mm256_zeroupper() }
+                    #[cfg(target_arch = "x86_64")]
+                    unsafe { core::arch::x86_64::_mm256_zeroupper() }
+                }
+                return
+            }
+
+            let (first, mid, last) = if $is_load {
+                // SAFETY: MaybeUninit is valid representation for all types.
+                let (first, mid, last) = unsafe {
+                    core::slice::from_raw_parts(src, count)
+                        .align_to::<core::cell::UnsafeCell<MaybeUninit<$align>>>()
+                };
+                (first.len(), mid.len(), last.len())
+            } else {
+                // SAFETY: MaybeUninit is valid representation for all types.
+                let (first, mid, last) = unsafe {
+                    core::slice::from_raw_parts(dst, count)
+                        .align_to::<core::cell::UnsafeCell<MaybeUninit<$align>>>()
+                };
+                (first.len(), mid.len(), last.len())
+            };
+
+            if let Some(count) = NonZeroUsize::new(first) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm!(
+                        concat!($movdqu, " ", $mm0, ", ", $word, " ptr [{src", ptr_modifier!(), "}]"), // ymm0 = *src
+                        concat!($movdqu, " ", $word, " ptr [{dst", ptr_modifier!(), "}], ", $mm0), // *dst = ymm0
+                        dst = in(reg) dst,
+                        src = in(reg) src,
+                        out($mm0) _,
+                        options(nostack, preserves_flags),
+                    );
+                    dst = dst.add(count.get());
+                    src = src.add(count.get());
+                }
+            }
+
+            if let Some(count) = NonZeroUsize::new(mid) {
+                let mut count = count.get();
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    'mid: {
+                        // 1 (0b0001): -          ->  x
+                        // 2 (0b0010): - -        ->  - -
+                        // 3 (0b0011): - - -      ->  x - -
+                        // 4 (0b0100): - - - -    ->  - - - -
+                        // 5 (0b0101): - - - - -  ->  x - - - -
+                        if count & 0b1 != 0 {
+                            asm!(
+                                concat!($load, " ", $mm0, ", ", $word, " ptr [{src", ptr_modifier!(), "}]"), // ymm0 = *src
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "}], ", $mm0), // *dst = ymm0
+                                dst = in(reg) dst,
+                                src = in(reg) src,
+                                out($mm0) _,
+                                options(nostack, preserves_flags),
+                            );
+                            src = src.add($vec_size);
+                            dst = dst.add($vec_size);
+                            count = count.wrapping_sub(1); // can use unchecked_sub
+                            if count == 0 {
+                                break 'mid;
+                            }
+                        }
+                        // 2x
+                        // 2 (0b0010): - -        ->  x x
+                        // 3 (0b0011): x - -      ->  x x x
+                        // 4 (0b0100): - - - -    ->  - - - -
+                        // 5 (0b0101): x - - - -  ->  x - - - -
+                        if count & 0b10 != 0 {
+                            asm!(
+                                concat!($load, " ", $mm0, ", ", $word, " ptr [{src", ptr_modifier!(), "}]"),        // ymm0 = *src
+                                concat!($load, " ", $mm1, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*1]"), // ymm1 = *src.byte_add(32*1)
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "}], ", $mm0),        // *dst = ymm0
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*1], ", $mm1, ""), // *dst.byte_add(32*1) = ymm1
+                                dst = in(reg) dst,
+                                src = in(reg) src,
+                                out($mm0) _,
+                                out($mm1) _,
+                                options(nostack, preserves_flags),
+                            );
+                            src = src.add($vec_size * 2);
+                            dst = dst.add($vec_size * 2);
+                            count = count.wrapping_sub(2); // can use unchecked_sub
+                            if count == 0 {
+                                break 'mid;
+                            }
+                        }
+                        // 4x
+                        // 4 (0b0100): - - - -    ->  x x x x
+                        // 5 (0b0101): x - - - -  ->  x x x x x
+                        if count & 0b100 != 0 {
+                            asm!(
+                                concat!($load, " ", $mm0, ", ", $word, " ptr [{src", ptr_modifier!(), "}]"),        // ymm0 = *src
+                                concat!($load, " ", $mm1, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*1]"), // ymm1 = *src.byte_add(32*1)
+                                concat!($load, " ", $mm2, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*2]"), // ymm1 = *src.byte_add(32*2)
+                                concat!($load, " ", $mm3, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*3]"), // ymm1 = *src.byte_add(32*3)
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "}], ", $mm0),        // *dst = ymm0
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*1], ", $mm1), // *dst.byte_add(32*1) = ymm1
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*2], ", $mm2), // *dst.byte_add(32*2) = ymm1
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*3], ", $mm3), // *dst.byte_add(32*3) = ymm1
+                                dst = in(reg) dst,
+                                src = in(reg) src,
+                                out($mm0) _,
+                                out($mm1) _,
+                                out($mm2) _,
+                                out($mm3) _,
+                                options(nostack, preserves_flags),
+                            );
+                            src = src.add($vec_size * 4);
+                            dst = dst.add($vec_size * 4);
+                            count = count.wrapping_sub(4); // can use unchecked_sub
+                            if count == 0 {
+                                break 'mid;
+                            }
+                        }
+                        // 8x
+                        count >>= 3;
+                        loop {
+                            asm!(
+                                concat!($load, " ", $mm0, ", ", $word, " ptr [{src", ptr_modifier!(), "}]"),        // ymm0 = *src
+                                concat!($load, " ", $mm1, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*1]"), // ymm1 = *src.byte_add(32*1)
+                                concat!($load, " ", $mm2, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*2]"), // ymm1 = *src.byte_add(32*2)
+                                concat!($load, " ", $mm3, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*3]"), // ymm1 = *src.byte_add(32*3)
+                                concat!($load, " ", $mm4, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*4]"), // ymm1 = *src.byte_add(32*4)
+                                concat!($load, " ", $mm5, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*5]"), // ymm1 = *src.byte_add(32*5)
+                                concat!($load, " ", $mm6, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*6]"), // ymm1 = *src.byte_add(32*6)
+                                concat!($load, " ", $mm7, ", ", $word, " ptr [{src", ptr_modifier!(), "} + ", $vec_size, "*7]"), // ymm1 = *src.byte_add(32*7)
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "}], ", $mm0),        // *dst = ymm0
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*1], ", $mm1), // *dst.byte_add(32*1) = ymm1
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*2], ", $mm2), // *dst.byte_add(32*2) = ymm1
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*3], ", $mm3), // *dst.byte_add(32*3) = ymm1
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*4], ", $mm4), // *dst.byte_add(32*4) = ymm1
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*5], ", $mm5), // *dst.byte_add(32*5) = ymm1
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*6], ", $mm6), // *dst.byte_add(32*6) = ymm1
+                                concat!($store, " ", $word, " ptr [{dst", ptr_modifier!(), "} + ", $vec_size, "*7], ", $mm7), // *dst.byte_add(32*7) = ymm1
+                                dst = in(reg) dst,
+                                src = in(reg) src,
+                                out($mm0) _,
+                                out($mm1) _,
+                                out($mm2) _,
+                                out($mm3) _,
+                                out($mm4) _,
+                                out($mm5) _,
+                                out($mm6) _,
+                                out($mm7) _,
+                                options(nostack, preserves_flags),
+                            );
+                            src = src.add($vec_size * 8);
+                            dst = dst.add($vec_size * 8);
+                            count = count.wrapping_sub(1); // can use unchecked_sub
+                            if count == 0 {
+                                break 'mid;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let Some(count) = NonZeroUsize::new(last) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    dst = dst.add(count.get());
+                    src = src.add(count.get());
+                    asm!(
+                        concat!($movdqu, " ", $mm0, ", ", $word, " ptr [{src", ptr_modifier!(), "} - ", $vec_size, "]"), // ymm0 = *src
+                        concat!($movdqu, " ", $word, " ptr [{dst", ptr_modifier!(), "} - ", $vec_size, "], ", $mm0), // *dst = ymm0
+                        dst = in(reg) dst,
+                        src = in(reg) src,
+                        out($mm0) _,
+                        options(nostack, preserves_flags),
+                    );
+                }
+            }
+
+            if $vec_size >= 32 {
+                #[cfg(target_arch = "x86")]
+                unsafe { core::arch::x86::_mm256_zeroupper() }
+                #[cfg(target_arch = "x86_64")]
+                unsafe { core::arch::x86_64::_mm256_zeroupper() }
+            }
+        }
+    };
+}
+atomic_memcpy_vec! {
+    #[cfg(target_feature = "sse2")]
+    atomic_load_memcpy_sse2, atomic_store_memcpy_sse2,
+    16, crate::Align16, "movdqa", "movdqu",
+    "xmmword", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7",
+}
+atomic_memcpy_vec! {
+    #[cfg(target_feature = "sse2")]
+    #[cfg(not(all(
+        not(target_feature = "avx"),
+        any(
+            atomic_maybe_uninit_no_outline_atomics,
+            target_env = "sgx",
+            not(target_feature = "sse"),
+        ),
+    )))]
+    #[target_feature(enable = "avx")]
+    atomic_load_memcpy_avx, atomic_store_memcpy_avx,
+    32, crate::Align32, "vmovdqa", "vmovdqu",
+    "ymmword", "ymm0", "ymm1", "ymm2", "ymm3", "ymm4", "ymm5", "ymm6", "ymm7",
+}
+atomic_memcpy_vec! {
+    #[cfg(target_feature = "sse2")]
+    #[cfg(not(all(
+        not(target_feature = "avx512f"),
+        any(
+            atomic_maybe_uninit_no_outline_atomics,
+            target_env = "sgx",
+            not(target_feature = "sse"),
+        ),
+    )))]
+    #[target_feature(enable = "avx512f")]
+    atomic_load_memcpy_avx512f, atomic_store_memcpy_avx512f,
+    64, crate::Align64, "vmovdqa64", "vmovdqu64",
+    "zmmword", "zmm0", "zmm1", "zmm2", "zmm3", "zmm4", "zmm5", "zmm6", "zmm7",
+}
 
 // -----------------------------------------------------------------------------
 // cfg macros

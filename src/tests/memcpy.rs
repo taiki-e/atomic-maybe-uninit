@@ -18,10 +18,13 @@ use super::helper::{assert_panic, skip_should_panic_test};
 use crate::utils::ptr::MutPtrExt as _;
 use crate::{PerByteAtomicMaybeUninit, raw};
 
+// TODO: quickcheck
+
 macro_rules! test_int {
     ($test_name:ident, $ty:ident) => {
         #[test]
         fn $test_name() {
+            const LARGE: usize = 4096 / mem::size_of::<$ty>();
             unsafe {
                 let x = PerByteAtomicMaybeUninit::<$ty>::from(0);
                 assert_eq!(x.load(Ordering::Relaxed).assume_init(), 0);
@@ -51,6 +54,10 @@ macro_rules! test_int {
                 assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [0; 200][..]);
                 x.store(MaybeUninit::new([!0; 200]), Ordering::Relaxed);
                 assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [!0; 200][..]);
+                let x = PerByteAtomicMaybeUninit::<[$ty; LARGE]>::from([0; LARGE]);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [0; LARGE][..]);
+                x.store(MaybeUninit::new([!0; LARGE]), Ordering::Relaxed);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [!0; LARGE][..]);
             }
         }
     };

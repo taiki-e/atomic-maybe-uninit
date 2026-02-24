@@ -422,6 +422,12 @@ pub unsafe fn atomic_load_memcpy<T>(
     let mut dst = dst.cast::<MaybeUninit<u8>>();
     let src = src.cast::<MaybeUninit<u8>>();
 
+    #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"))]
+    if count.get() >= 16 {
+        unsafe { crate::arch::atomic_memcpy::<IS_LOAD>(dst, src, count) }
+        return;
+    }
+
     // Handle cases where the alignment is smaller than the register size.
     #[cfg(not(target_arch = "avr"))] // AVR's actual register size is 8-bit.
     if const_eval!(T => bool { mem::align_of::<T>() < mem::size_of::<RegSize>() })
@@ -534,6 +540,12 @@ pub unsafe fn atomic_store_memcpy<T>(
     let dst = dst.cast::<MaybeUninit<u8>>();
     #[cfg_attr(target_arch = "avr", allow(unused_mut))]
     let mut src = src.cast::<MaybeUninit<u8>>();
+
+    #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"))]
+    if count.get() >= 16 {
+        unsafe { crate::arch::atomic_memcpy::<IS_LOAD>(dst, src, count) }
+        return;
+    }
 
     // Handle cases where the alignment is smaller than the register size.
     #[cfg(not(target_arch = "avr"))] // AVR's actual register size is 8-bit.

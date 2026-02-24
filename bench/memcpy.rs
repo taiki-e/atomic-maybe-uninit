@@ -120,14 +120,25 @@ struct Align64<T>(T);
 
 macro_rules! bench {
     ($c:ident) => {{
-        bench!(@1; $c, 8);
-        bench!(@1; $c, 16);
+        bench!(@1; $c, 1);
+        bench!(@1; $c, 2); // TODO(x86_64): slow
+        bench!(@1; $c, 4); // TODO(x86_64): slow
+        bench!(@1; $c, 8); // TODO(x86_64): slow
+        bench!(@1; $c, 16); // TODO(x86_64): slow
         bench!(@1; $c, 32);
+        bench!(@1; $c, 33); // TODO(x86_64): slow
+        bench!(@1; $c, 63); // TODO(x86_64): slow
         bench!(@1; $c, 64);
-        bench!(@1; $c, 128);
-        bench!(@1; $c, 256);
+        bench!(@1; $c, 128); // TODO(x86_64): slow
+        bench!(@1; $c, 256); // TODO(x86_64): slow
         bench!(@1; $c, 512);
+        bench!(@1; $c, 1024);
+        bench!(@1; $c, 2048);
         bench!(@1; $c, 4096);
+        bench!(@1; $c, 8192);
+        bench!(@1; $c, 16384);
+        bench!(@1; $c, 32768);
+        bench!(@1; $c, 65536);
     }};
     (@1; $c:ident, $len:expr) => {{
         bench!(@0; $c, concat!(stringify!($len), "/align1"), Align1([0u8; $len]));
@@ -161,13 +172,13 @@ macro_rules! bench {
         g.bench_function("store", |b| {
             bench_local(b, $v, load, store, false);
         });
-        g.throughput(Throughput::Bytes(mem::size_of_val(&$v) as u64 * N as u64));
-        g.bench_function("load_contended", |b| {
-            bench_concurrent_contended(b, $v, load, store, true);
-        });
-        g.bench_function("store_contended", |b| {
-            bench_concurrent_contended(b, $v, load, store, false);
-        });
+        // g.throughput(Throughput::Bytes(mem::size_of_val(&$v) as u64 * N as u64));
+        // g.bench_function("load_contended", |b| {
+        //     bench_concurrent_contended(b, $v, load, store, true);
+        // });
+        // g.bench_function("store_contended", |b| {
+        //     bench_concurrent_contended(b, $v, load, store, false);
+        // });
     }};
 }
 

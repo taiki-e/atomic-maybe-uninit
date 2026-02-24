@@ -39,6 +39,7 @@ eors
 espup
 fild
 fistp
+fsrm
 gaisler
 getex
 GRLIB
@@ -86,6 +87,8 @@ memw
 mfcr
 mfence
 mgba
+movdqa
+movdqu
 movi
 movlps
 movq
@@ -169,3 +172,4 @@ zacas
 zalasr
 zalrsc
 zeroupper
+zmmword
