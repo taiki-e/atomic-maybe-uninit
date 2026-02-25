@@ -32,6 +32,7 @@ dbar
 devkitc
 devkitm
 DWCAS
+eors
 espup
 fild
 fistp
@@ -70,6 +71,8 @@ LLWPE
 lmul
 lqarx
 lrcpc
+lsls
+lsrs
 lwarx
 lwsync
 mcpu
@@ -83,9 +86,11 @@ mgba
 movi
 movlps
 movq
+movs
 mspdebug
 msync
 muldi
+mvns
 noat
 nostartfiles
 orrs

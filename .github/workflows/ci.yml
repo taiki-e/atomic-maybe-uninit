@@ -293,12 +293,28 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
         if: matrix.target == 'armv7-unknown-linux-gnueabihf' || matrix.target == 'thumbv7neon-unknown-linux-gnueabihf'
+      # arm v5te thumb
+      - run: tools/test.sh -vv --tests --target armv5te-unknown-linux-gnueabi -Z build-std ${RELEASE:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+thumb-mode
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+thumb-mode
+        # "LLVM ERROR: underestimated function size" with nightly-2023-08-24
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armv5te-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2023')
       # arm v4t
       - run: tools/test.sh -vv --tests --target armv4t-unknown-linux-gnueabi -Z build-std ${RELEASE:-}
         env:
           CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_LINKER: arm-linux-gnueabi-gcc
           CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-arm
         if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armv5te-unknown-linux-gnueabi'
+      # arm v4t thumb
+      - run: tools/test.sh -vv --tests --target armv4t-unknown-linux-gnueabi -Z build-std ${RELEASE:-}
+        env:
+          CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_LINKER: arm-linux-gnueabi-gcc
+          CARGO_TARGET_ARMV4T_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-arm
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+thumb-mode
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+thumb-mode
+        # "LLVM ERROR: underestimated function size" with nightly-2023-08-24
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armv5te-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2023')
       # powerpc +msync
       - run: tools/test.sh -vv --tests ${TARGET:-} -Z build-std ${RELEASE:-}
         env:
