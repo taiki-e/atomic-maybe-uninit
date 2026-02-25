@@ -70,6 +70,10 @@ fn test() {
         Revision::new("mipsel", "mipsel-unknown-linux-gnu"),
         Revision::new("mips64", "mips64-unknown-linux-gnuabi64"),
         Revision::new("mips64el", "mips64el-unknown-linux-gnuabi64"),
+        Revision::new("mips32r6", "mipsisa32r6-unknown-linux-gnu"),
+        Revision::new("mips32r6el", "mipsisa32r6el-unknown-linux-gnu"),
+        Revision::new("mips64r6", "mipsisa64r6-unknown-linux-gnuabi64"),
+        Revision::new("mips64r6el", "mipsisa64r6el-unknown-linux-gnuabi64"),
         // MSP430
         Revision::new("msp430", "msp430-none-elf"),
         // PowerPC and PowerPC64
