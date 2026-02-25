@@ -4,11 +4,11 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -24,9 +24,9 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -37,11 +37,11 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -57,9 +57,9 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -70,11 +70,11 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -90,9 +90,9 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -103,11 +103,11 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -123,9 +123,9 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -136,11 +136,11 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -156,9 +156,9 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -169,11 +169,11 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -189,9 +189,9 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -202,11 +202,11 @@ asm_test::compare_exchange::u8::release_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -222,9 +222,9 @@ asm_test::compare_exchange::u8::release_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -235,11 +235,11 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -255,9 +255,9 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -268,11 +268,11 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -288,9 +288,9 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -301,11 +301,11 @@ asm_test::compare_exchange::u8::acquire_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -320,9 +320,9 @@ asm_test::compare_exchange::u8::acquire_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -333,11 +333,11 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -352,9 +352,9 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -365,11 +365,11 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -384,9 +384,9 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -397,11 +397,11 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -416,8 +416,8 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -428,11 +428,11 @@ asm_test::compare_exchange::u8::release_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -448,9 +448,9 @@ asm_test::compare_exchange::u8::release_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -461,11 +461,11 @@ asm_test::compare_exchange::u8::release_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -481,8 +481,8 @@ asm_test::compare_exchange::u8::release_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -495,10 +495,10 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acqrel_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -514,9 +514,9 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -529,10 +529,10 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::seqcst_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -548,9 +548,9 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -563,10 +563,10 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acqrel_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -582,9 +582,9 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -597,10 +597,10 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acqrel_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -616,9 +616,9 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -631,10 +631,10 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acquire_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -650,9 +650,9 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -665,10 +665,10 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::relaxed_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -684,9 +684,9 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -699,10 +699,10 @@ asm_test::compare_exchange::u16::release_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::release_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -718,9 +718,9 @@ asm_test::compare_exchange::u16::release_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -733,10 +733,10 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::seqcst_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -752,9 +752,9 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -767,10 +767,10 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::seqcst_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -786,9 +786,9 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -801,10 +801,10 @@ asm_test::compare_exchange::u16::acquire_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acquire_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -819,9 +819,9 @@ asm_test::compare_exchange::u16::acquire_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -834,10 +834,10 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::acquire_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -852,9 +852,9 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -867,10 +867,10 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::relaxed_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -885,9 +885,9 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -900,10 +900,10 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::relaxed_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -918,8 +918,8 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -932,10 +932,10 @@ asm_test::compare_exchange::u16::release_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::release_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -951,9 +951,9 @@ asm_test::compare_exchange::u16::release_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -966,10 +966,10 @@ asm_test::compare_exchange::u16::release_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange::u16::release_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -985,8 +985,8 @@ asm_test::compare_exchange::u16::release_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1375,11 +1375,11 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1395,9 +1395,9 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1408,11 +1408,11 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1428,9 +1428,9 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1441,11 +1441,11 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1461,9 +1461,9 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1474,11 +1474,11 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1494,9 +1494,9 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1507,11 +1507,11 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1527,9 +1527,9 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1540,11 +1540,11 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1560,9 +1560,9 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1573,11 +1573,11 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1593,9 +1593,9 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1606,11 +1606,11 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1626,9 +1626,9 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1639,11 +1639,11 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1659,9 +1659,9 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1672,11 +1672,11 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -1691,9 +1691,9 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1704,11 +1704,11 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -1723,9 +1723,9 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1736,11 +1736,11 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -1755,9 +1755,9 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1768,11 +1768,11 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -1787,8 +1787,8 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1799,11 +1799,11 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1819,9 +1819,9 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1832,11 +1832,11 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i4
         and               %i1, 0xff, %i1
+        sll               %i1, %i4, %i1
         and               %i2, 0xff, %i2
+        sll               %i2, %i4, %i2
         mov               0xff, %i5
         sll               %i5, %i4, %i5
-        sll               %i1, %i4, %i1
-        sll               %i2, %i4, %i2
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1852,8 +1852,8 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1866,10 +1866,10 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acqrel_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1885,9 +1885,9 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1900,10 +1900,10 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::seqcst_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1919,9 +1919,9 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1934,10 +1934,10 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acqrel_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1953,9 +1953,9 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -1968,10 +1968,10 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acqrel_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -1987,9 +1987,9 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2002,10 +2002,10 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acquire_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -2021,9 +2021,9 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2036,10 +2036,10 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::relaxed_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -2055,9 +2055,9 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2070,10 +2070,10 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::release_seqcst+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -2089,9 +2089,9 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2104,10 +2104,10 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::seqcst_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -2123,9 +2123,9 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2138,10 +2138,10 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::seqcst_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -2157,9 +2157,9 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2172,10 +2172,10 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acquire_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -2190,9 +2190,9 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2205,10 +2205,10 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::acquire_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -2223,9 +2223,9 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2238,10 +2238,10 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::relaxed_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -2256,9 +2256,9 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2271,10 +2271,10 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::relaxed_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         ld                [ %i3 ], %i0
 0:
         and               %i0, %i5, %g2
@@ -2289,8 +2289,8 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2303,10 +2303,10 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::release_acquire+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -2322,9 +2322,9 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2337,10 +2337,10 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i5	! ffff <asm_test::compare_exchange_weak::u16::release_relaxed+0xffff>
         and               %i1, %i5, %i1
-        and               %i2, %i5, %i2
-        sll               %i5, %i4, %i5
         sll               %i1, %i4, %i1
+        and               %i2, %i5, %i2
         sll               %i2, %i4, %i2
+        sll               %i5, %i4, %i5
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i3 ], %i0
 0:
@@ -2356,8 +2356,8 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         bne               %icc, 0b
         mov               1, %g2
 1:
-        srl               %i0, %i4, %i0
         mov               %g0, %i1
+        srl               %i0, %i4, %i0
         movrne            %g2, 1, %i1
         ret
         restore
@@ -2830,9 +2830,9 @@ asm_test::swap::u8::acqrel:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i3
         and               %i1, 0xff, %i1
+        sll               %i1, %i3, %i1
         mov               0xff, %i4
         sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i2 ], %i5
 0:
@@ -2842,8 +2842,8 @@ asm_test::swap::u8::acqrel:
         cmp               %i0, %i5
         bne,a             %icc, 0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        srl               %i0, %i3, %i0
         ret
         restore
 
@@ -2853,9 +2853,9 @@ asm_test::swap::u8::seqcst:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i3
         and               %i1, 0xff, %i1
+        sll               %i1, %i3, %i1
         mov               0xff, %i4
         sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i2 ], %i5
 0:
@@ -2865,8 +2865,8 @@ asm_test::swap::u8::seqcst:
         cmp               %i0, %i5
         bne,a             %icc, 0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        srl               %i0, %i3, %i0
         ret
         restore
 
@@ -2876,9 +2876,9 @@ asm_test::swap::u8::acquire:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i3
         and               %i1, 0xff, %i1
+        sll               %i1, %i3, %i1
         mov               0xff, %i4
         sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
         ld                [ %i2 ], %i5
 0:
         andn              %i5, %i4, %i0
@@ -2887,8 +2887,8 @@ asm_test::swap::u8::acquire:
         cmp               %i0, %i5
         bne,a             %icc, 0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        srl               %i0, %i3, %i0
         ret
         restore
 
@@ -2898,9 +2898,9 @@ asm_test::swap::u8::relaxed:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i3
         and               %i1, 0xff, %i1
+        sll               %i1, %i3, %i1
         mov               0xff, %i4
         sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
         ld                [ %i2 ], %i5
 0:
         andn              %i5, %i4, %i0
@@ -2919,9 +2919,9 @@ asm_test::swap::u8::release:
         sllx              %i0, 3, %i0
         xor               %i0, 0x18, %i3
         and               %i1, 0xff, %i1
+        sll               %i1, %i3, %i1
         mov               0xff, %i4
         sll               %i4, %i3, %i4
-        sll               %i1, %i3, %i1
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i2 ], %i5
 0:
@@ -2943,8 +2943,8 @@ asm_test::swap::u16::acqrel:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::acqrel+0xffff>
         and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
         sll               %i1, %i3, %i1
+        sll               %i4, %i3, %i4
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i2 ], %i5
 0:
@@ -2954,8 +2954,8 @@ asm_test::swap::u16::acqrel:
         cmp               %i0, %i5
         bne,a             %icc, 0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        srl               %i0, %i3, %i0
         ret
         restore
 
@@ -2967,8 +2967,8 @@ asm_test::swap::u16::seqcst:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::seqcst+0xffff>
         and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
         sll               %i1, %i3, %i1
+        sll               %i4, %i3, %i4
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i2 ], %i5
 0:
@@ -2978,8 +2978,8 @@ asm_test::swap::u16::seqcst:
         cmp               %i0, %i5
         bne,a             %icc, 0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        srl               %i0, %i3, %i0
         ret
         restore
 
@@ -2991,8 +2991,8 @@ asm_test::swap::u16::acquire:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::acquire+0xffff>
         and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
         sll               %i1, %i3, %i1
+        sll               %i4, %i3, %i4
         ld                [ %i2 ], %i5
 0:
         andn              %i5, %i4, %i0
@@ -3001,8 +3001,8 @@ asm_test::swap::u16::acquire:
         cmp               %i0, %i5
         bne,a             %icc, 0b
         mov               %i0, %i5
-        srl               %i0, %i3, %i0
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        srl               %i0, %i3, %i0
         ret
         restore
 
@@ -3014,8 +3014,8 @@ asm_test::swap::u16::relaxed:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::relaxed+0xffff>
         and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
         sll               %i1, %i3, %i1
+        sll               %i4, %i3, %i4
         ld                [ %i2 ], %i5
 0:
         andn              %i5, %i4, %i0
@@ -3036,8 +3036,8 @@ asm_test::swap::u16::release:
         sethi             %hi(0xfc00), %i0
         or                %i0, 0x3ff, %i4	! ffff <asm_test::swap::u16::release+0xffff>
         and               %i1, %i4, %i1
-        sll               %i4, %i3, %i4
         sll               %i1, %i3, %i1
+        sll               %i4, %i3, %i4
         membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
         ld                [ %i2 ], %i5
 0:

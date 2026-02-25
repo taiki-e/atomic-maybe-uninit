@@ -28,6 +28,35 @@ use core::{
 use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
+#[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
+#[inline(always)]
+fn lsl32(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+    // SAFETY: calling LSL32 is safe
+    unsafe {
+        asm!(
+            "lsl32 {val}, {val}, {shift}", // val <<= shift
+            val = inout(reg) val,
+            shift = in(reg) shift,
+            options(pure, nomem, nostack, preserves_flags),
+        );
+    }
+    val
+}
+#[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
+#[inline(always)]
+fn lsr32(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+    // SAFETY: calling LSR32 is safe
+    unsafe {
+        asm!(
+            "lsr32 {val}, {val}, {shift}", // val >>= shift
+            val = inout(reg) val,
+            shift = in(reg) shift,
+            options(pure, nomem, nostack, preserves_flags),
+        );
+    }
+    val
+}
+
 // According to Linux kernel, there is a more efficient BAR instruction for this purpose, but that
 // instruction is not mentioned in CSKY Architecture user_guide, so we always use SYNC for now.
 // https://github.com/torvalds/linux/blob/v6.19/arch/csky/include/asm/barrier.h
@@ -210,7 +239,7 @@ macro_rules! atomic_sub_word {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -219,7 +248,6 @@ macro_rules! atomic_sub_word {
                             // Implement sub-word atomic operations using word-sized LL/SC loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "lsl32 {val}, {val}, {shift}",     // val <<= shift
                                 $release,                          // fence
                                 "2:", // 'retry:
                                     "ldex32.w {out}, ({dst}, 0)",  // atomic { out = *dst; EXCLUSIVE = dst }
@@ -228,11 +256,9 @@ macro_rules! atomic_sub_word {
                                     "stex32.w {tmp}, ({dst}, 0)",  // atomic { if EXCLUSIVE == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; EXCLUSIVE = None }
                                     "bez32 {tmp}, 2b",             // if tmp == 0 { jump 'retry }
                                 $acquire,                          // fence
-                                "lsr32 {out}, {out}, {shift}",     // out >>= shift
                                 dst = in(reg) ptr_reg!(dst),
-                                val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                                val = in(reg) lsl32(crate::utils::extend32::$ty::zero(val), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
                                 mask = in(reg) mask,
                                 tmp = out(reg) _,
                                 options(nostack, preserves_flags),
@@ -241,7 +267,7 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(swap, order);
                 }
-                out
+                crate::utils::extend32::$ty::extract(lsr32(out, shift))
             }
         }
         #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
@@ -256,7 +282,7 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -266,8 +292,6 @@ macro_rules! atomic_sub_word {
                             // Implement sub-word atomic operations using word-sized LL/SC loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "lsl32 {old}, {old}, {shift}",     // old <<= shift
-                                "lsl32 {new}, {new}, {shift}",     // new <<= shift
                                 $release,                          // fence
                                 "2:", // 'retry:
                                     "ldex32.w {tmp}, ({dst}, 0)",  // atomic { tmp = *dst; EXCLUSIVE = dst }
@@ -283,12 +307,10 @@ macro_rules! atomic_sub_word {
                                     "movi32 {tmp}, 0",             // tmp = 0
                                 "4:", // 'success:
                                 $acquire,                          // fence
-                                "lsr32 {out}, {out}, {shift}",     // out >>= shift
                                 dst = in(reg) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                old = in(reg) lsl32(crate::utils::extend32::$ty::zero(old), shift),
+                                new = in(reg) lsl32(crate::utils::extend32::$ty::zero(new), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
                                 mask = in(reg) mask,
                                 tmp = out(reg) r,
                                 // Do not use `preserves_flags` because CMPNE modifies condition bit C.
@@ -298,7 +320,7 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
+                    (crate::utils::extend32::$ty::extract(lsr32(out, shift)), r != 0)
                 }
             }
         }

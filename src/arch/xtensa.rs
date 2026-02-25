@@ -41,6 +41,23 @@ macro_rules! atomic_rmw {
     };
 }
 
+#[cfg(target_feature = "s32c1i")]
+#[inline(always)]
+fn srl(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+    // SAFETY: calling SRL is safe
+    unsafe {
+        asm!(
+            "ssr {shift}",      // sar = for_srl(shift & 31)
+            "srl {val}, {val}", // val >>= sar
+            val = inout(reg) val,
+            shift = in(reg) shift,
+            out("sar") _,
+            options(pure, nomem, nostack, preserves_flags),
+        );
+    }
+    val
+}
+
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $bits:tt, $narrow:tt, $unsigned:tt) => {
@@ -205,7 +222,7 @@ macro_rules! atomic_sub_word {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -227,8 +244,6 @@ macro_rules! atomic_sub_word {
                                     "xor {out}, {out}, {tmp}",  // out ^= out
                                     "s32c1i {out}, {dst}, 0",   // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
                                     "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
-                                "ssr {shift}",                  // sar = for_srl(shift & 31)
-                                "srl {out}, {out}",             // out >>= sar
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
@@ -244,7 +259,7 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(swap, order);
                 }
-                out
+                crate::utils::extend32::$ty::extract(srl(out, shift))
             }
         }
         #[cfg(target_feature = "s32c1i")]
@@ -259,7 +274,7 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -287,8 +302,6 @@ macro_rules! atomic_sub_word {
                                     "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
                                     "movi {r}, 1",              // r = 1
                                 "3:", // 'cmp-fail:
-                                "ssr {shift}",                  // sar = for_srl(shift & 31)
-                                "srl {out}, {out}",             // out >>= sar
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
@@ -306,7 +319,7 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
+                    (crate::utils::extend32::$ty::extract(srl(out, shift)), r != 0)
                 }
             }
         }

@@ -2,10 +2,10 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -27,10 +27,10 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -52,10 +52,10 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -77,10 +77,10 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -102,10 +102,10 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -127,10 +127,10 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -152,10 +152,10 @@ asm_test::compare_exchange::u8::release_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -177,10 +177,10 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -202,10 +202,10 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -227,10 +227,10 @@ asm_test::compare_exchange::u8::acquire_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -252,10 +252,10 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -277,10 +277,10 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -302,10 +302,10 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -327,10 +327,10 @@ asm_test::compare_exchange::u8::release_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -352,10 +352,10 @@ asm_test::compare_exchange::u8::release_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -377,11 +377,11 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -403,11 +403,11 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -429,11 +429,11 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -455,11 +455,11 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -481,11 +481,11 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -507,11 +507,11 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -533,11 +533,11 @@ asm_test::compare_exchange::u16::release_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -559,11 +559,11 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -585,11 +585,11 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -611,11 +611,11 @@ asm_test::compare_exchange::u16::acquire_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -637,11 +637,11 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -663,11 +663,11 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -689,11 +689,11 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -715,11 +715,11 @@ asm_test::compare_exchange::u16::release_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -741,11 +741,11 @@ asm_test::compare_exchange::u16::release_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1007,10 +1007,10 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1032,10 +1032,10 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1057,10 +1057,10 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1082,10 +1082,10 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1107,10 +1107,10 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1132,10 +1132,10 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1157,10 +1157,10 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1182,10 +1182,10 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1207,10 +1207,10 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1232,10 +1232,10 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1257,10 +1257,10 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1282,10 +1282,10 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1307,10 +1307,10 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1332,10 +1332,10 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1357,10 +1357,10 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
         sll.w             $a1, $a1, $a4
         sll.w             $a2, $a2, $a4
+        ori               $a5, $zero, 255
+        sll.w             $a5, $a5, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1382,11 +1382,11 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1408,11 +1408,11 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1434,11 +1434,11 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1460,11 +1460,11 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1486,11 +1486,11 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1512,11 +1512,11 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1538,11 +1538,11 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1564,11 +1564,11 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1590,11 +1590,11 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1616,11 +1616,11 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1642,11 +1642,11 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1668,11 +1668,11 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1694,11 +1694,11 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1720,11 +1720,11 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -1746,11 +1746,11 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         addi.w            $a3, $zero, -4
         and               $a3, $a0, $a3
         slli.w            $a4, $a0, 3
+        sll.w             $a1, $a1, $a4
+        sll.w             $a2, $a2, $a4
         lu12i.w           $a0, 15
         ori               $a5, $a0, 4095
         sll.w             $a5, $a5, $a4
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
 0:
         ll.w              $a0, $a3, 0
         and               $a6, $a0, $a5
@@ -2054,9 +2054,9 @@ asm_test::swap::u8::acqrel:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         ori               $a4, $zero, 255
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4
@@ -2070,9 +2070,9 @@ asm_test::swap::u8::seqcst:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         ori               $a4, $zero, 255
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4
@@ -2086,9 +2086,9 @@ asm_test::swap::u8::acquire:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         ori               $a4, $zero, 255
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4
@@ -2102,9 +2102,9 @@ asm_test::swap::u8::relaxed:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         ori               $a4, $zero, 255
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4
@@ -2118,9 +2118,9 @@ asm_test::swap::u8::release:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         ori               $a4, $zero, 255
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4
@@ -2134,10 +2134,10 @@ asm_test::swap::u16::acqrel:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         lu12i.w           $a0, 15
         ori               $a4, $a0, 4095
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4
@@ -2151,10 +2151,10 @@ asm_test::swap::u16::seqcst:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         lu12i.w           $a0, 15
         ori               $a4, $a0, 4095
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4
@@ -2168,10 +2168,10 @@ asm_test::swap::u16::acquire:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         lu12i.w           $a0, 15
         ori               $a4, $a0, 4095
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4
@@ -2185,10 +2185,10 @@ asm_test::swap::u16::relaxed:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         lu12i.w           $a0, 15
         ori               $a4, $a0, 4095
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4
@@ -2202,10 +2202,10 @@ asm_test::swap::u16::release:
         addi.w            $a2, $zero, -4
         and               $a2, $a0, $a2
         slli.w            $a3, $a0, 3
+        sll.w             $a1, $a1, $a3
         lu12i.w           $a0, 15
         ori               $a4, $a0, 4095
         sll.w             $a4, $a4, $a3
-        sll.w             $a1, $a1, $a3
 0:
         ll.w              $a0, $a2, 0
         andn              $a5, $a0, $a4

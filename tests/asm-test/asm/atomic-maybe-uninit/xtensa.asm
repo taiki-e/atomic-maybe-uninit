@@ -145,9 +145,9 @@ asm_test::swap::u8::acquire:
         xor               a2, a2, a12
         s32c1i            a2, a8, 0
         bne               a12, a2, 0b
+        memw
         ssr               a11
         srl               a2, a2
-        memw
         retw.n
 
 asm_test::swap::u8::release:
@@ -194,9 +194,9 @@ asm_test::swap::u8::acqrel:
         xor               a2, a2, a12
         s32c1i            a2, a8, 0
         bne               a12, a2, 0b
+        memw
         ssr               a11
         srl               a2, a2
-        memw
         retw.n
 
 asm_test::swap::u8::seqcst:
@@ -219,9 +219,9 @@ asm_test::swap::u8::seqcst:
         xor               a2, a2, a12
         s32c1i            a2, a8, 0
         bne               a12, a2, 0b
+        memw
         ssr               a11
         srl               a2, a2
-        memw
         retw.n
 
 .literal.asm_test::swap::u16::relaxed:
@@ -274,9 +274,9 @@ asm_test::swap::u16::acquire:
         xor               a2, a2, a12
         s32c1i            a2, a8, 0
         bne               a12, a2, 0b
+        memw
         ssr               a11
         srl               a2, a2
-        memw
         retw.n
 
 .literal.asm_test::swap::u16::release:
@@ -331,9 +331,9 @@ asm_test::swap::u16::acqrel:
         xor               a2, a2, a12
         s32c1i            a2, a8, 0
         bne               a12, a2, 0b
+        memw
         ssr               a11
         srl               a2, a2
-        memw
         retw.n
 
 .literal.asm_test::swap::u16::seqcst:
@@ -360,9 +360,9 @@ asm_test::swap::u16::seqcst:
         xor               a2, a2, a12
         s32c1i            a2, a8, 0
         bne               a12, a2, 0b
+        memw
         ssr               a11
         srl               a2, a2
-        memw
         retw.n
 
 asm_test::swap::u32::relaxed:
@@ -434,535 +434,535 @@ asm_test::swap::u32::seqcst:
 asm_test::compare_exchange::u8::relaxed_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::relaxed_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::acquire_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::acquire_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::acquire_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::release_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::release_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::release_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::acqrel_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::acqrel_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::seqcst_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::relaxed_relaxed:
@@ -972,35 +972,35 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
 asm_test::compare_exchange::u16::relaxed_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::relaxed_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::relaxed_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::relaxed_acquire:
@@ -1010,36 +1010,36 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
 asm_test::compare_exchange::u16::relaxed_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::relaxed_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::relaxed_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::relaxed_seqcst:
@@ -1049,37 +1049,37 @@ asm_test::compare_exchange::u16::relaxed_acquire:
 asm_test::compare_exchange::u16::relaxed_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::relaxed_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::relaxed_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::acquire_relaxed:
@@ -1089,36 +1089,36 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
 asm_test::compare_exchange::u16::acquire_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::acquire_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::acquire_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::acquire_acquire:
@@ -1128,36 +1128,36 @@ asm_test::compare_exchange::u16::acquire_relaxed:
 asm_test::compare_exchange::u16::acquire_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::acquire_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::acquire_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::acquire_seqcst:
@@ -1167,37 +1167,37 @@ asm_test::compare_exchange::u16::acquire_acquire:
 asm_test::compare_exchange::u16::acquire_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::acquire_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::acquire_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::release_relaxed:
@@ -1207,36 +1207,36 @@ asm_test::compare_exchange::u16::acquire_seqcst:
 asm_test::compare_exchange::u16::release_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::release_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::release_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::release_acquire:
@@ -1246,37 +1246,37 @@ asm_test::compare_exchange::u16::release_relaxed:
 asm_test::compare_exchange::u16::release_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::release_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::release_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::release_seqcst:
@@ -1286,37 +1286,37 @@ asm_test::compare_exchange::u16::release_acquire:
 asm_test::compare_exchange::u16::release_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::release_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::release_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::acqrel_relaxed:
@@ -1326,37 +1326,37 @@ asm_test::compare_exchange::u16::release_seqcst:
 asm_test::compare_exchange::u16::acqrel_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::acqrel_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::acqrel_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::acqrel_acquire:
@@ -1366,37 +1366,37 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
 asm_test::compare_exchange::u16::acqrel_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::acqrel_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::acqrel_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::acqrel_seqcst:
@@ -1406,37 +1406,37 @@ asm_test::compare_exchange::u16::acqrel_acquire:
 asm_test::compare_exchange::u16::acqrel_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::acqrel_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::acqrel_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::seqcst_relaxed:
@@ -1446,37 +1446,37 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
 asm_test::compare_exchange::u16::seqcst_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::seqcst_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::seqcst_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::seqcst_acquire:
@@ -1486,37 +1486,37 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
 asm_test::compare_exchange::u16::seqcst_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::seqcst_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::seqcst_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange::u16::seqcst_seqcst:
@@ -1526,37 +1526,37 @@ asm_test::compare_exchange::u16::seqcst_acquire:
 asm_test::compare_exchange::u16::seqcst_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange::u16::seqcst_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange::u16::seqcst_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange::u32::relaxed_relaxed:
@@ -1841,535 +1841,535 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
 asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::relaxed_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::acquire_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::acquire_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::release_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        movi              a9, 255
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        movi              a10, 255
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::relaxed_relaxed:
@@ -2379,35 +2379,35 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
 asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::relaxed_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::relaxed_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::relaxed_acquire:
@@ -2417,36 +2417,36 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
 asm_test::compare_exchange_weak::u16::relaxed_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::relaxed_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::relaxed_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::relaxed_seqcst:
@@ -2456,37 +2456,37 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::relaxed_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::relaxed_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::acquire_relaxed:
@@ -2496,36 +2496,36 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
 asm_test::compare_exchange_weak::u16::acquire_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::acquire_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::acquire_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::acquire_acquire:
@@ -2535,36 +2535,36 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
 asm_test::compare_exchange_weak::u16::acquire_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::acquire_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::acquire_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
-        l32i.n            a2, a8, 0
+        sll               a12, a12
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::acquire_seqcst:
@@ -2574,37 +2574,37 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::acquire_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::acquire_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::release_relaxed:
@@ -2614,36 +2614,36 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
 asm_test::compare_exchange_weak::u16::release_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::release_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::release_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::release_acquire:
@@ -2653,37 +2653,37 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
 asm_test::compare_exchange_weak::u16::release_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::release_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::release_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::release_seqcst:
@@ -2693,37 +2693,37 @@ asm_test::compare_exchange_weak::u16::release_acquire:
 asm_test::compare_exchange_weak::u16::release_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::release_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::release_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::acqrel_relaxed:
@@ -2733,37 +2733,37 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::acqrel_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::acqrel_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::acqrel_acquire:
@@ -2773,37 +2773,37 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::acqrel_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::acqrel_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::acqrel_seqcst:
@@ -2813,37 +2813,37 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
 asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::acqrel_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::acqrel_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::seqcst_relaxed:
@@ -2853,37 +2853,37 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::seqcst_relaxed+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::seqcst_relaxed+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::seqcst_acquire:
@@ -2893,37 +2893,37 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::seqcst_acquire+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::seqcst_acquire+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 .literal.asm_test::compare_exchange_weak::u16::seqcst_seqcst:
@@ -2933,37 +2933,37 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         entry             a1, 32
         movi.n            a8, -4
-        and               a8, a2, a8
-        l32r              a9, fffc0008 <asm_test::compare_exchange_weak::u16::seqcst_seqcst+0xfffc0008>
-        and               a10, a3, a9
-        and               a11, a4, a9
-        slli              a12, a2, 3
+        and               a9, a2, a8
+        l32r              a10, fffc0008 <asm_test::compare_exchange_weak::u16::seqcst_seqcst+0xfffc0008>
+        and               a11, a3, a10
+        and               a12, a4, a10
+        slli              a8, a2, 3
         movi.n            a3, 0
         mov.n             a13, a3
-        ssl               a12
-        sll               a9, a9
+        ssl               a8
         sll               a10, a10
         sll               a11, a11
+        sll               a12, a12
         memw
-        l32i.n            a2, a8, 0
+        l32i.n            a2, a9, 0
 0:
-        and               a14, a2, a9
-        bne               a14, a10, 1f
+        and               a14, a2, a10
+        bne               a14, a11, 1f
         mov.n             a14, a2
         wsr.scompare1     a14
-        xor               a2, a14, a11
-        and               a2, a2, a9
+        xor               a2, a14, a12
+        and               a2, a2, a10
         xor               a2, a2, a14
-        s32c1i            a2, a8, 0
+        s32c1i            a2, a9, 0
         bne               a14, a2, 0b
         movi              a13, 1
 1:
-        ssr               a12
-        srl               a2, a2
         memw
         beq               a13, a3, 2f
         movi.n            a3, 1
 2:
+        ssr               a8
+        srl               a2, a2
         retw.n
 
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:

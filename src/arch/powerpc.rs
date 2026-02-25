@@ -27,13 +27,16 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
 use crate::utils::{MaybeUninit128, Pair};
+use crate::{
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+    utils::RegSize,
+};
 
 cfg_sel!({
     #[cfg(any(target_feature = "msync", atomic_maybe_uninit_target_feature = "msync"))]
@@ -54,6 +57,41 @@ cfg_sel!({
         }
     }
 });
+
+#[cfg(not(any(
+    target_feature = "partword-atomics",
+    atomic_maybe_uninit_target_feature = "partword-atomics",
+)))]
+#[inline(always)]
+fn slw(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
+    // SAFETY: calling SLW is safe
+    unsafe {
+        asm!(
+            "slw {val}, {val}, {shift}", // val <<= shift
+            val = inout(reg) val,
+            shift = in(reg) shift,
+            options(pure, nomem, nostack, preserves_flags),
+        );
+    }
+    val
+}
+#[cfg(not(any(
+    target_feature = "partword-atomics",
+    atomic_maybe_uninit_target_feature = "partword-atomics",
+)))]
+#[inline(always)]
+fn srw(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
+    // SAFETY: calling SRW is safe
+    unsafe {
+        asm!(
+            "srw {val}, {val}, {shift}", // val >>= shift
+            val = inout(reg) val,
+            shift = in(reg) shift,
+            options(pure, nomem, nostack, preserves_flags),
+        );
+    }
+    val
+}
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -93,7 +131,7 @@ macro_rules! atomic_cas {
 
 // Extracts and checks the EQ bit of cr0.
 #[inline(always)]
-const fn test_cr0_eq(cr: crate::utils::RegSize) -> bool {
+const fn test_cr0_eq(cr: RegSize) -> bool {
     cr & 0x20000000 != 0
 }
 
@@ -331,7 +369,7 @@ macro_rules! atomic_sub_word {
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -341,7 +379,6 @@ macro_rules! atomic_sub_word {
                     macro_rules! swap {
                         ($acquire:expr, $release:expr) => {
                             asm!(
-                                "slw {val}, {val}, {shift}",     // val <<= shift
                                 $release,                        // fence
                                 "2:", // 'retry:
                                     "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = *dst }
@@ -350,11 +387,9 @@ macro_rules! atomic_sub_word {
                                     "stwcx. {tmp}, 0, {dst}",    // atomic { if RESERVE == (dst, 4) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
                                     "bne %cr0, 2b",              // if cr0.EQ == 0 { jump 'retry }
                                 $acquire,                        // fence
-                                "srw {out}, {out}, {shift}",     // out >>= shift
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                                val = in(reg) slw(crate::utils::extend32::$ty::zero(val), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
                                 mask = in(reg) mask,
                                 tmp = out(reg) _,
                                 out("cr0") _,
@@ -364,7 +399,7 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(swap, order);
                 }
-                out
+                crate::utils::extend32::$ty::extract(srw(out, shift))
             }
         }
         #[cfg(not(any(
@@ -382,7 +417,7 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
                 let mut r;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -393,8 +428,6 @@ macro_rules! atomic_sub_word {
                     macro_rules! cmpxchg {
                         ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
-                                "slw {old}, {old}, {shift}",     // old <<= shift
-                                "slw {new}, {new}, {shift}",     // new <<= shift
                                 $release,                        // fence
                                 "2:", // 'retry:
                                     "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = *dst }
@@ -408,13 +441,11 @@ macro_rules! atomic_sub_word {
                                     $acquire_success,            // fence
                                 "3:", // 'cmp-fail:
                                 $acquire_always,                 // fence
-                                "srw {out}, {out}, {shift}",     // out >>= shift
                                 "mfcr {tmp}",                    // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                old = in(reg) slw(crate::utils::extend32::$ty::zero(old), shift),
+                                new = in(reg) slw(crate::utils::extend32::$ty::zero(new), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
                                 mask = in(reg) mask,
                                 tmp = out(reg) r,
                                 out("cr0") _,
@@ -424,7 +455,7 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_cas!(cmpxchg, success, failure);
                     // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
-                    (out, test_cr0_eq(r))
+                    (crate::utils::extend32::$ty::extract(srw(out, shift)), test_cr0_eq(r))
                 }
             }
             #[inline]
@@ -437,7 +468,7 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
                 let mut r;
 
                 // SAFETY: the caller must uphold the safety contract.
@@ -448,8 +479,6 @@ macro_rules! atomic_sub_word {
                     macro_rules! cmpxchg_weak {
                         ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
-                                "slw {old}, {old}, {shift}", // old <<= shift
-                                "slw {new}, {new}, {shift}", // new <<= shift
                                 $release,                    // fence
                                 "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = *dst }
                                 "and {tmp}, {out}, {mask}",  // tmp = out & mask
@@ -461,13 +490,11 @@ macro_rules! atomic_sub_word {
                                 $acquire_success,            // fence
                                 "3:", // 'cmp-fail:
                                 $acquire_always,             // fence
-                                "srw {out}, {out}, {shift}", // out >>= shift
                                 "mfcr {tmp}",                // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                old = in(reg) slw(crate::utils::extend32::$ty::zero(old), shift),
+                                new = in(reg) slw(crate::utils::extend32::$ty::zero(new), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
                                 mask = in(reg) mask,
                                 tmp = out(reg) r,
                                 out("cr0") _,
@@ -477,7 +504,7 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_cas!(cmpxchg_weak, success, failure);
                     // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
-                    (out, test_cr0_eq(r))
+                    (crate::utils::extend32::$ty::extract(srw(out, shift)), test_cr0_eq(r))
                 }
             }
         }
