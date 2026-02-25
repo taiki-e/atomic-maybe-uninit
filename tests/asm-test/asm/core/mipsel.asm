@@ -2758,4 +2758,3 @@ asm_test::store::u32::release:
         sync
         jr                $31
         sw                $5,0($4)
-

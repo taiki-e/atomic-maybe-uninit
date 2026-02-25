@@ -3393,4 +3393,3 @@ asm_test::store::u64::release:
         sd                $5,0($4)
         jr                $31
         nop
-

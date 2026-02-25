@@ -2172,4 +2172,3 @@ asm_test::store::u128::release:
         or                a1, a1, a6
         bnez              a1, 0b
         ret
-

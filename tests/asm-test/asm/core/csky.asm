@@ -2439,4 +2439,3 @@ asm_test::store::u32::release:
         ld.w              r28, (r14, 0x4)
         addi              r14, r14, 8
         rts
-

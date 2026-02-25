@@ -2979,4 +2979,3 @@ asm_test::store::u32::release:
         stbar
         retl
         st                %o1, [ %o0 ]
-

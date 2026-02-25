@@ -1865,4 +1865,3 @@ asm_test::store::u64::release:
         fistp             qword ptr [eax]
         add               esp, 0xc
         ret
-

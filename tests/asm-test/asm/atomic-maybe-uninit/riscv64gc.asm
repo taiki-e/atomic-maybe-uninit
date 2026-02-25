@@ -2572,4 +2572,3 @@ asm_test::store::u64::release:
         fence             rw, w
         sd                a1, 0x0(a0)
         ret
-

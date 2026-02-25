@@ -2304,4 +2304,3 @@ asm_test::store::u32::release:
         dmb               sy
         str               r1, [r0]
         pop               {r7, pc}
-

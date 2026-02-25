@@ -3744,4 +3744,3 @@ asm_test::store::u32::release:
         nop
         ret
         restore
-

@@ -1729,4 +1729,3 @@ asm_test::store::u128::release:
         vpunpcklqdq       xmm0, xmm1, xmm0 # xmm0 = xmm1[0],xmm0[0]
         vmovdqa           xmmword ptr [rdi], xmm0
         ret
-

@@ -3266,4 +3266,3 @@ asm_test::store::u64::release:
         stx               %i1, [ %i0 ]
         ret
         restore
-

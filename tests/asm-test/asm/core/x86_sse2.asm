@@ -1634,4 +1634,3 @@ asm_test::store::u64::release:
         movsd             xmm0, qword ptr [esp + 0x8]
         movlps            qword ptr [eax], xmm0
         ret
-

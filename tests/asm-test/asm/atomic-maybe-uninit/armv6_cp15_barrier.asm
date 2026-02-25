@@ -3081,4 +3081,3 @@ asm_test::store::u64::release:
         cmp               r4, #0
         bne               0b
         pop               {r4, r5, r11, pc}
-

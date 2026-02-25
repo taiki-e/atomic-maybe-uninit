@@ -3989,4 +3989,3 @@ asm_test::store::u128::release:
         xor               4, 4, 5
         stq               4, 0(3)
         blr
-

@@ -8048,4 +8048,3 @@ asm_test::store::u64::release:
         .word             0xffff0ffc
 5:
         .word             0xffff0f60
-

@@ -5207,4 +5207,3 @@ asm_test::store::u64::release:
         pop               {r4, r5, r11, pc}
 1:
         bl                1f
-

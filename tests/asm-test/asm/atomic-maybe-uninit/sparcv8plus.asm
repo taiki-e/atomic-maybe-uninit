@@ -2870,4 +2870,3 @@ asm_test::store::u32::release:
         st                %i1, [ %i0 ]
         ret
         restore
-

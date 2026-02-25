@@ -3218,4 +3218,3 @@ asm_test::store::u128::release:
         stlxp             w8, x2, x3, [x0]
         cbnz              w8, 0b
         ret
-

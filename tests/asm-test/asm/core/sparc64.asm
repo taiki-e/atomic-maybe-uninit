@@ -2945,4 +2945,3 @@ asm_test::store::u64::release:
         membar            #StoreStore|#LoadStore
         retl
         stx               %o1, [ %o0 ]
-

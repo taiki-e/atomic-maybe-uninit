@@ -2384,4 +2384,3 @@ asm_test::store::u32::release:
         dbar              18
         st.w              $a1, $a0, 0
         ret
-

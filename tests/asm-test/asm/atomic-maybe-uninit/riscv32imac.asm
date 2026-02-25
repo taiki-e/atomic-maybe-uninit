@@ -2132,4 +2132,3 @@ asm_test::store::u32::release:
         fence             rw, w
         sw                a1, 0x0(a0)
         ret
-

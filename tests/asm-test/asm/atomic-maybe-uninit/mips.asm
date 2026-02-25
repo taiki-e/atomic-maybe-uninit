@@ -2630,4 +2630,3 @@ asm_test::store::u32::release:
         sw                $5,0($4)
         jr                $31
         nop
-

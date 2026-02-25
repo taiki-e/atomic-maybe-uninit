@@ -3519,4 +3519,3 @@ asm_test::store::u64::release:
         sync
         jr                $31
         sd                $5,0($4)
-

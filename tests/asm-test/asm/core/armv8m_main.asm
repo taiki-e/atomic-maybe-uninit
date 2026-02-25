@@ -2040,4 +2040,3 @@ asm_test::store::u32::release:
         mov               r7, sp
         stl               r1, [r0]
         pop               {r7, pc}
-

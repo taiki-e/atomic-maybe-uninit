@@ -1509,4 +1509,3 @@ asm_test::store::u32::release:
         pop               {r7}
         pop               {r0}
         bx                r0
-

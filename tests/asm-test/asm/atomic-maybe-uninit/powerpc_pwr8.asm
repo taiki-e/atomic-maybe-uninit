@@ -1524,4 +1524,3 @@ asm_test::store::u32::release:
         lwsync
         stw               4, 0(3)
         blr
-

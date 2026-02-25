@@ -3244,4 +3244,3 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
 1:
         mov.n             a2, a4
         retw.n
-

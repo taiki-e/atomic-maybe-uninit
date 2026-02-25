@@ -3680,4 +3680,3 @@ asm_test::store::u64::release:
         lwsync
         std               4, 0(3)
         blr
-

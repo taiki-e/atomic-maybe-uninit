@@ -2228,4 +2228,3 @@ asm_test::store::u64::release:
         moveml            %sp@(0),%d2-%d3
         addal             #8,%sp
         rts
-

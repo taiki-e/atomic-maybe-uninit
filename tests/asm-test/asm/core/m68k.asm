@@ -1746,4 +1746,3 @@ asm_test::store::u32::release:
         moveal            %sp@(4),%a0
         movel             %d0,%a0@
         rts
-

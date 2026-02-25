@@ -5646,4 +5646,3 @@ asm_test::store::u64::release:
         bx                lr
 1:
         bl                1f
-

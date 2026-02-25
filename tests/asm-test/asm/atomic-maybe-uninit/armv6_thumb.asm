@@ -3873,4 +3873,3 @@ asm_test::store::u64::release:
         ldr               r2, [pc, #0x4]          @ 0x284 <<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x284>
 28:
         bl                28f
-

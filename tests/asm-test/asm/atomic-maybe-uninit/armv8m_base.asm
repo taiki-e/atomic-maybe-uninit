@@ -1995,4 +1995,3 @@ asm_test::store::u32::release:
         add               r7, sp, #0x0
         stl               r1, [r0]
         pop               {r7, pc}
-

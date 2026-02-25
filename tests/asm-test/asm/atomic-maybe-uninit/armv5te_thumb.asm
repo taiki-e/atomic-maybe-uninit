@@ -6627,4 +6627,3 @@ asm_test::store::u64::release:
         .word             0xffff0ffc
 3:
         .word             0xffff0f60
-

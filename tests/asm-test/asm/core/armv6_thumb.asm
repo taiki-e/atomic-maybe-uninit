@@ -1284,4 +1284,3 @@ asm_test::store::u32::release:
 0:
         bl                0f
         pop               {r7, pc}
-

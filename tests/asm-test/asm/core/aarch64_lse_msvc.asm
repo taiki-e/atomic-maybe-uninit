@@ -1601,4 +1601,3 @@ asm_test::store::u128::release:
         mov               x5, x7
         b.ne              0b
         ret
-

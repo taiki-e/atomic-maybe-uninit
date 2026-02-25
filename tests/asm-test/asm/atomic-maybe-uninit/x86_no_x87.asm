@@ -1875,4 +1875,3 @@ asm_test::store::u64::release:
         pop               edi
         pop               ebx
         ret
-

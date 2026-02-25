@@ -1538,4 +1538,3 @@ asm_test::store::u128::release:
         jne               0b
         pop               rbx
         ret
-

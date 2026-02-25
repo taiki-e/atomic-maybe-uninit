@@ -2594,4 +2594,3 @@ asm_test::store::u32::release:
         sync
         st.w              r1, (r0, 0x0)
         rts
-

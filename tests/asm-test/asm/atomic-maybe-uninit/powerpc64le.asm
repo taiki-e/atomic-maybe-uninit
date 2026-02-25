@@ -2709,4 +2709,3 @@ asm_test::store::u128::release:
         lwsync
         stq               4, 0(3)
         blr
-

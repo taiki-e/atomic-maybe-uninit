@@ -2824,4 +2824,3 @@ asm_test::store::u128::release:
         lg                %r1,8(%r3)
         stpq              %r0,0(%r2)
         br                %r14
-

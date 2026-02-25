@@ -2513,4 +2513,3 @@ asm_test::store::u32::release:
         membar            #StoreStore|#LoadStore
         retl
         st                %o1, [ %o0 ]
-
