@@ -13,49 +13,53 @@ Refs:
 See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
-#[cfg(atomic_maybe_uninit_no_ldex_stex)]
-delegate_size!(delegate_load_store);
-#[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
-delegate_size!(delegate_all);
-
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
     sync::atomic::Ordering,
 };
 
-#[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
-use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
-#[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
-#[inline(always)]
-fn lsl32(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
-    // SAFETY: calling LSL32 is safe
-    unsafe {
-        asm!(
-            "lsl32 {val}, {val}, {shift}", // val <<= shift
-            val = inout(reg) val,
-            shift = in(reg) shift,
-            options(pure, nomem, nostack, preserves_flags),
-        );
+cfg_sel!({
+    #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
+    {
+        use crate::raw::{AtomicCompareExchange, AtomicSwap};
+
+        delegate_size!(delegate_all);
+
+        #[inline(always)]
+        fn lsl32(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+            // SAFETY: calling LSL32 is safe
+            unsafe {
+                asm!(
+                    "lsl32 {val}, {val}, {shift}", // val <<= shift
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    options(pure, nomem, nostack, preserves_flags),
+                );
+            }
+            val
+        }
+        #[inline(always)]
+        fn lsr32(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+            // SAFETY: calling LSR32 is safe
+            unsafe {
+                asm!(
+                    "lsr32 {val}, {val}, {shift}", // val >>= shift
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    options(pure, nomem, nostack, preserves_flags),
+                );
+            }
+            val
+        }
     }
-    val
-}
-#[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
-#[inline(always)]
-fn lsr32(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
-    // SAFETY: calling LSR32 is safe
-    unsafe {
-        asm!(
-            "lsr32 {val}, {val}, {shift}", // val >>= shift
-            val = inout(reg) val,
-            shift = in(reg) shift,
-            options(pure, nomem, nostack, preserves_flags),
-        );
+    #[cfg(else)]
+    {
+        delegate_size!(delegate_load_store);
     }
-    val
-}
+});
 
 // According to Linux kernel, there is a more efficient BAR instruction for this purpose, but that
 // instruction is not mentioned in CSKY Architecture user_guide, so we always use SYNC for now.

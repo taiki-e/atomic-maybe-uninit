@@ -14,20 +14,42 @@ Note that l32ai (acquire load), s32ri (release store), and l32ex/s32ex/getex (LL
 https://github.com/espressif/llvm-project/blob/xtensa_release_19.1.2/llvm/lib/Target/Xtensa/XtensaInstrInfo.td
 */
 
-#[cfg(not(target_feature = "s32c1i"))]
-delegate_size!(delegate_load_store);
-#[cfg(target_feature = "s32c1i")]
-delegate_size!(delegate_all);
-
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
     sync::atomic::Ordering,
 };
 
-#[cfg(target_feature = "s32c1i")]
-use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
+
+cfg_sel!({
+    #[cfg(target_feature = "s32c1i")]
+    {
+        use crate::raw::{AtomicCompareExchange, AtomicSwap};
+
+        delegate_size!(delegate_all);
+
+        #[inline(always)]
+        fn srl(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+            // SAFETY: calling SRL is safe
+            unsafe {
+                asm!(
+                    "ssr {shift}",      // sar = for_srl(shift & 31)
+                    "srl {val}, {val}", // val >>= sar
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    out("sar") _,
+                    options(pure, nomem, nostack, preserves_flags),
+                );
+            }
+            val
+        }
+    }
+    #[cfg(else)]
+    {
+        delegate_size!(delegate_load_store);
+    }
+});
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -39,23 +61,6 @@ macro_rules! atomic_rmw {
             _ => unreachable!(),
         }
     };
-}
-
-#[cfg(target_feature = "s32c1i")]
-#[inline(always)]
-fn srl(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
-    // SAFETY: calling SRL is safe
-    unsafe {
-        asm!(
-            "ssr {shift}",      // sar = for_srl(shift & 31)
-            "srl {val}, {val}", // val >>= sar
-            val = inout(reg) val,
-            shift = in(reg) shift,
-            out("sar") _,
-            options(pure, nomem, nostack, preserves_flags),
-        );
-    }
-    val
 }
 
 #[rustfmt::skip]
