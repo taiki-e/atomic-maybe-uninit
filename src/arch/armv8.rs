@@ -97,7 +97,7 @@ macro_rules! atomic {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                concat!("ld", $acquire, $suffix, " {out}, [{src}]"), // atomic { out = *src }
+                                concat!("ld", $acquire, $suffix, " {out}, [{src}]"), // atomic { out = zero_extend(*src) }
                                 src = in(reg) src,
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -160,7 +160,7 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                     concat!("st", $release, "ex", $suffix, " {r}, {val}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cmp {r}, #0",                                                  // if r == 0 { Z = 1 } else { Z = 0 }
                                     "bne 2b",                                                       // if Z == 0 { jump 'retry }
@@ -198,7 +198,7 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                     "cmp {out}, {old}",                                             // if out == old { Z = 1 } else { Z = 0 }
                                     "bne 3f",                                                       // if Z == 0 { jump 'cmp-fail }
                                     concat!("st", $release, "ex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
@@ -243,7 +243,7 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                             // if out == old { Z = 1 } else { Z = 0 }
                                 "bne 3f",                                                       // if Z == 0 { jump 'cmp-fail }
                                 concat!("st", $release, "ex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
@@ -275,6 +275,9 @@ macro_rules! atomic {
 atomic!(u8, "b");
 atomic!(u16, "h");
 atomic!(u32, "");
+
+// -----------------------------------------------------------------------------
+// 64-bit atomics
 
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 #[rustfmt::skip]

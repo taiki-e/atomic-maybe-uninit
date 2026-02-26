@@ -78,7 +78,7 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                concat!("l", $bits, $unsigned, "i", $narrow, " {out}, {src}, 0"), // atomic { out = *src }
+                                concat!("l", $bits, $unsigned, "i", $narrow, " {out}, {src}, 0"), // atomic { out = zero_extend(*src) }
                                 $acquire,                                                         // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,

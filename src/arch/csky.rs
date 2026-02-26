@@ -93,7 +93,7 @@ macro_rules! atomic_load_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 $release,                                        // fence
-                                concat!("ld32.", $suffix, " {out}, ({src}, 0)"), // atomic { out = *src }
+                                concat!("ld32.", $suffix, " {out}, ({src}, 0)"), // atomic { out = zero_extend(*src) }
                                 $acquire,                                        // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,

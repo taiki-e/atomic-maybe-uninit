@@ -31,7 +31,7 @@ Refs: [Arm® Architecture Reference Manual for A-profile architecture](https://d
 
 TODO: document overview
 
-(Refs: Section B2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture)
+(Refs: Section [B2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture](https://developer.arm.com/documentation/ddi0487/maa/-Part-B-The-AArch64-Application-Level-Architecture/-Chapter-B2-The-AArch64-Application-Level-Memory-Model/-B2-2-Atomicity-in-the-Arm-architecture))
 
 ## Arm
 

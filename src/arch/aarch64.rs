@@ -74,7 +74,7 @@ macro_rules! atomic {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                concat!("ld", $acquire, "r", $suffix, " {out", $val_modifier, "}, [{src}]"), // atomic { out = *src }
+                                concat!("ld", $acquire, "r", $suffix, " {out", $val_modifier, "}, [{src}]"), // atomic { out = zero_extend(*src) }
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -152,7 +152,7 @@ macro_rules! atomic {
                             // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWPB--SWPAB--SWPALB--SWPLB--Swap-byte-in-memory-
                             // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWPH--SWPAH--SWPALH--SWPLH--Swap-halfword-in-memory-
                             asm!(
-                                concat!("swp", $acquire, $release, $suffix, " {val", $val_modifier, "}, {out", $val_modifier, "}, [{dst}]"), // atomic { _x = *dst; *dst = val; out = _x }
+                                concat!("swp", $acquire, $release, $suffix, " {val", $val_modifier, "}, {out", $val_modifier, "}, [{dst}]"), // atomic { _x = *dst; *dst = val; out = zero_extend(_x) }
                                 $fence,                                                                                                      // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
@@ -166,7 +166,7 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                     concat!("st", $release, "xr", $suffix, " {r:w}, {val", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cbnz {r:w}, 2b",                                                                    // if r != 0 { jump 'retry }
                                 $fence,                                                                                  // fence
@@ -210,7 +210,7 @@ macro_rules! atomic {
                                 // cas writes the current value to the first register,
                                 // so copy the `old`'s value for later comparison.
                                 concat!("mov {out", $val_modifier, "}, {old", $val_modifier, "}"),                                           // out = old
-                                concat!("cas", $acquire, $release, $suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"), // atomic { if *dst == out { *dst = new } else { out = *dst } }
+                                concat!("cas", $acquire, $release, $suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"), // atomic { if *dst == out { *dst = new } else { out = zero_extend(*dst) } }
                                 $fence,                                                                                                      // fence
                                 concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),                                 // if out == old { Z = 1 } else { Z = 0 }
                                 "cset {r:w}, eq",                                                                                            // r = Z
@@ -231,7 +231,7 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt, $fence:tt) => {{
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                     concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),         // if out == old { Z = 1 } else { Z = 0 }
                                     "b.ne 3f",                                                                           // if Z == 0 { jump 'cmp-fail }
                                     concat!("st", $release, "xr", $suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
@@ -277,7 +277,7 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt, $fence:tt) => {
                             asm!(
-                                concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = *dst; EXCLUSIVE = dst }
+                                concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),         // if out == old { Z = 1 } else { Z = 0 }
                                 "b.ne 3f",                                                                           // if Z == 0 { jump 'cmp-fail }
                                 concat!("st", $release, "xr", $suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
@@ -313,6 +313,9 @@ atomic!(u8, "b", ":w", ", uxtb");
 atomic!(u16, "h", ":w", ", uxth");
 atomic!(u32, "", ":w", "");
 atomic!(u64, "", "", "");
+
+// -----------------------------------------------------------------------------
+// 128-bit atomics
 
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //

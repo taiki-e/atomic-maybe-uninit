@@ -277,6 +277,9 @@ atomic_sub_word!(u16, "2", "h", "h");
 atomic!(u32, "");
 atomic!(u64, "g");
 
+// -----------------------------------------------------------------------------
+// 128-bit atomics
+
 macro_rules! atomic128 {
     ($ty:ident) => {
         delegate_signed!(delegate_all, $ty);

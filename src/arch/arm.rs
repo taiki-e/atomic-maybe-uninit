@@ -433,7 +433,7 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_load {
                         ($asm:ident, $acquire:expr) => {
                             $asm!(
-                                concat!("ldr", $suffix, " {out}, [{src}]"), // atomic { out = *src }
+                                concat!("ldr", $suffix, " {out}, [{src}]"), // atomic { out = zero_extend(*src) }
                                 $acquire,                                   // fence
                                 src = in(reg) src,
                                 out = lateout(reg) out,
@@ -547,7 +547,7 @@ macro_rules! atomic {
                             $asm!(
                                 $release,                                              // fence
                                 "2:", // 'retry:
-                                    concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                     concat!("strex", $suffix, " {r}, {val}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cmp {r}, #0",                                     // if r == 0 { Z = 1 } else { Z = 0 }
                                     "bne 2b",                                          // if Z == 0 { jump 'retry }
@@ -646,7 +646,7 @@ macro_rules! atomic {
                         ($asm:ident, $acquire_success:expr, $acquire_failure:expr) => {
                             $asm!(
                                 "2:", // 'retry:
-                                    concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                     "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
                                     "bne 3f",                                          // if Z == 0 { jump 'cmp-fail }
                                     concat!("strex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
@@ -672,7 +672,7 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_release {
                         ($acquire_failure:expr) => {
                             asm_use_dmb!(
-                                concat!("ldrex", $suffix, " {out}, [{dst}]"),          // atomic { out = *dst; EXCLUSIVE = dst }
+                                concat!("ldrex", $suffix, " {out}, [{dst}]"),          // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                    // if out == old { Z = 1 } else { Z = 0 }
                                 "bne 3f",                                              // if Z == 0 { jump 'cmp-fail }
                                 dmb!(),                                                // fence
@@ -680,7 +680,7 @@ macro_rules! atomic {
                                     concat!("strex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cmp {r}, #0",                                     // if r == 0 { Z = 1 } else { Z = 0 }
                                     "beq 4f",                                          // if Z == 1 { jump 'success }
-                                    concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                     "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
                                     "beq 2b",                                          // if Z == 1 { jump 'retry }
                                 "3:", // 'cmp-fail:
@@ -701,7 +701,7 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_acqrel {
                         ($skip_failure_fence:expr) => {
                             asm_use_dmb!(
-                                concat!("ldrex", $suffix, " {out}, [{dst}]"),          // atomic { out = *dst; EXCLUSIVE = dst }
+                                concat!("ldrex", $suffix, " {out}, [{dst}]"),          // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                    // if out == old { Z = 1 } else { Z = 0 }
                                 "bne 3f",                                              // if Z == 0 { jump 'cmp-fail }
                                 dmb!(),                                                // fence
@@ -709,7 +709,7 @@ macro_rules! atomic {
                                     concat!("strex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cmp {r}, #0",                                     // if r == 0 { Z = 1 } else { Z = 0 }
                                     "beq 4f",                                          // if Z == 1 { jump 'success }
-                                    concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                    concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                     "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
                                     "beq 2b",                                          // if Z == 1 { jump 'retry }
                                 "3:", // 'cmp-fail:
@@ -832,7 +832,7 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak {
                         ($asm:ident, $acquire:expr, $release:expr) => {
                             $asm!(
-                                concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
                                 "bne 3f",                                          // if Z == 0 { jump 'cmp-fail }
                                 $release,                                          // fence
@@ -856,7 +856,7 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak_fail_load_relaxed {
                         ($release:expr) => {
                             asm_use_dmb!(
-                                concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
                                 "bne 3f",                                          // if Z == 0 { jump 'cmp-fail }
                                 $release,                                          // fence
@@ -884,7 +884,7 @@ macro_rules! atomic {
                     macro_rules! cmpxchg_weak_success_load_relaxed {
                         ($release:expr) => {
                             asm_use_dmb!(
-                                concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = *dst; EXCLUSIVE = dst }
+                                concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
                                 "bne 3f",                                          // if Z == 0 { jump 'cmp-fail }
                                 $release,                                          // fence
@@ -1104,6 +1104,9 @@ macro_rules! atomic_sub_word {
 atomic_sub_word!(u8, "b");
 atomic_sub_word!(u16, "h");
 atomic!(u32, "");
+
+// -----------------------------------------------------------------------------
+// 64-bit atomics
 
 // Refs:
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/LDREXD

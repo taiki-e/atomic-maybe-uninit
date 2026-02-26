@@ -66,7 +66,7 @@ macro_rules! atomic_load_store {
                 // MEM{UB,UH,W} has SeqCst semantics.
                 unsafe {
                     asm!(
-                        concat!("{out} = mem", $load_ext, $suffix, "({src})"), // atomic { out = *src }
+                        concat!("{out} = mem", $load_ext, $suffix, "({src})"), // atomic { out = zero_extend(*src) }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -261,6 +261,9 @@ macro_rules! atomic_sub_word {
 atomic_sub_word!(u8, "b");
 atomic_sub_word!(u16, "h");
 atomic!(u32);
+
+// -----------------------------------------------------------------------------
+// 64-bit atomics
 
 macro_rules! atomic64 {
     ($ty:ident) => {

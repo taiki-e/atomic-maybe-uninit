@@ -823,12 +823,15 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(
         target_arch = "arm",
+        // Pre-v6 Arm has no Data Memory Barrier (DMB) operation, so we cannot implement non-relaxed atomics.
+        // However, Linux kernel provides helpers for it, so we can provide it on Linux/Android.
         any(
             target_feature = "v6",
             atomic_maybe_uninit_target_feature = "v6",
             target_os = "linux",
             target_os = "android",
         ),
+        // Use armv8.rs for Armv8+.
         not(any(
             target_feature = "v8",
             atomic_maybe_uninit_target_feature = "v8",
@@ -841,6 +844,7 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(
         target_arch = "arm",
+        // Use arm.rs for pre-v8 Arm.
         any(
             target_feature = "v8",
             atomic_maybe_uninit_target_feature = "v8",
@@ -876,6 +880,7 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(
         any(
+            // MIPS-I has no SYNC, so we cannot implement non-relaxed atomics.
             all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
             target_arch = "mips32r6",
             target_arch = "mips64",
@@ -900,6 +905,7 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
         any(
             all(
                 target_arch = "sparc",
+                // TODO(sparc): CAS operation requires leoncasa or v9, but we can implement load/store on others.
                 any(
                     target_feature = "leoncasa",
                     atomic_maybe_uninit_target_feature = "leoncasa",

@@ -100,7 +100,7 @@ macro_rules! atomic_load_store {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = *src }
+                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = sign_extend(*src) }
                                 $acquire,                                  // fence
                                 ".set pop",
                                 src = in(reg) ptr_reg!(src),

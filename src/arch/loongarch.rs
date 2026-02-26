@@ -72,7 +72,7 @@ macro_rules! atomic_load {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                concat!("ld.", $suffix, " {out}, {src}, 0"), // atomic { out = *src }
+                                concat!("ld.", $suffix, " {out}, {src}, 0"), // atomic { out = sign_extend(*src) }
                                 $acquire,                                    // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
@@ -165,7 +165,7 @@ macro_rules! atomic {
                         }
                         Ordering::Release | Ordering::SeqCst => {
                             asm!(
-                                concat!("amswap_db.", $suffix, " $zero, {val}, {dst}"), // atomic { _x = *dst; *dst = val; _ = _x }
+                                concat!("amswap_db.", $suffix, " $zero, {val}, {dst}"), // atomic { _x = *dst; *dst = val; _ = sign_extend(_x) }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -195,7 +195,7 @@ macro_rules! atomic {
                     ))]
                     asm!(
                         "2:", // 'retry:
-                            concat!("ll.", $suffix, " {out}, {dst}, 0"),  // atomic { out = *dst; LL = dst }
+                            concat!("ll.", $suffix, " {out}, {dst}, 0"),  // atomic { out = sign_extend(*dst); LL = dst }
                             "move {tmp}, {val}",                          // tmp = val
                             concat!("sc.", $suffix, " {tmp}, {dst}, 0"),  // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
                             "beqz {tmp}, 2b",                             // if tmp == 0 { jump 'retry }
@@ -211,7 +211,7 @@ macro_rules! atomic {
                         atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
                     )))]
                     asm!(
-                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = _x }
+                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = sign_extend(_x) }
                         dst = in(reg) ptr_reg!(dst),
                         val = in(reg) val,
                         out = out(reg) out,
@@ -240,7 +240,7 @@ macro_rules! atomic {
                         ($failure_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ll.", $suffix, " {out}, {dst}, 0"), // atomic { out = *dst; LL = dst }
+                                    concat!("ll.", $suffix, " {out}, {dst}, 0"), // atomic { out = sign_extend(*dst); LL = dst }
                                     "bne {out}, {old}, 3f",                      // if out != old { jump 'cmp-fail }
                                     "move {tmp}, {new}",                         // tmp = new
                                     concat!("sc.", $suffix, " {tmp}, {dst}, 0"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
@@ -297,7 +297,7 @@ macro_rules! atomic_sub_word {
                     // See also create_sub_word_mask_values.
                     asm!(
                         "2:", // 'retry:
-                            "ll.w {out}, {dst}, 0",      // atomic { out = *dst; LL = dst }
+                            "ll.w {out}, {dst}, 0",      // atomic { out = sign_extend(*dst); LL = dst }
                             "andn {tmp}, {out}, {mask}", // tmp = out & !mask
                             "or {tmp}, {tmp}, {val}",    // tmp |= val
                             "sc.w {tmp}, {dst}, 0",      // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
@@ -335,7 +335,7 @@ macro_rules! atomic_sub_word {
                         ($failure_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    "ll.w {out}, {dst}, 0",      // atomic { tmp = *dst; LL = dst }
+                                    "ll.w {out}, {dst}, 0",      // atomic { tmp = sign_extend(*dst); LL = dst }
                                     "and {tmp}, {out}, {mask}",  // tmp = out & mask
                                     "bne {tmp}, {old}, 3f",      // if tmp != old { jump 'cmp-fail }
                                     "andn {tmp}, {out}, {mask}", // tmp = out & !mask

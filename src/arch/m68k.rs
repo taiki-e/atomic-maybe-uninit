@@ -150,6 +150,9 @@ atomic!(u8, "b");
 atomic!(u16, "w");
 atomic!(u32, "l");
 
+// -----------------------------------------------------------------------------
+// 64-bit atomics
+
 // Use .2byte directive because CAS2 is not yet supported in LLVM (as of 21): https://godbolt.org/z/eWaT9Mbfe
 #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
 macro_rules! atomic64 {

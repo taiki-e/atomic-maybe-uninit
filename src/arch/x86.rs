@@ -119,7 +119,7 @@ macro_rules! atomic {
                 // load by MOV has SeqCst semantics.
                 unsafe {
                     asm!(
-                        concat!("mov", $zx, " {out", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"), // atomic { out = *src }
+                        concat!("mov", $zx, " {out", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"), // atomic { out = zero_extend(*src) }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -234,6 +234,9 @@ atomic!(u16, reg, reg, identity, "zx", ":x", ":x", ":e", "word", "ax");
 atomic!(u32, reg, reg, identity, "", ":e", ":e", ":e", "dword", "eax");
 #[cfg(target_arch = "x86_64")]
 atomic!(u64, reg, reg, identity, "", "", "", "", "qword", "rax");
+
+// -----------------------------------------------------------------------------
+// 64-bit atomics on x86_32
 
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE)/FILD&FISTP(x87) instead of CMPXCHG8B.
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
@@ -603,6 +606,9 @@ macro_rules! atomic64 {
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 atomic64!(u64);
+
+// -----------------------------------------------------------------------------
+// 128-bit atomics on x86_64
 
 #[cfg(target_arch = "x86_64")]
 #[cfg(target_feature = "cmpxchg16b")]

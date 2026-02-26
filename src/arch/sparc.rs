@@ -214,7 +214,7 @@ macro_rules! atomic_load_store {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 $release,                                              // fence
-                                concat!("ld", $load_sign, $suffix, " [{src}], {out}"), // atomic { out = *src }
+                                concat!("ld", $load_sign, $suffix, " [{src}], {out}"), // atomic { out = zero_extend(*src) }
                                 $acquire,                                              // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
@@ -332,10 +332,10 @@ macro_rules! atomic {
                         ($acquire:expr, $release:expr) => {
                             asm!(
                                 $release,                                       // fence
-                                concat!("ld", $suffix, " [{dst}], {tmp}"),      // atomic { tmp = *dst }
+                                concat!("ld", $suffix, " [{dst}], {tmp}"),      // atomic { tmp = zero_extend(*dst) }
                                 "2:", // 'retry:
                                     "mov {val}, {out}",                         // out = val
-                                    cas!($suffix, "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = _x }
+                                    cas!($suffix, "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
                                     "cmp {out}, {tmp}",                         // if out == tmp { cc.Z = true } else { cc.Z = false }
                                     bne_a!($cc, "2b"),                          // if !cc.Z {
                                         "mov {out}, {tmp}",                     //   tmp = out; jump 'retry }
@@ -375,7 +375,7 @@ macro_rules! atomic {
                             asm!(
                                 leon_nop!(), // Workaround for errata (GRLIB-TN-0010).
                                 $release,                                   // fence
-                                cas!($suffix, "[{dst}]", "{old}", "{out}"), // atomic { _x = *dst; if _x == old { *dst = out }; out = _x }
+                                cas!($suffix, "[{dst}]", "{old}", "{out}"), // atomic { _x = *dst; if _x == old { *dst = out }; out = zero_extend(_x) }
                                 "cmp {out}, {old}",                         // if out == old { cc.Z = true } else { cc.Z = false }
                                 "mov %g0, {r}",                             // r = 0
                                 move_!($cc, "1", "{r}"),                    // if cc.Z { r = 1 }
@@ -421,11 +421,11 @@ macro_rules! atomic_sub_word {
                             // See also create_sub_word_mask_values.
                             asm!(
                                 $release,                                  // fence
-                                "ld [{dst}], {tmp}",                       // atomic { tmp = *dst }
+                                "ld [{dst}], {tmp}",                       // atomic { tmp = zero_extend(*dst) }
                                 "2:", // 'retry:
                                     "andn {tmp}, {mask}, {out}",           // out = tmp & !mask
                                     "or {out}, {val}, {out}",              // out |= val
-                                    cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = _x }
+                                    cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
                                     "cmp {out}, {tmp}",                    // if out == tmp { cc.Z = true } else { cc.Z = false }
                                     bne_a!("%icc", "2b"),                  // if !cc.Z {
                                         "mov {out}, {tmp}",                //   tmp = out; jump 'retry }
@@ -468,7 +468,7 @@ macro_rules! atomic_sub_word {
                             // See also create_sub_word_mask_values.
                             asm!(
                                 $release,                                  // fence
-                                "ld [{dst}], {out}",                       // atomic { out = *dst }
+                                "ld [{dst}], {out}",                       // atomic { out = zero_extend(*dst) }
                                 "2:", // 'retry:
                                     "and {out}, {mask}, {tmp}",            // tmp = out & mask
                                     "cmp {old}, {tmp}",                    // if old == tmp { cc.Z = true } else { cc.Z = false }
@@ -477,7 +477,7 @@ macro_rules! atomic_sub_word {
                                     "mov {out}, {tmp}",                    // tmp = out
                                     "andn {out}, {mask}, {out}",           // out &= !mask
                                     "or {out}, {new}, {out}",              // out |= new
-                                    cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = _x }
+                                    cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
                                     "cmp {out}, {tmp}",                    // if out == tmp { cc.Z = true } else { cc.Z = false }
                                     bne!("%icc", "2b"),                    // if !cc.Z {
                                         "mov 1, {tmp}",                    //   tmp = 1; jump 'retry } else { tmp = 1 }

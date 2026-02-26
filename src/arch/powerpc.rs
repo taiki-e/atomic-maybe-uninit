@@ -153,7 +153,7 @@ macro_rules! atomic_load_store {
                         ($release:expr) => {
                             asm!(
                                 $release,
-                                concat!("l", $suffix, $load_ext, " {out}, 0({src})"), // atomic { out = *src }
+                                concat!("l", $suffix, $load_ext, " {out}, 0({src})"), // atomic { out = zero_extend(*src) }
                                 "cmpw {out}, {out}",                                  // if out == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
                                 "bne- %cr0, 2f",                                      // if unlikely(cr0.EQ == 0) { jump 'never }
                                 "2:", // 'never:
@@ -168,7 +168,7 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => {
                             asm!(
-                                concat!("l", $suffix, $load_ext, " {out}, 0({src})"), // atomic { out = *src }
+                                concat!("l", $suffix, $load_ext, " {out}, 0({src})"), // atomic { out = zero_extend(*src) }
                                 src = in(reg_nonzero) ptr_reg!(src),
                                 out = lateout(reg) out,
                                 options(nostack, preserves_flags),
@@ -237,7 +237,7 @@ macro_rules! atomic {
                             asm!(
                                 $release,                                          // fence
                                 "2:", // 'retry:
-                                    concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
+                                    concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = zero_extend(*dst) }
                                     concat!("st", $suffix, "cx. {val}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = val; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
                                     "bne %cr0, 2b",                                // if cr0.EQ == 0 { jump 'retry }
                                 $acquire,                                          // fence
@@ -274,7 +274,7 @@ macro_rules! atomic {
                             asm!(
                                 $release,                                          // fence
                                 "2:", // 'retry:
-                                    concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
+                                    concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = zero_extend(*dst) }
                                     concat!("cmp", $cmp_size, " {old}, {out}"),    // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
                                     "bne %cr0, 3f",                                // if cr0.EQ == 0 { jump 'cmp-fail }
                                     concat!("st", $suffix, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
@@ -316,7 +316,7 @@ macro_rules! atomic {
                         ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
                                 $release,                                      // fence
-                                concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = *dst }
+                                concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = zero_extend(*dst) }
                                 concat!("cmp", $cmp_size, " {old}, {out}"),    // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
                                 "bne %cr0, 3f",                                // if cr0.EQ == 0 { jump 'cmp-fail }
                                 concat!("st", $suffix, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
@@ -381,7 +381,7 @@ macro_rules! atomic_sub_word {
                             asm!(
                                 $release,                        // fence
                                 "2:", // 'retry:
-                                    "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = *dst }
+                                    "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
                                     "andc {tmp}, {out}, {mask}", // tmp = out & !mask
                                     "or {tmp}, {val}, {tmp}",    // tmp |= val
                                     "stwcx. {tmp}, 0, {dst}",    // atomic { if RESERVE == (dst, 4) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
@@ -430,7 +430,7 @@ macro_rules! atomic_sub_word {
                             asm!(
                                 $release,                        // fence
                                 "2:", // 'retry:
-                                    "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = *dst }
+                                    "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
                                     "and {tmp}, {out}, {mask}",  // tmp = out & mask
                                     "cmpw {tmp}, {old}",         // if tmp == old { cr0.EQ = 1 } else { cr0.EQ = 0 }
                                     "bne %cr0, 3f",              // if cr0.EQ == 0 { jump 'cmp-fail }
@@ -480,7 +480,7 @@ macro_rules! atomic_sub_word {
                         ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
                             asm!(
                                 $release,                    // fence
-                                "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = *dst }
+                                "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
                                 "and {tmp}, {out}, {mask}",  // tmp = out & mask
                                 "cmpw {tmp}, {old}",         // if tmp == old { cr0.EQ = 1 } else { cr0.EQ = 0 }
                                 "bne %cr0, 3f",              // if cr0.EQ == 0 { jump 'cmp-fail }
@@ -516,6 +516,9 @@ atomic_sub_word!(u16, "h");
 atomic!(u32, "w", "z", "w");
 #[cfg(target_arch = "powerpc64")]
 atomic!(u64, "d", "", "d");
+
+// -----------------------------------------------------------------------------
+// 128-bit atomics on PowerPC64
 
 #[cfg(target_arch = "powerpc64")]
 #[cfg(any(
