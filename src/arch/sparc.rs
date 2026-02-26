@@ -16,18 +16,13 @@ Refs:
 See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
-delegate_size!(delegate_all);
-
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
     sync::atomic::Ordering,
 };
 
-use crate::{
-    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
-    utils::RegSize,
-};
+use crate::raw::{AtomicLoad, AtomicStore};
 
 cfg_sel!({
     #[cfg(any(
@@ -53,6 +48,16 @@ cfg_sel!({
                 concat!("move ", $cc, ", ", $val, ", ", $rd)
             };
         }
+        macro_rules! cas {
+            ($suffix:tt, $rs1:tt, $rs2:tt, $rd:tt) => {
+                concat!("cas", $suffix, " ", $rs1, ", ", $rs2, ", ", $rd)
+            };
+        }
+        macro_rules! leon_nop {
+            () => {
+                ""
+            };
+        }
         macro_rules! atomic_rmw {
             ($op:ident, $order:ident) => {
                 match $order {
@@ -68,16 +73,19 @@ cfg_sel!({
     }
     #[cfg(else)]
     {
+        #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
         macro_rules! bne {
             ("%icc", $label:tt) => {
                 concat!("bne ", $label)
             };
         }
+        #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
         macro_rules! bne_a {
             ("%icc", $label:tt) => {
                 concat!("bne,a ", $label)
             };
         }
+        #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
         #[rustfmt::skip]
         macro_rules! move_ {
             ($cc:tt, $val:tt, $rd:tt) => {
@@ -89,6 +97,29 @@ cfg_sel!({
                 )
             };
         }
+        #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
+        macro_rules! cas {
+            ("", $rs1:tt, $rs2:tt, $rd:tt) => {
+                concat!(leon_align!(), "casa ", $rs1, " 10, ", $rs2, ", ", $rd)
+            };
+        }
+        // Non-Leon CPUs can also reach here, but always emits them as code compile with
+        // -C target-cpu=v8, etc. run on Leon CPUs.
+        // Workaround for errata (GRLIB-TN-0009, GRLIB-TN-0010).
+        // https://www.gaisler.com/app-notes-tech-notes-and-white-papers
+        macro_rules! leon_nop {
+            () => {
+                "nop\n"
+            };
+        }
+        // Workaround for errata (GRLIB-TN-0011).
+        // https://www.gaisler.com/app-notes-tech-notes-and-white-papers
+        macro_rules! leon_align {
+            () => {
+                ".p2align 4\n"
+            };
+        }
+        #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
         macro_rules! atomic_rmw {
             ($op:ident, $order:ident) => {
                 // GCC and LLVM use different types of memory barriers in SPARC-V8, and probably have
@@ -112,93 +143,77 @@ cfg_sel!({
 });
 
 cfg_sel!({
-    #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
+    #[cfg(any(
+        target_arch = "sparc64",
+        target_feature = "v9",
+        atomic_maybe_uninit_target_feature = "v9",
+        target_feature = "leoncasa",
+        atomic_maybe_uninit_target_feature = "leoncasa",
+    ))]
     {
-        macro_rules! cas {
-            ("", $rs1:tt, $rs2:tt, $rd:tt) => {
-                concat!(leon_align!(), "casa ", $rs1, " 10, ", $rs2, ", ", $rd)
-            };
+        use crate::{
+            raw::{AtomicCompareExchange, AtomicSwap},
+            utils::RegSize,
+        };
+
+        delegate_size!(delegate_all);
+
+        macro_rules! sll {
+            ($val:expr, $shift:expr) => {{
+                let mut val = $val;
+                let shift: RegSize = $shift;
+                #[allow(unused_unsafe)]
+                // SAFETY: calling SLL is safe
+                unsafe {
+                    asm!(
+                        "sll {val}, {shift}, {val}", // val <<= shift & 31
+                        val = inout(reg) val,
+                        shift = in(reg) shift,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
+                val
+            }};
         }
-        // Workaround for errata (GRLIB-TN-0009, GRLIB-TN-0010).
-        // https://www.gaisler.com/app-notes-tech-notes-and-white-papers
-        macro_rules! leon_nop {
-            () => {
-                "nop\n"
-            };
-        }
-        // Workaround for errata (GRLIB-TN-0011).
-        // https://www.gaisler.com/app-notes-tech-notes-and-white-papers
-        macro_rules! leon_align {
-            () => {
-                ".p2align 4\n"
-            };
+        #[inline(always)]
+        fn srl(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
+            // SAFETY: calling SRL is safe
+            unsafe {
+                asm!(
+                    "srl {val}, {shift}, {val}", // val >>= shift & 31
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    options(pure, nomem, nostack, preserves_flags),
+                );
+            }
+            val
         }
     }
     #[cfg(else)]
     {
-        #[cfg(any(
-            target_arch = "sparc64",
-            target_feature = "v9",
-            atomic_maybe_uninit_target_feature = "v9",
-        ))]
-        macro_rules! cas {
-            ($suffix:tt, $rs1:tt, $rs2:tt, $rd:tt) => {
-                concat!("cas", $suffix, " ", $rs1, ", ", $rs2, ", ", $rd)
-            };
-        }
-        macro_rules! leon_nop {
-            () => {
-                ""
-            };
-        }
-        #[cfg(not(any(
-            target_arch = "sparc64",
-            target_feature = "v9",
-            atomic_maybe_uninit_target_feature = "v9",
-        )))]
-        macro_rules! leon_align {
-            () => {
-                ""
-            };
-        }
+        delegate_size!(delegate_load_store);
     }
 });
-
-macro_rules! sll {
-    ($val:expr, $shift:expr) => {{
-        let mut val = $val;
-        let shift: RegSize = $shift;
-        #[allow(unused_unsafe)]
-        // SAFETY: calling SLL is safe
-        unsafe {
-            asm!(
-                "sll {val}, {shift}, {val}", // val <<= shift & 31
-                val = inout(reg) val,
-                shift = in(reg) shift,
-                options(pure, nomem, nostack, preserves_flags),
-            );
-        }
-        val
-    }};
-}
-#[inline(always)]
-fn srl(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
-    // SAFETY: calling SRL is safe
-    unsafe {
-        asm!(
-            "srl {val}, {shift}, {val}", // val >>= shift & 31
-            val = inout(reg) val,
-            shift = in(reg) shift,
-            options(pure, nomem, nostack, preserves_flags),
-        );
-    }
-    val
-}
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $suffix:tt, $load_sign:tt) => {
+        #[cfg(any(
+            target_arch = "sparc64",
+            target_feature = "v9",
+            atomic_maybe_uninit_target_feature = "v9",
+            target_feature = "leoncasa",
+            atomic_maybe_uninit_target_feature = "leoncasa",
+        ))]
         delegate_signed!(delegate_all, $ty);
+        #[cfg(not(any(
+            target_arch = "sparc64",
+            target_feature = "v9",
+            atomic_maybe_uninit_target_feature = "v9",
+            target_feature = "leoncasa",
+            atomic_maybe_uninit_target_feature = "leoncasa",
+        )))]
+        delegate_signed!(delegate_load_store, $ty);
         impl AtomicLoad for $ty {
             #[inline]
             unsafe fn atomic_load(
@@ -316,6 +331,13 @@ macro_rules! atomic_load_store {
 macro_rules! atomic {
     ($ty:ident, $suffix:tt, $cc:tt) => {
         atomic_load_store!($ty, $suffix, "");
+        #[cfg(any(
+            target_arch = "sparc64",
+            target_feature = "v9",
+            atomic_maybe_uninit_target_feature = "v9",
+            target_feature = "leoncasa",
+            atomic_maybe_uninit_target_feature = "leoncasa",
+        ))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -354,6 +376,13 @@ macro_rules! atomic {
                 out
             }
         }
+        #[cfg(any(
+            target_arch = "sparc64",
+            target_feature = "v9",
+            atomic_maybe_uninit_target_feature = "v9",
+            target_feature = "leoncasa",
+            atomic_maybe_uninit_target_feature = "leoncasa",
+        ))]
         impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -402,6 +431,13 @@ macro_rules! atomic {
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
         atomic_load_store!($ty, $suffix, "u");
+        #[cfg(any(
+            target_arch = "sparc64",
+            target_feature = "v9",
+            atomic_maybe_uninit_target_feature = "v9",
+            target_feature = "leoncasa",
+            atomic_maybe_uninit_target_feature = "leoncasa",
+        ))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -445,6 +481,13 @@ macro_rules! atomic_sub_word {
                 crate::utils::extend32::$ty::extract(srl(out, shift))
             }
         }
+        #[cfg(any(
+            target_arch = "sparc64",
+            target_feature = "v9",
+            atomic_maybe_uninit_target_feature = "v9",
+            target_feature = "leoncasa",
+            atomic_maybe_uninit_target_feature = "leoncasa",
+        ))]
         impl AtomicCompareExchange for $ty {
             #[inline]
             unsafe fn atomic_compare_exchange(
@@ -567,11 +610,47 @@ macro_rules! cfg_has_atomic_128 {
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(any(
+    target_arch = "sparc64",
+    target_feature = "v9",
+    atomic_maybe_uninit_target_feature = "v9",
+    target_feature = "leoncasa",
+    atomic_maybe_uninit_target_feature = "leoncasa",
+))]
 #[macro_export]
 macro_rules! cfg_has_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(any(
+    target_arch = "sparc64",
+    target_feature = "v9",
+    atomic_maybe_uninit_target_feature = "v9",
+    target_feature = "leoncasa",
+    atomic_maybe_uninit_target_feature = "leoncasa",
+))]
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => {};
+}
+#[cfg(not(any(
+    target_arch = "sparc64",
+    target_feature = "v9",
+    atomic_maybe_uninit_target_feature = "v9",
+    target_feature = "leoncasa",
+    atomic_maybe_uninit_target_feature = "leoncasa",
+)))]
+#[macro_export]
+macro_rules! cfg_has_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(any(
+    target_arch = "sparc64",
+    target_feature = "v9",
+    atomic_maybe_uninit_target_feature = "v9",
+    target_feature = "leoncasa",
+    atomic_maybe_uninit_target_feature = "leoncasa",
+)))]
+#[macro_export]
+macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
 }

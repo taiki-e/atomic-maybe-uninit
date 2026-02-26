@@ -497,6 +497,9 @@ build() {
       CARGO_TARGET_DIR="${target_dir}/leon4" \
         RUSTFLAGS="${target_rustflags} -C target-cpu=leon4" \
         x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/v7" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=v7" \
+        x_cargo "${args[@]}" "$@"
       ;;
     avr*)
       CARGO_TARGET_DIR="${target_dir}/rmw" \

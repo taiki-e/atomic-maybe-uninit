@@ -39,7 +39,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -441,31 +441,36 @@ fn main() {
             target_feature_fallback("fast-serialization", arch9_features);
         }
         "sparc" => {
+            let mut leoncasa = false;
+            let mut v9 = false;
+            let mut v7 = false;
+            if let Some(cpu) = target_cpu() {
+                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/Sparc/Sparc.td#L143
+                match &*cpu {
+                    "myriad2" | "myriad2.1" | "myriad2.2" | "myriad2.3" | "ma2100" | "ma2150"
+                    | "ma2155" | "ma2450" | "ma2455" | "ma2x5x" | "ma2080" | "ma2085"
+                    | "ma2480" | "ma2485" | "ma2x8x" | "gr712rc" | "leon4" | "gr740" => {
+                        leoncasa = true;
+                    }
+                    "v9" | "ultrasparc" | "ultrasparc3" | "niagara" | "niagara2" | "niagara3"
+                    | "niagara4" => v9 = true,
+                    "v7" => v7 = true,
+                    _ => {}
+                }
+            } else {
+                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/clang/lib/Driver/ToolChains/Arch/Sparc.cpp#L136
+                // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L19
+                v9 = target_os == "linux" || target_os == "solaris";
+            }
             // target_feature "leoncasa"/"v9" is unstable and available on rustc side since nightly-2024-11-11: https://github.com/rust-lang/rust/pull/132552
             // Note: nightly-2024-11-10 is unavailable: https://github.com/rust-lang/rust/issues/132838
             if !version.probe(84, 2024, 11, 10) || needs_target_feature_fallback(&version, None) {
-                let mut leoncasa = false;
-                let mut v9 = false;
-                if let Some(cpu) = target_cpu() {
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/Sparc/Sparc.td#L143
-                    match &*cpu {
-                        "myriad2" | "myriad2.1" | "myriad2.2" | "myriad2.3" | "ma2100"
-                        | "ma2150" | "ma2155" | "ma2450" | "ma2455" | "ma2x5x" | "ma2080"
-                        | "ma2085" | "ma2480" | "ma2485" | "ma2x8x" | "gr712rc" | "leon4"
-                        | "gr740" => {
-                            leoncasa = true;
-                        }
-                        "v9" | "ultrasparc" | "ultrasparc3" | "niagara" | "niagara2"
-                        | "niagara3" | "niagara4" => v9 = true,
-                        _ => {}
-                    }
-                } else {
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/clang/lib/Driver/ToolChains/Arch/Sparc.cpp#L136
-                    // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L19
-                    v9 = target_os == "linux" || target_os == "solaris";
-                }
                 target_feature_fallback("leoncasa", leoncasa);
                 target_feature_fallback("v9", v9);
+            }
+            if v7 {
+                // SPARC-V7 has no STBAR.
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_stbar");
             }
         }
         "mips" => {
