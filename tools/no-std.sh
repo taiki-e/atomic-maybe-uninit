@@ -129,6 +129,18 @@ fi
 export QEMU_AUDIO_DRV=none
 export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
 
+setup_wokwi() {
+  local target="$1"
+  local test_dir="$2"
+  local cpu="$3"
+  export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh wokwi-cli ${target}"
+  export WOKWI_TMPDIR="${workspace_dir}/tmp/wokwi"
+  export WOKWI_WORKSPACE_DIR="${workspace_dir}"
+  rm -rf -- "${WOKWI_TMPDIR}"
+  mkdir -p -- "${WOKWI_TMPDIR}"
+  cp -- "${workspace_dir}/${test_dir}/diagram-${cpu}.json" "${WOKWI_TMPDIR}/diagram.json"
+}
+
 run() {
   local target="$1"
   shift
@@ -261,19 +273,13 @@ run() {
       ;;
     xtensa*)
       test_dir=tests/xtensa
-      export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh wokwi-cli ${target}"
       linker=linkall.x
       target_rustflags+=" -C link-arg=-Wl,-T${linker} -C link-arg=-nostartfiles"
       local cpu
       cpu=$(cut -d- -f2 <<<"${target}")
       args+=(--features "esp-println/${cpu},esp-hal/${cpu}")
       if [[ "${subcmd}" != "build" ]]; then
-        export WOKWI_TMPDIR="${workspace_dir}/tmp/wokwi"
-        export WOKWI_WORKSPACE_DIR="${workspace_dir}"
-        rm -rf -- "${WOKWI_TMPDIR}"
-        mkdir -p -- "${WOKWI_TMPDIR}"
-        cp -- "${test_dir}/diagram-${cpu}.json" "${WOKWI_TMPDIR}/diagram.json"
-        cp -- "${test_dir}/wokwi-base.toml" "${WOKWI_TMPDIR}/wokwi-base.toml"
+        setup_wokwi "${target}" "${test_dir}" "${cpu}"
       fi
       ;;
     m68k*)
@@ -344,6 +350,27 @@ run() {
         CARGO_TARGET_DIR="${target_dir}/no-std-test" \
           RUSTFLAGS="${target_rustflags}" \
           x_cargo "${args[@]}" --release "$@"
+
+        # Run with wokwi-cli.
+        # TODO(avr): run test with wokwi on CI
+        if type -P "${WOKWI_CLI:-wokwi-cli}" >/dev/null; then
+          subcmd=run
+          setup_wokwi "${target}" "${test_dir}" "mega"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-rmw" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+rmw" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-rmw" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+rmw" \
+            x_cargo "${args[@]}" --release "$@"
+        else
+          info "no-std test for ${target} requires wokwi-cli (switched to build-only)"
+        fi
         ;;
       sparc*)
         # Run with qemu-system-sparc.
