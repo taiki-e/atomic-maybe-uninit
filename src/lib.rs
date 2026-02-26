@@ -100,16 +100,16 @@ This crate uses inline assembly to implement atomic operations (this is currentl
     clippy::exhaustive_enums,
     clippy::exhaustive_structs,
     clippy::impl_trait_in_params,
-    clippy::missing_inline_in_public_items,
     clippy::std_instead_of_alloc,
     clippy::std_instead_of_core,
+    clippy::missing_inline_in_public_items,
     // Code outside of cfg(test) shouldn't use float.
     clippy::float_arithmetic,
     // Code outside of cfg(test) shouldn't use code that can panic except for assertions. (overflow also cause panic if overflow check is enabled)
     clippy::arithmetic_side_effects,
 )]
 #![cfg_attr(atomic_maybe_uninit_no_strict_provenance, allow(unstable_name_collisions))]
-#![allow(clippy::inline_always, clippy::used_underscore_items)]
+#![allow(clippy::inline_always, clippy::unreadable_literal, clippy::used_underscore_items)]
 #![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
 
 // There are currently no 128-bit or higher builtin targets.
