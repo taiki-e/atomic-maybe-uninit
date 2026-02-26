@@ -765,7 +765,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
 }
 
 macro_rules! int {
-    ($ty:ident, $align:ident) => {
+    ($($ty:ident),* => $align:ident) => {$(
         impl raw::Primitive for $ty {}
         const _: () = {
             assert!(mem::size_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
@@ -788,20 +788,14 @@ macro_rules! int {
                 Self { v: UnsafeCell::new(v), _align: [] }
             }
         }
-    };
+    )*};
 }
-int!(i8, Align1);
-int!(u8, Align1);
-int!(i16, Align2);
-int!(u16, Align2);
-int!(i32, Align4);
-int!(u32, Align4);
-int!(i64, Align8);
-int!(u64, Align8);
-int!(i128, Align16);
-int!(u128, Align16);
-int!(isize, AlignPtr);
-int!(usize, AlignPtr);
+int!(i8, u8 => Align1);
+int!(i16, u16 => Align2);
+int!(i32, u32 => Align4);
+int!(i64, u64 => Align8);
+int!(i128, u128 => Align16);
+int!(isize, usize => AlignPtr);
 
 #[cfg(target_pointer_width = "16")]
 pub use {cfg_has_atomic_16 as cfg_has_atomic_ptr, cfg_no_atomic_16 as cfg_no_atomic_ptr};
