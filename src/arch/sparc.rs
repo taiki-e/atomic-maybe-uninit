@@ -53,19 +53,15 @@ cfg_sel!({
                 concat!("cas", $suffix, " ", $rs1, ", ", $rs2, ", ", $rd)
             };
         }
-        macro_rules! leon_nop {
-            () => {
-                ""
-            };
-        }
         macro_rules! atomic_rmw {
             ($op:ident, $order:ident) => {
                 match $order {
-                    Ordering::Relaxed => $op!("", ""),
-                    // 15 == #LoadLoad | #StoreLoad | #LoadStore | #StoreStore
-                    Ordering::Acquire => $op!("membar 15", ""),
-                    Ordering::Release => $op!("", "membar 15"),
-                    Ordering::AcqRel | Ordering::SeqCst => $op!("membar 15", "membar 15"),
+                    Ordering::Relaxed => $op!("", "", ""),
+                    Ordering::Acquire => $op!("membar #LoadStore|#LoadLoad", "", ""),
+                    Ordering::Release => $op!("", "membar #StoreStore|#LoadStore", ""),
+                    Ordering::AcqRel | Ordering::SeqCst => {
+                        $op!("membar #LoadStore|#LoadLoad", "membar #StoreStore|#LoadStore", "")
+                    }
                     _ => unreachable!(),
                 }
             };
@@ -91,7 +87,7 @@ cfg_sel!({
             ($cc:tt, $val:tt, $rd:tt) => {
                 concat!(
                     bne!($cc, "99f"), "\n",
-                    "nop", "\n",
+                      "nop", "\n",
                     "mov ", $val, ", ", $rd, "\n",
                     "99:"
                 )
@@ -103,37 +99,45 @@ cfg_sel!({
                 concat!(leon_align!(), "casa ", $rs1, " 10, ", $rs2, ", ", $rd)
             };
         }
-        // Non-Leon CPUs can also reach here, but always emits them as code compile with
-        // -C target-cpu=v8, etc. run on Leon CPUs.
-        // Workaround for errata (GRLIB-TN-0009, GRLIB-TN-0010).
-        // https://www.gaisler.com/app-notes-tech-notes-and-white-papers
+        // Non-Leon CPUs can also reach here, but always emits them for now as code compile with
+        // -C target-cpu=v8 -C target-feature=+.., etc. run on Leon CPUs.
+        // Workaround for errata:
+        // - GRLIB-TN-0004:
+        //   - Insert this or others between a load instruction and a memory accessing instruction.
+        // - GRLIB-TN-0009:
+        //   - Insert this or others twice between a <= 32-bit store instruction and a store instruction.
+        //   - Insert this or others between a 64-bit store instruction and a store instruction.
+        // - GRLIB-TN-0010:
+        //   - Insert this or others between a load instruction and an atomic instruction (swap, ldstub, casa).
+        // Refs: https://www.gaisler.com/app-notes-tech-notes-and-white-papers
         macro_rules! leon_nop {
             () => {
                 "nop\n"
             };
         }
-        // Workaround for errata (GRLIB-TN-0011).
-        // https://www.gaisler.com/app-notes-tech-notes-and-white-papers
+        // Workaround for errata:
+        // - GRLIB-TN-0011:
+        //   - Insert this before an atomic instruction (swap, ldstub, casa).
+        //   - Do not place atomic instructions in delay slot.
+        // Refs: https://www.gaisler.com/app-notes-tech-notes-and-white-papers
         macro_rules! leon_align {
             () => {
-                ".p2align 4\n"
+                ".balign 16\n"
             };
         }
         #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
         macro_rules! atomic_rmw {
             ($op:ident, $order:ident) => {
-                // GCC and LLVM use different types of memory barriers in SPARC-V8, and probably have
-                // different semantics to obtain as a result. My experience with this platform is that LLVM
-                // is often incomplete and GCC's is more likely to be correct, but I use code with both
-                // semantics just to be safe.
                 match $order {
-                    Ordering::Relaxed => $op!("", ""),
-                    Ordering::Acquire => $op!("stbar", ""),
+                    // leon_nop for GRLIB-TN-0010
+                    Ordering::Relaxed => $op!("", "", leon_nop!()),
+                    Ordering::Acquire => $op!("", "", leon_nop!()),
+                    // LLVM doesn't emits ldstub here, but GCC does. https://godbolt.org/z/bsGqWzEfM
                     Ordering::Release => {
-                        $op!("", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"))
+                        $op!("", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"), "")
                     }
                     Ordering::AcqRel | Ordering::SeqCst => {
-                        $op!("stbar", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"))
+                        $op!("", concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"), "")
                     }
                     _ => unreachable!(),
                 }
@@ -244,10 +248,8 @@ macro_rules! atomic_load_store {
                     ))]
                     match order {
                         Ordering::Relaxed => atomic_load!("", ""),
-                        // 3 == #LoadLoad | #StoreLoad
-                        // 5 == #LoadLoad | #LoadStore
-                        Ordering::Acquire => atomic_load!("membar 5", ""),
-                        Ordering::SeqCst => atomic_load!("membar 5", "membar 3"),
+                        // Acquire and SeqCst loads are equivalent.
+                        Ordering::Acquire | Ordering::SeqCst => atomic_load!("membar #LoadStore|#LoadLoad", ""),
                         _ => unreachable!(),
                     }
                     #[cfg(not(any(
@@ -255,14 +257,12 @@ macro_rules! atomic_load_store {
                         target_feature = "v9",
                         atomic_maybe_uninit_target_feature = "v9",
                     )))]
-                    // GCC and LLVM use different types of memory barriers in SPARC-V8, and probably have
-                    // different semantics to obtain as a result. My experience with this platform is that LLVM
-                    // is often incomplete and GCC's is more likely to be correct, but I use code with both
-                    // semantics just to be safe.
                     match order {
-                        Ordering::Relaxed => atomic_load!("", ""),
-                        Ordering::Acquire => atomic_load!("stbar", ""),
-                        Ordering::SeqCst => atomic_load!("stbar", concat!(leon_nop!(), leon_align!(), "ldstub [%sp-1], %g0")),
+                        // leon_nop for GRLIB-TN-0004
+                        Ordering::Relaxed => atomic_load!(leon_nop!(), ""),
+                        Ordering::Acquire => atomic_load!(leon_nop!(), ""),
+                        // LLVM doesn't emits ldstub here, but GCC does. https://godbolt.org/z/bsGqWzEfM
+                        Ordering::SeqCst => atomic_load!(leon_nop!(), concat!(leon_nop!() /* for GRLIB-TN-0010 */, leon_align!(), "ldstub [%sp-1], %g0")),
                         _ => unreachable!(),
                     }
                 }
@@ -282,11 +282,9 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_store {
                         ($acquire:expr, $release:expr) => {
                             asm!(
-                                leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
                                 $release,                                  // fence
                                 concat!("st", $suffix, " {val}, [{dst}]"), // atomic { *dst = val }
                                 $acquire,                                  // fence
-                                leon_nop!(), // Workaround for for errata (GRLIB-TN-0009).
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -300,10 +298,8 @@ macro_rules! atomic_load_store {
                     ))]
                     match order {
                         Ordering::Relaxed => atomic_store!("", ""),
-                        // 10 == #StoreLoad | #StoreStore
-                        // 12 == #LoadStore | #StoreStore
-                        Ordering::Release => atomic_store!("", "membar 12"),
-                        Ordering::SeqCst => atomic_store!("membar 10", "membar 12"),
+                        Ordering::Release => atomic_store!("", "membar #StoreStore|#LoadStore"),
+                        Ordering::SeqCst => atomic_store!("membar #StoreStore|#LoadStore|#StoreLoad|#LoadLoad", "membar #StoreStore|#LoadStore"),
                         _ => unreachable!(),
                     }
                     #[cfg(not(any(
@@ -311,13 +307,10 @@ macro_rules! atomic_load_store {
                         target_feature = "v9",
                         atomic_maybe_uninit_target_feature = "v9",
                     )))]
-                    // GCC and LLVM use different types of memory barriers in SPARC-V8, and probably have
-                    // different semantics to obtain as a result. My experience with this platform is that LLVM
-                    // is often incomplete and GCC's is more likely to be correct, but I use code with both
-                    // semantics just to be safe.
                     match order {
-                        Ordering::Relaxed => atomic_store!("", ""),
-                        Ordering::Release => atomic_store!("", "stbar"),
+                        // leon_nop for GRLIB-TN-0009
+                        Ordering::Relaxed => atomic_store!(concat!(leon_nop!(), leon_nop!()), ""),
+                        Ordering::Release => atomic_store!(concat!(leon_nop!(), leon_nop!()), "stbar"),
                         Ordering::SeqCst => atomic_store!(concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"), "stbar"),
                         _ => unreachable!(),
                     }
@@ -351,7 +344,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:expr, $release:expr, $_leon_nop:expr) => {
                             asm!(
                                 $release,                                       // fence
                                 concat!("ld", $suffix, " [{dst}], {tmp}"),      // atomic { tmp = zero_extend(*dst) }
@@ -360,7 +353,7 @@ macro_rules! atomic {
                                     cas!($suffix, "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
                                     "cmp {out}, {tmp}",                         // if out == tmp { cc.Z = true } else { cc.Z = false }
                                     bne_a!($cc, "2b"),                          // if !cc.Z {
-                                        "mov {out}, {tmp}",                     //   tmp = out; jump 'retry }
+                                      "mov {out}, {tmp}",                       //   tmp = out; jump 'retry }
                                 $acquire,                                       // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
@@ -400,9 +393,9 @@ macro_rules! atomic {
                 unsafe {
                     let mut r: RegSize;
                     macro_rules! cmpxchg {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:expr, $release:expr, $leon_nop:expr) => {
                             asm!(
-                                leon_nop!(), // Workaround for errata (GRLIB-TN-0010).
+                                $leon_nop, // Workaround for errata (GRLIB-TN-0010).
                                 $release,                                   // fence
                                 cas!($suffix, "[{dst}]", "{old}", "{out}"), // atomic { _x = *dst; if _x == old { *dst = out }; out = zero_extend(_x) }
                                 "cmp {out}, {old}",                         // if out == old { cc.Z = true } else { cc.Z = false }
@@ -452,7 +445,7 @@ macro_rules! atomic_sub_word {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:expr, $release:expr, $_leon_nop:expr) => {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(
@@ -464,7 +457,7 @@ macro_rules! atomic_sub_word {
                                     cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
                                     "cmp {out}, {tmp}",                    // if out == tmp { cc.Z = true } else { cc.Z = false }
                                     bne_a!("%icc", "2b"),                  // if !cc.Z {
-                                        "mov {out}, {tmp}",                //   tmp = out; jump 'retry }
+                                      "mov {out}, {tmp}",                //   tmp = out; jump 'retry }
                                 $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) sll!(crate::utils::extend32::$ty::zero(val), shift),
@@ -506,7 +499,7 @@ macro_rules! atomic_sub_word {
                 unsafe {
                     let mut r: RegSize;
                     macro_rules! cmpxchg {
-                        ($acquire:expr, $release:expr) => {
+                        ($acquire:expr, $release:expr, $_leon_nop:expr) => {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(
@@ -516,14 +509,14 @@ macro_rules! atomic_sub_word {
                                     "and {out}, {mask}, {tmp}",            // tmp = out & mask
                                     "cmp {old}, {tmp}",                    // if old == tmp { cc.Z = true } else { cc.Z = false }
                                     bne_a!("%icc", "3f"),                  // if !cc.Z {
-                                        "mov %g0, {tmp}",                  //   tmp = 0; jump 'cmp-fail }
+                                      "mov %g0, {tmp}",                  //   tmp = 0; jump 'cmp-fail }
                                     "mov {out}, {tmp}",                    // tmp = out
                                     "andn {out}, {mask}, {out}",           // out &= !mask
                                     "or {out}, {new}, {out}",              // out |= new
                                     cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
                                     "cmp {out}, {tmp}",                    // if out == tmp { cc.Z = true } else { cc.Z = false }
                                     bne!("%icc", "2b"),                    // if !cc.Z {
-                                        "mov 1, {tmp}",                    //   tmp = 1; jump 'retry } else { tmp = 1 }
+                                      "mov 1, {tmp}",                    //   tmp = 1; jump 'retry } else { tmp = 1 }
                                 "3:", // 'cmp-fail:
                                 $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),

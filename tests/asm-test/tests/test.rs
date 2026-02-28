@@ -109,6 +109,9 @@ fn test() {
         // SPARC and SPARC64
         Revision::new("sparcv8_leoncasa", "sparc-unknown-none-elf")
             .rustc_args(["-C", "target-cpu=leon3", "-C", "target-feature=+leoncasa"]),
+        Revision::new("sparcv8_leoncasa_workarounds", "sparc-unknown-none-elf")
+            // See https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0/llvm/lib/Target/Sparc/LeonFeatures.td
+            .rustc_args(["-C", "target-cpu=leon3", "-C", "target-feature=+leoncasa,+insertnopload,+fix-tn0009,+fix-tn0010,+fix-tn0011,+fix-tn0012,+fix-tn0013"]),
         Revision::new("sparcv8plus", "sparc-unknown-linux-gnu"),
         Revision::new("sparc64", "sparc64-unknown-linux-gnu"),
         // x86 and x86_64

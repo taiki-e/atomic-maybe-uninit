@@ -357,7 +357,7 @@ Which memory barrier the above instructions imply depends on the memory model us
 V8+ and V9 have three memory models: Total Store Order (TSO), Partial Store Order (PSO), and Relaxed
 Memory Order (RMO). V8 has only TSO and PSO. Implementation of TSO (or a more strongly ordered model
 which implies TSO) is mandatory, and PSO and RMO are optional.<br>
-(Refs: Section 8.4.4 "Memory Models" of the SPARC Architecture Manual, Version 9)
+(Refs: Section 8.4.4 "Memory Models" of the SPARC Architecture Manual, Version 9, Section 2.3 "Memory Model" of the SPARC Architecture Manual, Version 8)
 
 ## SPIR-V
 

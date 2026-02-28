@@ -7,6 +7,7 @@ andn
 aqrl
 armasm
 atxmega
+balign
 beqz
 beqzc
 Bicc
@@ -44,6 +45,7 @@ Halfword
 hwsync
 IMAFD
 inequal
+insertnopload
 ishld
 isync
 kuser
