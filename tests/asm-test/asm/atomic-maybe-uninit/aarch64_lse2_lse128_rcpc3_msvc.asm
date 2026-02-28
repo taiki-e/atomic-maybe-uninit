@@ -1563,7 +1563,7 @@ asm_test::load::u8::seqcst:
         ret
 
 asm_test::load::u8::acquire:
-        ldarb             w0, [x0]
+        ldaprb            w0, [x0]
         ret
 
 asm_test::load::u8::relaxed:
@@ -1575,7 +1575,7 @@ asm_test::load::u16::seqcst:
         ret
 
 asm_test::load::u16::acquire:
-        ldarh             w0, [x0]
+        ldaprh            w0, [x0]
         ret
 
 asm_test::load::u16::relaxed:
@@ -1587,7 +1587,7 @@ asm_test::load::u32::seqcst:
         ret
 
 asm_test::load::u32::acquire:
-        ldar              w0, [x0]
+        ldapr             w0, [x0]
         ret
 
 asm_test::load::u32::relaxed:
@@ -1599,7 +1599,7 @@ asm_test::load::u64::seqcst:
         ret
 
 asm_test::load::u64::acquire:
-        ldar              x0, [x0]
+        ldapr             x0, [x0]
         ret
 
 asm_test::load::u64::relaxed:
@@ -1607,27 +1607,16 @@ asm_test::load::u64::relaxed:
         ret
 
 asm_test::load::u128::seqcst:
-        mov               x2, xzr
-        mov               x3, xzr
-        caspal            x2, x3, x2, x3, [x0]
-        mov               x1, x3
-        mov               x0, x2
+        ldar              x8, [x0]
+        ldiapp            x0, x1, [x0]
         ret
 
 asm_test::load::u128::acquire:
-        mov               x2, xzr
-        mov               x3, xzr
-        caspa             x2, x3, x2, x3, [x0]
-        mov               x1, x3
-        mov               x0, x2
+        ldiapp            x0, x1, [x0]
         ret
 
 asm_test::load::u128::relaxed:
-        mov               x2, xzr
-        mov               x3, xzr
-        casp              x2, x3, x2, x3, [x0]
-        mov               x1, x3
-        mov               x0, x2
+        ldp               x0, x1, [x0]
         ret
 
 asm_test::swap::u8::acqrel:
@@ -1711,44 +1700,33 @@ asm_test::swap::u64::release:
         ret
 
 asm_test::swap::u128::acqrel:
-0:
-        ldaxp             x8, x1, [x0]
-        stlxp             w9, x2, x3, [x0]
-        cbnz              w9, 0b
-        mov               x0, x8
+        mov               x1, x3
+        swppal            x2, x1, [x0]
+        mov               x0, x2
         ret
 
 asm_test::swap::u128::seqcst:
-0:
-        ldaxp             x8, x1, [x0]
-        stlxp             w9, x2, x3, [x0]
-        cbnz              w9, 0b
-        dmb               ish
-        mov               x0, x8
+        mov               x1, x3
+        swppal            x2, x1, [x0]
+        mov               x0, x2
         ret
 
 asm_test::swap::u128::acquire:
-0:
-        ldaxp             x8, x1, [x0]
-        stxp              w9, x2, x3, [x0]
-        cbnz              w9, 0b
-        mov               x0, x8
+        mov               x1, x3
+        swppa             x2, x1, [x0]
+        mov               x0, x2
         ret
 
 asm_test::swap::u128::relaxed:
-0:
-        ldxp              x8, x1, [x0]
-        stxp              w9, x2, x3, [x0]
-        cbnz              w9, 0b
-        mov               x0, x8
+        mov               x1, x3
+        swpp              x2, x1, [x0]
+        mov               x0, x2
         ret
 
 asm_test::swap::u128::release:
-0:
-        ldxp              x8, x1, [x0]
-        stlxp             w9, x2, x3, [x0]
-        cbnz              w9, 0b
-        mov               x0, x8
+        mov               x1, x3
+        swppl             x2, x1, [x0]
+        mov               x0, x2
         ret
 
 asm_test::store::u8::seqcst:
@@ -1804,23 +1782,13 @@ asm_test::store::u64::release:
         ret
 
 asm_test::store::u128::seqcst:
-0:
-        ldaxp             xzr, x8, [x0]
-        stlxp             w8, x2, x3, [x0]
-        cbnz              w8, 0b
-        dmb               ish
+        swppal            x2, x3, [x0]
         ret
 
 asm_test::store::u128::relaxed:
-0:
-        ldxp              xzr, x8, [x0]
-        stxp              w8, x2, x3, [x0]
-        cbnz              w8, 0b
+        stp               x2, x3, [x0]
         ret
 
 asm_test::store::u128::release:
-0:
-        ldxp              xzr, x8, [x0]
-        stlxp             w8, x2, x3, [x0]
-        cbnz              w8, 0b
+        stilp             x2, x3, [x0]
         ret

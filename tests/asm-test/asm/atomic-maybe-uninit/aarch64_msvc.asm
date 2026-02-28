@@ -1263,6 +1263,7 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         cmp               w8, w1, uxtb
         b.ne              0f
         stlxrb            w9, w2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -1354,6 +1355,7 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         cmp               w8, w1, uxtb
         b.ne              0f
         stlxrb            w9, w2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -1370,6 +1372,7 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         cmp               w8, w1, uxtb
         b.ne              0f
         stlxrb            w9, w2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -1491,6 +1494,7 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         cmp               w8, w1, uxth
         b.ne              0f
         stlxrh            w9, w2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -1582,6 +1586,7 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         cmp               w8, w1, uxth
         b.ne              0f
         stlxrh            w9, w2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -1598,6 +1603,7 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         cmp               w8, w1, uxth
         b.ne              0f
         stlxrh            w9, w2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -1719,6 +1725,7 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         cmp               w8, w1
         b.ne              0f
         stlxr             w9, w2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -1810,6 +1817,7 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         cmp               w8, w1
         b.ne              0f
         stlxr             w9, w2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -1826,6 +1834,7 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         cmp               w8, w1
         b.ne              0f
         stlxr             w9, w2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -1947,6 +1956,7 @@ asm_test::compare_exchange_weak::u64::seqcst_seqcst:
         cmp               x8, x1
         b.ne              0f
         stlxr             w9, x2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -2038,6 +2048,7 @@ asm_test::compare_exchange_weak::u64::seqcst_acquire:
         cmp               x8, x1
         b.ne              0f
         stlxr             w9, x2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:
@@ -2054,6 +2065,7 @@ asm_test::compare_exchange_weak::u64::seqcst_relaxed:
         cmp               x8, x1
         b.ne              0f
         stlxr             w9, x2, [x0]
+        cbnz              w9, 1f
         dmb               ish
         b                 1f
 0:

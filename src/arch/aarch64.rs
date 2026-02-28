@@ -56,6 +56,14 @@ macro_rules! atomic_rmw {
     };
 }
 
+#[cfg(not(target_feature = "lse"))]
+macro_rules! if_any {
+    ("", $($tt:tt)*) => { "" };
+    ($cond:tt, $($tt:tt)*) => {
+        $($tt)*
+    };
+}
+
 #[rustfmt::skip]
 macro_rules! atomic {
     ($ty:ident, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
@@ -107,10 +115,10 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! atomic_store {
-                        ($release:tt, $fence:tt) => {
+                        ($release:tt, $msvc_fence:tt) => {
                             asm!(
                                 concat!("st", $release, "r", $suffix, " {val", $val_modifier, "}, [{dst}]"), // atomic { *dst = val }
-                                $fence,                                                                      // fence
+                                $msvc_fence,                                                                 // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
@@ -146,14 +154,13 @@ macro_rules! atomic {
                 unsafe {
                     #[cfg(target_feature = "lse")]
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt, $fence:tt) => {
+                        ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
                             // Refs:
                             // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWP--SWPA--SWPAL--SWPL--Swap-word-or-doubleword-in-memory-
                             // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWPB--SWPAB--SWPALB--SWPLB--Swap-byte-in-memory-
                             // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/SWPH--SWPAH--SWPALH--SWPLH--Swap-halfword-in-memory-
                             asm!(
                                 concat!("swp", $acquire, $release, $suffix, " {val", $val_modifier, "}, {out", $val_modifier, "}, [{dst}]"), // atomic { _x = *dst; *dst = val; out = zero_extend(_x) }
-                                $fence,                                                                                                      // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = lateout(reg) out,
@@ -163,13 +170,13 @@ macro_rules! atomic {
                     }
                     #[cfg(not(target_feature = "lse"))]
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt, $fence:tt) => {
+                        ($acquire:tt, $release:tt, $msvc_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
                                     concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                     concat!("st", $release, "xr", $suffix, " {r:w}, {val", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cbnz {r:w}, 2b",                                                                    // if r != 0 { jump 'retry }
-                                $fence,                                                                                  // fence
+                                $msvc_fence,                                                                             // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = out(reg) out,
@@ -201,7 +208,7 @@ macro_rules! atomic {
                     let mut r: i32;
                     #[cfg(target_feature = "lse")]
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt, $fence:tt) => {{
+                        ($acquire:tt, $release:tt, $_msvc_fence:tt) => {{
                             // Refs:
                             // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-
                             // - https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASB--CASAB--CASALB--CASLB--Compare-and-swap-byte-in-memory-
@@ -211,7 +218,6 @@ macro_rules! atomic {
                                 // so copy the `old`'s value for later comparison.
                                 concat!("mov {out", $val_modifier, "}, {old", $val_modifier, "}"),                                           // out = old
                                 concat!("cas", $acquire, $release, $suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"), // atomic { if *dst == out { *dst = new } else { out = zero_extend(*dst) } }
-                                $fence,                                                                                                      // fence
                                 concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),                                 // if out == old { Z = 1 } else { Z = 0 }
                                 "cset {r:w}, eq",                                                                                            // r = Z
                                 dst = in(reg) ptr_reg!(dst),
@@ -228,7 +234,7 @@ macro_rules! atomic {
                     }
                     #[cfg(not(target_feature = "lse"))]
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt, $fence:tt) => {{
+                        ($acquire:tt, $release:tt, $msvc_fence:tt) => {{
                             asm!(
                                 "2:", // 'retry:
                                     concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
@@ -236,7 +242,7 @@ macro_rules! atomic {
                                     "b.ne 3f",                                                                           // if Z == 0 { jump 'cmp-fail }
                                     concat!("st", $release, "xr", $suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cbnz {r:w}, 2b",                                                                    // if r != 0 { jump 'retry }
-                                    $fence,                                                                              // fence
+                                    $msvc_fence,                                                                         // fence
                                     "b 4f",                                                                              // jump 'success
                                 "3:", // 'cmp-fail:
                                     "mov {r:w}, #1",                                                                     // r = 1
@@ -275,20 +281,19 @@ macro_rules! atomic {
                 unsafe {
                     let r: i32;
                     macro_rules! cmpxchg_weak {
-                        ($acquire:tt, $release:tt, $fence:tt) => {
+                        ($acquire:tt, $release:tt, $msvc_fence:tt) => {
                             asm!(
                                 concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),         // if out == old { Z = 1 } else { Z = 0 }
                                 "b.ne 3f",                                                                           // if Z == 0 { jump 'cmp-fail }
                                 concat!("st", $release, "xr", $suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                // TODO: emit fence only when the above sc succeed?
-                                // "cbnz {r:w}, 4f",
-                                $fence,                                                                              // fence
-                                "b 4f",                                                                              // jump 'success
+                                if_any!($msvc_fence, "cbnz {r:w}, 4f"),                                              // if r != 0 { jump 'end }
+                                $msvc_fence,                                                                         // fence
+                                "b 4f",                                                                              // jump 'end
                                 "3:", // 'cmp-fail:
                                     "mov {r:w}, #1",                                                                 // r = 1
                                     "clrex",                                                                         // EXCLUSIVE = None
-                                "4:", // 'success:
+                                "4:", // 'end:
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
                                 new = in(reg) new,
@@ -499,10 +504,9 @@ macro_rules! atomic128 {
                     // https://reviews.llvm.org/D143506
                     #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
                     macro_rules! atomic_store_swpp {
-                        ($acquire:tt, $release:tt, $fence:tt) => {
+                        ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
                             asm!(
                                 concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"), // atomic { _x = *dst; *dst = val_lo:val_hi; val_lo:val_hi = _x }
-                                $fence,                                                              // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val_lo = inout(reg) val.pair.lo => _,
                                 val_hi = inout(reg) val.pair.hi => _,
@@ -552,13 +556,13 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! store {
-                        ($acquire:tt, $release:tt, $fence:tt) => {
+                        ($acquire:tt, $release:tt, $msvc_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
                                     concat!("ld", $acquire, "xp xzr, {tmp}, [{dst}]"),                  // atomic { xzr:tmp = *dst; EXCLUSIVE = dst }
                                     concat!("st", $release, "xp {tmp:w}, {val_lo}, {val_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val_lo:val_hi; tmp = 0 } else { tmp = 1 }; EXCLUSIVE = None }
                                     "cbnz {tmp:w}, 2b",                                                 // if tmp != 0 { jump 'retry }
-                                $fence,                                                                 // fence
+                                $msvc_fence,                                                            // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val_lo = in(reg) val.pair.lo,
                                 val_hi = in(reg) val.pair.hi,
@@ -586,10 +590,9 @@ macro_rules! atomic128 {
                 unsafe {
                     #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt, $fence:tt) => {
+                        ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
                             asm!(
                                 concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"), // atomic { _x = *dst; *dst = val_lo:val_hi; val_lo:val_hi = _x }
-                                $fence,                                                              // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val_lo = inout(reg) val.pair.lo => prev_lo,
                                 val_hi = inout(reg) val.pair.hi => prev_hi,
@@ -599,13 +602,13 @@ macro_rules! atomic128 {
                     }
                     #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt, $fence:tt) => {
+                        ($acquire:tt, $release:tt, $msvc_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
                                     concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),      // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
                                     concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val_lo:val_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cbnz {r:w}, 2b",                                                 // if r != 0 { jump 'retry }
-                                $fence,                                                               // fence
+                                $msvc_fence,                                                          // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val_lo = in(reg) val.pair.lo,
                                 val_hi = in(reg) val.pair.hi,
@@ -641,7 +644,7 @@ macro_rules! atomic128 {
                     let mut r: i32;
                     #[cfg(target_feature = "lse")]
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt, $fence:tt) => {
+                        ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
                             // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
                             asm!(
                                 // casp writes the current value to the first register pair,
@@ -649,7 +652,6 @@ macro_rules! atomic128 {
                                 "mov x8, {old_lo}",                                              // x8 = old_lo
                                 "mov x9, {old_hi}",                                              // x9 = old_hi
                                 concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"), // atomic { if *src == x8:x9 { *dst = x4:x5 } else { x8:x9 = *dst } }
-                                $fence,                                                          // fence
                                 "cmp x8, {old_lo}",                                              // if x8 == old_lo { Z = 1 } else { Z = 0 }
                                 "ccmp x9, {old_hi}, #0, eq",                                     // if Z == 1 { if x9 == old_hi { Z = 1 } else { Z = 0 } } else { Z = 0 }
                                 "cset {r:w}, eq",                                                // r = Z
@@ -670,7 +672,7 @@ macro_rules! atomic128 {
                     }
                     #[cfg(not(target_feature = "lse"))]
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt, $fence:tt) => {
+                        ($acquire:tt, $release:tt, $msvc_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
                                     concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),      // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
@@ -682,7 +684,7 @@ macro_rules! atomic128 {
                                     concat!("st", $release, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = tmp_lo:tmp_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cbnz {r:w}, 2b",                                                 // if r != 0 { jump 'retry }
                                 "cset {r:w}, eq",                                                     // r = Z
-                                $fence,
+                                $msvc_fence,                                                          // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 old_lo = in(reg) old.pair.lo,
                                 old_hi = in(reg) old.pair.hi,
