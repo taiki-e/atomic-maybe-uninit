@@ -122,10 +122,16 @@ macro_rules! test_atomic {
             )]
             mod [<test_atomic_ $ty>] {
                 __test_atomic!(load_store, $ty);
-                #[cfg(not(all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex)))]
+                #[cfg(not(any(
+                    all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex),
+                    all(target_arch = "mips64", atomic_maybe_uninit_no_ll_sc),
+                )))]
                 __test_atomic!(swap, $ty);
-                #[cfg(not(all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex)))]
-                #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
+                #[cfg(not(any(
+                    all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex),
+                    all(target_arch = "mips64", atomic_maybe_uninit_no_ll_sc),
+                    all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg),
+                )))]
                 __test_atomic!(cas, $ty);
             }
         }
@@ -1484,10 +1490,14 @@ macro_rules! stress_test_load_store {
         }
     };
 }
+#[rustfmt::skip]
 macro_rules! stress_test {
     ($ty:ident) => {
         stress_test_load_store!($ty);
-        #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
+        #[cfg(not(any(
+            target_arch = "csky", // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
+            all(target_arch = "mips64", atomic_maybe_uninit_no_ll_sc),
+        )))]
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,

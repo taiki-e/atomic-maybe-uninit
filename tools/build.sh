@@ -500,6 +500,11 @@ build() {
         RUSTFLAGS="${target_rustflags} -C target-cpu=v7" \
         x_cargo "${args[@]}" "$@"
       ;;
+    mips64-unknown-linux-gnuabi64)
+      CARGO_TARGET_DIR="${target_dir}/r5900" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=r5900" \
+        x_cargo "${args[@]}" "$@"
+      ;;
     avr*)
       CARGO_TARGET_DIR="${target_dir}/rmw" \
         RUSTFLAGS="${target_rustflags} -C target-feature=+rmw" \

@@ -39,7 +39,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_ll_sc,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -473,25 +473,34 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_stbar");
             }
         }
-        "mips" => {
+        "mips" | "mips64" => {
             let mut mips1 = false;
+            let mut r5900 = false;
             if let Some(cpu) = target_cpu() {
                 // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/Mips/Mips.td#L259
                 match &*cpu {
                     "mips1" => mips1 = true,
+                    "r5900" => r5900 = true,
                     _ => {}
                 }
             } else {
                 // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/mipsel_sony_psx.rs#L26
                 // (old rustc uses target_env instead of target_os: https://github.com/rust-lang/rust/commit/111f2e8a39fce63c6daac7eae88023f1e87c15d4)
-                mips1 = target_os == "psx"
-                    || env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default() == "psx";
+                mips1 = target_arch == "mips"
+                    && (target_os == "psx"
+                        || env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default() == "psx");
             }
             if mips1 {
                 // MIPS-I has no SYNC and LL/SC.
                 // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/Mips/MipsInstrInfo.td#L2179
                 // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/Mips/MipsInstrInfo.td#L2235
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_sync");
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_ll_sc");
+            }
+            if r5900 {
+                // R5900 has no LL/SC.
+                // https://github.com/llvm/llvm-project/blob/32134a64b195f7804698418b6f416e761d890dea/llvm/lib/Target/Mips/Mips64InstrInfo.td#L259
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_ll_sc");
             }
         }
         "m68k" => {

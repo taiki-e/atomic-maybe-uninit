@@ -8,6 +8,7 @@ aqrl
 armasm
 atxmega
 beqz
+beqzc
 Bicc
 bnez
 boundedly
@@ -92,6 +93,8 @@ msync
 muldi
 mvns
 noat
+nomacro
+noreorder
 nostartfiles
 orrs
 osxsave

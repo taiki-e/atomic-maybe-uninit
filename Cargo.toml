@@ -83,18 +83,21 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # x86: Assume CPU does not have CMPXCHG8B instruction.
     # This is a cfg for compatibility with 80486/80386, but note that
     # LLVM does not support those CPUs well: https://reviews.llvm.org/D18802
-    # 'cfg(atomic_maybe_uninit_no_cmpxchg8b)', // check-cfg is already set by build script
+    # 'cfg(atomic_maybe_uninit_no_cmpxchg8b)', # check-cfg is already set by build script
     # x86: Assume CPU does not have CMPXCHG instruction.
     # This is a cfg for compatibility with 80386, but note that
     # LLVM does not support those CPUs well: https://reviews.llvm.org/D18802
     # When setting this cfg you also need to set atomic_maybe_uninit_no_cmpxchg8b.
-    # 'cfg(atomic_maybe_uninit_no_cmpxchg)', // check-cfg is already set by build script
+    # 'cfg(atomic_maybe_uninit_no_cmpxchg)', # check-cfg is already set by build script
+    # mips: Assume CPU does not have LL/SC instruction.
+    # This is a cfg for compatibility with R5900.
+    # 'cfg(atomic_maybe_uninit_no_ll_sc)', # check-cfg is already set by build script
     # mips: Assume CPU does not have SYNC instruction.
     # This is a cfg for compatibility with MIPS I.
-    # 'cfg(atomic_maybe_uninit_no_sync)', // check-cfg is already set by build script
+    # 'cfg(atomic_maybe_uninit_no_sync)', # check-cfg is already set by build script
     # sparc: Assume CPU does not have STBAR instruction.
     # This is a cfg for compatibility with SPARC-V7.
-    # 'cfg(atomic_maybe_uninit_no_stbar)', // check-cfg is already set by build script
+    # 'cfg(atomic_maybe_uninit_no_stbar)', # check-cfg is already set by build script
     # Not public API.
     'cfg(atomic_maybe_uninit_test_detect_false,atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_kuser_memory_barrier,atomic_maybe_uninit_test_prefer_kuser_cmpxchg,atomic_maybe_uninit_test_prefer_bx,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,qemu,valgrind)',
 ] }
