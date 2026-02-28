@@ -2,17 +2,17 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -26,17 +26,17 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -50,17 +50,17 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -74,17 +74,17 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -98,17 +98,17 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -122,17 +122,17 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -146,17 +146,17 @@ asm_test::compare_exchange::u8::release_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -170,17 +170,17 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -194,17 +194,17 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -218,17 +218,17 @@ asm_test::compare_exchange::u8::acquire_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -242,17 +242,17 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -266,17 +266,17 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -290,17 +290,17 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -314,17 +314,17 @@ asm_test::compare_exchange::u8::release_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -338,17 +338,17 @@ asm_test::compare_exchange::u8::release_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -362,17 +362,17 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -386,17 +386,17 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -410,17 +410,17 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -434,17 +434,17 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -458,17 +458,17 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -482,17 +482,17 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -506,17 +506,17 @@ asm_test::compare_exchange::u16::release_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -530,17 +530,17 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -554,17 +554,17 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -578,17 +578,17 @@ asm_test::compare_exchange::u16::acquire_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -602,17 +602,17 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -626,17 +626,17 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -650,17 +650,17 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -674,17 +674,17 @@ asm_test::compare_exchange::u16::release_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -698,17 +698,17 @@ asm_test::compare_exchange::u16::release_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1232,17 +1232,17 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1256,17 +1256,17 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1280,17 +1280,17 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1304,17 +1304,17 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1328,17 +1328,17 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1352,17 +1352,17 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1376,17 +1376,17 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1400,17 +1400,17 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1424,17 +1424,17 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1448,17 +1448,17 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1472,17 +1472,17 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1496,17 +1496,17 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1520,17 +1520,17 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1544,17 +1544,17 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1568,17 +1568,17 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llcr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llcr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,8(%r2)
+        rll               %r0,%r13,8(%r2)
         risbg             %r4,%r0,32,55
         llcr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-8(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-8(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1592,17 +1592,17 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1616,17 +1616,17 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1640,17 +1640,17 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1664,17 +1664,17 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1688,17 +1688,17 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1712,17 +1712,17 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1736,17 +1736,17 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1760,17 +1760,17 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1784,17 +1784,17 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1808,17 +1808,17 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1832,17 +1832,17 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1856,17 +1856,17 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1880,17 +1880,17 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1904,17 +1904,17 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3
@@ -1928,17 +1928,17 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         stmg              %r13,%r15,104(%r15)
         risbgz            %r1,%r2,0,61
         sll               %r2,3
-        llhr              %r3,%r3
-        lcr               %r5,%r2
-        l                 %r14,0(%r1)
+        llhr              %r5,%r3
+        lcr               %r14,%r2
+        l                 %r13,0(%r1)
 0:
-        rll               %r0,%r14,16(%r2)
+        rll               %r0,%r13,16(%r2)
         risbg             %r4,%r0,32,47
         llhr              %r0,%r0
-        cr                %r0,%r3
+        cr                %r0,%r5
         jlh               1f
-        rll               %r13,%r4,-16(%r5)
-        cs                %r14,%r13,0(%r1)
+        rll               %r3,%r4,-16(%r14)
+        cs                %r13,%r3,0(%r1)
         jl                0b
 1:
         ipm               %r3

@@ -232,7 +232,7 @@ macro_rules! atomic_sub_word {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, _mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<Self>;
-                let r;
+                let mut r;
 
                 // SAFETY: the caller must uphold the safety contract.
                 // CS has SeqCst semantics.
@@ -252,15 +252,14 @@ macro_rules! atomic_sub_word {
                             "cs {prev}, {tmp}, 0({dst})",                           // atomic { if *dst == prev { cc = 0; *dst = tmp } else { cc = 1; prev = *dst } }
                             "jl 2b",                                                // if cc == 1 { jump 'retry }
                         "3:", // 'cmp-fail:
-                        "ipm {r}",                                                  // r[:] = cc
+                        "ipm {tmp}",                                                // tmp[:] = cc
                         dst = in(reg_addr) ptr_reg!(dst),
                         prev = out(reg) _,
                         old = in(reg) crate::utils::extend32::$ty::zero(old),
                         new = inout(reg) new => _,
                         shift = in(reg_addr) shift,
                         shift_c = in(reg_addr) shift.wrapping_neg(),
-                        tmp = out(reg) _,
-                        r = lateout(reg) r,
+                        tmp = out(reg) r,
                         out = out(reg) out,
                         // Do not use `preserves_flags` because CS, CR, and RISBG modify the condition code.
                         options(nostack),

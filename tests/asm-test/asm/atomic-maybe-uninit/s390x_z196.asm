@@ -15,9 +15,9 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -38,9 +38,9 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -61,9 +61,9 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -84,9 +84,9 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -107,9 +107,9 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -130,9 +130,9 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -153,9 +153,9 @@ asm_test::compare_exchange::u8::release_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -176,9 +176,9 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -199,9 +199,9 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -222,9 +222,9 @@ asm_test::compare_exchange::u8::acquire_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -245,9 +245,9 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -268,9 +268,9 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -291,9 +291,9 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -314,9 +314,9 @@ asm_test::compare_exchange::u8::release_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -337,9 +337,9 @@ asm_test::compare_exchange::u8::release_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -360,9 +360,9 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -383,9 +383,9 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -406,9 +406,9 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -429,9 +429,9 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -452,9 +452,9 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -475,9 +475,9 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -498,9 +498,9 @@ asm_test::compare_exchange::u16::release_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -521,9 +521,9 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -544,9 +544,9 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -567,9 +567,9 @@ asm_test::compare_exchange::u16::acquire_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -590,9 +590,9 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -613,9 +613,9 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -636,9 +636,9 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -659,9 +659,9 @@ asm_test::compare_exchange::u16::release_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -682,9 +682,9 @@ asm_test::compare_exchange::u16::release_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1215,9 +1215,9 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1238,9 +1238,9 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1261,9 +1261,9 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1284,9 +1284,9 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1307,9 +1307,9 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1330,9 +1330,9 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1353,9 +1353,9 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1376,9 +1376,9 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1399,9 +1399,9 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1422,9 +1422,9 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1445,9 +1445,9 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1468,9 +1468,9 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1491,9 +1491,9 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1514,9 +1514,9 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1537,9 +1537,9 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1560,9 +1560,9 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1583,9 +1583,9 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1606,9 +1606,9 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1629,9 +1629,9 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1652,9 +1652,9 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1675,9 +1675,9 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1698,9 +1698,9 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1721,9 +1721,9 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1744,9 +1744,9 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1767,9 +1767,9 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1790,9 +1790,9 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1813,9 +1813,9 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1836,9 +1836,9 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1859,9 +1859,9 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
@@ -1882,9 +1882,9 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         cs                %r14,%r13,0(%r1)
         jl                0b
 1:
-        ipm               %r3
-        afi               %r3,-268435456
-        srl               %r3,31
+        ipm               %r13
+        afi               %r13,-268435456
+        srlk              %r3,%r13,31
         lmg               %r13,%r15,104(%r15)
         br                %r14
 
