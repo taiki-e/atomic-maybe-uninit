@@ -249,8 +249,8 @@ The following instructions are atomic if the address is properly aligned and the
     (Refs: [Section "Memory Model Primitives" of RVWMO Memory Consistency Model, Version 2.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/rvwmo.adoc#memory-model-primitives))
 
 - Load-Acquire and Store-Release Instructions
-  - (experimental) Zalasr extension: {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) acquire/seqcst load, release/seqcst store<br>
-    (Refs: [RISC-V Zalasr Specification](https://github.com/riscv/riscv-zalasr))
+  - Zalasr extension: {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) acquire/seqcst load, release/seqcst store<br>
+    (Refs: ["Zalasr" Atomic Load-Acquire and Store-Release Instructions](https://github.com/riscv/riscv-isa-manual/blob/91210aeb65f7e2cdf164797c4b28d4d6b0661681/src/zalasr.adoc))
 
 - Load-Reserved/Store-Conditional (LR/SC) Instructions (aka LL/SC)
   - Zalrsc extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64)<br>

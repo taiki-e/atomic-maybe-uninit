@@ -442,6 +442,7 @@ macro_rules! atomic128 {
                             asm!(
                                 "2:", // 'retry:
                                     concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{src}]"),        // atomic { prev_lo:prev_hi = *src; EXCLUSIVE = src }
+                                    // write back to ensure atomicity
                                     concat!("st", $release, "xp {r:w}, {prev_lo}, {prev_hi}, [{src}]"), // atomic { if EXCLUSIVE == src { *src = prev_lo:prev_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
                                 src = in(reg) ptr_reg!(src),
