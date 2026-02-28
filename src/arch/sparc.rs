@@ -99,8 +99,9 @@ cfg_sel!({
                 concat!(leon_align!(), "casa ", $rs1, " 10, ", $rs2, ", ", $rd)
             };
         }
-        // Non-Leon CPUs can also reach here, but always emits them for now as code compile with
-        // -C target-cpu=v8 -C target-feature=+.., etc. run on Leon CPUs.
+        // Not all CPUs require workarounds, but since we currently have no way to accurately catch
+        // the flag that tells LLVM to enable workarounds for these (see comments in build script),
+        // we always do them for now.
         // Workaround for errata:
         // - GRLIB-TN-0004:
         //   - Insert this or others between a load instruction and a memory accessing instruction.

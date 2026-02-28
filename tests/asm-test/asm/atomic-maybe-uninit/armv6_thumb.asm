@@ -1990,206 +1990,8 @@ asm_test::store::u64::release:
 <u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange:
         push              {r11, lr}
         mov               r11, sp
-        ldr               lr, [r11, #0x8]
-        uxtb              r3, r3
-        cmp               r3, #0
-        beq               7f
-        cmp               r3, #1
-        beq               3f
-        cmp               r3, #2
-        bne               11f
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               28f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               32f
-        mov               r3, #0
         uxtb              r12, r1
-0:
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        bne               1f
-        strexb            r1, r2, [r0]
-        cmp               r1, #0
-        bne               0b
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        b                 2f
-1:
-        mov               r1, #1
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-2:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-3:
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               20f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               32f
-        mov               r3, #0
-        uxtb              r12, r1
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        bne               5f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-4:
-        strexb            r1, r2, [r0]
-        cmp               r1, #0
-        beq               6f
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        beq               4b
-5:
-        mov               r1, #1
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-6:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-7:
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               24f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               32f
-        mov               r3, #0
-        uxtb              r12, r1
-8:
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        bne               9f
-        strexb            r1, r2, [r0]
-        cmp               r1, #0
-        bne               8b
-        b                 10f
-9:
-        mov               r1, #1
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-10:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-11:
-        uxtb              r12, r1
-        mov               r3, #0
-        tst               lr, #255
-        beq               15f
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        bne               13f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-12:
-        strexb            r1, r2, [r0]
-        cmp               r1, #0
-        beq               14f
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        beq               12b
-13:
-        mov               r1, #1
-14:
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-15:
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        bne               17f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-16:
-        strexb            r1, r2, [r0]
-        cmp               r1, #0
-        beq               18f
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        beq               16b
-17:
-        mov               r1, #1
-        b                 19f
-18:
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-19:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-20:
-        mov               r3, #0
-        uxtb              r12, r1
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        bne               22f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-21:
-        strexb            r1, r2, [r0]
-        cmp               r1, #0
-        beq               23f
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        beq               21b
-22:
-        mov               r1, #1
-23:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-24:
-        uxtb              r3, r1
-25:
-        ldrexb            lr, [r0]
-        cmp               lr, r3
-        bne               26f
-        strexb            r1, r2, [r0]
-        cmp               r1, #0
-        bne               25b
-        b                 27f
-26:
-        mov               r1, #1
-27:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-28:
-        mov               r3, #0
-        uxtb              r12, r1
-29:
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        bne               30f
-        strexb            r1, r2, [r0]
-        cmp               r1, #0
-        bne               29b
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        b                 31f
-30:
-        mov               r1, #1
-31:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-32:
-        ldr               r0, [pc, #0x8]          @ 0x28c <<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange+0x28c>
-        mov               r1, #40
-        ldr               r2, [pc, #0x4]          @ 0x290 <<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange+0x290>
-33:
-        bl                33f
-
-<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
-        push              {r11, lr}
-        mov               r11, sp
-        ldr               lr, [r11, #0x8]
+        ldr               r1, [r11, #0x8]
         uxtb              r3, r3
         cmp               r3, #0
         beq               6f
@@ -2197,21 +1999,17 @@ asm_test::store::u64::release:
         beq               2f
         cmp               r3, #2
         bne               10f
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               23f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               27f
+        tst               r1, #255
+        beq               19f
+        mov               r1, #1
         mov               r3, #0
-        uxtb              r12, r1
+0:
         ldrexb            lr, [r0]
         cmp               lr, r12
-        bne               0f
+        bne               1f
         strexb            r1, r2, [r0]
-        b                 1f
-0:
-        mov               r1, #1
+        cmp               r1, #0
+        bne               0b
 1:
         mcr               p15, #0x0, r3, c7, c10, #0x5
         clz               r0, r1
@@ -2219,24 +2017,21 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 2:
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               17f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               27f
+        tst               r1, #255
+        beq               13f
+        mov               r1, #1
         mov               r3, #0
-        uxtb              r12, r1
         ldrexb            lr, [r0]
         cmp               lr, r12
-        bne               3f
+        bne               4f
         mcr               p15, #0x0, r3, c7, c10, #0x5
+3:
         strexb            r1, r2, [r0]
         cmp               r1, #0
         beq               5f
-        b                 4f
-3:
-        mov               r1, #1
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        beq               3b
 4:
         mcr               p15, #0x0, r3, c7, c10, #0x5
 5:
@@ -2245,23 +2040,18 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 6:
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               20f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               27f
+        tst               r1, #255
+        beq               16f
+        mov               r1, #1
         mov               r3, #0
-        uxtb              r12, r1
+7:
         ldrexb            lr, [r0]
         cmp               lr, r12
-        bne               7f
+        bne               8f
         strexb            r1, r2, [r0]
         cmp               r1, #0
-        beq               9f
-        b                 8f
-7:
-        mov               r1, #1
+        bne               7b
+        b                 9f
 8:
         mcr               p15, #0x0, r3, c7, c10, #0x5
 9:
@@ -2270,18 +2060,21 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 10:
-        uxtb              r12, r1
+        tst               r1, #255
+        beq               22f
+        mov               r1, #1
         mov               r3, #0
-        tst               lr, #255
-        beq               13f
         ldrexb            lr, [r0]
         cmp               lr, r12
-        bne               11f
+        bne               12f
         mcr               p15, #0x0, r3, c7, c10, #0x5
-        strexb            r1, r2, [r0]
-        b                 12f
 11:
-        mov               r1, #1
+        strexb            r1, r2, [r0]
+        cmp               r1, #0
+        beq               12f
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        beq               11b
 12:
         mcr               p15, #0x0, r3, c7, c10, #0x5
         clz               r0, r1
@@ -2289,18 +2082,221 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 13:
+        mov               r1, #1
+        mov               r3, #0
         ldrexb            lr, [r0]
         cmp               lr, r12
-        bne               14f
+        bne               15f
         mcr               p15, #0x0, r3, c7, c10, #0x5
+14:
         strexb            r1, r2, [r0]
         cmp               r1, #0
         beq               15f
-        b                 16f
-14:
-        mov               r1, #1
-        b                 16f
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        beq               14b
 15:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+16:
+        mov               r1, #1
+17:
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               18f
+        strexb            r1, r2, [r0]
+        cmp               r1, #0
+        bne               17b
+18:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+19:
+        mov               r1, #1
+        mov               r3, #0
+20:
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               21f
+        strexb            r1, r2, [r0]
+        cmp               r1, #0
+        bne               20b
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+21:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+22:
+        mov               r1, #1
+        mov               r3, #0
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               25f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+23:
+        strexb            r1, r2, [r0]
+        cmp               r1, #0
+        beq               24f
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        beq               23b
+        b                 25f
+24:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+25:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+
+<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
+        push              {r11, lr}
+        mov               r11, sp
+        ldr               lr, [r11, #0x8]
+        uxtb              r3, r3
+        cmp               r3, #0
+        beq               4f
+        cmp               r3, #1
+        beq               1f
+        cmp               r3, #2
+        bne               7f
+        uxtb              r3, lr
+        cmp               r3, #0
+        beq               15f
+        cmp               r3, #2
+        cmpne             r3, #4
+        bne               17f
+        uxtb              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               0f
+        strexb            r1, r2, [r0]
+0:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+1:
+        uxtb              r3, lr
+        cmp               r3, #0
+        beq               11f
+        cmp               r3, #2
+        cmpne             r3, #4
+        bne               17f
+        uxtb              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               2f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strexb            r1, r2, [r0]
+        cmp               r1, #0
+        beq               3f
+2:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+3:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+4:
+        uxtb              r3, lr
+        cmp               r3, #0
+        beq               13f
+        cmp               r3, #2
+        cmpne             r3, #4
+        bne               17f
+        uxtb              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               5f
+        strexb            r1, r2, [r0]
+        cmp               r1, #0
+        beq               6f
+5:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+6:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+7:
+        uxtb              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        tst               lr, #255
+        beq               9f
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               8f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strexb            r1, r2, [r0]
+8:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+9:
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               10f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strexb            r1, r2, [r0]
+        cmp               r1, #0
+        bne               10f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+10:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+11:
+        uxtb              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               12f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strexb            r1, r2, [r0]
+12:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+13:
+        uxtb              r12, r1
+        mov               r1, #1
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               14f
+        strexb            r1, r2, [r0]
+14:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+15:
+        uxtb              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexb            lr, [r0]
+        cmp               lr, r12
+        bne               16f
+        strexb            r1, r2, [r0]
+        cmp               r1, #0
+        bne               16f
         mcr               p15, #0x0, r3, c7, c10, #0x5
 16:
         clz               r0, r1
@@ -2308,61 +2304,11 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 17:
-        mov               r3, #0
-        uxtb              r12, r1
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        bne               18f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        strexb            r1, r2, [r0]
-        b                 19f
-18:
-        mov               r1, #1
-19:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-20:
-        uxtb              r3, r1
-        ldrexb            lr, [r0]
-        cmp               lr, r3
-        bne               21f
-        strexb            r1, r2, [r0]
-        b                 22f
-21:
-        mov               r1, #1
-22:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-23:
-        mov               r3, #0
-        uxtb              r12, r1
-        ldrexb            lr, [r0]
-        cmp               lr, r12
-        bne               24f
-        strexb            r1, r2, [r0]
-        cmp               r1, #0
-        beq               25f
-        b                 26f
-24:
-        mov               r1, #1
-        b                 26f
-25:
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-26:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-27:
-        ldr               r0, [pc, #0x8]          @ 0x24c <<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x24c>
+        ldr               r0, [pc, #0x8]          @ 0x220 <<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x220>
         mov               r1, #40
-        ldr               r2, [pc, #0x4]          @ 0x250 <<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x250>
-28:
-        bl                28f
+        ldr               r2, [pc, #0x4]          @ 0x224 <<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x224>
+18:
+        bl                18f
 
 <u8 as atomic_maybe_uninit::raw::AtomicLoad>::atomic_load:
         uxtb              r1, r1
@@ -2467,206 +2413,8 @@ asm_test::store::u64::release:
 <u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange:
         push              {r11, lr}
         mov               r11, sp
-        ldr               lr, [r11, #0x8]
-        uxtb              r3, r3
-        cmp               r3, #0
-        beq               7f
-        cmp               r3, #1
-        beq               3f
-        cmp               r3, #2
-        bne               11f
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               28f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               32f
-        mov               r3, #0
         uxth              r12, r1
-0:
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        bne               1f
-        strexh            r1, r2, [r0]
-        cmp               r1, #0
-        bne               0b
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        b                 2f
-1:
-        mov               r1, #1
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-2:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-3:
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               20f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               32f
-        mov               r3, #0
-        uxth              r12, r1
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        bne               5f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-4:
-        strexh            r1, r2, [r0]
-        cmp               r1, #0
-        beq               6f
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        beq               4b
-5:
-        mov               r1, #1
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-6:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-7:
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               24f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               32f
-        mov               r3, #0
-        uxth              r12, r1
-8:
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        bne               9f
-        strexh            r1, r2, [r0]
-        cmp               r1, #0
-        bne               8b
-        b                 10f
-9:
-        mov               r1, #1
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-10:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-11:
-        uxth              r12, r1
-        mov               r3, #0
-        tst               lr, #255
-        beq               15f
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        bne               13f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-12:
-        strexh            r1, r2, [r0]
-        cmp               r1, #0
-        beq               14f
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        beq               12b
-13:
-        mov               r1, #1
-14:
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-15:
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        bne               17f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-16:
-        strexh            r1, r2, [r0]
-        cmp               r1, #0
-        beq               18f
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        beq               16b
-17:
-        mov               r1, #1
-        b                 19f
-18:
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-19:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-20:
-        mov               r3, #0
-        uxth              r12, r1
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        bne               22f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-21:
-        strexh            r1, r2, [r0]
-        cmp               r1, #0
-        beq               23f
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        beq               21b
-22:
-        mov               r1, #1
-23:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-24:
-        uxth              r3, r1
-25:
-        ldrexh            lr, [r0]
-        cmp               lr, r3
-        bne               26f
-        strexh            r1, r2, [r0]
-        cmp               r1, #0
-        bne               25b
-        b                 27f
-26:
-        mov               r1, #1
-27:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-28:
-        mov               r3, #0
-        uxth              r12, r1
-29:
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        bne               30f
-        strexh            r1, r2, [r0]
-        cmp               r1, #0
-        bne               29b
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        b                 31f
-30:
-        mov               r1, #1
-31:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-32:
-        ldr               r0, [pc, #0x8]          @ 0x28c <<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange+0x28c>
-        mov               r1, #40
-        ldr               r2, [pc, #0x4]          @ 0x290 <<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange+0x290>
-33:
-        bl                33f
-
-<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
-        push              {r11, lr}
-        mov               r11, sp
-        ldr               lr, [r11, #0x8]
+        ldr               r1, [r11, #0x8]
         uxtb              r3, r3
         cmp               r3, #0
         beq               6f
@@ -2674,21 +2422,17 @@ asm_test::store::u64::release:
         beq               2f
         cmp               r3, #2
         bne               10f
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               23f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               27f
+        tst               r1, #255
+        beq               19f
+        mov               r1, #1
         mov               r3, #0
-        uxth              r12, r1
+0:
         ldrexh            lr, [r0]
         cmp               lr, r12
-        bne               0f
+        bne               1f
         strexh            r1, r2, [r0]
-        b                 1f
-0:
-        mov               r1, #1
+        cmp               r1, #0
+        bne               0b
 1:
         mcr               p15, #0x0, r3, c7, c10, #0x5
         clz               r0, r1
@@ -2696,24 +2440,21 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 2:
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               17f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               27f
+        tst               r1, #255
+        beq               13f
+        mov               r1, #1
         mov               r3, #0
-        uxth              r12, r1
         ldrexh            lr, [r0]
         cmp               lr, r12
-        bne               3f
+        bne               4f
         mcr               p15, #0x0, r3, c7, c10, #0x5
+3:
         strexh            r1, r2, [r0]
         cmp               r1, #0
         beq               5f
-        b                 4f
-3:
-        mov               r1, #1
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        beq               3b
 4:
         mcr               p15, #0x0, r3, c7, c10, #0x5
 5:
@@ -2722,23 +2463,18 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 6:
-        uxtb              r3, lr
-        cmp               r3, #0
-        beq               20f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               27f
+        tst               r1, #255
+        beq               16f
+        mov               r1, #1
         mov               r3, #0
-        uxth              r12, r1
+7:
         ldrexh            lr, [r0]
         cmp               lr, r12
-        bne               7f
+        bne               8f
         strexh            r1, r2, [r0]
         cmp               r1, #0
-        beq               9f
-        b                 8f
-7:
-        mov               r1, #1
+        bne               7b
+        b                 9f
 8:
         mcr               p15, #0x0, r3, c7, c10, #0x5
 9:
@@ -2747,18 +2483,21 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 10:
-        uxth              r12, r1
+        tst               r1, #255
+        beq               22f
+        mov               r1, #1
         mov               r3, #0
-        tst               lr, #255
-        beq               13f
         ldrexh            lr, [r0]
         cmp               lr, r12
-        bne               11f
+        bne               12f
         mcr               p15, #0x0, r3, c7, c10, #0x5
-        strexh            r1, r2, [r0]
-        b                 12f
 11:
-        mov               r1, #1
+        strexh            r1, r2, [r0]
+        cmp               r1, #0
+        beq               12f
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        beq               11b
 12:
         mcr               p15, #0x0, r3, c7, c10, #0x5
         clz               r0, r1
@@ -2766,18 +2505,221 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 13:
+        mov               r1, #1
+        mov               r3, #0
         ldrexh            lr, [r0]
         cmp               lr, r12
-        bne               14f
+        bne               15f
         mcr               p15, #0x0, r3, c7, c10, #0x5
+14:
         strexh            r1, r2, [r0]
         cmp               r1, #0
         beq               15f
-        b                 16f
-14:
-        mov               r1, #1
-        b                 16f
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        beq               14b
 15:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+16:
+        mov               r1, #1
+17:
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               18f
+        strexh            r1, r2, [r0]
+        cmp               r1, #0
+        bne               17b
+18:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+19:
+        mov               r1, #1
+        mov               r3, #0
+20:
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               21f
+        strexh            r1, r2, [r0]
+        cmp               r1, #0
+        bne               20b
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+21:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+22:
+        mov               r1, #1
+        mov               r3, #0
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               25f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+23:
+        strexh            r1, r2, [r0]
+        cmp               r1, #0
+        beq               24f
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        beq               23b
+        b                 25f
+24:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+25:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+
+<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
+        push              {r11, lr}
+        mov               r11, sp
+        ldr               lr, [r11, #0x8]
+        uxtb              r3, r3
+        cmp               r3, #0
+        beq               4f
+        cmp               r3, #1
+        beq               1f
+        cmp               r3, #2
+        bne               7f
+        uxtb              r3, lr
+        cmp               r3, #0
+        beq               15f
+        cmp               r3, #2
+        cmpne             r3, #4
+        bne               17f
+        uxth              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               0f
+        strexh            r1, r2, [r0]
+0:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+1:
+        uxtb              r3, lr
+        cmp               r3, #0
+        beq               11f
+        cmp               r3, #2
+        cmpne             r3, #4
+        bne               17f
+        uxth              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               2f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strexh            r1, r2, [r0]
+        cmp               r1, #0
+        beq               3f
+2:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+3:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+4:
+        uxtb              r3, lr
+        cmp               r3, #0
+        beq               13f
+        cmp               r3, #2
+        cmpne             r3, #4
+        bne               17f
+        uxth              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               5f
+        strexh            r1, r2, [r0]
+        cmp               r1, #0
+        beq               6f
+5:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+6:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+7:
+        uxth              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        tst               lr, #255
+        beq               9f
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               8f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strexh            r1, r2, [r0]
+8:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+9:
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               10f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strexh            r1, r2, [r0]
+        cmp               r1, #0
+        bne               10f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+10:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+11:
+        uxth              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               12f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strexh            r1, r2, [r0]
+12:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+13:
+        uxth              r12, r1
+        mov               r1, #1
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               14f
+        strexh            r1, r2, [r0]
+14:
+        clz               r0, r1
+        lsr               r1, r0, #5
+        mov               r0, lr
+        pop               {r11, pc}
+15:
+        uxth              r12, r1
+        mov               r1, #1
+        mov               r3, #0
+        ldrexh            lr, [r0]
+        cmp               lr, r12
+        bne               16f
+        strexh            r1, r2, [r0]
+        cmp               r1, #0
+        bne               16f
         mcr               p15, #0x0, r3, c7, c10, #0x5
 16:
         clz               r0, r1
@@ -2785,61 +2727,11 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 17:
-        mov               r3, #0
-        uxth              r12, r1
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        bne               18f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        strexh            r1, r2, [r0]
-        b                 19f
-18:
-        mov               r1, #1
-19:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-20:
-        uxth              r3, r1
-        ldrexh            lr, [r0]
-        cmp               lr, r3
-        bne               21f
-        strexh            r1, r2, [r0]
-        b                 22f
-21:
-        mov               r1, #1
-22:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-23:
-        mov               r3, #0
-        uxth              r12, r1
-        ldrexh            lr, [r0]
-        cmp               lr, r12
-        bne               24f
-        strexh            r1, r2, [r0]
-        cmp               r1, #0
-        beq               25f
-        b                 26f
-24:
-        mov               r1, #1
-        b                 26f
-25:
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-26:
-        clz               r0, r1
-        lsr               r1, r0, #5
-        mov               r0, lr
-        pop               {r11, pc}
-27:
-        ldr               r0, [pc, #0x8]          @ 0x24c <<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x24c>
+        ldr               r0, [pc, #0x8]          @ 0x220 <<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x220>
         mov               r1, #40
-        ldr               r2, [pc, #0x4]          @ 0x250 <<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x250>
-28:
-        bl                28f
+        ldr               r2, [pc, #0x4]          @ 0x224 <<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x224>
+18:
+        bl                18f
 
 <u16 as atomic_maybe_uninit::raw::AtomicLoad>::atomic_load:
         uxtb              r1, r1
@@ -2946,19 +2838,16 @@ asm_test::store::u64::release:
         mov               r11, sp
         ldr               r12, [r11, #0x8]
         uxtb              r3, r3
+        mov               lr, #1
         cmp               r3, #0
-        beq               7f
+        beq               6f
         cmp               r3, #1
-        beq               3f
+        beq               2f
         cmp               r3, #2
-        bne               11f
-        uxtb              r3, r12
-        cmp               r3, #0
-        beq               27f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               31f
+        bne               10f
         mov               r3, #0
+        tst               r12, #255
+        beq               18f
 0:
         ldrex             r12, [r0]
         cmp               r12, r1
@@ -2966,106 +2855,110 @@ asm_test::store::u64::release:
         strex             lr, r2, [r0]
         cmp               lr, #0
         bne               0b
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        b                 2f
 1:
-        mov               lr, #1
         mcr               p15, #0x0, r3, c7, c10, #0x5
+        clz               r0, lr
+        lsr               r1, r0, #5
+        mov               r0, r12
+        pop               {r11, pc}
 2:
-        clz               r0, lr
-        lsr               r1, r0, #5
-        mov               r0, r12
-        pop               {r11, pc}
-3:
-        uxtb              r3, r12
-        cmp               r3, #0
-        beq               20f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               31f
-        mov               r3, #0
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        bne               5f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-4:
-        strex             lr, r2, [r0]
-        cmp               lr, #0
-        beq               6f
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        beq               4b
-5:
-        mov               lr, #1
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-6:
-        clz               r0, lr
-        lsr               r1, r0, #5
-        mov               r0, r12
-        pop               {r11, pc}
-7:
-        uxtb              r3, r12
-        cmp               r3, #0
-        beq               24f
-        cmp               r3, #2
-        cmpne             r3, #4
-        bne               31f
-        mov               r3, #0
-8:
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        bne               9f
-        strex             lr, r2, [r0]
-        cmp               lr, #0
-        bne               8b
-        b                 10f
-9:
-        mov               lr, #1
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-10:
-        clz               r0, lr
-        lsr               r1, r0, #5
-        mov               r0, r12
-        pop               {r11, pc}
-11:
         mov               r3, #0
         tst               r12, #255
+        beq               13f
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        bne               4f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+3:
+        strex             lr, r2, [r0]
+        cmp               lr, #0
+        beq               5f
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        beq               3b
+4:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+5:
+        clz               r0, lr
+        lsr               r1, r0, #5
+        mov               r0, r12
+        pop               {r11, pc}
+6:
+        tst               r12, #255
+        beq               16f
+        mov               r3, #0
+7:
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        bne               8f
+        strex             lr, r2, [r0]
+        cmp               lr, #0
+        bne               7b
+        b                 9f
+8:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+9:
+        clz               r0, lr
+        lsr               r1, r0, #5
+        mov               r0, r12
+        pop               {r11, pc}
+10:
+        mov               r3, #0
+        tst               r12, #255
+        beq               20f
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        bne               12f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+11:
+        strex             lr, r2, [r0]
+        cmp               lr, #0
+        beq               12f
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        beq               11b
+12:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        clz               r0, lr
+        lsr               r1, r0, #5
+        mov               r0, r12
+        pop               {r11, pc}
+13:
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        bne               15f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+14:
+        strex             lr, r2, [r0]
+        cmp               lr, #0
         beq               15f
         ldrex             r12, [r0]
         cmp               r12, r1
-        bne               13f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-12:
-        strex             lr, r2, [r0]
-        cmp               lr, #0
-        beq               14f
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        beq               12b
-13:
-        mov               lr, #1
-14:
-        mcr               p15, #0x0, r3, c7, c10, #0x5
+        beq               14b
+15:
         clz               r0, lr
         lsr               r1, r0, #5
         mov               r0, r12
         pop               {r11, pc}
-15:
+16:
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               17f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-16:
         strex             lr, r2, [r0]
         cmp               lr, #0
-        beq               18f
+        bne               16b
+17:
+        clz               r0, lr
+        lsr               r1, r0, #5
+        mov               r0, r12
+        pop               {r11, pc}
+18:
         ldrex             r12, [r0]
         cmp               r12, r1
-        beq               16b
-17:
-        mov               lr, #1
-        b                 19f
-18:
+        bne               19f
+        strex             lr, r2, [r0]
+        cmp               lr, #0
+        bne               18b
         mcr               p15, #0x0, r3, c7, c10, #0x5
 19:
         clz               r0, lr
@@ -3073,64 +2966,25 @@ asm_test::store::u64::release:
         mov               r0, r12
         pop               {r11, pc}
 20:
-        mov               r3, #0
         ldrex             r12, [r0]
         cmp               r12, r1
-        bne               22f
+        bne               23f
         mcr               p15, #0x0, r3, c7, c10, #0x5
 21:
         strex             lr, r2, [r0]
         cmp               lr, #0
-        beq               23f
+        beq               22f
         ldrex             r12, [r0]
         cmp               r12, r1
         beq               21b
+        b                 23f
 22:
-        mov               lr, #1
+        mcr               p15, #0x0, r3, c7, c10, #0x5
 23:
         clz               r0, lr
         lsr               r1, r0, #5
         mov               r0, r12
         pop               {r11, pc}
-24:
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        bne               25f
-        strex             lr, r2, [r0]
-        cmp               lr, #0
-        bne               24b
-        b                 26f
-25:
-        mov               lr, #1
-26:
-        clz               r0, lr
-        lsr               r1, r0, #5
-        mov               r0, r12
-        pop               {r11, pc}
-27:
-        mov               r3, #0
-28:
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        bne               29f
-        strex             lr, r2, [r0]
-        cmp               lr, #0
-        bne               28b
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        b                 30f
-29:
-        mov               lr, #1
-30:
-        clz               r0, lr
-        lsr               r1, r0, #5
-        mov               r0, r12
-        pop               {r11, pc}
-31:
-        ldr               r0, [pc, #0x8]          @ 0x270 <<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange+0x270>
-        mov               r1, #40
-        ldr               r2, [pc, #0x4]          @ 0x274 <<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange+0x274>
-32:
-        bl                32f
 
 <u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
         push              {r11, lr}
@@ -3138,111 +2992,137 @@ asm_test::store::u64::release:
         ldr               r12, [r11, #0x8]
         uxtb              r3, r3
         cmp               r3, #0
-        beq               6f
+        beq               4f
         cmp               r3, #1
-        beq               2f
+        beq               1f
         cmp               r3, #2
-        bne               10f
+        bne               7f
         uxtb              r3, r12
         cmp               r3, #0
-        beq               23f
+        beq               15f
         cmp               r3, #2
         cmpne             r3, #4
-        bne               27f
+        bne               17f
+        mov               lr, #1
         mov               r3, #0
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         strex             lr, r2, [r0]
-        b                 1f
 0:
-        mov               lr, #1
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        clz               r0, lr
+        lsr               r1, r0, #5
+        mov               r0, r12
+        pop               {r11, pc}
 1:
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        clz               r0, lr
-        lsr               r1, r0, #5
-        mov               r0, r12
-        pop               {r11, pc}
-2:
         uxtb              r3, r12
         cmp               r3, #0
-        beq               17f
+        beq               11f
         cmp               r3, #2
         cmpne             r3, #4
-        bne               27f
-        mov               r3, #0
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        bne               3f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        strex             lr, r2, [r0]
-        cmp               lr, #0
-        beq               5f
-        b                 4f
-3:
+        bne               17f
         mov               lr, #1
-4:
+        mov               r3, #0
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        bne               2f
         mcr               p15, #0x0, r3, c7, c10, #0x5
-5:
+        strex             lr, r2, [r0]
+        cmp               lr, #0
+        beq               3f
+2:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+3:
         clz               r0, lr
         lsr               r1, r0, #5
         mov               r0, r12
         pop               {r11, pc}
-6:
+4:
         uxtb              r3, r12
         cmp               r3, #0
-        beq               20f
+        beq               13f
         cmp               r3, #2
         cmpne             r3, #4
-        bne               27f
+        bne               17f
+        mov               lr, #1
         mov               r3, #0
         ldrex             r12, [r0]
         cmp               r12, r1
-        bne               7f
+        bne               5f
         strex             lr, r2, [r0]
         cmp               lr, #0
-        beq               9f
-        b                 8f
+        beq               6f
+5:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+6:
+        clz               r0, lr
+        lsr               r1, r0, #5
+        mov               r0, r12
+        pop               {r11, pc}
 7:
         mov               lr, #1
+        mov               r3, #0
+        tst               r12, #255
+        beq               9f
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        bne               8f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strex             lr, r2, [r0]
 8:
         mcr               p15, #0x0, r3, c7, c10, #0x5
-9:
         clz               r0, lr
         lsr               r1, r0, #5
         mov               r0, r12
         pop               {r11, pc}
-10:
-        mov               r3, #0
-        tst               r12, #255
-        beq               13f
+9:
         ldrex             r12, [r0]
         cmp               r12, r1
-        bne               11f
+        bne               10f
         mcr               p15, #0x0, r3, c7, c10, #0x5
         strex             lr, r2, [r0]
-        b                 12f
+        cmp               lr, #0
+        bne               10f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
+10:
+        clz               r0, lr
+        lsr               r1, r0, #5
+        mov               r0, r12
+        pop               {r11, pc}
 11:
         mov               lr, #1
-12:
+        mov               r3, #0
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        bne               12f
         mcr               p15, #0x0, r3, c7, c10, #0x5
+        strex             lr, r2, [r0]
+12:
         clz               r0, lr
         lsr               r1, r0, #5
         mov               r0, r12
         pop               {r11, pc}
 13:
+        mov               lr, #1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               14f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
+        strex             lr, r2, [r0]
+14:
+        clz               r0, lr
+        lsr               r1, r0, #5
+        mov               r0, r12
+        pop               {r11, pc}
+15:
+        mov               lr, #1
+        mov               r3, #0
+        ldrex             r12, [r0]
+        cmp               r12, r1
+        bne               16f
         strex             lr, r2, [r0]
         cmp               lr, #0
-        beq               15f
-        b                 16f
-14:
-        mov               lr, #1
-        b                 16f
-15:
+        bne               16f
         mcr               p15, #0x0, r3, c7, c10, #0x5
 16:
         clz               r0, lr
@@ -3250,58 +3130,11 @@ asm_test::store::u64::release:
         mov               r0, r12
         pop               {r11, pc}
 17:
-        mov               r3, #0
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        bne               18f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-        strex             lr, r2, [r0]
-        b                 19f
-18:
-        mov               lr, #1
-19:
-        clz               r0, lr
-        lsr               r1, r0, #5
-        mov               r0, r12
-        pop               {r11, pc}
-20:
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        bne               21f
-        strex             lr, r2, [r0]
-        b                 22f
-21:
-        mov               lr, #1
-22:
-        clz               r0, lr
-        lsr               r1, r0, #5
-        mov               r0, r12
-        pop               {r11, pc}
-23:
-        mov               r3, #0
-        ldrex             r12, [r0]
-        cmp               r12, r1
-        bne               24f
-        strex             lr, r2, [r0]
-        cmp               lr, #0
-        beq               25f
-        b                 26f
-24:
-        mov               lr, #1
-        b                 26f
-25:
-        mcr               p15, #0x0, r3, c7, c10, #0x5
-26:
-        clz               r0, lr
-        lsr               r1, r0, #5
-        mov               r0, r12
-        pop               {r11, pc}
-27:
-        ldr               r0, [pc, #0x8]          @ 0x230 <<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x230>
+        ldr               r0, [pc, #0x8]          @ 0x204 <<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x204>
         mov               r1, #40
-        ldr               r2, [pc, #0x4]          @ 0x234 <<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x234>
-28:
-        bl                28f
+        ldr               r2, [pc, #0x4]          @ 0x208 <<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x208>
+18:
+        bl                18f
 
 <u32 as atomic_maybe_uninit::raw::AtomicLoad>::atomic_load:
         uxtb              r1, r1
@@ -3474,141 +3307,153 @@ asm_test::store::u64::release:
         ldr               r4, [r11, #0x8]
         cmp               r3, #0
         ldr               r2, [r11, #0x14]
-        beq               7f
-        cmp               r3, #1
-        beq               3f
-        cmp               r3, #2
-        bne               11f
-        uxtb              r2, r2
-        cmp               r2, #0
-        beq               27f
-        cmp               r2, #2
-        cmpne             r2, #4
-        bne               31f
+        beq               6f
         mov               r8, #0
+        cmp               r3, #1
+        beq               2f
+        cmp               r3, #2
+        bne               10f
+        tst               r2, #255
+        beq               18f
 0:
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
+        mov               r6, #1
         bne               1f
         strexd            r6, r4, r5, [r1]
         cmp               r6, #0
         bne               0b
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        b                 2f
 1:
-        mov               r6, #1
         mcr               p15, #0x0, r8, c7, c10, #0x5
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
 2:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-3:
-        uxtb              r2, r2
-        cmp               r2, #0
-        beq               20f
-        cmp               r2, #2
-        cmpne             r2, #4
-        bne               31f
-        mov               r8, #0
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        bne               5f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-4:
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               6f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        beq               4b
-5:
-        mov               r6, #1
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-6:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-7:
-        uxtb              r2, r2
-        cmp               r2, #0
-        beq               24f
-        cmp               r2, #2
-        cmpne             r2, #4
-        bne               31f
-        mov               r8, #0
-8:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        bne               9f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        bne               8b
-        b                 10f
-9:
-        mov               r6, #1
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-10:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-11:
-        mov               r8, #0
         tst               r2, #255
+        beq               13f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               4f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+3:
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        beq               5f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        beq               3b
+4:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+5:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+6:
+        tst               r2, #255
+        beq               16f
+        mov               r8, #0
+7:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               8f
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        bne               7b
+        b                 9f
+8:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+9:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+10:
+        tst               r2, #255
+        beq               20f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               12f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+11:
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        beq               12f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        beq               11b
+12:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+13:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               15f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+14:
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
         beq               15f
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
-        bne               13f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-12:
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               14f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        beq               12b
-13:
         mov               r6, #1
-14:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
+        beq               14b
+15:
         eor               r1, r6, #1
         strd              r2, r3, [r0]
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-15:
+16:
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
+        mov               r6, #1
         bne               17f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-16:
         strexd            r6, r4, r5, [r1]
         cmp               r6, #0
-        beq               18f
+        bne               16b
+17:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+18:
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
-        beq               16b
-17:
         mov               r6, #1
-        b                 19f
-18:
+        bne               19f
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        bne               18b
         mcr               p15, #0x0, r8, c7, c10, #0x5
 19:
         eor               r1, r6, #1
@@ -3616,72 +3461,31 @@ asm_test::store::u64::release:
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, r10, r11, pc}
 20:
-        mov               r8, #0
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
-        bne               22f
+        mov               r6, #1
+        bne               23f
         mcr               p15, #0x0, r8, c7, c10, #0x5
 21:
         strexd            r6, r4, r5, [r1]
         cmp               r6, #0
-        beq               23f
+        beq               22f
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
-        beq               21b
-22:
         mov               r6, #1
+        beq               21b
+        b                 23f
+22:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
 23:
         eor               r1, r6, #1
         strd              r2, r3, [r0]
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-24:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        bne               25f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        bne               24b
-        b                 26f
-25:
-        mov               r6, #1
-26:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-27:
-        mov               r8, #0
-28:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        bne               29f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        bne               28b
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        b                 30f
-29:
-        mov               r6, #1
-30:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-31:
-        ldr               r0, [pc, #0x8]          @ 0x2e0 <<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange+0x2e0>
-        mov               r1, #40
-        ldr               r2, [pc, #0x4]          @ 0x2e4 <<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange+0x2e4>
-32:
-        bl                32f
 
 <u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
         push              {r4, r5, r6, r7, r8, r10, r11, lr}
@@ -3693,102 +3497,126 @@ asm_test::store::u64::release:
         ldr               r4, [r11, #0x8]
         cmp               r3, #0
         ldr               r2, [r11, #0x14]
-        beq               6f
+        beq               4f
         cmp               r3, #1
-        beq               2f
+        beq               1f
         cmp               r3, #2
-        bne               10f
+        bne               7f
         uxtb              r2, r2
         cmp               r2, #0
-        beq               23f
+        beq               15f
         cmp               r2, #2
         cmpne             r2, #4
-        bne               27f
+        bne               17f
         mov               r8, #0
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
+        mov               r6, #1
         bne               0f
         strexd            r6, r4, r5, [r1]
-        b                 1f
 0:
-        mov               r6, #1
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
 1:
+        uxtb              r2, r2
+        cmp               r2, #0
+        beq               11f
+        cmp               r2, #2
+        cmpne             r2, #4
+        bne               17f
+        mov               r8, #0
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               2f
         mcr               p15, #0x0, r8, c7, c10, #0x5
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        beq               3f
 2:
-        uxtb              r2, r2
-        cmp               r2, #0
-        beq               17f
-        cmp               r2, #2
-        cmpne             r2, #4
-        bne               27f
-        mov               r8, #0
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        bne               3f
         mcr               p15, #0x0, r8, c7, c10, #0x5
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               5f
-        b                 4f
 3:
-        mov               r6, #1
-4:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-5:
         eor               r1, r6, #1
         strd              r2, r3, [r0]
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-6:
+4:
         uxtb              r2, r2
         cmp               r2, #0
-        beq               20f
+        beq               13f
         cmp               r2, #2
         cmpne             r2, #4
-        bne               27f
+        bne               17f
         mov               r8, #0
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
-        bne               7f
+        mov               r6, #1
+        bne               5f
         strexd            r6, r4, r5, [r1]
         cmp               r6, #0
-        beq               9f
-        b                 8f
-7:
-        mov               r6, #1
-8:
+        beq               6f
+5:
         mcr               p15, #0x0, r8, c7, c10, #0x5
-9:
+6:
         eor               r1, r6, #1
         strd              r2, r3, [r0]
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-10:
+7:
         mov               r8, #0
         tst               r2, #255
-        beq               13f
+        beq               9f
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
-        bne               11f
+        mov               r6, #1
+        bne               8f
         mcr               p15, #0x0, r8, c7, c10, #0x5
         strexd            r6, r4, r5, [r1]
-        b                 12f
-11:
-        mov               r6, #1
-12:
+8:
         mcr               p15, #0x0, r8, c7, c10, #0x5
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+9:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               10f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        bne               10f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+10:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+11:
+        mov               r8, #0
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               12f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        strexd            r6, r4, r5, [r1]
+12:
         eor               r1, r6, #1
         strd              r2, r3, [r0]
         strb              r1, [r0, #0x8]
@@ -3798,16 +3626,25 @@ asm_test::store::u64::release:
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
+        mov               r6, #1
         bne               14f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
+        strexd            r6, r4, r5, [r1]
+14:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+15:
+        mov               r8, #0
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               16f
         strexd            r6, r4, r5, [r1]
         cmp               r6, #0
-        beq               15f
-        b                 16f
-14:
-        mov               r6, #1
-        b                 16f
-15:
+        bne               16f
         mcr               p15, #0x0, r8, c7, c10, #0x5
 16:
         eor               r1, r6, #1
@@ -3815,61 +3652,8 @@ asm_test::store::u64::release:
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, r10, r11, pc}
 17:
-        mov               r8, #0
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        bne               18f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        strexd            r6, r4, r5, [r1]
-        b                 19f
-18:
-        mov               r6, #1
-19:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-20:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        bne               21f
-        strexd            r6, r4, r5, [r1]
-        b                 22f
-21:
-        mov               r6, #1
-22:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-23:
-        mov               r8, #0
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        bne               24f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               25f
-        b                 26f
-24:
-        mov               r6, #1
-        b                 26f
-25:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-26:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-27:
-        ldr               r0, [pc, #0x8]          @ 0x280 <<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x280>
+        ldr               r0, [pc, #0x8]          @ 0x258 <<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x258>
         mov               r1, #40
-        ldr               r2, [pc, #0x4]          @ 0x284 <<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x284>
-28:
-        bl                28f
+        ldr               r2, [pc, #0x4]          @ 0x25c <<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak+0x25c>
+18:
+        bl                18f

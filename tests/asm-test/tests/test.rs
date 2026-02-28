@@ -48,6 +48,10 @@ fn test() {
         Revision::new("armv7m", "thumbv7m-none-eabi"),
         Revision::new("armv8a", "armv7-unknown-linux-gnueabi")
             .rustc_args(["-C", "target-feature=+v8"]),
+        Revision::new("armv8a_thumb", "armv7-unknown-linux-gnueabi")
+            .rustc_args(["-C", "target-feature=+v8,+thumb-mode"]),
+        Revision::new("armv8a_thumb_msvc", "thumbv7a-pc-windows-msvc")
+            .rustc_args(["-C", "target-feature=+v8"]),
         Revision::new("armv8m_base", "thumbv8m.base-none-eabi"),
         Revision::new("armv8m_main", "thumbv8m.main-none-eabi"),
         // AVR

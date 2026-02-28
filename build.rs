@@ -570,6 +570,8 @@ fn main() {
 // As mentioned in the [RFC2045], unstable target features are also passed to LLVM
 // (e.g., https://godbolt.org/z/4rr7rMcfG), so this hack works properly on stable.
 //
+// Note that fallback doesn't catch the target feature enabled via target spec.
+//
 // [RFC2045]: https://rust-lang.github.io/rfcs/2045-target-feature.html#backend-compilation-options
 fn needs_target_feature_fallback(version: &Version, stable: Option<u32>) -> bool {
     match stable {
@@ -602,6 +604,7 @@ fn target_feature_fallback(name: &str, mut has_target_feature: bool) -> bool {
     has_target_feature
 }
 
+// Note that this doesn't catch the target cpu set via target spec.
 fn target_cpu() -> Option<String> {
     let rustflags = env::var_os("CARGO_ENCODED_RUSTFLAGS")?;
     let rustflags = rustflags.to_string_lossy();

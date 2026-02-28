@@ -6,9 +6,8 @@ Armv8 AArch32
 See "Atomic operation overview by architecture" for atomic operations in this architecture:
 https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#arm
 
-LLVM doesn't generate CLREX for Armv8-M Baseline, but it actually supports CLREX.
+LLVM doesn't emit CLREX for Armv8-M Baseline, but it actually supports CLREX.
 https://developer.arm.com/documentation/dui1095/a/The-Cortex-M23-Instruction-Set/Memory-access-instructions
-https://community.arm.com/cfs-file/__key/telligent-evolution-components-attachments/01-2057-00-00-00-01-28-35/Cortex_2D00_M-for-Beginners-_2D00_-2017_5F00_EN_5F00_v2.pdf
 
 Refs:
 - Arm A-profile A32/T32 Instruction Set Architecture
@@ -74,6 +73,32 @@ cfg_sel!({
         macro_rules! s {
             ($op:tt, $operand:tt) => {
                 concat!($op, "s ", $operand)
+            };
+        }
+    }
+});
+
+cfg_sel!({
+    #[cfg(any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"))]
+    {
+        // CB{,N}Z is only supported on Thumb mode.
+        // $r must be r[0-7] and cannot jump to the label at the back.
+        // https://developer.arm.com/documentation/ddi0597/2025-12/Base-Instructions/CBNZ--CBZ--Compare-and-Branch-on-Nonzero-or-Zero-
+        macro_rules! cbz {
+            ($r:tt, $label:tt) => {
+                concat!("cbz ", $r, ", ", $label)
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        #[rustfmt::skip]
+        macro_rules! cbz {
+            ($r:tt, $label:tt) => {
+                concat!(
+                    "cmp ", $r, ", #0\n",
+                    "beq ", $label,
+                )
             };
         }
     }
@@ -198,23 +223,22 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
-                                    "cmp {out}, {old}",                                             // if out == old { Z = 1 } else { Z = 0 }
-                                    "bne 3f",                                                       // if Z == 0 { jump 'cmp-fail }
-                                    concat!("st", $release, "ex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cmp {r}, #0",                                                  // if r == 0 { Z = 1 } else { Z = 0 }
-                                    "bne 2b",                                                       // if Z == 0 { jump 'retry }
-                                    "b 4f",                                                         // jump 'success
+                                    concat!("ld", $acquire, "ex", $suffix, " {out}, [{dst}]"),     // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
+                                    "cmp {out}, {old}",                                            // if out == old { Z = 1 } else { Z = 0 }
+                                    "bne 3f",                                                      // if Z == 0 { jump 'cmp-fail }
+                                    concat!("st", $release, "ex", $suffix, " r3, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r3 = 0 } else { r3 = 1 }; EXCLUSIVE = None }
+                                    cbz!("r3", "4f"),                                              // if r3 == 0 { jump 'success }
+                                    "b 2b",                                                        // jump 'retry
                                 "3:", // 'cmp-fail:
-                                    "clrex",                                                        // EXCLUSIVE = None
-                                    s!("mov", "{r}, #1"),                                           // r = 1
+                                    "clrex",                                                       // EXCLUSIVE = None
+                                    s!("mov", "r3, #1"),                                           // r3 = 1
                                 "4:", // 'success:
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::extend32::$ty::zero(old),
                                 new = in(reg) new,
                                 out = out(reg) out,
-                                r = out(reg) r,
-                                // Do not use `preserves_flags` because CMP and s! modify the condition flags.
+                                out("r3") r,
+                                // Do not use `preserves_flags` because CMP, cbz!, and s! modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -415,31 +439,30 @@ macro_rules! atomic64 {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ld", $acquire, "exd r2, r3, [{dst}]"),       // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                    "eor {tmp}, r3, {old_hi}",                            // tmp = r3 ^ old_hi
-                                    "eor {r}, r2, {old_lo}",                              // r = r2 ^ old_lo
-                                    "orrs {r}, {r}, {tmp}",                               // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                    "bne 3f",                                             // if Z == 0 { jump 'cmp-fail }
-                                    concat!("st", $release, "exd  {r}, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cmp {r}, #0",                                        // if r == 0 { Z = 1 } else { Z = 0 }
-                                    "bne 2b",                                             // if Z == 0 { jump 'retry }
-                                    "b 4f",                                               // jump 'success
+                                    concat!("ld", $acquire, "exd r2, r3, [{dst}]"),     // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                                    "eor {tmp}, r3, {old_hi}",                          // tmp = r3 ^ old_hi
+                                    "eor r1, r2, {old_lo}",                             // r1 = r2 ^ old_lo
+                                    "orrs r1, {tmp}",                                   // r1 |= tmp; if r1 == 0 { Z = 1 } else { Z = 0 }
+                                    "bne 3f",                                           // if Z == 0 { jump 'cmp-fail }
+                                    concat!("st", $release, "exd r1, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r1 = 0 } else { r1 = 1 }; EXCLUSIVE = None }
+                                    cbz!("r1", "4f"),                                   // if r1 == 0 { jump 'success }
+                                    "b 2b",                                             // jump 'retry
                                 "3:", // 'cmp-fail:
-                                    "clrex",                                              // EXCLUSIVE = None
-                                    s!("mov", "{r}, #1"),                                 // r = 1
+                                    "clrex",                                            // EXCLUSIVE = None
+                                    s!("mov", "r1, #1"),                                // r1 = 1
                                 "4:", // 'success:
                                 dst = in(reg) dst,
                                 old_lo = in(reg) old.pair.lo,
                                 old_hi = in(reg) old.pair.hi,
-                                r = out(reg) r,
                                 tmp = out(reg) _,
+                                out("r1") r,
                                 // prev pair - must be even-numbered and not R14
                                 out("r2") prev_lo,
                                 out("r3") prev_hi,
                                 // new pair - must be even-numbered and not R14
                                 in("r4") new.pair.lo,
                                 in("r5") new.pair.hi,
-                                // Do not use `preserves_flags` because CMP, ORRS, and s! modify the condition flags.
+                                // Do not use `preserves_flags` because CMP, ORRS, cbz!, and s! modify the condition flags.
                                 options(nostack),
                             )
                         };
@@ -470,16 +493,16 @@ macro_rules! atomic64 {
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                concat!("ld", $acquire, "exd r2, r3, [{dst}]"),       // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                "eor {tmp}, r3, {old_hi}",                            // tmp = r3 ^ old_hi
-                                "eor {r}, r2, {old_lo}",                              // r = r2 ^ old_lo
-                                "orrs {r}, {r}, {tmp}",                               // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                "bne 3f",                                             // if Z == 0 { jump 'cmp-fail }
-                                concat!("st", $release, "exd  {r}, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                "b 4f",                                               // jump 'success
+                                concat!("ld", $acquire, "exd r2, r3, [{dst}]"),      // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                                "eor {tmp}, r3, {old_hi}",                           // tmp = r3 ^ old_hi
+                                "eor {r}, r2, {old_lo}",                             // r = r2 ^ old_lo
+                                "orrs {r}, {tmp}",                                   // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
+                                "bne 3f",                                            // if Z == 0 { jump 'cmp-fail }
+                                concat!("st", $release, "exd {r}, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                "b 4f",                                              // jump 'success
                                 "3:", // 'cmp-fail:
-                                    "clrex",                                          // EXCLUSIVE = None
-                                    s!("mov", "{r}, #1"),                             // r = 1
+                                    "clrex",                                         // EXCLUSIVE = None
+                                    s!("mov", "{r}, #1"),                            // r = 1
                                 "4:", // 'success:
                                 dst = in(reg) dst,
                                 old_lo = in(reg) old.pair.lo,
