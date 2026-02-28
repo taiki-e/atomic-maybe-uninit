@@ -124,25 +124,36 @@ convert_toolchain_for_unstable_asm() {
   case "${toolchain}" in
     1.74) bail "should be handled by calling min_nightly_toolchain" ;;
     1.7[5-7])
+      # LLVM 17
       case "${target}" in
         arm64ec* | csky* | hexagon* | sparc*) toolchain='' ;; # see min nightly toolchain
-        *) toolchain=nightly-2024-02-13 ;;                    # Rust 1.78, LLVM 17
+        *) toolchain=nightly-2024-02-13 ;;                    # Rust 1.78
       esac
       ;;
     1.7[8-9] | 1.8[0-1])
+      # LLVM 18
       case "${target}" in
         csky* | hexagon* | sparc*) toolchain='' ;; # see min nightly toolchain
-        *) toolchain=nightly-2024-07-31 ;;         # Rust 1.82, LLVM 18
+        *) toolchain=nightly-2024-07-31 ;;         # Rust 1.82
       esac
       ;;
     1.8[2-6])
+      # LLVM 19
       case "${target}" in
-        aarch64_be*) toolchain=nightly-2024-11-07 ;; # Rust 1.84, LLVM 19 (broken on nightly-2025-02-17 due to https://github.com/rust-lang/stdarch/issues/1484)
-        *) toolchain=nightly-2025-02-17 ;;           # Rust 1.87, LLVM 19
+        aarch64_be*) toolchain=nightly-2024-11-07 ;; # Rust 1.84 (broken on nightly-2025-02-17 due to https://github.com/rust-lang/stdarch/issues/1484)
+        *) toolchain=nightly-2025-02-17 ;;           # Rust 1.87
       esac
       ;;
     1.8[7-9] | 1.90)
-      toolchain=nightly-2025-08-06 # Rust 1.91, LLVM 20
+      # LLVM 20
+      case "${target}" in
+        hexagon*) toolchain=nightly-2025-03-07 ;; # Rust 1.87 (broken on nightly-2025-08-06 due to "symbol 'fma' is already defined" error fixed in https://github.com/rust-lang/compiler-builtins/pull/1066)
+        *) toolchain=nightly-2025-08-06 ;;        # Rust 1.91
+      esac
+      ;;
+    1.9[1-4])
+      # LLVM 21
+      toolchain=nightly-2026-01-28
       ;;
     1.*) bail "unhandled ${toolchain}" ;;
     stable | beta) toolchain='' ;; # ignore
@@ -264,27 +275,30 @@ for target in "${targets[@]}"; do
         ;;
       arm-unknown-linux-gnueabi | armv7-unknown-linux-gnueabi | armeb-unknown-linux-gnueabi)
         case "${toolchain}" in
-          1.8[7-9] | 1.9[0-4]) toolchain='' ;; # SIGILL on QEMU with LLVM 20-21
-          # TODO(arm): SIGILL on QEMU with LLVM 20-21
+          1.8[7-9] | 1.9[0-4]) toolchain='' ;; # SIGILL on QEMU with LLVM 20-22
+          # TODO(arm): SIGILL on QEMU with LLVM 20-22
           stable | beta) toolchain='' ;;
           nightly) toolchain=nightly-2025-02-17 ;;
         esac
         ;;
       hexagon-unknown-linux-musl)
         case "${toolchain}" in
-          nightly) toolchain=nightly-2025-03-07 ;; # TODO(hexagon): error: symbol 'fma' is already defined https://github.com/rust-lang/compiler-builtins/pull/1066
+          1.9[1-4]) toolchain='' ;; # "symbol 'fma' is already defined" error fixed in Rust 1.95 https://github.com/rust-lang/compiler-builtins/pull/1066
+          # TODO(hexagon): "symbol 'fma' is already defined" error fixed in Rust 1.95 https://github.com/rust-lang/compiler-builtins/pull/1066
+          stable | beta) toolchain='' ;;
         esac
         ;;
       sparc64-unknown-linux-gnu)
         case "${toolchain}" in
-          1.8[7-9] | 1.9[0-4]) toolchain='' ;; # "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-21
-          # TODO(sprac): "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-21
+          1.8[7-9] | 1.9[0-4]) toolchain='' ;; # "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-22
+          # TODO(sprac): "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-22
           stable | beta) toolchain='' ;;
           nightly) toolchain=nightly-2025-02-17 ;;
         esac
         ;;
       mipsisa*)
         case "${toolchain}" in
+          1.95) toolchain='' ;;                    # compiler SIGILL with LLVM 22
           nightly) toolchain=nightly-2026-01-28 ;; # TODO(mips): compiler SIGILL with LLVM 22
         esac
         ;;
@@ -297,7 +311,7 @@ for target in "${targets[@]}"; do
       toolchain=nightly
       case "${target}" in
         armv7*-linux-gnueabihf | thumbv7*-linux-gnueabihf)
-          toolchain=nightly-2025-02-17 # TODO(arm): SIGILL on QEMU with LLVM 20-21
+          toolchain=nightly-2025-02-17 # TODO(arm): SIGILL on QEMU with LLVM 20-22
           ;;
       esac
       os=''

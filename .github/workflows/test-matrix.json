@@ -328,7 +328,7 @@
       "target": "hexagon-unknown-linux-musl"
     },
     {
-      "rust": "nightly-2025-03-07",
+      "rust": "nightly",
       "target": "hexagon-unknown-linux-musl"
     },
     {
