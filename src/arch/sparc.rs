@@ -55,6 +55,7 @@ cfg_sel!({
         }
         macro_rules! atomic_rmw {
             ($op:ident, $order:ident) => {
+                // op(acquire, release, leon_nop)
                 match $order {
                     Ordering::Relaxed => $op!("", "", ""),
                     Ordering::Acquire => $op!("membar #LoadStore|#LoadLoad", "", ""),
@@ -129,6 +130,7 @@ cfg_sel!({
         #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
         macro_rules! atomic_rmw {
             ($op:ident, $order:ident) => {
+                // op(acquire, release, leon_nop)
                 match $order {
                     // leon_nop for GRLIB-TN-0010
                     Ordering::Relaxed => $op!("", "", leon_nop!()),
@@ -251,7 +253,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_load!("", ""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("membar #LoadStore|#LoadLoad", ""),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     #[cfg(not(any(
                         target_arch = "sparc64",
@@ -264,7 +266,7 @@ macro_rules! atomic_load_store {
                         Ordering::Acquire => atomic_load!(leon_nop!(), ""),
                         // LLVM doesn't emits ldstub here, but GCC does. https://godbolt.org/z/bsGqWzEfM
                         Ordering::SeqCst => atomic_load!(leon_nop!(), concat!(leon_nop!() /* for GRLIB-TN-0010 */, leon_align!(), "ldstub [%sp-1], %g0")),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -301,7 +303,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_store!("", ""),
                         Ordering::Release => atomic_store!("", "membar #StoreStore|#LoadStore"),
                         Ordering::SeqCst => atomic_store!("membar #StoreStore|#LoadStore|#StoreLoad|#LoadLoad", "membar #StoreStore|#LoadStore"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     #[cfg(not(any(
                         target_arch = "sparc64",
@@ -313,7 +315,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_store!(concat!(leon_nop!(), leon_nop!()), ""),
                         Ordering::Release => atomic_store!(concat!(leon_nop!(), leon_nop!()), "stbar"),
                         Ordering::SeqCst => atomic_store!(concat!("stbar\n", leon_align!(), "ldstub [%sp-1], %g0"), "stbar"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }

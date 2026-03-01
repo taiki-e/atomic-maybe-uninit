@@ -40,6 +40,7 @@ macro_rules! atomic_rmw {
         atomic_rmw!($op, $order, write = $order)
     };
     ($op:ident, $order:ident, write = $write:ident) => {
+        // op(acquire, release, msvc_fence)
         match $order {
             Ordering::Relaxed => $op!("", "", ""),
             Ordering::Acquire => $op!("a", "", ""),
@@ -53,14 +54,6 @@ macro_rules! atomic_rmw {
             Ordering::SeqCst => $op!("a", "l", ""),
             _ => unreachable!(),
         }
-    };
-}
-
-#[cfg(not(target_feature = "lse"))]
-macro_rules! if_any {
-    ("", $($tt:tt)*) => { "" };
-    ($cond:tt, $($tt:tt)*) => {
-        $($tt)*
     };
 }
 
@@ -97,7 +90,7 @@ macro_rules! atomic {
                         #[cfg(not(target_feature = "rcpc"))]
                         Ordering::Acquire => atomic_load!("a"),
                         Ordering::SeqCst => atomic_load!("a"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -135,7 +128,7 @@ macro_rules! atomic {
                         // https://reviews.llvm.org/D141748
                         #[cfg(target_env = "msvc")]
                         Ordering::SeqCst => atomic_store!("l", "dmb ish"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -420,7 +413,7 @@ macro_rules! atomic128 {
                                 options(nostack, preserves_flags),
                             );
                         }
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
@@ -549,7 +542,7 @@ macro_rules! atomic128 {
                         #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
                         #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
                         Ordering::SeqCst => atomic_store!("", "dmb ish", "dmb ish"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]

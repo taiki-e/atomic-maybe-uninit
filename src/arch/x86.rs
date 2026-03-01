@@ -159,7 +159,7 @@ macro_rules! atomic {
                                 options(nostack, preserves_flags),
                             );
                         }
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -412,7 +412,7 @@ macro_rules! atomic64 {
                                 options(nostack, preserves_flags),
                             );
                         }
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 #[cfg(all(
@@ -783,7 +783,7 @@ macro_rules! atomic128 {
                                     options(nostack, preserves_flags),
                                 );
                             }
-                            _ => unreachable!(),
+                            _ => crate::utils::unreachable_unchecked(),
                         }
                     }
                 }

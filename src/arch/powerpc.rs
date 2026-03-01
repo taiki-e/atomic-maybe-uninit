@@ -95,6 +95,7 @@ fn srw(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
+        // op(acquire, release)
         match $order {
             Ordering::Relaxed => $op!("", ""),
             Ordering::Acquire => $op!("isync", ""),
@@ -176,7 +177,7 @@ macro_rules! atomic_load_store {
                         }
                         Ordering::Acquire => atomic_load_acquire!(""),
                         Ordering::SeqCst => atomic_load_acquire!("sync"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -208,7 +209,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_store!(""),
                         Ordering::Release => atomic_store!(lwsync!()),
                         Ordering::SeqCst => atomic_store!("sync"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -572,7 +573,7 @@ macro_rules! atomic128 {
                         }
                         Ordering::Acquire => atomic_load_acquire!(""),
                         Ordering::SeqCst => atomic_load_acquire!("sync"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
                 }
@@ -608,7 +609,7 @@ macro_rules! atomic128 {
                         Ordering::Relaxed => atomic_store!(""),
                         Ordering::Release => atomic_store!(lwsync!()),
                         Ordering::SeqCst => atomic_store!("sync"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }

@@ -100,32 +100,33 @@ cfg_sel!({
                 }
             }
         });
+
+        macro_rules! atomic_rmw {
+            ($op:ident, $order:ident) => {
+                // op(acquire, release, r6_nop)
+                match $order {
+                    // In r6, if a delay slot cannot be filled with anything other than a nop, we use a
+                    // compact branch instruction which has no delay slot instead.
+                    //
+                    // Compact branch instructions have no delay slot, but the rule that prevents placing
+                    // Control Transfer Instructions (CTIs) such as branch instructions immediately after
+                    // a branch (forbidden slot) still exists. If a subsequent fence exists for acquire
+                    // semantics, this is already met; otherwise, the slot must be filled with nop or others.
+                    Ordering::Relaxed => $op!("", "", if_r6!("nop")),
+                    Ordering::Acquire => $op!("sync", "", ""),
+                    Ordering::Release => $op!("", "sync", if_r6!("nop")),
+                    // AcqRel and SeqCst RMWs are equivalent.
+                    Ordering::AcqRel | Ordering::SeqCst => $op!("sync", "sync", ""),
+                    _ => unreachable!(),
+                }
+            };
+        }
     }
     #[cfg(else)]
     {
         delegate_size!(delegate_load_store);
     }
 });
-
-macro_rules! atomic_rmw {
-    ($op:ident, $order:ident) => {
-        match $order {
-            // In r6, if a delay slot cannot be filled with anything other than a nop, we use a
-            // compact branch instruction which has no delay slot instead.
-            //
-            // Compact branch instructions have no delay slot, but the rule that prevents placing
-            // Control Transfer Instructions (CTIs) such as branch instructions immediately after
-            // a branch (forbidden slot) still exists. If a subsequent fence exists for acquire
-            // semantics, this is already met; otherwise, the slot must be filled with nop or others.
-            Ordering::Relaxed => $op!("", "", if_r6!("nop")),
-            Ordering::Acquire => $op!("sync", "", ""),
-            Ordering::Release => $op!("", "sync", if_r6!("nop")),
-            // AcqRel and SeqCst RMWs are equivalent.
-            Ordering::AcqRel | Ordering::SeqCst => $op!("sync", "sync", ""),
-            _ => unreachable!(),
-        }
-    };
-}
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
@@ -163,7 +164,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("sync"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -180,8 +181,8 @@ macro_rules! atomic_load_store {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! store {
-                        ($acquire:tt, $release:tt, $_r6_nop:expr) => {
+                    macro_rules! atomic_store {
+                        ($acquire:tt, $release:tt) => {
                             asm!(
                                 ".set push",
                                 ".set noat",
@@ -195,7 +196,12 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
-                    atomic_rmw!(store, order);
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("", "sync"),
+                        Ordering::SeqCst => atomic_store!("sync", "sync"),
+                        _ => crate::utils::unreachable_unchecked(),
+                    }
                 }
             }
         }

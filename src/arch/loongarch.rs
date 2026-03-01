@@ -84,7 +84,7 @@ macro_rules! atomic_load {
                         Ordering::Relaxed => atomic_load!(""),
                         Ordering::Acquire => atomic_load!("dbar 20"),
                         Ordering::SeqCst => atomic_load!("dbar 16"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -123,7 +123,7 @@ macro_rules! atomic_store {
                         Ordering::Relaxed => atomic_store!("", ""),
                         Ordering::Release => atomic_store!("", "dbar 18"),
                         Ordering::SeqCst => atomic_store!("dbar 16", "dbar 16"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -171,7 +171,7 @@ macro_rules! atomic {
                                 options(nostack, preserves_flags),
                             )
                         }
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }

@@ -171,6 +171,7 @@ macro_rules! xlen {
 ))]
 macro_rules! atomic_rmw_amo {
     ($op:ident, $order:ident) => {
+        // op(order)
         match $order {
             Ordering::Relaxed => $op!(""),
             Ordering::Acquire => $op!(".aq"),
@@ -187,6 +188,7 @@ macro_rules! atomic_rmw_amocas {
         atomic_rmw_amocas!($op, $order, failure = $order)
     };
     ($op:ident, $order:ident, failure = $failure:ident) => {
+        // op(fence, order)
         match $order {
             Ordering::Relaxed => $op!("", ""),
             Ordering::Acquire => $op!("", ".aq"),
@@ -215,6 +217,7 @@ macro_rules! atomic_rmw_amocas {
 ))]
 macro_rules! atomic_rmw_lr_sc {
     ($op:ident, $order:ident) => {
+        // op(acquire, release)
         match $order {
             Ordering::Relaxed => $op!("", ""),
             Ordering::Acquire => $op!(".aq", ""),
@@ -257,7 +260,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_load!("", ""),
                         Ordering::Acquire => atomic_load!("fence r, rw", ""),
                         Ordering::SeqCst => atomic_load!("fence r, rw", "fence rw, rw"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -291,7 +294,7 @@ macro_rules! atomic_load_store {
                         Ordering::Release => atomic_store!("", "fence rw, w"),
                         // https://github.com/llvm/llvm-project/commit/3ea8f2526541884e03d5bd4f4e46f4eb190990b6
                         Ordering::SeqCst => atomic_store!("fence rw, rw", "fence rw, w"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -430,14 +433,14 @@ macro_rules! atomic {
                         unsafe {
                             let mut r: RegSize;
                             macro_rules! cmpxchg {
-                                ($fence:tt, $asm_order:tt) => {
+                                ($fence:tt, $order:tt) => {
                                     asm!(
-                                        $fence,                                                             // fence
+                                        $fence,                                                         // fence
                                         // old will be used for later comparison.
-                                        "mv {out}, {old}",                                                  // out = old
-                                        concat!("amocas.", $suffix, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = sign_extend(*dst) } }
-                                        "xor {r}, {out}, {old}",                                            // r = out ^ old
-                                        "seqz {r}, {r}",                                                    // if r == 0 { r = 1 } else { r = 0 }
+                                        "mv {out}, {old}",                                              // out = old
+                                        concat!("amocas.", $suffix, $order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = sign_extend(*dst) } }
+                                        "xor {r}, {out}, {old}",                                        // r = out ^ old
+                                        "seqz {r}, {r}",                                                // if r == 0 { r = 1 } else { r = 0 }
                                         dst = in(reg) ptr_reg!(dst),
                                         old = in(reg) old,
                                         new = in(reg) new,
@@ -599,16 +602,16 @@ macro_rules! atomic_sub_word {
                             // See also create_sub_word_mask_values.
                             macro_rules! swap {
                                 // fence is not emitted because we retry until CAS success
-                                ($_fence:tt, $asm_order:tt) => {
+                                ($_fence:tt, $order:tt) => {
                                     asm!(
-                                        "lw {out}, 0({dst})",                                           // atomic { out = sign_extend(*dst) }
+                                        "lw {out}, 0({dst})",                                       // atomic { out = sign_extend(*dst) }
                                         "2:", // 'retry:
                                             // out_tmp will be used for later comparison.
-                                            "mv {out_tmp}, {out}",                                      // out_tmp = out
-                                            "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
-                                            "or {tmp}, {tmp}, {val}",                                   // tmp |= val
-                                            concat!("amocas.w", $asm_order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = sign_extend(*dst) } }
-                                            "bne {out}, {out_tmp}, 2b",                                 // if out != out_tmp { jump 'retry }
+                                            "mv {out_tmp}, {out}",                                  // out_tmp = out
+                                            "and {tmp}, {out}, {mask}",                             // tmp = out & mask
+                                            "or {tmp}, {tmp}, {val}",                               // tmp |= val
+                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = sign_extend(*dst) } }
+                                            "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
                                         dst = in(reg) ptr_reg!(dst),
                                         val = in(reg) sllw!(crate::utils::extend32::$ty::zero(val), shift),
                                         out = out(reg) out,
@@ -653,16 +656,16 @@ macro_rules! atomic_sub_word {
                         unsafe {
                             let mut r: RegSize;
                             macro_rules! cmpxchg {
-                                ($fence:tt, $asm_order:tt) => {
+                                ($fence:tt, $order:tt) => {
                                     asm!(
-                                        $fence,                                                             // fence
+                                        $fence,                                                         // fence
                                         // old will be used for later comparison.
-                                        "mv {out}, {old}",                                                  // out = old
-                                        concat!("slli {old}, {old}, ", xlen!(), "-", $size, "*8"),          // old <<= XLEN - $size * 8
-                                        concat!("amocas.", $suffix, $asm_order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = sign_extend(*dst) } }
-                                        concat!("srai {old}, {old}, ", xlen!(), "-", $size, "*8"),          // old >>= XLEN - $size * 8
-                                        "xor {r}, {out}, {old}",                                            // r = out ^ old
-                                        "seqz {r}, {r}",                                                    // if r == 0 { r = 1 } else { r = 0 }
+                                        "mv {out}, {old}",                                              // out = old
+                                        concat!("slli {old}, {old}, ", xlen!(), "-", $size, "*8"),      // old <<= XLEN - $size * 8
+                                        concat!("amocas.", $suffix, $order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = sign_extend(*dst) } }
+                                        concat!("srai {old}, {old}, ", xlen!(), "-", $size, "*8"),      // old >>= XLEN - $size * 8
+                                        "xor {r}, {out}, {old}",                                        // r = out ^ old
+                                        "seqz {r}, {r}",                                                // if r == 0 { r = 1 } else { r = 0 }
                                         dst = in(reg) ptr_reg!(dst),
                                         old = inout(reg) old => _,
                                         new = in(reg) new,
@@ -772,24 +775,24 @@ macro_rules! atomic_sub_word {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             macro_rules! cmpxchg_fail_relaxed {
-                                ($failure_release:tt, $asm_order:tt) => {
+                                ($failure_release:tt, $order:tt) => {
                                     asm!(
-                                        $failure_release,                                               // fence
-                                        "lw {out}, 0({dst})",                                           // atomic { out = sign_extend(*dst) }
+                                        $failure_release,                                           // fence
+                                        "lw {out}, 0({dst})",                                       // atomic { out = sign_extend(*dst) }
                                         "2:", // 'retry:
                                             // out_tmp will be used for later comparison.
-                                            "mv {out_tmp}, {out}",                                      // out_tmp = out
-                                            "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
-                                            "bne {tmp}, {old}, 3f",                                     // if tmp != old { jump 'cmp-fail }
-                                            "xor {tmp}, {out}, {new}",                                  // tmp = out ^ new
-                                            "and {tmp}, {tmp}, {mask}",                                 // tmp &= mask
-                                            "xor {tmp}, {tmp}, {out}",                                  // tmp ^= out
-                                            concat!("amocas.w", $asm_order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { tmp = sign_extend(*dst) } }
-                                            "bne {out}, {out_tmp}, 2b",                                 // if out != out_tmp { jump 'retry }
+                                            "mv {out_tmp}, {out}",                                  // out_tmp = out
+                                            "and {tmp}, {out}, {mask}",                             // tmp = out & mask
+                                            "bne {tmp}, {old}, 3f",                                 // if tmp != old { jump 'cmp-fail }
+                                            "xor {tmp}, {out}, {new}",                              // tmp = out ^ new
+                                            "and {tmp}, {tmp}, {mask}",                             // tmp &= mask
+                                            "xor {tmp}, {tmp}, {out}",                              // tmp ^= out
+                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { tmp = sign_extend(*dst) } }
+                                            "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
                                         "3:", // 'cmp-fail:
-                                        "and {tmp}, {out}, {mask}",                                     // tmp = out & mask
-                                        "xor {tmp}, {old}, {tmp}",                                      // tmp ^= old
-                                        "seqz {tmp}, {tmp}",                                            // if tmp == 0 { tmp = 1 } else { tmp = 0 }
+                                        "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
+                                        "xor {tmp}, {old}, {tmp}",                                  // tmp ^= old
+                                        "seqz {tmp}, {tmp}",                                        // if tmp == 0 { tmp = 1 } else { tmp = 0 }
                                         dst = in(reg) ptr_reg!(dst),
                                         old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old), shift),
                                         new = in(reg) sllw!(crate::utils::extend32::$ty::zero(new), shift),
@@ -802,27 +805,27 @@ macro_rules! atomic_sub_word {
                                 };
                             }
                             macro_rules! cmpxchg {
-                                ($failure_release:tt, $asm_order:tt) => {
+                                ($failure_release:tt, $order:tt) => {
                                     asm!(
-                                        $failure_release,                                               // fence
-                                        "lw {out}, 0({dst})",                                           // atomic { out = sign_extend(*dst) }
+                                        $failure_release,                                           // fence
+                                        "lw {out}, 0({dst})",                                       // atomic { out = sign_extend(*dst) }
                                         "2:", // 'retry:
                                             // out_tmp will be used for later comparison.
-                                            "mv {out_tmp}, {out}",                                      // out_tmp = out
-                                            "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
-                                            "bne {tmp}, {old}, 3f",                                     // if tmp != old { jump 'cmp-fail }
-                                            "xor {tmp}, {out}, {new}",                                  // tmp = out ^ new
-                                            "and {tmp}, {tmp}, {mask}",                                 // tmp &= mask
-                                            "xor {tmp}, {tmp}, {out}",                                  // tmp ^= out
-                                            concat!("amocas.w", $asm_order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { tmp = sign_extend(*dst) } }
-                                            "bne {out}, {out_tmp}, 2b",                                 // if out != out_tmp { jump 'retry }
-                                            "j 4f",                                                     // jump 'success
+                                            "mv {out_tmp}, {out}",                                  // out_tmp = out
+                                            "and {tmp}, {out}, {mask}",                             // tmp = out & mask
+                                            "bne {tmp}, {old}, 3f",                                 // if tmp != old { jump 'cmp-fail }
+                                            "xor {tmp}, {out}, {new}",                              // tmp = out ^ new
+                                            "and {tmp}, {tmp}, {mask}",                             // tmp &= mask
+                                            "xor {tmp}, {tmp}, {out}",                              // tmp ^= out
+                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { tmp = sign_extend(*dst) } }
+                                            "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
+                                            "j 4f",                                                 // jump 'success
                                         "3:", // 'cmp-fail:
-                                            "fence r, rw",                                              // fence
+                                            "fence r, rw",                                          // fence
                                         "4:", // 'success:
-                                        "and {tmp}, {out}, {mask}",                                     // tmp = out & mask
-                                        "xor {tmp}, {old}, {tmp}",                                      // tmp ^= old
-                                        "seqz {tmp}, {tmp}",                                            // if tmp == 0 { tmp = 1 } else { tmp = 0 }
+                                        "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
+                                        "xor {tmp}, {old}, {tmp}",                                  // tmp ^= old
+                                        "seqz {tmp}, {tmp}",                                        // if tmp == 0 { tmp = 1 } else { tmp = 0 }
                                         dst = in(reg) ptr_reg!(dst),
                                         old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old), shift),
                                         new = in(reg) sllw!(crate::utils::extend32::$ty::zero(new), shift),
@@ -880,11 +883,11 @@ macro_rules! atomic_dw {
                 // SAFETY: the caller must uphold the safety contract,
                 // the cfg guarantee that the CPU supports Zacas extension.
                 unsafe {
-                    macro_rules! load {
-                        ($fence:tt, $asm_order:tt) => {
+                    macro_rules! atomic_load {
+                        ($fence:tt, $order:tt) => {
                             asm!(
-                                $fence,                                                       // fence
-                                concat!("amocas.", $suffix, $asm_order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
+                                $fence,                                                   // fence
+                                concat!("amocas.", $suffix, $order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
                                 src = in(reg) ptr_reg!(src),
                                 inout("a2") 0 as RegSize => out_lo,
                                 inout("a3") 0 as RegSize => out_hi,
@@ -892,7 +895,12 @@ macro_rules! atomic_dw {
                             )
                         };
                     }
-                    atomic_rmw_amocas!(load, order);
+                    match order {
+                        Ordering::Relaxed => atomic_load!("", ""),
+                        Ordering::Acquire => atomic_load!("", ".aq"),
+                        Ordering::SeqCst => atomic_load!("fence rw,rw", ".aqrl"),
+                        _ => crate::utils::unreachable_unchecked(),
+                    }
                     MaybeUninitDw { pair: Pair { lo: out_lo, hi: out_hi } }.whole
                 }
             }
@@ -926,21 +934,21 @@ macro_rules! atomic_dw {
                 unsafe {
                     macro_rules! swap {
                         // fence is not emitted because we retry until CAS success
-                        ($_fence:tt, $asm_order:tt) => {
+                        ($_fence:tt, $order:tt) => {
                             asm!(
                                 // This is not single-copy atomic reads, but this is ok because subsequent
                                 // CAS will check for consistency.
-                                concat!("l", $reg_size, " a4, ({dst})"),                          // atomic { a4 = *dst }
-                                concat!("l", $reg_size, " a5, ", $reg_size_offset, "({dst})"),    // atomic { a5 = *dst.byte_add($reg_size_offset) }
+                                concat!("l", $reg_size, " a4, ({dst})"),                       // atomic { a4 = *dst }
+                                concat!("l", $reg_size, " a5, ", $reg_size_offset, "({dst})"), // atomic { a5 = *dst.byte_add($reg_size_offset) }
                                 "2:", // 'retry:
                                     // tmp_lo:tmp_hi will be used for later comparison.
-                                    "mv {tmp_lo}, a4",                                            // tmp_lo = a4
-                                    "mv {tmp_hi}, a5",                                            // tmp_hi = a5
-                                    concat!("amocas.", $suffix, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
-                                    "xor {tmp_lo}, {tmp_lo}, a4",                                 // tmp_lo ^= a4
-                                    "xor {tmp_hi}, {tmp_hi}, a5",                                 // tmp_hi ^= a5
-                                    "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                            // tmp_lo |= tmp_hi
-                                    "bnez {tmp_lo}, 2b",                                          // if tmp_lo != 0 { jump 'retry }
+                                    "mv {tmp_lo}, a4",                                         // tmp_lo = a4
+                                    "mv {tmp_hi}, a5",                                         // tmp_hi = a5
+                                    concat!("amocas.", $suffix, $order, " a4, a2, 0({dst})"),  // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                    "xor {tmp_lo}, {tmp_lo}, a4",                              // tmp_lo ^= a4
+                                    "xor {tmp_hi}, {tmp_hi}, a5",                              // tmp_hi ^= a5
+                                    "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                         // tmp_lo |= tmp_hi
+                                    "bnez {tmp_lo}, 2b",                                       // if tmp_lo != 0 { jump 'retry }
                                 dst = in(reg) ptr_reg!(dst),
                                 tmp_lo = out(reg) _,
                                 tmp_hi = out(reg) _,
@@ -979,17 +987,17 @@ macro_rules! atomic_dw {
                 unsafe {
                     let mut r: RegSize;
                     macro_rules! cmpxchg {
-                        ($fence:tt, $asm_order:tt) => {
+                        ($fence:tt, $order:tt) => {
                             asm!(
-                                $fence,                                                       // fence
+                                $fence,                                                   // fence
                                 // tmp_lo:tmp_hi will be used for later comparison.
-                                "mv {tmp_lo}, a4",                                            // tmp_lo = a4
-                                "mv {tmp_hi}, a5",                                            // tmp_hi = a5
-                                concat!("amocas.", $suffix, $asm_order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
-                                "xor {tmp_lo}, {tmp_lo}, a4",                                 // tmp_lo ^= a4
-                                "xor {tmp_hi}, {tmp_hi}, a5",                                 // tmp_hi ^= a5
-                                "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                            // tmp_lo |= tmp_hi
-                                "seqz {tmp_lo}, {tmp_lo}",                                    // if tmp_lo == 0 { tmp_lo = 1 } else { tmp_lo = 0 }
+                                "mv {tmp_lo}, a4",                                        // tmp_lo = a4
+                                "mv {tmp_hi}, a5",                                        // tmp_hi = a5
+                                concat!("amocas.", $suffix, $order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                "xor {tmp_lo}, {tmp_lo}, a4",                             // tmp_lo ^= a4
+                                "xor {tmp_hi}, {tmp_hi}, a5",                             // tmp_hi ^= a5
+                                "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                        // tmp_lo |= tmp_hi
+                                "seqz {tmp_lo}, {tmp_lo}",                                // if tmp_lo == 0 { tmp_lo = 1 } else { tmp_lo = 0 }
                                 dst = in(reg) ptr_reg!(dst),
                                 tmp_lo = out(reg) r,
                                 tmp_hi = out(reg) _,

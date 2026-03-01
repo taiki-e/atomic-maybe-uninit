@@ -106,7 +106,7 @@ macro_rules! atomic_load_store {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => atomic_store!(""),
                         Ordering::SeqCst => atomic_store!(serialization!()),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -335,7 +335,7 @@ macro_rules! atomic128 {
                         // Relaxed and Release stores are equivalent.
                         Ordering::Relaxed | Ordering::Release => atomic_store!(""),
                         Ordering::SeqCst => atomic_store!(serialization!()),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }

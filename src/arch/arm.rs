@@ -73,6 +73,71 @@ cfg_sel!({
         use crate::raw::{AtomicCompareExchange, AtomicSwap};
 
         delegate_size!(delegate_all);
+
+        #[cfg(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        ))]
+        macro_rules! atomic_rmw {
+            ($op:ident, $order:ident) => {
+                // op(asm, acquire, release)
+                match $order {
+                    Ordering::Relaxed => $op!(asm_no_dmb, "", ""),
+                    Ordering::Acquire => $op!(asm_use_dmb, dmb!(), ""),
+                    Ordering::Release => $op!(asm_use_dmb, "", dmb!()),
+                    // AcqRel and SeqCst swaps are equivalent.
+                    Ordering::AcqRel | Ordering::SeqCst => $op!(asm_use_dmb, dmb!(), dmb!()),
+                    _ => unreachable!(),
+                }
+            };
+        }
+        #[cfg(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        ))]
+        #[rustfmt::skip]
+        macro_rules! atomic_cmpxchg {
+            ($cmpxchg:ident, $cmpxchg_cond_release:ident, $success:ident, $failure:ident) => {{
+                use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
+                // cmpxchg(asm, acquire, fail_label, skip_success_fence)
+                // cmpxchg_cond_release(acquire, fail_label, success_label, skip_fail_fence)
+                match ($success, $failure) {
+                    (Relaxed, Relaxed) => $cmpxchg!(asm_no_dmb, "", "4f", ""),
+                    (Relaxed, _) => $cmpxchg!(asm_use_dmb, dmb!(), "3f" /* emit-fence-on-fail */, "b 4f" /* skip-fence-on-success */),
+                    (Acquire, Relaxed) => $cmpxchg!(asm_use_dmb, dmb!(), "4f" /* skip-fence-on-fail */, ""),
+                    (Acquire, _) => $cmpxchg!(asm_use_dmb, dmb!(), "3f" /* emit-fence-on-fail */, ""),
+                    (Release, Relaxed) => $cmpxchg_cond_release!("", "4f", "4f", ""),
+                    (Release, _) => $cmpxchg_cond_release!(dmb!(), "3f" /* emit-fence-on-fail */, "4f" /* skip-fence-on-success */, "" /* emit-fence-on-fail */),
+                    // AcqRel and SeqCst compare_exchange are equivalent.
+                    (AcqRel | SeqCst, Relaxed) => $cmpxchg_cond_release!(dmb!(), "4f" /* skip-fence-on-fail */, "3f" /* emit-fence-on-success */, "b 4f" /* skip-fence-on-fail */),
+                    (AcqRel | SeqCst, _) => $cmpxchg_cond_release!(dmb!(), "3f" /* emit-fence-on-fail */, "3f" /* emit-fence-on-success */, "" /* emit-fence-on-fail */),
+                    _ => unreachable!(),
+                }
+            }};
+        }
+        #[cfg(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        ))]
+        #[rustfmt::skip]
+        macro_rules! atomic_cmpxchg_weak {
+            ($cmpxchg_weak:ident, $success:ident, $failure:ident) => {{
+                use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
+                // cmpxchg_weak(asm:ident, acquire, release, cmp_fail_label, branch_after_sc)
+                match ($success, $failure) {
+                    (Relaxed, Relaxed) => $cmpxchg_weak!(asm_no_dmb, "", "", "4f", ""),
+                    (Relaxed, _) => $cmpxchg_weak!(asm_use_dmb, dmb!(), "", "3f" /* emit-fence-on-fail */, "beq 4f" /* skip-fence-on-success */),
+                    (Acquire, Relaxed) => $cmpxchg_weak!(asm_use_dmb, dmb!(), "", "4f" /* skip-fence-on-fail */, "bne 4f" /* skip-fence-on-fail */),
+                    (Acquire, _) => $cmpxchg_weak!(asm_use_dmb, dmb!(), "", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
+                    (Release, Relaxed) => $cmpxchg_weak!(asm_use_dmb, "", dmb!(), "4f", ""),
+                    (Release, _) => $cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!(), "3f" /* emit-fence-on-fail */, "beq 4f" /* skip-fence-on-success */),
+                    // AcqRel and SeqCst compare_exchange_weak are equivalent.
+                    (AcqRel | SeqCst, Relaxed) => $cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!(), "4f" /* skip-fence-on-fail */, "bne 4f" /* skip-fence-on-fail */),
+                    (AcqRel | SeqCst, _) => $cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!(), "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
+                    _ => unreachable!(),
+                }
+            }};
+        }
     }
     #[cfg(else)]
     {
@@ -433,7 +498,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -482,7 +547,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
                         Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
                         Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -530,7 +595,7 @@ macro_rules! atomic {
                 ))]
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($asm:ident, $acquire:expr, $release:expr) => {
                             $asm!(
                                 $release,                                              // fence
@@ -549,16 +614,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!(asm_no_dmb, "", ""),
-                        Ordering::Acquire => atomic_swap!(asm_use_dmb, dmb!(), ""),
-                        Ordering::Release => atomic_swap!(asm_use_dmb, "", dmb!()),
-                        // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => {
-                            atomic_swap!(asm_use_dmb, dmb!(), dmb!());
-                        }
-                        _ => unreachable!(),
-                    }
+                    atomic_rmw!(swap, order);
                 }
                 #[cfg(not(all(
                     any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
@@ -628,10 +684,8 @@ macro_rules! atomic {
                 ))]
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32 = 1;
-                    // cmpxchg(Relaxed|Acquire, *)
-                    macro_rules! cmpxchg_store_relaxed {
+                    macro_rules! cmpxchg {
                         ($asm:ident, $acquire:expr, $fail_label:tt, $skip_success_fence:tt) => {
                             $asm!(
                                 "2:", // 'retry:
@@ -655,8 +709,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    // cmpxchg(Release|AcqRel|SeqCst, *)
-                    macro_rules! cmpxchg {
+                    macro_rules! cmpxchg_cond_release {
                         ($acquire:expr, $fail_label:tt, $success_label:tt, $skip_fail_fence:tt) => {
                             asm_use_dmb!(
                                 concat!("ldrex", $suffix, " {out}, [{dst}]"),          // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
@@ -684,18 +737,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    match (success, failure) {
-                        (Relaxed, Relaxed) => cmpxchg_store_relaxed!(asm_no_dmb, "", "4f", ""),
-                        (Relaxed, _) => cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), "3f" /* 'emit-fence-on-fail */, "b 4f" /* skip-fence-on-success */),
-                        (Acquire, Relaxed) => cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), "4f" /* 'skip-fence-on-fail */, ""),
-                        (Acquire, _) => cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), "3f" /* 'emit-fence-on-fail */, ""),
-                        (Release, Relaxed) => cmpxchg!("", "4f", "4f", ""),
-                        (Release, _) => cmpxchg!(dmb!(), "3f" /* 'emit-fence-on-fail */, "4f" /* 'skip-fence-on-success */, ""),
-                        // AcqRel and SeqCst compare_exchange are equivalent.
-                        (AcqRel | SeqCst, Relaxed) => cmpxchg!(dmb!(), "4f" /* 'skip-fence-on-fail */, "3f" /* 'emit-fence-on-success */, "b 4f" /* skip-fence-on-fail */),
-                        (AcqRel | SeqCst, _) => cmpxchg!(dmb!(), "3f" /* 'emit-fence-on-fail */, "3f" /* 'emit-fence-on-success */, ""),
-                        _ => unreachable!(),
-                    }
+                    atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
@@ -778,18 +820,20 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32 = 1;
                     macro_rules! cmpxchg_weak {
-                        ($asm:ident, $acquire:expr, $release:expr) => {
+                        ($asm:ident, $acquire:expr, $release:expr, $cmp_fail_label:tt, $branch_after_sc:tt) => {
                             $asm!(
                                 concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
-                                "bne 3f",                                          // if Z == 0 { jump 'cmp-fail }
+                                concat!("bne ", $cmp_fail_label),                  // if Z == 0 { jump 'cmp-fail }
                                 $release,                                          // fence
                                 concat!("strex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                "3:", // 'cmp-fail:
-                                $acquire,                                          // fence
+                                if_any!($branch_after_sc, "cmp {r}, #0"),          // if r == 0 { Z = 1 } else { Z = 0 }
+                                $branch_after_sc,                                  // if ? { jump '? }
+                                "3:", // 'emit-fence:
+                                    $acquire,                                      // fence
+                                "4:", // 'skip-fence:
                                 dst = in(reg) dst,
                                 old = in(reg) crate::utils::extend32::$ty::zero(old),
                                 new = in(reg) new,
@@ -800,63 +844,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    macro_rules! cmpxchg_weak_fail_load_relaxed {
-                        ($release:expr) => {
-                            asm_use_dmb!(
-                                concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
-                                "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
-                                "bne 3f",                                          // if Z == 0 { jump 'fail }
-                                $release,                                          // fence
-                                concat!("strex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                "cmp {r}, #0",                                     // if r == 0 { Z = 1 } else { Z = 0 }
-                                "bne 3f",                                          // if Z == 1 { jump 'fail }
-                                dmb!(),                                            // fence
-                                "3:", // 'fail:
-                                dst = in(reg) dst,
-                                old = in(reg) crate::utils::extend32::$ty::zero(old),
-                                new = in(reg) new,
-                                out = out(reg) out,
-                                r = inout(reg) r,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    macro_rules! cmpxchg_weak_success_load_relaxed {
-                        ($release:expr) => {
-                            asm_use_dmb!(
-                                concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
-                                "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
-                                "bne 3f",                                          // if Z == 0 { jump 'cmp-fail }
-                                $release,                                          // fence
-                                concat!("strex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                "cmp {r}, #0",                                     // if r == 0 { Z = 1 } else { Z = 0 }
-                                "beq 4f",                                          // if Z == 1 { jump 'success }
-                                "3:", // 'cmp-fail:
-                                    dmb!(),                                            // fence
-                                "4:", // 'success:
-                                dst = in(reg) dst,
-                                old = in(reg) crate::utils::extend32::$ty::zero(old),
-                                new = in(reg) new,
-                                out = out(reg) out,
-                                r = inout(reg) r,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    match (success, failure) {
-                        (Relaxed, Relaxed) => cmpxchg_weak!(asm_no_dmb, "", ""),
-                        (Relaxed, Acquire | SeqCst) => cmpxchg_weak_success_load_relaxed!(""),
-                        (Acquire, Relaxed) => cmpxchg_weak_fail_load_relaxed!(""),
-                        (Acquire, Acquire | SeqCst) => cmpxchg_weak!(asm_use_dmb, dmb!(), ""),
-                        (Release, Relaxed) => cmpxchg_weak!(asm_use_dmb, "", dmb!()),
-                        (Release, Acquire | SeqCst) => cmpxchg_weak_success_load_relaxed!(dmb!()),
-                        // AcqRel and SeqCst compare_exchange_weak are equivalent.
-                        (AcqRel | SeqCst, Relaxed) => cmpxchg_weak_fail_load_relaxed!(dmb!()),
-                        (AcqRel | SeqCst, _) => cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!(),
-                    }
+                    atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (out, r == 0)
@@ -1101,7 +1089,7 @@ macro_rules! atomic64 {
                         Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
@@ -1198,7 +1186,7 @@ macro_rules! atomic64 {
                         Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
                         Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
                         Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 #[cfg(not(all(
@@ -1269,7 +1257,7 @@ macro_rules! atomic64 {
                 unsafe {
                     let val = MaybeUninit64 { whole: val };
                     let (mut prev_lo, mut prev_hi);
-                    macro_rules! atomic_swap {
+                    macro_rules! swap {
                         ($asm:ident, $acquire:expr, $release:expr) => {
                             $asm!(
                                 $release,                          // fence
@@ -1292,14 +1280,7 @@ macro_rules! atomic64 {
                             )
                         };
                     }
-                    match order {
-                        Ordering::Relaxed => atomic_swap!(asm_no_dmb, "", ""),
-                        Ordering::Acquire => atomic_swap!(asm_use_dmb, dmb!(), ""),
-                        Ordering::Release => atomic_swap!(asm_use_dmb, "", dmb!()),
-                        // AcqRel and SeqCst swaps are equivalent.
-                        Ordering::AcqRel | Ordering::SeqCst => atomic_swap!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!(),
-                    }
+                    atomic_rmw!(swap, order);
                     MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
                 #[cfg(not(all(
@@ -1372,12 +1353,10 @@ macro_rules! atomic64 {
                 ))]
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let new = MaybeUninit64 { whole: new };
                     let (mut prev_lo, mut prev_hi);
                     let mut r: i32;
-                    // cmpxchg(Relaxed|Acquire, *)
-                    macro_rules! cmpxchg_store_relaxed {
+                    macro_rules! cmpxchg {
                         ($asm:ident, $acquire:expr, $fail_label:tt, $skip_success_fence:tt) => {
                             $asm!(
                                 "2:", // 'retry:
@@ -1410,8 +1389,7 @@ macro_rules! atomic64 {
                             )
                         };
                     }
-                    // cmpxchg(Release|AcqRel|SeqCst, *)
-                    macro_rules! cmpxchg {
+                    macro_rules! cmpxchg_cond_release {
                         ($acquire:expr, $fail_label:tt, $success_label:tt, $skip_fail_fence:tt) => {
                             asm_use_dmb!(
                                 "ldrexd r2, r3, [{dst}]",            // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
@@ -1451,18 +1429,7 @@ macro_rules! atomic64 {
                             )
                         };
                     }
-                    match (success, failure) {
-                        (Relaxed, Relaxed) => cmpxchg_store_relaxed!(asm_no_dmb, "", "4f", ""),
-                        (Relaxed, _) => cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), "3f" /* 'emit-fence-on-fail */, "b 4f" /* skip-fence-on-success */),
-                        (Acquire, Relaxed) => cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), "4f" /* 'skip-fence-on-fail */, ""),
-                        (Acquire, _) => cmpxchg_store_relaxed!(asm_use_dmb, dmb!(), "3f" /* 'emit-fence-on-fail */, ""),
-                        (Release, Relaxed) => cmpxchg!("", "4f", "4f", ""),
-                        (Release, _) => cmpxchg!(dmb!(), "3f" /* 'emit-fence-on-fail */, "4f" /* 'skip-fence-on-success */, ""),
-                        // AcqRel and SeqCst compare_exchange are equivalent.
-                        (AcqRel | SeqCst, Relaxed) => cmpxchg!(dmb!(), "4f" /* 'skip-fence-on-fail */, "3f" /* 'emit-fence-on-success */, "b 4f" /* skip-fence-on-fail */),
-                        (AcqRel | SeqCst, _) => cmpxchg!(dmb!(), "3f" /* 'emit-fence-on-fail */, "3f" /* 'emit-fence-on-success */, ""),
-                        _ => unreachable!(),
-                    }
+                    atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
@@ -1605,21 +1572,23 @@ macro_rules! atomic64 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                     let mut r: i32;
                     macro_rules! cmpxchg_weak {
-                        ($asm:ident, $acquire:expr, $release:expr) => {
+                        ($asm:ident, $acquire:expr, $release:expr, $cmp_fail_label:tt, $branch_after_sc:tt) => {
                             $asm!(
-                                "ldrexd r2, r3, [{dst}]",      // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                "eor {tmp}, r3, {old_hi}",     // tmp = r3 ^ old_hi
-                                "eor {r}, r2, {old_lo}",       // r = r2 ^ old_lo
-                                "orrs {r}, {tmp}",             // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                "mov {r}, #1",                 // r = 1
-                                "bne 3f",                      // if Z == 0 { jump 'cmp-fail }
-                                $release,                      // fence
-                                "strexd {r}, r4, r5, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                "3:", // 'cmp-fail:
-                                $acquire,                      // fence
+                                "ldrexd r2, r3, [{dst}]",                 // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                                "eor {tmp}, r3, {old_hi}",                // tmp = r3 ^ old_hi
+                                "eor {r}, r2, {old_lo}",                  // r = r2 ^ old_lo
+                                "orrs {r}, {tmp}",                        // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
+                                "mov {r}, #1",                            // r = 1
+                                concat!("bne ", $cmp_fail_label),         // if Z == 0 { jump 'cmp-fail }
+                                $release,                                 // fence
+                                "strexd {r}, r4, r5, [{dst}]",            // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                                if_any!($branch_after_sc, "cmp {r}, #0"), // if r == 0 { Z = 1 } else { Z = 0 }
+                                $branch_after_sc,                         // if ? { jump '? }
+                                "3:", // 'emit-fence:
+                                    $acquire,                             // fence
+                                "4:", // 'skip-fence:
                                 dst = in(reg) dst,
                                 old_lo = in(reg) old.pair.lo,
                                 old_hi = in(reg) old.pair.hi,
@@ -1636,81 +1605,7 @@ macro_rules! atomic64 {
                             )
                         };
                     }
-                    macro_rules! cmpxchg_weak_fail_load_relaxed {
-                        ($release:expr) => {
-                            asm_use_dmb!(
-                                "ldrexd r2, r3, [{dst}]",      // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                "eor {tmp}, r3, {old_hi}",     // tmp = r3 ^ old_hi
-                                "eor {r}, r2, {old_lo}",       // r = r2 ^ old_lo
-                                "orrs {r}, {tmp}",             // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                "mov {r}, #1",                 // r = 1
-                                "bne 3f",                      // if Z == 0 { jump 'fail }
-                                $release,                      // fence
-                                "strexd {r}, r4, r5, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                "cmp {r}, #0",                 // if r == 0 { Z = 1 } else { Z = 0 }
-                                "bne 3f",                      // if Z == 1 { jump 'fail }
-                                dmb!(),                        // fence
-                                "3:", // 'fail:
-                                dst = in(reg) dst,
-                                old_lo = in(reg) old.pair.lo,
-                                old_hi = in(reg) old.pair.hi,
-                                r = out(reg) r,
-                                tmp = out(reg) _,
-                                // prev pair - must be even-numbered and not R14
-                                out("r2") prev_lo,
-                                out("r3") prev_hi,
-                                // new pair - must be even-numbered and not R14
-                                in("r4") new.pair.lo,
-                                in("r5") new.pair.hi,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    macro_rules! cmpxchg_weak_success_load_relaxed {
-                        ($release:expr) => {
-                            asm_use_dmb!(
-                                "ldrexd r2, r3, [{dst}]",      // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                "eor {tmp}, r3, {old_hi}",     // tmp = r3 ^ old_hi
-                                "eor {r}, r2, {old_lo}",       // r = r2 ^ old_lo
-                                "orrs {r}, {tmp}",             // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                "mov {r}, #1",                 // r = 1
-                                "bne 3f",                      // if Z == 0 { jump 'cmp-fail }
-                                $release,                      // fence
-                                "strexd {r}, r4, r5, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                "cmp {r}, #0",                 // if r == 0 { Z = 1 } else { Z = 0 }
-                                "beq 4f",                      // if Z == 1 { jump 'success }
-                                "3:", // 'cmp-fail:
-                                    dmb!(),                    // fence
-                                "4:", // 'success:
-                                dst = in(reg) dst,
-                                old_lo = in(reg) old.pair.lo,
-                                old_hi = in(reg) old.pair.hi,
-                                r = out(reg) r,
-                                tmp = out(reg) _,
-                                // prev pair - must be even-numbered and not R14
-                                out("r2") prev_lo,
-                                out("r3") prev_hi,
-                                // new pair - must be even-numbered and not R14
-                                in("r4") new.pair.lo,
-                                in("r5") new.pair.hi,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    match (success, failure) {
-                        (Relaxed, Relaxed) => cmpxchg_weak!(asm_no_dmb, "", ""),
-                        (Relaxed, Acquire | SeqCst) => cmpxchg_weak_success_load_relaxed!(""),
-                        (Acquire, Relaxed) => cmpxchg_weak_fail_load_relaxed!(""),
-                        (Acquire, Acquire | SeqCst) => cmpxchg_weak!(asm_use_dmb, dmb!(), ""),
-                        (Release, Relaxed) => cmpxchg_weak!(asm_use_dmb, "", dmb!()),
-                        (Release, Acquire | SeqCst) => cmpxchg_weak_success_load_relaxed!(dmb!()),
-                        // AcqRel and SeqCst compare_exchange_weak are equivalent.
-                        (AcqRel | SeqCst, Relaxed) => cmpxchg_weak_fail_load_relaxed!(dmb!()),
-                        (AcqRel | SeqCst, _) => cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => unreachable!(),
-                    }
+                    atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                     // 0 if the store was successful, 1 if no store was performed
                     (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)

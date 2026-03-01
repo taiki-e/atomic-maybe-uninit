@@ -193,13 +193,19 @@ pub(crate) const unsafe fn transmute_copy_by_val<Src, Dst>(src: Src) -> Dst {
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) const unsafe fn assert_unchecked(cond: bool) {
     if !cond {
-        #[cfg(debug_assertions)]
-        unreachable!();
-        #[cfg(not(debug_assertions))]
         // SAFETY: the caller promised `cond` is true.
-        unsafe {
-            core::hint::unreachable_unchecked()
-        }
+        unsafe { unreachable_unchecked() }
+    }
+}
+#[inline]
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) const unsafe fn unreachable_unchecked() -> ! {
+    #[cfg(debug_assertions)]
+    unreachable!();
+    #[cfg(not(debug_assertions))]
+    // SAFETY: the caller must ensure that this is unreachable.
+    unsafe {
+        core::hint::unreachable_unchecked()
     }
 }
 
@@ -270,6 +276,14 @@ macro_rules! debug_assert_atomic_unsafe_precondition {
             debug_assert!($ptr.addr() & const_eval!(=> usize { mem::size_of::<$ty>() - 1 }) == 0);
         }
     }};
+}
+
+#[allow(unused_macros)]
+macro_rules! if_any {
+    ("", $($tt:tt)*) => { "" };
+    ($cond:tt, $($tt:tt)*) => {
+        $($tt)*
+    };
 }
 
 #[allow(unused_macros)]

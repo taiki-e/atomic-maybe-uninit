@@ -40,6 +40,7 @@ use crate::utils::{MaybeUninit64, Pair};
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
+        // op(acquire, release)
         match $order {
             Ordering::Relaxed => $op!("r", "r"),
             Ordering::Acquire => $op!("a", "r"),
@@ -133,7 +134,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_load!("r"),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -164,7 +165,7 @@ macro_rules! atomic {
                         Ordering::Relaxed => atomic_store!("r"),
                         // Release and SeqCst stores are equivalent.
                         Ordering::Release | Ordering::SeqCst => atomic_store!("l"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -336,7 +337,7 @@ macro_rules! atomic64 {
                         Ordering::Relaxed => atomic_load!("r"),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
@@ -354,7 +355,7 @@ macro_rules! atomic64 {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! store {
+                    macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 "2:", // 'retry:
@@ -374,7 +375,12 @@ macro_rules! atomic64 {
                             )
                         };
                     }
-                    atomic_rmw!(store, order);
+                    match order {
+                        Ordering::Relaxed => atomic_store!("r", "r"),
+                        Ordering::Release => atomic_store!("r", "l"),
+                        Ordering::SeqCst => atomic_store!("a", "l"),
+                        _ => crate::utils::unreachable_unchecked(),
+                    }
                 }
             }
         }

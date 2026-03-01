@@ -44,24 +44,25 @@ cfg_sel!({
             }
             val
         }
+
+        macro_rules! atomic_rmw {
+            ($op:ident, $order:ident) => {
+                // op(acquire, release)
+                match $order {
+                    Ordering::Relaxed => $op!("", ""),
+                    Ordering::Acquire => $op!("memw", ""),
+                    Ordering::Release => $op!("", "memw"),
+                    Ordering::AcqRel | Ordering::SeqCst => $op!("memw", "memw"),
+                    _ => unreachable!(),
+                }
+            };
+        }
     }
     #[cfg(else)]
     {
         delegate_size!(delegate_load_store);
     }
 });
-
-macro_rules! atomic_rmw {
-    ($op:ident, $order:ident) => {
-        match $order {
-            Ordering::Relaxed => $op!("", ""),
-            Ordering::Acquire => $op!("memw", ""),
-            Ordering::Release => $op!("", "memw"),
-            Ordering::AcqRel | Ordering::SeqCst => $op!("memw", "memw"),
-            _ => unreachable!(),
-        }
-    };
-}
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
@@ -94,7 +95,7 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("memw"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -109,7 +110,7 @@ macro_rules! atomic_load_store {
             ) {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! store {
+                    macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 $release,                                              // fence
@@ -121,7 +122,12 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
-                    atomic_rmw!(store, order);
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("", "memw"),
+                        Ordering::SeqCst => atomic_store!("memw", "memw"),
+                        _ => crate::utils::unreachable_unchecked(),
+                    }
                 }
             }
         }

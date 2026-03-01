@@ -54,27 +54,28 @@ cfg_sel!({
             }
             val
         }
+
+        // According to Linux kernel, there is a more efficient BAR instruction for this purpose, but that
+        // instruction is not mentioned in CSKY Architecture user_guide, so we always use SYNC for now.
+        // https://github.com/torvalds/linux/blob/v6.19/arch/csky/include/asm/barrier.h
+        macro_rules! atomic_rmw {
+            ($op:ident, $order:ident) => {
+                // op(acquire, release)
+                match $order {
+                    Ordering::Relaxed => $op!("", ""),
+                    Ordering::Acquire => $op!("sync32", ""),
+                    Ordering::Release => $op!("", "sync32"),
+                    Ordering::AcqRel | Ordering::SeqCst => $op!("sync32", "sync32"),
+                    _ => unreachable!(),
+                }
+            };
+        }
     }
     #[cfg(else)]
     {
         delegate_size!(delegate_load_store);
     }
 });
-
-// According to Linux kernel, there is a more efficient BAR instruction for this purpose, but that
-// instruction is not mentioned in CSKY Architecture user_guide, so we always use SYNC for now.
-// https://github.com/torvalds/linux/blob/v6.19/arch/csky/include/asm/barrier.h
-macro_rules! atomic_rmw {
-    ($op:ident, $order:ident) => {
-        match $order {
-            Ordering::Relaxed => $op!("", ""),
-            Ordering::Acquire => $op!("sync32", ""),
-            Ordering::Release => $op!("", "sync32"),
-            Ordering::AcqRel | Ordering::SeqCst => $op!("sync32", "sync32"),
-            _ => unreachable!(),
-        }
-    };
-}
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
@@ -109,7 +110,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_load!("", ""),
                         Ordering::Acquire => atomic_load!("sync32", ""),
                         Ordering::SeqCst => atomic_load!("sync32", "sync32"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -124,7 +125,7 @@ macro_rules! atomic_load_store {
             ) {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! store {
+                    macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 $release,                                        // fence
@@ -136,7 +137,12 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
-                    atomic_rmw!(store, order);
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("", "sync32"),
+                        Ordering::SeqCst => atomic_store!("sync32", "sync32"),
+                        _ => crate::utils::unreachable_unchecked(),
+                    }
                 }
             }
         }
