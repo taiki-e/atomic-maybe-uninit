@@ -106,28 +106,50 @@ macro_rules! atomic_rmw {
         }
     };
 }
-macro_rules! atomic_cas {
-    ($op:ident, $success:ident, $failure:ident) => {
-        if $failure == Ordering::Relaxed {
-            match $success {
-                Ordering::Relaxed => $op!("", "", ""),
-                Ordering::Acquire => $op!("", "isync", ""),
-                Ordering::Release => $op!("", "", lwsync!()),
-                Ordering::AcqRel => $op!("", "isync", lwsync!()),
-                Ordering::SeqCst => $op!("", "isync", "sync"),
-                _ => unreachable!(),
-            }
-        } else {
-            let order = crate::utils::upgrade_success_ordering($success, $failure);
-            match order {
-                // Relaxed and Release are covered in $failure == Relaxed branch.
-                Ordering::Acquire => $op!("isync", "", ""),
-                Ordering::AcqRel => $op!("isync", "", lwsync!()),
-                Ordering::SeqCst => $op!("isync", "", "sync"),
-                _ => unreachable!(),
-            }
+#[rustfmt::skip]
+macro_rules! atomic_cmpxchg {
+    ($cmpxchg:ident, $cmpxchg_cond_release:ident, $success:ident, $failure:ident) => {{
+        use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
+        // cmpxchg(acquire, release:, fail_label, skip_success_fence)
+        // cmpxchg_cond_release(acquire, release, fail_label, success_label, skip_fail_fence)
+        match ($success, $failure) {
+            (Relaxed, Relaxed) => $cmpxchg!("", "", "4f", ""),
+            (Relaxed, Acquire) => $cmpxchg!("isync", "", "3f" /* emit-fence-on-fail */, "b 4f" /* skip-fence-on-success */),
+            (Acquire, Relaxed) => $cmpxchg!("isync", "", "4f" /* skip-fence-on-fail */, "" /* emit-fence-on-success */),
+            (Acquire, Acquire) => $cmpxchg!("isync", "", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-success */),
+            (Release, Relaxed) => $cmpxchg_cond_release!("", lwsync!(), "4f", "4f", ""),
+            (Release, Acquire) => $cmpxchg_cond_release!("isync", lwsync!(), "3f" /* emit-fence-on-fail */, "4f" /* skip-fence-on-success */, "" /* emit-fence-on-fail */),
+            (AcqRel, Relaxed) => $cmpxchg_cond_release!("isync", lwsync!(), "4f" /* skip-fence-on-fail */, "3f" /* emit-fence-on-success */, "b 4f" /* skip-fence-on-fail */),
+            (AcqRel, Acquire) => $cmpxchg_cond_release!("isync", lwsync!(), "3f" /* emit-fence-on-fail */, "3f" /* emit-fence-on-success */, "" /* emit-fence-on-fail */),
+            // LLVM doesn't emit SYNC before LL in these cases, but seems to wrong considering load's lowing.
+            (Relaxed | Release, _) => $cmpxchg!("isync", "sync", "3f" /* emit-fence-on-fail */, "b 4f" /* skip-fence-on-success */),
+            (SeqCst, Relaxed) => $cmpxchg!("isync", "sync", "4f" /* skip-fence-on-fail */, "" /* emit-fence-on-success */),
+            (Acquire | AcqRel | SeqCst, _) => $cmpxchg!("isync", "sync", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-success */),
+            _ => unreachable!(),
         }
-    };
+    }};
+}
+#[rustfmt::skip]
+macro_rules! atomic_cmpxchg_weak {
+    ($cmpxchg_weak:ident, $success:ident, $failure:ident) => {{
+        use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
+        // cmpxchg_weak(acquire, release_always, release_cond, cmp_fail_label, branch_after_sc)
+        match ($success, $failure) {
+            (Relaxed, Relaxed) => $cmpxchg_weak!("", "", "", "4f", ""),
+            (Relaxed, Acquire) => $cmpxchg_weak!("isync", "", "", "3f" /* emit-fence-on-fail */, "beq+ %cr0, 4f" /* skip-fence-on-success */),
+            (Acquire, Relaxed) => $cmpxchg_weak!("isync", "", "", "4f" /* skip-fence-on-fail */, "bne- %cr0, 4f" /* skip-fence-on-fail */),
+            (Acquire, Acquire) => $cmpxchg_weak!("isync", "", "", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
+            (Release, Relaxed) => $cmpxchg_weak!("", "", lwsync!(), "4f", ""),
+            (Release, Acquire) => $cmpxchg_weak!("isync", "", lwsync!(), "3f" /* emit-fence-on-fail */, "beq+ %cr0, 4f" /* skip-fence-on-success */),
+            (AcqRel, Relaxed) => $cmpxchg_weak!("isync", "", lwsync!(), "4f" /* skip-fence-on-fail */, "bne- %cr0, 4f" /* skip-fence-on-fail */),
+            (AcqRel, Acquire) => $cmpxchg_weak!("isync", "", lwsync!(), "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
+            // LLVM doesn't emit SYNC before LL in these cases, but seems to wrong considering load's lowing.
+            (Relaxed | Release, _) => $cmpxchg_weak!("isync", "sync", "", "3f" /* emit-fence-on-fail */, "beq+ %cr0, 4f" /* skip-fence-on-success */),
+            (SeqCst, Relaxed) => $cmpxchg_weak!("isync", "sync", "", "4f" /* skip-fence-on-fail */, "bne- %cr0, 4f" /* skip-fence-on-fail */),
+            (Acquire | AcqRel | SeqCst, _) => $cmpxchg_weak!("isync", "sync", "", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
+            _ => unreachable!(),
+        }
+    }};
 }
 
 // Extracts and checks the EQ bit of cr0.
@@ -240,7 +262,7 @@ macro_rules! atomic {
                                 "2:", // 'retry:
                                     concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = zero_extend(*dst) }
                                     concat!("st", $suffix, "cx. {val}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = val; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne %cr0, 2b",                                // if cr0.EQ == 0 { jump 'retry }
+                                    "bne- %cr0, 2b",                               // if unlikely(cr0.EQ == 0) { jump 'retry }
                                 $acquire,                                          // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 val = in(reg) val,
@@ -271,18 +293,19 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! cmpxchg {
-                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
+                        ($acquire:expr, $release:expr, $fail_label:tt, $skip_success_fence:tt) => {
                             asm!(
-                                $release,                                          // fence
+                                $release,
                                 "2:", // 'retry:
                                     concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = zero_extend(*dst) }
                                     concat!("cmp", $cmp_size, " {old}, {out}"),    // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                    "bne %cr0, 3f",                                // if cr0.EQ == 0 { jump 'cmp-fail }
+                                    concat!("bne- %cr0, ", $fail_label),           // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
                                     concat!("st", $suffix, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne %cr0, 2b",                                // if cr0.EQ == 0 { jump 'retry }
-                                    $acquire_success,                              // fence
-                                "3:", // 'cmp-fail:
-                                $acquire_always,                                   // fence
+                                    "bne- %cr0, 2b",                               // if unlikely(cr0.EQ == 0) { jump 'retry }
+                                    $skip_success_fence,                           // jump 'skip-fence
+                                "3:", // 'emit-fence:
+                                    $acquire,                                      // fence
+                                "4:", // 'skip-fence:
                                 "mfcr {r}",                                        // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = in(reg) crate::utils::extend32::$ty::zero(old),
@@ -294,7 +317,35 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    atomic_cas!(cmpxchg, success, failure);
+                    macro_rules! cmpxchg_cond_release {
+                        ($acquire:expr, $release:expr, $fail_label:tt, $success_label:tt, $skip_fail_fence:tt) => {
+                            asm!(
+                                concat!("l", $suffix, "arx {out}, 0, {dst}"),      // atomic { RESERVE = (dst, size_of($ty)); out = zero_extend(*dst) }
+                                concat!("cmp", $cmp_size, " {old}, {out}"),        // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                concat!("bne- %cr0, ", $fail_label),               // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                                $release,                                          // fence
+                                "2:", // 'retry:
+                                    concat!("st", $suffix, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    concat!("beq+ %cr0, ", $success_label),        // if likely(cr0.EQ == 1) { jump 'success }
+                                    concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = zero_extend(*dst) }
+                                    concat!("cmp", $cmp_size, " {old}, {out}"),    // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                    "beq+ %cr0, 2b",                               // if likely(cr0.EQ != 0) { jump 'retry }
+                                    $skip_fail_fence,                              // jump 'skip-fence
+                                "3:", // 'emit-fence:
+                                    $acquire,                                      // fence
+                                "4:", // 'skip-fence:
+                                "mfcr {r}",                                        // r = zero_extend(cr)
+                                dst = in(reg_nonzero) ptr_reg!(dst),
+                                old = in(reg) crate::utils::extend32::$ty::zero(old),
+                                new = in(reg) new,
+                                out = out(reg) out,
+                                r = lateout(reg) r,
+                                out("cr0") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
                     // if compare failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (out, test_cr0_eq(r))
                 }
@@ -314,16 +365,18 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! cmpxchg_weak {
-                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
+                        ($acquire:expr, $release_always:expr, $release_cond:expr, $cmp_fail_label:tt, $branch_after_sc:tt) => {
                             asm!(
-                                $release,                                      // fence
+                                $release_always,                               // fence
                                 concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = zero_extend(*dst) }
                                 concat!("cmp", $cmp_size, " {old}, {out}"),    // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                "bne %cr0, 3f",                                // if cr0.EQ == 0 { jump 'cmp-fail }
+                                concat!("bne- %cr0, ", $cmp_fail_label),       // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                                $release_cond,                                 // fence
                                 concat!("st", $suffix, "cx. {new}, 0, {dst}"), // atomic { if RESERVE == (dst, size_of($ty)) { *dst = new; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                $acquire_success,                              // fence
-                                "3:", // 'cmp-fail:
-                                $acquire_always,                               // fence
+                                $branch_after_sc,                              // if ? { jump '? }
+                                "3:", // 'emit-fence:
+                                    $acquire,                                  // fence
+                                "4:", // 'skip-fence:
                                 "mfcr {r}",                                    // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = in(reg) crate::utils::extend32::$ty::zero(old),
@@ -335,7 +388,7 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    atomic_cas!(cmpxchg_weak, success, failure);
+                    atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
                     // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (out, test_cr0_eq(r))
                 }
@@ -386,7 +439,7 @@ macro_rules! atomic_sub_word {
                                     "andc {tmp}, {out}, {mask}", // tmp = out & !mask
                                     "or {tmp}, {val}, {tmp}",    // tmp |= val
                                     "stwcx. {tmp}, 0, {dst}",    // atomic { if RESERVE == (dst, 4) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne %cr0, 2b",              // if cr0.EQ == 0 { jump 'retry }
+                                    "bne- %cr0, 2b",             // unlikely(if cr0.EQ == 0) { jump 'retry }
                                 $acquire,                        // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 val = in(reg) slw(crate::utils::extend32::$ty::zero(val), shift),
@@ -427,22 +480,23 @@ macro_rules! atomic_sub_word {
                     // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg {
-                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
+                        ($acquire:expr, $release:expr, $fail_label:tt, $skip_success_fence:tt) => {
                             asm!(
-                                $release,                        // fence
+                                $release,
                                 "2:", // 'retry:
-                                    "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
-                                    "and {tmp}, {out}, {mask}",  // tmp = out & mask
-                                    "cmpw {tmp}, {old}",         // if tmp == old { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                    "bne %cr0, 3f",              // if cr0.EQ == 0 { jump 'cmp-fail }
-                                    "andc {tmp}, {out}, {mask}", // tmp = out & !mask
-                                    "or {tmp}, {tmp}, {new}",    // tmp |= new
-                                    "stwcx. {tmp}, 0, {dst}",    // atomic { if RESERVE == (dst, size_of($ty)) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne %cr0, 2b",              // if cr0.EQ == 0 { jump 'retry }
-                                    $acquire_success,            // fence
-                                "3:", // 'cmp-fail:
-                                $acquire_always,                 // fence
-                                "mfcr {tmp}",                    // r = zero_extend(cr)
+                                    "lwarx {out}, 0, {dst}",             // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
+                                    "and {tmp}, {out}, {mask}",          // tmp = out & mask
+                                    "cmpw {tmp}, {old}",                 // if tmp == old { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                    concat!("bne- %cr0, ", $fail_label), // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                                    "andc {tmp}, {out}, {mask}",         // tmp = out & !mask
+                                    "or {tmp}, {tmp}, {new}",            // tmp |= new
+                                    "stwcx. {tmp}, 0, {dst}",            // atomic { if RESERVE == (dst, size_of($ty)) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne- %cr0, 2b",                     // if unlikely(cr0.EQ == 0) { jump 'retry }
+                                    $skip_success_fence,                 // jump 'skip-fence
+                                "3:", // 'emit-fence:
+                                    $acquire,                            // fence
+                                "4:", // 'skip-fence:
+                                "mfcr {tmp}",                            // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = in(reg) slw(crate::utils::extend32::$ty::zero(old), shift),
                                 new = in(reg) slw(crate::utils::extend32::$ty::zero(new), shift),
@@ -454,7 +508,40 @@ macro_rules! atomic_sub_word {
                             )
                         };
                     }
-                    atomic_cas!(cmpxchg, success, failure);
+                    macro_rules! cmpxchg_cond_release {
+                        ($acquire:expr, $release:expr, $fail_label:tt, $success_label:tt, $skip_fail_fence:tt) => {
+                            asm!(
+                                "lwarx {out}, 0, {dst}",                    // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
+                                "and {tmp}, {out}, {mask}",                 // tmp = out & mask
+                                "cmpw {tmp}, {old}",                        // if tmp == old { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                concat!("bne- %cr0, ", $fail_label),        // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                                $release,                                   // fence
+                                "2:", // 'retry:
+                                    "andc {tmp}, {out}, {mask}",            // tmp = out & !mask
+                                    "or {tmp}, {tmp}, {new}",               // tmp |= new
+                                    "stwcx. {tmp}, 0, {dst}",               // atomic { if RESERVE == (dst, size_of($ty)) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    concat!("beq+ %cr0, ", $success_label), // if likely(cr0.EQ == 1) { jump 'success }
+                                    "lwarx {out}, 0, {dst}",                // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
+                                    "and {tmp}, {out}, {mask}",             // tmp = out & mask
+                                    "cmpw {tmp}, {old}",                    // if tmp == old { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                    "beq+ %cr0, 2b",                        // if likely(cr0.EQ != 0) { jump 'retry }
+                                    $skip_fail_fence,                       // jump 'skip-fence
+                                "3:", // 'emit-fence:
+                                    $acquire,                               // fence
+                                "4:", // 'skip-fence:
+                                "mfcr {tmp}",                               // r = zero_extend(cr)
+                                dst = in(reg_nonzero) ptr_reg!(dst),
+                                old = in(reg) slw(crate::utils::extend32::$ty::zero(old), shift),
+                                new = in(reg) slw(crate::utils::extend32::$ty::zero(new), shift),
+                                out = out(reg) out,
+                                mask = in(reg) mask,
+                                tmp = out(reg) r,
+                                out("cr0") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
                     // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
                     (crate::utils::extend32::$ty::extract(srw(out, shift)), test_cr0_eq(r))
                 }
@@ -478,19 +565,21 @@ macro_rules! atomic_sub_word {
                     // Based on assemblies generated by rustc/LLVM.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg_weak {
-                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
+                        ($acquire:expr, $release_always:expr, $release_cond:expr, $cmp_fail_label:tt, $branch_after_sc:tt) => {
                             asm!(
-                                $release,                    // fence
-                                "lwarx {out}, 0, {dst}",     // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
-                                "and {tmp}, {out}, {mask}",  // tmp = out & mask
-                                "cmpw {tmp}, {old}",         // if tmp == old { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                "bne %cr0, 3f",              // if cr0.EQ == 0 { jump 'cmp-fail }
-                                "andc {tmp}, {out}, {mask}", // tmp = out & !mask
-                                "or {tmp}, {tmp}, {new}",    // tmp |= new
-                                "stwcx. {tmp}, 0, {dst}",    // atomic { if RESERVE == (dst, size_of($ty)) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                $acquire_success,            // fence
-                                "3:", // 'cmp-fail:
-                                $acquire_always,             // fence
+                                $release_always,                         // fence
+                                "lwarx {out}, 0, {dst}",                 // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
+                                "and {tmp}, {out}, {mask}",              // tmp = out & mask
+                                "cmpw {tmp}, {old}",                     // if tmp == old { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                concat!("bne- %cr0, ", $cmp_fail_label), // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                                $release_cond,                           // fence
+                                "andc {tmp}, {out}, {mask}",             // tmp = out & !mask
+                                "or {tmp}, {tmp}, {new}",                // tmp |= new
+                                "stwcx. {tmp}, 0, {dst}",                // atomic { if RESERVE == (dst, size_of($ty)) { *dst = tmp; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                $branch_after_sc,                        // if ? { jump '? }
+                                "3:", // 'emit-fence:
+                                    $acquire,                            // fence
+                                "4:", // 'skip-fence:
                                 "mfcr {tmp}",                // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = in(reg) slw(crate::utils::extend32::$ty::zero(old), shift),
@@ -503,7 +592,7 @@ macro_rules! atomic_sub_word {
                             )
                         };
                     }
-                    atomic_cas!(cmpxchg_weak, success, failure);
+                    atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
                     // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (crate::utils::extend32::$ty::extract(srw(out, shift)), test_cr0_eq(r))
                 }
@@ -526,6 +615,7 @@ atomic!(u64, "d", "", "d");
     target_feature = "quadword-atomics",
     atomic_maybe_uninit_target_feature = "quadword-atomics",
 ))]
+#[rustfmt::skip]
 macro_rules! atomic128 {
     ($ty:ident) => {
         delegate_signed!(delegate_all, $ty);
@@ -634,7 +724,7 @@ macro_rules! atomic128 {
                                 "2:", // 'retry:
                                     "lqarx %r6, 0, {dst}",  // atomic { RESERVE = (dst, 16); r6:r7 = *dst }
                                     "stqcx. %r8, 0, {dst}", // atomic { if RESERVE == (dst, 16) { *dst = r8:r9; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne %cr0, 2b",         // if cr0.EQ == 0 { jump 'retry }
+                                    "bne- %cr0, 2b",        // if unlikely(cr0.EQ == 0) { jump 'retry }
                                 $acquire,                   // fence
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
@@ -671,21 +761,22 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! cmpxchg {
-                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
+                        ($acquire:expr, $release:expr, $fail_label:tt, $skip_success_fence:tt) => {
                             asm!(
-                                $release,                               // fence
+                                $release,
                                 "2:", // 'retry:
-                                    "lqarx %r8, 0, {dst}",              // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
-                                    "xor {tmp_lo}, %r9, {old_lo}",      // tmp_lo = r9 ^ old_lo
-                                    "xor {tmp_hi}, %r8, {old_hi}",      // tmp_hi = r8 ^ old_hi
-                                    "or. {tmp_lo}, {tmp_lo}, {tmp_hi}", // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                    "bne %cr0, 3f",                     // if cr0.EQ == 0 { jump 'cmp-fail }
-                                    "stqcx. %r6, 0, {dst}",             // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne %cr0, 2b",                     // if cr0.EQ == 0 { jump 'retry }
-                                    $acquire_success,                   // fence
-                                "3:", // 'cmp-fail:
-                                $acquire_always,                        // fence
-                                "mfcr {tmp_lo}",                        // tmp_lo = zero_extend(cr)
+                                    "lqarx %r8, 0, {dst}",               // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                                    "xor {tmp_lo}, %r9, {old_lo}",       // tmp_lo = r9 ^ old_lo
+                                    "xor {tmp_hi}, %r8, {old_hi}",       // tmp_hi = r8 ^ old_hi
+                                    "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",  // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                    concat!("bne- %cr0, ", $fail_label), // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                                    "stqcx. %r6, 0, {dst}",              // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    "bne- %cr0, 2b",                     // if unlikely(cr0.EQ == 0) { jump 'retry }
+                                    $skip_success_fence,                 // jump 'skip-fence
+                                "3:", // 'emit-fence:
+                                    $acquire,                            // fence
+                                "4:", // 'skip-fence:
+                                "mfcr {tmp_lo}",                         // tmp_lo = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old_hi = in(reg) old.pair.hi,
                                 old_lo = in(reg) old.pair.lo,
@@ -702,7 +793,45 @@ macro_rules! atomic128 {
                             )
                         };
                     }
-                    atomic_cas!(cmpxchg, success, failure);
+                    macro_rules! cmpxchg_cond_release {
+                        ($acquire:expr, $release:expr, $fail_label:tt, $success_label:tt, $skip_fail_fence:tt) => {
+                            asm!(
+                                "lqarx %r8, 0, {dst}",                      // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                                "xor {tmp_lo}, %r9, {old_lo}",              // tmp_lo = r9 ^ old_lo
+                                "xor {tmp_hi}, %r8, {old_hi}",              // tmp_hi = r8 ^ old_hi
+                                "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",         // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                concat!("bne- %cr0, ", $fail_label),        // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                                $release,                                   // fence
+                                "2:", // 'retry:
+                                    "stqcx. %r6, 0, {dst}",                 // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                    concat!("beq+ %cr0, ", $success_label), // if likely(cr0.EQ == 1) { jump 'success }
+                                    "lqarx %r8, 0, {dst}",                  // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                                    "xor {tmp_lo}, %r9, {old_lo}",          // tmp_lo = r9 ^ old_lo
+                                    "xor {tmp_hi}, %r8, {old_hi}",          // tmp_hi = r8 ^ old_hi
+                                    "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",     // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                    "beq+ %cr0, 2b",                        // if likely(cr0.EQ != 0) { jump 'retry }
+                                    $skip_fail_fence,                       // jump 'skip-fence
+                                "3:", // 'emit-fence:
+                                    $acquire,                               // fence
+                                "4:", // 'skip-fence:
+                                "mfcr {tmp_lo}",                            // tmp_lo = zero_extend(cr)
+                                dst = in(reg_nonzero) ptr_reg!(dst),
+                                old_hi = in(reg) old.pair.hi,
+                                old_lo = in(reg) old.pair.lo,
+                                tmp_hi = out(reg) _,
+                                tmp_lo = out(reg) r,
+                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                                in("r6") new.pair.hi,
+                                in("r7") new.pair.lo,
+                                out("r8") prev_hi,
+                                out("r9") prev_lo,
+                                out("cr0") _,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
                     // if compare failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (
                         MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
@@ -727,19 +856,21 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! cmpxchg_weak {
-                        ($acquire_always:expr, $acquire_success:expr, $release:expr) => {
+                        ($acquire:expr, $release_always:expr, $release_cond:expr, $cmp_fail_label:tt, $branch_after_sc:tt) => {
                             asm!(
-                                $release,                           // fence
-                                "lqarx %r8, 0, {dst}",              // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
-                                "xor {tmp_lo}, %r9, {old_lo}",      // tmp_lo = r9 ^ old_lo
-                                "xor {tmp_hi}, %r8, {old_hi}",      // tmp_hi = r8 ^ old_hi
-                                "or. {tmp_lo}, {tmp_lo}, {tmp_hi}", // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                "bne %cr0, 3f",                     // if cr0.EQ == 0 { jump 'cmp-fail }
-                                "stqcx. %r6, 0, {dst}",             // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                $acquire_success,                   // fence
-                                "3:", // 'cmp-fail:
-                                $acquire_always,                    // fence
-                                "mfcr {tmp_lo}",                    // tmp_lo = zero_extend(cr)
+                                $release_always,                         // fence
+                                "lqarx %r8, 0, {dst}",                   // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                                "xor {tmp_lo}, %r9, {old_lo}",           // tmp_lo = r9 ^ old_lo
+                                "xor {tmp_hi}, %r8, {old_hi}",           // tmp_hi = r8 ^ old_hi
+                                "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",      // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                                concat!("bne- %cr0, ", $cmp_fail_label), // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                                $release_cond,                           // fence
+                                "stqcx. %r6, 0, {dst}",                  // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                                $branch_after_sc,                        // if ? { jump '? }
+                                "3:", // 'emit-fence:
+                                    $acquire,                            // fence
+                                "4:", // 'skip-fence:
+                                "mfcr {tmp_lo}",                         // tmp_lo = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old_hi = in(reg) old.pair.hi,
                                 old_lo = in(reg) old.pair.lo,
@@ -756,7 +887,7 @@ macro_rules! atomic128 {
                             )
                         };
                     }
-                    atomic_cas!(cmpxchg_weak, success, failure);
+                    atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
                     // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
                     (
                         MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
