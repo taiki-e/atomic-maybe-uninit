@@ -32,9 +32,7 @@ fn main() {
     };
 
     if version.minor >= 80 {
-        println!(
-            r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization","rmw"))"#
-        );
+        println!(r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization"))"#);
 
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -44,7 +42,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","thumb2","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8","v8m","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
         );
     }
 
@@ -521,23 +519,81 @@ fn main() {
             }
         }
         "avr" => {
-            // target_feature "rmw" is unstable and available on rustc side since nightly-2026-02-08: https://github.com/rust-lang/rust/pull/146900
-            if !version.probe(95, 2026, 2, 7) || needs_target_feature_fallback(&version, None) {
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/AVR/AVRDevices.td
-                let mut xmegau = false; // FamilyXMEGAU
-                if let Some(cpu) = target_cpu() {
-                    match &*cpu {
-                        "atxmega16a4u" | "atxmega16c4" | "atxmega32a4u" | "atxmega32c3"
-                        | "atxmega32c4" | "atxmega32e5" | "atxmega16e5" | "atxmega8e5"
-                        | "atxmega64a3u" | "atxmega64a4u" | "atxmega64b1" | "atxmega64b3"
-                        | "atxmega64c3" | "atxmega64a1u" | "atxmega128a3u" | "atxmega128b1"
-                        | "atxmega128b3" | "atxmega128c3" | "atxmega192a3u" | "atxmega192c3"
-                        | "atxmega256a3u" | "atxmega256a3bu" | "atxmega256c3" | "atxmega384c3"
-                        | "atxmega128a1u" | "atxmega128a4u" => xmegau = true,
-                        _ => {}
-                    }
+            // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/AVR/AVRDevices.td
+            let mut tiny = false; // FamilyTiny
+            let mut xmegau = false; // FamilyXMEGAU
+            let mut lowbytefirst = false; // FamilyXMEGA* | attiny102 | attiny104
+            let cpu = target_cpu();
+            let cpu = match cpu.as_deref() {
+                Some(cpu) => cpu,
+                None => {
+                    // Handle legacy custom target names before https://github.com/Rahix/avr-hal/commit/9e96d0efe67367749b43084fcbe474649d6b62cf
+                    target.rsplit_once('-').unwrap_or(("", "")).1
                 }
+            };
+            match cpu {
+                // attiny4/attiny5/attiny9/attiny10: 12.3. Accessing 16-bit Registers of https://ww1.microchip.com/downloads/en/DeviceDoc/atmel-8127-avr-8-bit-microcontroller-attiny4-attiny5-attiny9-attiny10_datasheet.pdf
+                //   > To perform a 16-bit write operation, the high byte must be written before the low byte.
+                // attiny20: 12.10 Accessing 16-bit Registers of https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-8235-8-bit-AVR-Microcontroller-ATtiny20_Datasheet.pdf
+                //   > To do a 16-bit write, the high byte must be written before the low byte.
+                // attiny40: 12.9 Accessing Registers in 16-bit Mode of https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-8263-8-bit-AVR-Microcontroller-tinyAVR-ATtiny40_Datasheet.pdf
+                //   > To do a 16-bit write, the high byte must be written before the low byte.
+                "avrtiny" | "attiny4" | "attiny5" | "attiny9" | "attiny10" | "attiny20"
+                | "attiny40" => tiny = true,
+                // attiny102/attiny104: 8.9. Accessing 16-bit Registers of https://ww1.microchip.com/downloads/en/devicedoc/atmel-42505-8-bit-avr-microcontrollers-attiny102-attiny104_datasheet.pdf
+                //   > For a write operation, the low byte of the 16-bit register must be written before the high byte.
+                "attiny102" | "attiny104" => {
+                    tiny = true;
+                    lowbytefirst = true;
+                }
+                "atxmega16a4u" | "atxmega16c4" | "atxmega32a4u" | "atxmega32c3" | "atxmega32c4"
+                | "atxmega32e5" | "atxmega16e5" | "atxmega8e5" | "atxmega64a3u"
+                | "atxmega64a4u" | "atxmega64b1" | "atxmega64b3" | "atxmega64c3"
+                | "atxmega64a1u" | "atxmega128a3u" | "atxmega128b1" | "atxmega128b3"
+                | "atxmega128c3" | "atxmega192a3u" | "atxmega192c3" | "atxmega256a3u"
+                | "atxmega256a3bu" | "atxmega256c3" | "atxmega384c3" | "atxmega128a1u"
+                | "atxmega128a4u" => {
+                    xmegau = true;
+                    lowbytefirst = true;
+                }
+                "avrxmega1" | "avrxmega2" | "avrxmega3" | "avrxmega4" | "avrxmega5"
+                | "avrxmega6" | "avrxmega7" | "atxmega16a4" | "atxmega16d4" | "atxmega32a4"
+                | "atxmega32d3" | "atxmega32d4" | "atxmega64a3" | "atxmega64d3" | "atxmega64d4"
+                | "atxmega64a1" | "atxmega128a3" | "atxmega128d3" | "atxmega128d4"
+                | "atxmega192a3" | "atxmega192d3" | "atxmega256a3" | "atxmega256a3b"
+                | "atxmega256d3" | "atxmega384d3" | "atxmega128a1" | "attiny202" | "attiny402"
+                | "attiny204" | "attiny404" | "attiny804" | "attiny1604" | "attiny406"
+                | "attiny806" | "attiny1606" | "attiny807" | "attiny1607" | "attiny212"
+                | "attiny412" | "attiny214" | "attiny414" | "attiny814" | "attiny1614"
+                | "attiny416" | "attiny816" | "attiny1616" | "attiny3216" | "attiny417"
+                | "attiny817" | "attiny1617" | "attiny3217" | "attiny1624" | "attiny1626"
+                | "attiny1627" | "attiny3224" | "attiny3226" | "attiny3227" | "atmega808"
+                | "atmega809" | "atmega1608" | "atmega1609" | "atmega3208" | "atmega3209"
+                | "atmega4808" | "atmega4809" | "avr64da28" | "avr64da32" | "avr64da48"
+                | "avr64da64" | "avr64db28" | "avr64db32" | "avr64db48" | "avr64db64"
+                | "avr64dd14" | "avr64dd20" | "avr64dd28" | "avr64dd32" | "avr64du28"
+                | "avr64du32" | "avr64ea28" | "avr64ea32" | "avr64ea48" | "avr64sd28"
+                | "avr64sd32" | "avr64sd48" | "avr16dd20" | "avr16dd28" | "avr16dd32"
+                | "avr16du14" | "avr16du20" | "avr16du28" | "avr16du32" | "avr32da28"
+                | "avr32da32" | "avr32da48" | "avr32db28" | "avr32db32" | "avr32db48"
+                | "avr32dd14" | "avr32dd20" | "avr32dd28" | "avr32dd32" | "avr32du14"
+                | "avr32du20" | "avr32du28" | "avr32du32" | "avr16eb14" | "avr16eb20"
+                | "avr16eb28" | "avr16eb32" | "avr16ea28" | "avr16ea32" | "avr16ea48"
+                | "avr32ea28" | "avr32ea32" | "avr32ea48" | "avr32sd20" | "avr32sd28"
+                | "avr32sd32" | "avr128da28" | "avr128da32" | "avr128da48" | "avr128da64"
+                | "avr128db28" | "avr128db32" | "avr128db48" | "avr128db64" => lowbytefirst = true,
+                _ => {}
+            }
+            // target_feature "tinyencoding"/"lowbytefirst"/"rmw" is unstable and available on rustc side since nightly-2026-02-08: https://github.com/rust-lang/rust/pull/146900
+            let needs_target_feature_fallback =
+                !version.probe(95, 2026, 2, 7) || needs_target_feature_fallback(&version, None);
+            if needs_target_feature_fallback {
+                target_feature_fallback("tinyencoding", tiny);
                 target_feature_fallback("rmw", xmegau);
+            }
+            // LLVM 22 doesn't handle attiny102/attiny104 as lowbytefirst.
+            if needs_target_feature_fallback || lowbytefirst {
+                target_feature_fallback("lowbytefirst", lowbytefirst);
             }
         }
         "csky" => {

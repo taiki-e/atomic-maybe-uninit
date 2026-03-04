@@ -66,6 +66,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(target_feature,values("isa-68020"))', # 1.85+ https://github.com/rust-lang/rust/pull/134329
     'cfg(target_feature,values("zacas"))', # 1.87+ https://github.com/rust-lang/rust/pull/137417
     'cfg(target_feature,values("msync"))', # 1.87+ https://github.com/rust-lang/rust/pull/137860
+    'cfg(target_feature,values("tinyencoding","lowbytefirst","rmw"))', # 1.95+ https://github.com/rust-lang/rust/pull/146900
     'cfg(target_pointer_width,values("128"))',
     # Known custom cfgs, excluding those that may be set by build script.
     # Public APIs, considered unstable unless documented as stable in readme.

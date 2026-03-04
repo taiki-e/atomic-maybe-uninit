@@ -506,8 +506,17 @@ build() {
         x_cargo "${args[@]}" "$@"
       ;;
     avr*)
+      CARGO_TARGET_DIR="${target_dir}/tiny" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/tiny-lowbytefirst" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/lowbytefirst" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+        x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/rmw" \
-        RUSTFLAGS="${target_rustflags} -C target-feature=+rmw" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
         x_cargo "${args[@]}" "$@"
       ;;
     csky-unknown-linux-gnuabiv2)

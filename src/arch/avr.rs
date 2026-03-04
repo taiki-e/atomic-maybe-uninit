@@ -25,62 +25,6 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
-// See portable-atomic's interrupt module for more.
-#[inline(always)]
-fn disable() -> u8 {
-    let sreg: u8;
-    // SAFETY: reading the status register (SREG) and disabling interrupts are safe.
-    unsafe {
-        asm!(
-            "in {sreg}, 0x3F", // sreg = SREG
-            "cli",             // SREG.I = 0
-            sreg = out(reg) sreg,
-            // Do not use `nomem` and `readonly` because prevent subsequent memory accesses from being reordered before interrupts are disabled.
-            // Do not use `preserves_flags` because CLI modifies the I bit of the status register (SREG).
-            options(nostack),
-        );
-    }
-    sreg
-}
-#[inline(always)]
-unsafe fn restore(prev_sreg: u8) {
-    // SAFETY: the caller must guarantee that the state was retrieved by the previous `disable`,
-    unsafe {
-        // This clobbers the entire status register. See msp430.rs to safety on this.
-        asm!(
-            "out 0x3F, {prev_sreg}", // SREG = prev_sreg
-            prev_sreg = in(reg) prev_sreg,
-            // Do not use `nomem` and `readonly` because prevent preceding memory accesses from being reordered after interrupts are enabled.
-            // Do not use `preserves_flags` because OUT modifies the status register (SREG).
-            options(nostack),
-        );
-    }
-}
-
-#[inline(always)]
-fn xor8(a: MaybeUninit<u8>, b: MaybeUninit<u8>) -> u8 {
-    let out;
-    // SAFETY: calling EOR is safe.
-    unsafe {
-        asm!(
-            "eor {a}, {b}", // a ^= b
-            a = inout(reg) a => out,
-            b = in(reg) b,
-            // Do not use `preserves_flags` because EOR modifies Z, N, V, and S bits in the status register (SREG).
-            options(pure, nomem, nostack),
-        );
-    }
-    out
-}
-#[inline(always)]
-fn cmp16(a: MaybeUninit<u16>, b: MaybeUninit<u16>) -> bool {
-    // SAFETY: same layout.
-    let [a1, a2] = unsafe { mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(a) };
-    // SAFETY: same layout.
-    let [b1, b2] = unsafe { mem::transmute::<MaybeUninit<u16>, [MaybeUninit<u8>; 2]>(b) };
-    xor8(a1, b1) | xor8(a2, b2) == 0
-}
-
 macro_rules! atomic8 {
     ($ty:ident) => {
         delegate_signed!(delegate_all, $ty);
@@ -204,12 +148,35 @@ macro_rules! atomic16 {
                 src: *const MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let s = disable();
-                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
-                // On single-core systems, disabling interrupts is enough to prevent data race.
-                let out = unsafe { src.read() };
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
+                let out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(not(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding")))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "ld {out:l}, Z",    //   out.lo = *Z
+                        "ldd {out:h}, Z+1", //   out.hi = *Z.byte_add(1)
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        out = out(reg_pair) out,
+                        sreg = out(reg) _,
+                        in("Z") src,
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding"))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "ld {out:l}, Z+",   //   out.lo = *Z; Z = Z.byte_add(1)
+                        "ld {out:h}, Z",    //   out.hi = *Z
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        out = out(reg_pair) out,
+                        sreg = out(reg) _,
+                        inout("Z") src => _,
+                        options(nostack, preserves_flags),
+                    );
+                }
                 out
             }
         }
@@ -220,12 +187,61 @@ macro_rules! atomic16 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) {
-                let s = disable();
-                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
-                // On single-core systems, disabling interrupts is enough to prevent data race.
-                unsafe { dst.write(val) }
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(not(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding")))]
+                    #[cfg(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst"))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "st Z, {val:l}",    //   *Z = val.lo
+                        "std Z+1, {val:h}", //   *Z.byte_add(1) = val.hi
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        val = in(reg_pair) val,
+                        sreg = out(reg) _,
+                        in("Z") dst,
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(not(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding")))]
+                    #[cfg(not(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst")))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "std Z+1, {val:h}", //   *Z.byte_add(1) = val.hi
+                        "st Z, {val:l}",    //   *Z = val.lo
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        val = in(reg_pair) val,
+                        sreg = out(reg) _,
+                        in("Z") dst,
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding"))]
+                    #[cfg(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst"))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "st Z+, {val:l}",   //   *Z = val.lo; Z = Z.byte_add(1)
+                        "st Z, {val:h}",    //   *Z = val.hi
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        val = in(reg_pair) val,
+                        sreg = out(reg) _,
+                        inout("Z") dst => _,
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding"))]
+                    #[cfg(not(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst")))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "st Z, {val:h}",    //   *Z = val.hi
+                        "st -Z, {val:l}",   //   Z = Z.byte_sub(1); *Z = val.lo
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        val = in(reg_pair) val,
+                        sreg = out(reg) _,
+                        inout("Z") dst.cast::<u8>().add(1) => _,
+                        options(nostack, preserves_flags),
+                    );
+                }
             }
         }
         impl AtomicSwap for $ty {
@@ -235,14 +251,78 @@ macro_rules! atomic16 {
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                let s = disable();
-                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
-                // On single-core systems, disabling interrupts is enough to prevent data race.
-                let out = unsafe { dst.read() };
-                // SAFETY: see dst.read()
-                unsafe { dst.write(val) }
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
+                let out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(not(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding")))]
+                    #[cfg(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst"))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "ld {out:l}, Z",    //   out.lo = *Z
+                        "ldd {out:h}, Z+1", //   out.hi = *Z.byte_add(1)
+                        "st Z, {val:l}",    //   *Z = val.lo
+                        "std Z+1, {val:h}", //   *Z.byte_add(1) = val.hi
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        val = in(reg_pair) val,
+                        out = out(reg_pair) out,
+                        sreg = out(reg) _,
+                        in("Z") dst,
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(not(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding")))]
+                    #[cfg(not(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst")))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "ld {out:l}, Z",    //   out.lo = *Z
+                        "ldd {out:h}, Z+1", //   out.hi = *Z.byte_add(1)
+                        "std Z+1, {val:h}", //   *Z.byte_add(1) = val.hi
+                        "st Z, {val:l}",    //   *Z = val.lo
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        val = in(reg_pair) val,
+                        out = out(reg_pair) out,
+                        sreg = out(reg) _,
+                        in("Z") dst,
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding"))]
+                    #[cfg(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst"))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "ld {out:l}, Z+",   //   out.lo = *Z; Z = Z.byte_add(1);
+                        "ld {out:h}, Z",    //   out.hi = *Z
+                        "subi r30, 0x01",   //   Z.lo -= 1
+                        "sbci r31, 0x00",   //   Z.hi -= borrow
+                        "st Z+, {val:l}",   //   Z = Z.byte_sub(1); *Z = val.lo
+                        "st Z, {val:h}",    //   *Z = val.hi
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        val = in(reg_pair) val,
+                        out = out(reg_pair) out,
+                        sreg = out(reg) _,
+                        inout("Z") dst => _,
+                        // Do not use `preserves_flags` because SUBI modifies the status register (SREG).
+                        options(nostack),
+                    );
+                    #[cfg(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding"))]
+                    #[cfg(not(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst")))]
+                    asm!(
+                        "in {sreg}, 0x3F",  // sreg = SREG
+                        "cli",              // atomic { SREG.I = 0
+                        "ld {out:l}, Z+",   //   out.lo = *Z; Z = Z.byte_add(1);
+                        "ld {out:h}, Z",    //   out.hi = *Z
+                        "st Z, {val:h}",    //   *Z = val.hi
+                        "st -Z, {val:l}",   //   Z = Z.byte_sub(1); *Z = val.lo
+                        "out 0x3F, {sreg}", //   SREG = sreg }
+                        val = in(reg_pair) val,
+                        out = out(reg_pair) out,
+                        sreg = out(reg) _,
+                        in("Z") dst,
+                        options(nostack, preserves_flags),
+                    );
+                }
                 out
             }
         }
@@ -255,26 +335,120 @@ macro_rules! atomic16 {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                let s = disable();
-                // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
-                // On single-core systems, disabling interrupts is enough to prevent data race.
-                let out = unsafe { dst.read() };
-                // transmute from MaybeUninit<{i,u}{16,size}> to MaybeUninit<u16>
-                #[allow(clippy::useless_transmute)] // only useless when Self is u16
-                // SAFETY: Self and $cmp_ty has the same layout
-                let r = unsafe {
-                    cmp16(
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<u16>>(old),
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<u16>>(out),
-                    )
-                };
-                if r {
-                    // SAFETY: see dst.read()
-                    unsafe { dst.write(new) }
+                let out: MaybeUninit<Self>;
+                let mut r: u8 = 0;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    #[cfg(not(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding")))]
+                    #[cfg(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst"))]
+                    asm!(
+                        "in {sreg}, 0x3F",      // sreg = SREG
+                        "cli",                  // atomic { SREG.I = 0
+                        "ld {out:l}, Z",        //   out.lo = *Z
+                        "ldd {out:h}, Z+1",     //   out.hi = *Z.byte_add(1)
+                        "eor {old:l}, {out:l}", //   old.lo ^= out.lo; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "eor {old:h}, {out:h}", //   old.hi ^= out.hi; if old.hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "or {old:l}, {old:h}",  //   old.lo ^= old.hi; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "brne 2f",              //   if SREG.Z == 0 { jump 'cmp-fail }
+                        "ldi {r}, 1",           //   r = 1
+                        "st Z, {new:l}",        //   *Z = new.lo
+                        "std Z+1, {new:h}",     //   *Z.byte_add(1) = new.hi
+                        "2:", // 'cmp-fail:
+                        "out 0x3F, {sreg}",     //   SREG = sreg }
+                        old = inout(reg_pair) old => _,
+                        new = in(reg_pair) new,
+                        out = out(reg_pair) out,
+                        // ldi requires r[16-31]
+                        r = inout(reg_upper) r,
+                        sreg = out(reg) _,
+                        in("Z") dst,
+                        // EOR and OR modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(not(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding")))]
+                    #[cfg(not(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst")))]
+                    asm!(
+                        "in {sreg}, 0x3F",      // sreg = SREG
+                        "cli",                  // atomic { SREG.I = 0
+                        "ld {out:l}, Z",        //   out.lo = *Z
+                        "ldd {out:h}, Z+1",     //   out.hi = *Z.byte_add(1)
+                        "eor {old:l}, {out:l}", //   old.lo ^= out.lo; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "eor {old:h}, {out:h}", //   old.hi ^= out.hi; if old.hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "or {old:l}, {old:h}",  //   old.lo ^= old.hi; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "brne 2f",              //   if SREG.Z == 0 { jump 'cmp-fail }
+                        "ldi {r}, 1",           //   r = 1
+                        "std Z+1, {new:h}",     //   *Z.byte_add(1) = new.hi
+                        "st Z, {new:l}",        //   *Z = new.lo
+                        "2:", // 'cmp-fail:
+                        "out 0x3F, {sreg}",     //   SREG = sreg }
+                        old = inout(reg_pair) old => _,
+                        new = in(reg_pair) new,
+                        out = out(reg_pair) out,
+                        // ldi requires r[16-31]
+                        r = inout(reg_upper) r,
+                        sreg = out(reg) _,
+                        in("Z") dst,
+                        // EOR and OR modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding"))]
+                    #[cfg(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst"))]
+                    asm!(
+                        "in {sreg}, 0x3F",      // sreg = SREG
+                        "cli",                  // atomic { SREG.I = 0
+                        "ld {out:l}, Z+",       //   out.lo = *Z; Z = Z.byte_add(1);
+                        "ld {out:h}, Z",        //   out.hi = *Z
+                        "eor {old:l}, {out:l}", //   old.lo ^= out.lo; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "eor {old:h}, {out:h}", //   old.hi ^= out.hi; if old.hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "or {old:l}, {old:h}",  //   old.lo ^= old.hi; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "brne 2f",              //   if SREG.Z == 0 { jump 'cmp-fail }
+                        "ldi {r}, 1",           //   r = 1
+                        "subi r30, 0x01",       //   Z.lo -= 1
+                        "sbci r31, 0x00",       //   Z.hi -= borrow
+                        "st Z+, {new:l}",       //   Z = Z.byte_sub(1); *Z = new.lo
+                        "st Z, {new:h}",        //   *Z = new.hi
+                        "2:", // 'cmp-fail:
+                        "out 0x3F, {sreg}",     //   SREG = sreg }
+                        old = inout(reg_pair) old => _,
+                        new = in(reg_pair) new,
+                        out = out(reg_pair) out,
+                        // ldi requires r[16-31]
+                        r = inout(reg_upper) r,
+                        sreg = out(reg) _,
+                        inout("Z") dst => _,
+                        // EOR, OR, and SUBI modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
+                        options(nostack, preserves_flags),
+                    );
+                    #[cfg(any(target_feature = "tinyencoding", atomic_maybe_uninit_target_feature = "tinyencoding"))]
+                    #[cfg(not(any(target_feature = "lowbytefirst", atomic_maybe_uninit_target_feature = "lowbytefirst")))]
+                    asm!(
+                        "in {sreg}, 0x3F",      // sreg = SREG
+                        "cli",                  // atomic { SREG.I = 0
+                        "ld {out:l}, Z+",       //   out.lo = *Z; Z = Z.byte_add(1);
+                        "ld {out:h}, Z",        //   out.hi = *Z
+                        "eor {old:l}, {out:l}", //   old.lo ^= out.lo; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "eor {old:h}, {out:h}", //   old.hi ^= out.hi; if old.hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "or {old:l}, {old:h}",  //   old.lo ^= old.hi; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                        "brne 2f",              //   if SREG.Z == 0 { jump 'cmp-fail }
+                        "ldi {r}, 1",           //   r = 1
+                        "st Z, {new:h}",        //   *Z = new.hi
+                        "st -Z, {new:l}",       //   Z = Z.byte_sub(1); *Z = new.lo
+                        "2:", // 'cmp-fail:
+                        "out 0x3F, {sreg}",     //   SREG = sreg }
+                        old = inout(reg_pair) old => _,
+                        new = in(reg_pair) new,
+                        out = out(reg_pair) out,
+                        // ldi requires r[16-31]
+                        r = inout(reg_upper) r,
+                        sreg = out(reg) _,
+                        inout("Z") dst => _,
+                        // EOR and OR modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
+                        options(nostack, preserves_flags),
+                    );
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+                    (out, r != 0)
                 }
-                // SAFETY: the state was retrieved by the previous `disable`.
-                unsafe { restore(s) }
-                (out, r)
             }
         }
     };
