@@ -59,7 +59,13 @@ fn test() {
         // AVR
         Revision::new("avr", "avr-none")
             .rustc_args(["-C", "target-cpu=atmega2560"]),
-        Revision::new("avr_rmw", "avr-none")
+        Revision::new("avr_tinyencoding", "avr-none")
+            .rustc_args(["-C", "target-cpu=attiny40"]),
+        Revision::new("avr_tinyencoding_lowbytefirst", "avr-none")
+            .rustc_args(["-C", "target-cpu=attiny104"]),
+        Revision::new("avr_lowbytefirst", "avr-none")
+            .rustc_args(["-C", "target-cpu=atxmega384d3"]),
+        Revision::new("avr_lowbytefirst_rmw", "avr-none")
             .rustc_args(["-C", "target-cpu=atxmega384c3"]),
         // C-SKY
         Revision::new("csky", "csky-unknown-linux-gnuabiv2")
