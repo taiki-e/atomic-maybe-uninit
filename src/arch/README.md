@@ -75,8 +75,11 @@ TODO: add reference link and document overview
 
 target_arch: hexagon<br>
 Implementation: [hexagon.rs](hexagon.rs)<br>
+Refs: [Qualcomm Hexagon V79 Programmer Reference Manual](https://docs.qualcomm.com/doc/80-N2040-60/topic)
 
-TODO: add reference link and document overview
+TODO: document overview
+
+(Refs: [Section 5.12 "Atomic operations"](https://docs.qualcomm.com/doc/80-N2040-60/topic/memory.html#atomic-operations) and [section 5.11 "Memory ordering"](https://docs.qualcomm.com/doc/80-N2040-60/topic/memory.html#memory-ordering) of Qualcomm Hexagon V79 Programmer Reference Manual)
 
 ## LoongArch
 

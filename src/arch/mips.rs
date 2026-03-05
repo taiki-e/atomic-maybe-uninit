@@ -238,8 +238,8 @@ macro_rules! atomic {
                                     ".set push",
                                     ".set noreorder",
                                     ".set nomacro",
-                                    "beqz {tmp}, 2b",                                 // if tmp == 0 { jump 'retry }
-                                      "move {tmp}, {val}",                            // tmp = val
+                                    "beqz {tmp}, 2b",                                 // if tmp == 0 {
+                                      "move {tmp}, {val}",                            //   tmp = val; jump 'retry } else { tmp = val }
                                     ".set pop",
                                 $acquire,                                             // fence
                                 ".set pop",
