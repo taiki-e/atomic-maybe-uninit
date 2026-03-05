@@ -523,6 +523,7 @@ fn main() {
             let mut tiny = false; // FamilyTiny
             let mut xmegau = false; // FamilyXMEGAU
             let mut lowbytefirst = false; // FamilyXMEGA* | attiny102 | attiny104
+            let mut llvm_missing_lowbytefirst = false;
             let cpu = target_cpu();
             let cpu = match cpu.as_deref() {
                 Some(cpu) => cpu,
@@ -545,6 +546,8 @@ fn main() {
                 "attiny102" | "attiny104" => {
                     tiny = true;
                     lowbytefirst = true;
+                    // LLVM 22 doesn't handle attiny102/attiny104 as lowbytefirst.
+                    llvm_missing_lowbytefirst = true;
                 }
                 "atxmega16a4u" | "atxmega16c4" | "atxmega32a4u" | "atxmega32c3" | "atxmega32c4"
                 | "atxmega32e5" | "atxmega16e5" | "atxmega8e5" | "atxmega64a3u"
@@ -591,8 +594,7 @@ fn main() {
                 target_feature_fallback("tinyencoding", tiny);
                 target_feature_fallback("rmw", xmegau);
             }
-            // LLVM 22 doesn't handle attiny102/attiny104 as lowbytefirst.
-            if needs_target_feature_fallback || lowbytefirst {
+            if needs_target_feature_fallback || llvm_missing_lowbytefirst {
                 target_feature_fallback("lowbytefirst", lowbytefirst);
             }
         }
