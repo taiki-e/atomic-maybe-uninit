@@ -1940,6 +1940,435 @@ asm_test::store::u64::release:
         add               sp, #0x8
         pop               {r7, pc}
 
+<u64 as atomic_maybe_uninit::raw::AtomicLoad>::atomic_load:
+        push              {r11, lr}
+        mov               r11, sp
+        tst               r1, #255
+        beq               0f
+        mov               r2, #0
+        ldrexd            r0, r1, [r0]
+        mcr               p15, #0x0, r2, c7, c10, #0x5
+        pop               {r11, pc}
+0:
+        ldrexd            r0, r1, [r0]
+        pop               {r11, pc}
+
+<u64 as atomic_maybe_uninit::raw::AtomicSwap>::atomic_swap:
+        push              {r4, r10, r11, lr}
+        add               r11, sp, #8
+        mov               r12, r0
+        ldrb              r0, [r11, #0x8]
+        add               r1, pc, #0
+        ldr               pc, [r1, r0, lsl #2]
+        .word             0x00000068
+        .word             0x0000007c
+        .word             0x0000004c
+        .word             0x0000002c
+        .word             0x0000002c
+        mov               lr, #0
+        mcr               p15, #0x0, lr, c7, c10, #0x5
+0:
+        ldrexd            r0, r1, [r12]
+        strexd            r4, r2, r3, [r12]
+        cmp               r4, #0
+        bne               0b
+        mcr               p15, #0x0, lr, c7, c10, #0x5
+        pop               {r4, r10, r11, pc}
+        mov               lr, #0
+1:
+        ldrexd            r0, r1, [r12]
+        strexd            r4, r2, r3, [r12]
+        cmp               r4, #0
+        bne               1b
+        mcr               p15, #0x0, lr, c7, c10, #0x5
+        pop               {r4, r10, r11, pc}
+2:
+        ldrexd            r0, r1, [r12]
+        strexd            lr, r2, r3, [r12]
+        cmp               lr, #0
+        bne               2b
+        pop               {r4, r10, r11, pc}
+        mov               lr, #0
+        mcr               p15, #0x0, lr, c7, c10, #0x5
+3:
+        ldrexd            r0, r1, [r12]
+        strexd            r4, r2, r3, [r12]
+        cmp               r4, #0
+        bne               3b
+        pop               {r4, r10, r11, pc}
+
+<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange:
+        push              {r4, r5, r6, r7, r8, r10, r11, lr}
+        add               r11, sp, #24
+        mov               r12, r3
+        mov               lr, r2
+        ldrb              r3, [r11, #0x10]
+        ldr               r5, [r11, #0xc]
+        ldr               r4, [r11, #0x8]
+        cmp               r3, #0
+        ldr               r2, [r11, #0x14]
+        beq               6f
+        mov               r8, #0
+        cmp               r3, #1
+        beq               2f
+        cmp               r3, #2
+        bne               10f
+        tst               r2, #255
+        beq               18f
+0:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               1f
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        bne               0b
+1:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+2:
+        tst               r2, #255
+        beq               13f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               4f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+3:
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        beq               5f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        beq               3b
+4:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+5:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+6:
+        tst               r2, #255
+        beq               16f
+        mov               r8, #0
+7:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               8f
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        bne               7b
+        b                 9f
+8:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+9:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+10:
+        tst               r2, #255
+        beq               20f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               12f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+11:
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        beq               12f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        beq               11b
+12:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+13:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               15f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+14:
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        beq               15f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        beq               14b
+15:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+16:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               17f
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        bne               16b
+17:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+18:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               19f
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        bne               18b
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+19:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+20:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               23f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+21:
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        beq               22f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        beq               21b
+        b                 23f
+22:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+23:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+
+<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
+        push              {r4, r5, r6, r7, r8, r10, r11, lr}
+        add               r11, sp, #24
+        mov               r12, r3
+        mov               lr, r2
+        ldrb              r3, [r11, #0x10]
+        ldr               r5, [r11, #0xc]
+        ldr               r4, [r11, #0x8]
+        cmp               r3, #0
+        ldr               r2, [r11, #0x14]
+        beq               4f
+        mov               r8, #0
+        cmp               r3, #1
+        beq               1f
+        cmp               r3, #2
+        bne               7f
+        tst               r2, #255
+        beq               13f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               0f
+        strexd            r6, r4, r5, [r1]
+0:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+1:
+        tst               r2, #255
+        beq               9f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               2f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        beq               3f
+2:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+3:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+4:
+        tst               r2, #255
+        beq               11f
+        mov               r8, #0
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               5f
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        beq               6f
+5:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+6:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+7:
+        tst               r2, #255
+        beq               15f
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               8f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        strexd            r6, r4, r5, [r1]
+8:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+9:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               10f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        strexd            r6, r4, r5, [r1]
+10:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+11:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               12f
+        strexd            r6, r4, r5, [r1]
+12:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+13:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               14f
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        bne               14f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+14:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+15:
+        ldrexd            r2, r3, [r1]
+        eor               r7, r3, r12
+        eor               r6, r2, lr
+        orrs              r6, r6, r7
+        mov               r6, #1
+        bne               16f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+        strexd            r6, r4, r5, [r1]
+        cmp               r6, #0
+        bne               16f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
+16:
+        eor               r1, r6, #1
+        strd              r2, r3, [r0]
+        strb              r1, [r0, #0x8]
+        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
+
+<u64 as atomic_maybe_uninit::raw::AtomicStore>::atomic_store:
+        push              {r4, r5, r11, lr}
+        add               r11, sp, #8
+        ldrb              r1, [r11, #0x8]
+        cmp               r1, #0
+        beq               1f
+        cmp               r1, #1
+        bne               2f
+        mov               r1, #0
+        mcr               p15, #0x0, r1, c7, c10, #0x5
+0:
+        ldrexd            r4, r5, [r0]
+        strexd            r4, r2, r3, [r0]
+        cmp               r4, #0
+        bne               0b
+        pop               {r4, r5, r11, pc}
+1:
+        ldrexd            r4, r5, [r0]
+        strexd            r4, r2, r3, [r0]
+        cmp               r4, #0
+        bne               1b
+        pop               {r4, r5, r11, pc}
+2:
+        mov               r1, #0
+        mcr               p15, #0x0, r1, c7, c10, #0x5
+3:
+        ldrexd            r4, r5, [r0]
+        strexd            r4, r2, r3, [r0]
+        cmp               r4, #0
+        bne               3b
+        mcr               p15, #0x0, r1, c7, c10, #0x5
+        pop               {r4, r5, r11, pc}
+
 <u8 as atomic_maybe_uninit::raw::AtomicSwap>::atomic_swap:
         push              {r11, lr}
         mov               r11, sp
@@ -3064,432 +3493,3 @@ asm_test::store::u64::release:
         str               r1, [r0]
         mcr               p15, #0x0, r2, c7, c10, #0x5
         pop               {r11, pc}
-
-<u64 as atomic_maybe_uninit::raw::AtomicLoad>::atomic_load:
-        push              {r11, lr}
-        mov               r11, sp
-        tst               r1, #255
-        beq               0f
-        mov               r2, #0
-        ldrexd            r0, r1, [r0]
-        mcr               p15, #0x0, r2, c7, c10, #0x5
-        pop               {r11, pc}
-0:
-        ldrexd            r0, r1, [r0]
-        pop               {r11, pc}
-
-<u64 as atomic_maybe_uninit::raw::AtomicStore>::atomic_store:
-        push              {r4, r5, r11, lr}
-        add               r11, sp, #8
-        ldrb              r1, [r11, #0x8]
-        cmp               r1, #0
-        beq               1f
-        cmp               r1, #1
-        bne               2f
-        mov               r1, #0
-        mcr               p15, #0x0, r1, c7, c10, #0x5
-0:
-        ldrexd            r4, r5, [r0]
-        strexd            r4, r2, r3, [r0]
-        cmp               r4, #0
-        bne               0b
-        pop               {r4, r5, r11, pc}
-1:
-        ldrexd            r4, r5, [r0]
-        strexd            r4, r2, r3, [r0]
-        cmp               r4, #0
-        bne               1b
-        pop               {r4, r5, r11, pc}
-2:
-        mov               r1, #0
-        mcr               p15, #0x0, r1, c7, c10, #0x5
-3:
-        ldrexd            r4, r5, [r0]
-        strexd            r4, r2, r3, [r0]
-        cmp               r4, #0
-        bne               3b
-        mcr               p15, #0x0, r1, c7, c10, #0x5
-        pop               {r4, r5, r11, pc}
-
-<u64 as atomic_maybe_uninit::raw::AtomicSwap>::atomic_swap:
-        push              {r4, r10, r11, lr}
-        add               r11, sp, #8
-        mov               r12, r0
-        ldrb              r0, [r11, #0x8]
-        add               r1, pc, #0
-        ldr               pc, [r1, r0, lsl #2]
-        .word             0x00000068
-        .word             0x0000007c
-        .word             0x0000004c
-        .word             0x0000002c
-        .word             0x0000002c
-        mov               lr, #0
-        mcr               p15, #0x0, lr, c7, c10, #0x5
-0:
-        ldrexd            r0, r1, [r12]
-        strexd            r4, r2, r3, [r12]
-        cmp               r4, #0
-        bne               0b
-        mcr               p15, #0x0, lr, c7, c10, #0x5
-        pop               {r4, r10, r11, pc}
-        mov               lr, #0
-1:
-        ldrexd            r0, r1, [r12]
-        strexd            r4, r2, r3, [r12]
-        cmp               r4, #0
-        bne               1b
-        mcr               p15, #0x0, lr, c7, c10, #0x5
-        pop               {r4, r10, r11, pc}
-2:
-        ldrexd            r0, r1, [r12]
-        strexd            lr, r2, r3, [r12]
-        cmp               lr, #0
-        bne               2b
-        pop               {r4, r10, r11, pc}
-        mov               lr, #0
-        mcr               p15, #0x0, lr, c7, c10, #0x5
-3:
-        ldrexd            r0, r1, [r12]
-        strexd            r4, r2, r3, [r12]
-        cmp               r4, #0
-        bne               3b
-        pop               {r4, r10, r11, pc}
-
-<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange:
-        push              {r4, r5, r6, r7, r8, r10, r11, lr}
-        add               r11, sp, #24
-        mov               r12, r3
-        mov               lr, r2
-        ldrb              r3, [r11, #0x10]
-        ldr               r5, [r11, #0xc]
-        ldr               r4, [r11, #0x8]
-        cmp               r3, #0
-        ldr               r2, [r11, #0x14]
-        beq               6f
-        mov               r8, #0
-        cmp               r3, #1
-        beq               2f
-        cmp               r3, #2
-        bne               10f
-        tst               r2, #255
-        beq               18f
-0:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               1f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        bne               0b
-1:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-2:
-        tst               r2, #255
-        beq               13f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               4f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-3:
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               5f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        beq               3b
-4:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-5:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-6:
-        tst               r2, #255
-        beq               16f
-        mov               r8, #0
-7:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               8f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        bne               7b
-        b                 9f
-8:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-9:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-10:
-        tst               r2, #255
-        beq               20f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               12f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-11:
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               12f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        beq               11b
-12:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-13:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               15f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-14:
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               15f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        beq               14b
-15:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-16:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               17f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        bne               16b
-17:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-18:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               19f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        bne               18b
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-19:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-20:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               23f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-21:
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               22f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        beq               21b
-        b                 23f
-22:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-23:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-
-<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
-        push              {r4, r5, r6, r7, r8, r10, r11, lr}
-        add               r11, sp, #24
-        mov               r12, r3
-        mov               lr, r2
-        ldrb              r3, [r11, #0x10]
-        ldr               r5, [r11, #0xc]
-        ldr               r4, [r11, #0x8]
-        cmp               r3, #0
-        ldr               r2, [r11, #0x14]
-        beq               4f
-        mov               r8, #0
-        cmp               r3, #1
-        beq               1f
-        cmp               r3, #2
-        bne               7f
-        tst               r2, #255
-        beq               13f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               0f
-        strexd            r6, r4, r5, [r1]
-0:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-1:
-        tst               r2, #255
-        beq               9f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               2f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               3f
-2:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-3:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-4:
-        tst               r2, #255
-        beq               11f
-        mov               r8, #0
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               5f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        beq               6f
-5:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-6:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-7:
-        tst               r2, #255
-        beq               15f
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               8f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        strexd            r6, r4, r5, [r1]
-8:
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-9:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               10f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        strexd            r6, r4, r5, [r1]
-10:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-11:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               12f
-        strexd            r6, r4, r5, [r1]
-12:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-13:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               14f
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        bne               14f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-14:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}
-15:
-        ldrexd            r2, r3, [r1]
-        eor               r7, r3, r12
-        eor               r6, r2, lr
-        orrs              r6, r6, r7
-        mov               r6, #1
-        bne               16f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-        strexd            r6, r4, r5, [r1]
-        cmp               r6, #0
-        bne               16f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
-16:
-        eor               r1, r6, #1
-        strd              r2, r3, [r0]
-        strb              r1, [r0, #0x8]
-        pop               {r4, r5, r6, r7, r8, r10, r11, pc}

@@ -64,6 +64,9 @@ cfg_sel!({
     }
 });
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $bits:tt, $narrow:tt, $unsigned:tt) => {

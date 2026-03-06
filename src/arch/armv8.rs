@@ -105,6 +105,9 @@ cfg_sel!({
     }
 });
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 #[rustfmt::skip]
 macro_rules! atomic {
     ($ty:ident, $suffix:tt) => {
@@ -305,239 +308,228 @@ atomic!(u32, "");
 // 64-bit atomics
 
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
-#[rustfmt::skip]
-macro_rules! atomic64 {
-    ($ty:ident) => {
-        delegate_signed!(delegate_all, $ty);
-        impl AtomicLoad for $ty {
-            #[inline]
-            unsafe fn atomic_load(
-                src: *const MaybeUninit<Self>,
-                order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(src, $ty);
-                let (prev_lo, prev_hi);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! atomic_load {
-                        ($acquire:tt) => {
-                            asm!(
-                                concat!("ld", $acquire, "exd r0, r1, [{src}]"), // atomic { r0:r1 = *src; EXCLUSIVE = src }
-                                "clrex",                                        // EXCLUSIVE = None
-                                src = in(reg) src,
-                                // prev pair - must be even-numbered and not R14
-                                lateout("r0") prev_lo,
-                                lateout("r1") prev_hi,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        Ordering::Relaxed => atomic_load!("r"),
-                        // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-            }
-        }
-        impl AtomicStore for $ty {
-            #[inline]
-            unsafe fn atomic_store(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit64 { whole: val };
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! atomic_store {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                "2:", // 'retry:
-                                    concat!("ld", $acquire, "exd r4, r5, [{dst}]"),     // atomic { r4:r5 = *dst; EXCLUSIVE = dst }
-                                    concat!("st", $release, "exd r4, r2, r3, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r4 = 0 } else { r4 = 1 }; EXCLUSIVE = None }
-                                    "cmp r4, #0",                                       // if r4 == 0 { Z = 1 } else { Z = 0 }
-                                    "bne 2b",                                           // if Z == 0 { jump 'retry }
-                                dst = in(reg) dst,
-                                // val pair - must be even-numbered and not R14
-                                in("r2") val.pair.lo,
-                                in("r3") val.pair.hi,
-                                // tmp pair - must be even-numbered and not R14
-                                out("r4") _,
-                                out("r5") _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    match order {
-                        Ordering::Relaxed => atomic_store!("r", "r"),
-                        Ordering::Release => atomic_store!("r", "l"),
-                        Ordering::SeqCst => atomic_store!("a", "l"),
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                }
-            }
-        }
-        impl AtomicSwap for $ty {
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit64 { whole: val };
-                let (mut prev_lo, mut prev_hi);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                "2:", // 'retry:
-                                    concat!("ld", $acquire, "exd r0, r1, [{dst}]"),      // atomic { r0:r1 = *dst; EXCLUSIVE = dst }
-                                    concat!("st", $release, "exd {r}, r2, r3, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cmp {r}, #0",                                       // if r == 0 { Z = 1 } else { Z = 0 }
-                                    "bne 2b",                                            // if Z == 0 { jump 'retry }
-                                dst = in(reg) dst,
-                                r = out(reg) _,
-                                // val pair - must be even-numbered and not R14
-                                in("r2") val.pair.lo,
-                                in("r3") val.pair.hi,
-                                // prev pair - must be even-numbered and not R14
-                                out("r0") prev_lo,
-                                out("r1") prev_hi,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    atomic_rmw!(swap, order);
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-            }
-        }
-        impl AtomicCompareExchange for $ty {
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                success: Ordering,
-                failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let order = crate::utils::upgrade_success_ordering(success, failure);
-                let old = MaybeUninit64 { whole: old };
-                let new = MaybeUninit64 { whole: new };
-                let (mut prev_lo, mut prev_hi);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let mut r: i32;
-                    macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                "2:", // 'retry:
-                                    concat!("ld", $acquire, "exd r2, r3, [{dst}]"),     // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                    "eor {tmp}, r3, {old_hi}",                          // tmp = r3 ^ old_hi
-                                    "eor r1, r2, {old_lo}",                             // r1 = r2 ^ old_lo
-                                    "orrs r1, {tmp}",                                   // r1 |= tmp; if r1 == 0 { Z = 1 } else { Z = 0 }
-                                    "bne 3f",                                           // if Z == 0 { jump 'cmp-fail }
-                                    concat!("st", $release, "exd r1, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r1 = 0 } else { r1 = 1 }; EXCLUSIVE = None }
-                                    cbz!("r1", "4f"),                                   // if r1 == 0 { jump 'success }
-                                    "b 2b",                                             // jump 'retry
-                                "3:", // 'cmp-fail:
-                                    "clrex",                                            // EXCLUSIVE = None
-                                    s!("mov", "r1, #1"),                                // r1 = 1
-                                "4:", // 'success:
-                                dst = in(reg) dst,
-                                old_lo = in(reg) old.pair.lo,
-                                old_hi = in(reg) old.pair.hi,
-                                tmp = out(reg) _,
-                                out("r1") r,
-                                // prev pair - must be even-numbered and not R14
-                                out("r2") prev_lo,
-                                out("r3") prev_hi,
-                                // new pair - must be even-numbered and not R14
-                                in("r4") new.pair.lo,
-                                in("r5") new.pair.hi,
-                                // Do not use `preserves_flags` because CMP, ORRS, cbz!, and s! modify the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    atomic_rmw!(cmpxchg, order);
-                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    // 0 if the store was successful, 1 if no store was performed
-                    (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
-                }
-            }
-            #[inline]
-            unsafe fn atomic_compare_exchange_weak(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                success: Ordering,
-                failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let order = crate::utils::upgrade_success_ordering(success, failure);
-                let old = MaybeUninit64 { whole: old };
-                let new = MaybeUninit64 { whole: new };
-                let (mut prev_lo, mut prev_hi);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let mut r: i32;
-                    macro_rules! cmpxchg_weak {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                concat!("ld", $acquire, "exd r2, r3, [{dst}]"),      // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                "eor {tmp}, r3, {old_hi}",                           // tmp = r3 ^ old_hi
-                                "eor {r}, r2, {old_lo}",                             // r = r2 ^ old_lo
-                                "orrs {r}, {tmp}",                                   // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                "bne 3f",                                            // if Z == 0 { jump 'cmp-fail }
-                                concat!("st", $release, "exd {r}, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                "b 4f",                                              // jump 'success
-                                "3:", // 'cmp-fail:
-                                    "clrex",                                         // EXCLUSIVE = None
-                                    s!("mov", "{r}, #1"),                            // r = 1
-                                "4:", // 'success:
-                                dst = in(reg) dst,
-                                old_lo = in(reg) old.pair.lo,
-                                old_hi = in(reg) old.pair.hi,
-                                r = out(reg) r,
-                                tmp = out(reg) _,
-                                // prev pair - must be even-numbered and not R14
-                                out("r2") prev_lo,
-                                out("r3") prev_hi,
-                                // new pair - must be even-numbered and not R14
-                                in("r4") new.pair.lo,
-                                in("r5") new.pair.hi,
-                                // Do not use `preserves_flags` because ORRS and s! modify the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    atomic_rmw!(cmpxchg_weak, order);
-                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    // 0 if the store was successful, 1 if no store was performed
-                    (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
-                }
-            }
-        }
-    };
-}
-
+delegate_signed!(delegate_all, u64);
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
-atomic64!(u64);
+impl AtomicLoad for u64 {
+    #[inline]
+    unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(src, u64);
+        let (prev_lo, prev_hi);
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! atomic_load {
+                ($acquire:tt) => {
+                    asm!(
+                        concat!("ld", $acquire, "exd r0, r1, [{src}]"), // atomic { r0:r1 = *src; EXCLUSIVE = src }
+                        "clrex",                                        // EXCLUSIVE = None
+                        src = in(reg) src,
+                        // prev pair - must be even-numbered and not R14
+                        lateout("r0") prev_lo,
+                        lateout("r1") prev_hi,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            match order {
+                Ordering::Relaxed => atomic_load!("r"),
+                // Acquire and SeqCst loads are equivalent.
+                Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
+                _ => crate::utils::unreachable_unchecked(),
+            }
+            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+    }
+}
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+impl AtomicStore for u64 {
+    #[inline]
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let val = MaybeUninit64 { whole: val };
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! atomic_store {
+                ($acquire:tt, $release:tt) => {
+                    asm!(
+                        "2:", // 'retry:
+                            concat!("ld", $acquire, "exd r4, r5, [{dst}]"),     // atomic { r4:r5 = *dst; EXCLUSIVE = dst }
+                            concat!("st", $release, "exd r4, r2, r3, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r4 = 0 } else { r4 = 1 }; EXCLUSIVE = None }
+                            "cmp r4, #0",                                       // if r4 == 0 { Z = 1 } else { Z = 0 }
+                            "bne 2b",                                           // if Z == 0 { jump 'retry }
+                        dst = in(reg) dst,
+                        // val pair - must be even-numbered and not R14
+                        in("r2") val.pair.lo,
+                        in("r3") val.pair.hi,
+                        // tmp pair - must be even-numbered and not R14
+                        out("r4") _,
+                        out("r5") _,
+                        // Do not use `preserves_flags` because CMP modifies the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            match order {
+                Ordering::Relaxed => atomic_store!("r", "r"),
+                Ordering::Release => atomic_store!("r", "l"),
+                Ordering::SeqCst => atomic_store!("a", "l"),
+                _ => crate::utils::unreachable_unchecked(),
+            }
+        }
+    }
+}
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+impl AtomicSwap for u64 {
+    #[inline]
+    unsafe fn atomic_swap(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let val = MaybeUninit64 { whole: val };
+        let (mut prev_lo, mut prev_hi);
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! swap {
+                ($acquire:tt, $release:tt) => {
+                    asm!(
+                        "2:", // 'retry:
+                            concat!("ld", $acquire, "exd r0, r1, [{dst}]"),      // atomic { r0:r1 = *dst; EXCLUSIVE = dst }
+                            concat!("st", $release, "exd {r}, r2, r3, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                            "cmp {r}, #0",                                       // if r == 0 { Z = 1 } else { Z = 0 }
+                            "bne 2b",                                            // if Z == 0 { jump 'retry }
+                        dst = in(reg) dst,
+                        r = out(reg) _,
+                        // val pair - must be even-numbered and not R14
+                        in("r2") val.pair.lo,
+                        in("r3") val.pair.hi,
+                        // prev pair - must be even-numbered and not R14
+                        out("r0") prev_lo,
+                        out("r1") prev_hi,
+                        // Do not use `preserves_flags` because CMP modifies the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            atomic_rmw!(swap, order);
+            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+    }
+}
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+impl AtomicCompareExchange for u64 {
+    #[inline]
+    unsafe fn atomic_compare_exchange(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let order = crate::utils::upgrade_success_ordering(success, failure);
+        let old = MaybeUninit64 { whole: old };
+        let new = MaybeUninit64 { whole: new };
+        let (mut prev_lo, mut prev_hi);
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let mut r: i32;
+            macro_rules! cmpxchg {
+                ($acquire:tt, $release:tt) => {
+                    asm!(
+                        "2:", // 'retry:
+                            concat!("ld", $acquire, "exd r2, r3, [{dst}]"),     // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                            "eor {tmp}, r3, {old_hi}",                          // tmp = r3 ^ old_hi
+                            "eor r1, r2, {old_lo}",                             // r1 = r2 ^ old_lo
+                            "orrs r1, {tmp}",                                   // r1 |= tmp; if r1 == 0 { Z = 1 } else { Z = 0 }
+                            "bne 3f",                                           // if Z == 0 { jump 'cmp-fail }
+                            concat!("st", $release, "exd r1, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r1 = 0 } else { r1 = 1 }; EXCLUSIVE = None }
+                            cbz!("r1", "4f"),                                   // if r1 == 0 { jump 'success }
+                            "b 2b",                                             // jump 'retry
+                        "3:", // 'cmp-fail:
+                            "clrex",                                            // EXCLUSIVE = None
+                            s!("mov", "r1, #1"),                                // r1 = 1
+                        "4:", // 'success:
+                        dst = in(reg) dst,
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
+                        tmp = out(reg) _,
+                        out("r1") r,
+                        // prev pair - must be even-numbered and not R14
+                        out("r2") prev_lo,
+                        out("r3") prev_hi,
+                        // new pair - must be even-numbered and not R14
+                        in("r4") new.pair.lo,
+                        in("r5") new.pair.hi,
+                        // Do not use `preserves_flags` because CMP, ORRS, cbz!, and s! modify the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            atomic_rmw!(cmpxchg, order);
+            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+            // 0 if the store was successful, 1 if no store was performed
+            (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
+        }
+    }
+    #[inline]
+    unsafe fn atomic_compare_exchange_weak(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let order = crate::utils::upgrade_success_ordering(success, failure);
+        let old = MaybeUninit64 { whole: old };
+        let new = MaybeUninit64 { whole: new };
+        let (mut prev_lo, mut prev_hi);
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let mut r: i32;
+            macro_rules! cmpxchg_weak {
+                ($acquire:tt, $release:tt) => {
+                    asm!(
+                        concat!("ld", $acquire, "exd r2, r3, [{dst}]"),      // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                        "eor {tmp}, r3, {old_hi}",                           // tmp = r3 ^ old_hi
+                        "eor {r}, r2, {old_lo}",                             // r = r2 ^ old_lo
+                        "orrs {r}, {tmp}",                                   // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
+                        "bne 3f",                                            // if Z == 0 { jump 'cmp-fail }
+                        concat!("st", $release, "exd {r}, r4, r5, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                        "b 4f",                                              // jump 'success
+                        "3:", // 'cmp-fail:
+                            "clrex",                                         // EXCLUSIVE = None
+                            s!("mov", "{r}, #1"),                            // r = 1
+                        "4:", // 'success:
+                        dst = in(reg) dst,
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
+                        r = out(reg) r,
+                        tmp = out(reg) _,
+                        // prev pair - must be even-numbered and not R14
+                        out("r2") prev_lo,
+                        out("r3") prev_hi,
+                        // new pair - must be even-numbered and not R14
+                        in("r4") new.pair.lo,
+                        in("r5") new.pair.hi,
+                        // Do not use `preserves_flags` because ORRS and s! modify the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            atomic_rmw!(cmpxchg_weak, order);
+            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+            // 0 if the store was successful, 1 if no store was performed
+            (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 // cfg macros

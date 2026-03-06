@@ -84,6 +84,9 @@ macro_rules! ptr_modifier {
     };
 }
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 macro_rules! atomic {
     (
         $ty:ident, $val_reg:ident, $ux_reg:ident, $ux:ident,
@@ -237,87 +240,186 @@ atomic!(u64, reg, reg, identity, "", "", "", "", "qword", "rax");
 
 // -----------------------------------------------------------------------------
 // 64-bit atomics on x86_32
-
+//
 // For load/store, we can use MOVQ(SSE2)/MOVLPS(SSE)/FILD&FISTP(x87) instead of CMPXCHG8B.
 // Refs: https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/test/CodeGen/X86/atomic-load-store-wide.ll
-#[cfg(target_arch = "x86")]
-#[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-macro_rules! atomic64 {
-    ($ty:ident) => {
-        delegate_signed!(delegate_all, $ty);
-        impl AtomicLoad for $ty {
-            #[inline]
-            unsafe fn atomic_load(
-                src: *const MaybeUninit<Self>,
-                _order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(src, $ty);
 
-                #[cfg(all(
-                    target_feature = "sse2",
-                    not(atomic_maybe_uninit_test_prefer_x87_over_sse),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                // cfg guarantees that the CPU supports SSE.
-                // load by MOVQ has SeqCst semantics.
-                //
-                // Refs:
-                // - https://www.felixcloutier.com/x86/movq (SSE2)
-                // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
-                unsafe {
-                    let out;
+#[cfg(all(target_arch = "x86", not(atomic_maybe_uninit_no_cmpxchg8b)))]
+delegate_signed!(delegate_all, u64);
+#[cfg(all(target_arch = "x86", not(atomic_maybe_uninit_no_cmpxchg8b)))]
+impl AtomicLoad for u64 {
+    #[inline]
+    unsafe fn atomic_load(src: *const MaybeUninit<Self>, _order: Ordering) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(src, u64);
+
+        #[cfg(all(target_feature = "sse2", not(atomic_maybe_uninit_test_prefer_x87_over_sse)))]
+        // SAFETY: the caller must uphold the safety contract.
+        // cfg guarantees that the CPU supports SSE.
+        // load by MOVQ has SeqCst semantics.
+        //
+        // Refs:
+        // - https://www.felixcloutier.com/x86/movq (SSE2)
+        // - https://www.felixcloutier.com/x86/movd:movq (SSE2)
+        unsafe {
+            let out;
+            asm!(
+                "movq {out}, qword ptr [{src}]", // atomic { out[:] = *src }
+                src = in(reg) src,
+                out = out(xmm_reg) out,
+                options(nostack, preserves_flags),
+            );
+            mem::transmute::<MaybeUninit<__m128i>, [MaybeUninit<Self>; 2]>(out)[0]
+        }
+        #[cfg(all(
+            not(target_feature = "sse2"),
+            target_feature = "sse",
+            not(atomic_maybe_uninit_test_prefer_x87_over_sse),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        // cfg guarantees that the CPU supports SSE.
+        // load by MOVLPS has SeqCst semantics.
+        //
+        // Refs:
+        // - https://www.felixcloutier.com/x86/movlps (SSE)
+        unsafe {
+            let out;
+            asm!(
+                "movlps {out}, qword ptr [{src}]", // atomic { out[:] = *src }
+                src = in(reg) src,
+                out = out(xmm_reg) out,
+                options(nostack, preserves_flags),
+            );
+            mem::transmute::<MaybeUninit<__m128>, [MaybeUninit<Self>; 2]>(out)[0]
+        }
+        #[cfg(all(
+            any(not(target_feature = "sse"), atomic_maybe_uninit_test_prefer_x87_over_sse),
+            all(
+                any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
+                not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
+            ),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        // load by FILD has SeqCst semantics.
+        //
+        // Refs:
+        // - https://www.felixcloutier.com/x86/fild
+        // - https://www.felixcloutier.com/x86/fist:fistp
+        unsafe {
+            let mut out = MaybeUninit::<Self>::uninit();
+            asm!(
+                "fild qword ptr [{src}]",  // atomic { st.push(*src) }
+                "fistp qword ptr [{out}]", // *out = st.pop()
+                src = in(reg) src,
+                out = in(reg) out.as_mut_ptr(),
+                out("st(0)") _,
+                out("st(1)") _,
+                out("st(2)") _,
+                out("st(3)") _,
+                out("st(4)") _,
+                out("st(5)") _,
+                out("st(6)") _,
+                out("st(7)") _,
+                // Do not use `preserves_flags` because FILD and FISTP modify C1 in x87 FPU status word.
+                options(nostack),
+            );
+            out
+        }
+        #[cfg(all(
+            any(not(target_feature = "sse"), atomic_maybe_uninit_test_prefer_x87_over_sse),
+            not(all(
+                any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
+                not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
+            )),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        // CMPXCHG8B has SeqCst semantics.
+        //
+        // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+        unsafe {
+            let (prev_lo, prev_hi);
+            asm!(
+                "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
+                // set old/new args of CMPXCHG8B to 0
+                in("ebx") 0_u32,
+                in("ecx") 0_u32,
+                inout("eax") 0_u32 => prev_lo,
+                inout("edx") 0_u32 => prev_hi,
+                in("edi") src,
+                // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
+                options(nostack),
+            );
+            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+    }
+}
+#[cfg(all(target_arch = "x86", not(atomic_maybe_uninit_no_cmpxchg8b)))]
+impl AtomicStore for u64 {
+    #[inline]
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+
+        #[cfg(all(target_feature = "sse", not(atomic_maybe_uninit_test_prefer_x87_over_sse)))]
+        // SAFETY: the caller must uphold the safety contract.
+        // cfg guarantees that the CPU supports SSE.
+        //
+        // Refs:
+        // - https://www.felixcloutier.com/x86/movlps (SSE)
+        // - https://www.felixcloutier.com/x86/lock
+        // - https://www.felixcloutier.com/x86/or
+        unsafe {
+            let val: MaybeUninit<__m128> = mem::transmute([val, MaybeUninit::uninit()]);
+            match order {
+                // Relaxed and Release stores are equivalent.
+                Ordering::Relaxed | Ordering::Release => {
                     asm!(
-                        "movq {out}, qword ptr [{src}]", // atomic { out[:] = *src }
-                        src = in(reg) src,
-                        out = out(xmm_reg) out,
+                        "movlps qword ptr [{dst}], {val}", // atomic { *dst = val[:] }
+                        dst = in(reg) dst,
+                        val = in(xmm_reg) val,
                         options(nostack, preserves_flags),
                     );
-                    mem::transmute::<MaybeUninit<__m128i>, [MaybeUninit<Self>; 2]>(out)[0]
                 }
-                #[cfg(all(
-                    not(target_feature = "sse2"),
-                    target_feature = "sse",
-                    not(atomic_maybe_uninit_test_prefer_x87_over_sse),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                // cfg guarantees that the CPU supports SSE.
-                // load by MOVLPS has SeqCst semantics.
-                //
-                // Refs:
-                // - https://www.felixcloutier.com/x86/movlps (SSE)
-                unsafe {
-                    let out;
+                Ordering::SeqCst => {
+                    let p = core::cell::UnsafeCell::new(MaybeUninit::<u32>::uninit());
                     asm!(
-                        "movlps {out}, qword ptr [{src}]", // atomic { out[:] = *src }
-                        src = in(reg) src,
-                        out = out(xmm_reg) out,
+                        "movlps qword ptr [{dst}], {val}", // atomic { *dst = val[:] }
+                        // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
+                        // - https://github.com/taiki-e/portable-atomic/pull/156
+                        // - LLVM uses `lock or` https://godbolt.org/z/vv6rjzfYd
+                        // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
+                        // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
+                        // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
+                        "xchg dword ptr [{p}], {tmp}",     // fence
+                        dst = in(reg) dst,
+                        val = in(xmm_reg) val,
+                        p = inout(reg) p.get() => _,
+                        tmp = lateout(reg) _,
                         options(nostack, preserves_flags),
                     );
-                    mem::transmute::<MaybeUninit<__m128>, [MaybeUninit<Self>; 2]>(out)[0]
                 }
-                #[cfg(all(
-                    any(
-                        not(target_feature = "sse"),
-                        atomic_maybe_uninit_test_prefer_x87_over_sse,
-                    ),
-                    all(
-                        any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
-                        not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
-                    ),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                // load by FILD has SeqCst semantics.
-                //
-                // Refs:
-                // - https://www.felixcloutier.com/x86/fild
-                // - https://www.felixcloutier.com/x86/fist:fistp
-                unsafe {
-                    let mut out = MaybeUninit::<Self>::uninit();
+                _ => crate::utils::unreachable_unchecked(),
+            }
+        }
+        #[cfg(all(
+            any(not(target_feature = "sse"), atomic_maybe_uninit_test_prefer_x87_over_sse),
+            all(
+                any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
+                not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
+            ),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        //
+        // Refs:
+        // - https://www.felixcloutier.com/x86/fild
+        // - https://www.felixcloutier.com/x86/fist:fistp
+        unsafe {
+            match order {
+                // Relaxed and Release stores are equivalent.
+                Ordering::Relaxed | Ordering::Release => {
                     asm!(
-                        "fild qword ptr [{src}]",  // atomic { st.push(*src) }
-                        "fistp qword ptr [{out}]", // *out = st.pop()
-                        src = in(reg) src,
-                        out = in(reg) out.as_mut_ptr(),
+                        "fild qword ptr [{val}]",  // st.push(*val)
+                        "fistp qword ptr [{dst}]", // atomic { *dst = st.pop() }
+                        dst = in(reg) dst,
+                        val = in(reg) val.as_ptr(),
                         out("st(0)") _,
                         out("st(1)") _,
                         out("st(2)") _,
@@ -326,286 +428,155 @@ macro_rules! atomic64 {
                         out("st(5)") _,
                         out("st(6)") _,
                         out("st(7)") _,
-                        // Do not use `preserves_flags` because FILD and FISTP modify C1 in x87 FPU status word.
+                        // Do not use `preserves_flags` because FILD and FISTP modify condition code flags in x87 FPU status word.
                         options(nostack),
                     );
-                    out
                 }
-                #[cfg(all(
-                    any(
-                        not(target_feature = "sse"),
-                        atomic_maybe_uninit_test_prefer_x87_over_sse,
-                    ),
-                    not(all(
-                        any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
-                        not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
-                    )),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                // CMPXCHG8B has SeqCst semantics.
-                //
-                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
-                unsafe {
-                    let (prev_lo, prev_hi);
+                Ordering::SeqCst => {
+                    let p = core::cell::UnsafeCell::new(MaybeUninit::<u32>::uninit());
                     asm!(
-                        "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
-                        // set old/new args of CMPXCHG8B to 0
-                        in("ebx") 0_u32,
-                        in("ecx") 0_u32,
-                        inout("eax") 0_u32 => prev_lo,
-                        inout("edx") 0_u32 => prev_hi,
-                        in("edi") src,
-                        // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
+                        "fild qword ptr [{val}]",      // st.push(*val)
+                        "fistp qword ptr [{dst}]",     // atomic { *dst = st.pop() }
+                        // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
+                        // - https://github.com/taiki-e/portable-atomic/pull/156
+                        // - LLVM uses `lock or` https://godbolt.org/z/vv6rjzfYd
+                        // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
+                        // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
+                        // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
+                        "xchg dword ptr [{p}], {tmp}", // fence
+                        dst = in(reg) dst,
+                        val = in(reg) val.as_ptr(),
+                        p = inout(reg) p.get() => _,
+                        tmp = lateout(reg) _,
+                        out("st(0)") _,
+                        out("st(1)") _,
+                        out("st(2)") _,
+                        out("st(3)") _,
+                        out("st(4)") _,
+                        out("st(5)") _,
+                        out("st(6)") _,
+                        out("st(7)") _,
+                        // Do not use `preserves_flags` because FILD and FISTP modify condition code flags in x87 FPU status word.
                         options(nostack),
                     );
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                 }
+                _ => unreachable!(),
             }
         }
-        impl AtomicStore for $ty {
-            #[inline]
-            unsafe fn atomic_store(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-
-                #[cfg(all(
-                    target_feature = "sse",
-                    not(atomic_maybe_uninit_test_prefer_x87_over_sse),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                // cfg guarantees that the CPU supports SSE.
+        #[cfg(all(
+            any(not(target_feature = "sse"), atomic_maybe_uninit_test_prefer_x87_over_sse),
+            not(all(
+                any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
+                not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
+            )),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        //
+        // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+        unsafe {
+            let val = MaybeUninit64 { whole: val };
+            // CMPXCHG8B has SeqCst semantics.
+            let _ = order;
+            asm!(
+                // This is based on the code generated for the first load in DW RMWs by LLVM,
+                // but it is interesting that they generate code that does mixed-sized atomic access.
                 //
-                // Refs:
-                // - https://www.felixcloutier.com/x86/movlps (SSE)
-                // - https://www.felixcloutier.com/x86/lock
-                // - https://www.felixcloutier.com/x86/or
-                unsafe {
-                    let val: MaybeUninit<__m128> = mem::transmute([val, MaybeUninit::uninit()]);
-                    match order {
-                        // Relaxed and Release stores are equivalent.
-                        Ordering::Relaxed | Ordering::Release => {
-                            asm!(
-                                "movlps qword ptr [{dst}], {val}", // atomic { *dst = val[:] }
-                                dst = in(reg) dst,
-                                val = in(xmm_reg) val,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        Ordering::SeqCst => {
-                            let p = core::cell::UnsafeCell::new(MaybeUninit::<u32>::uninit());
-                            asm!(
-                                "movlps qword ptr [{dst}], {val}", // atomic { *dst = val[:] }
-                                // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
-                                // - https://github.com/taiki-e/portable-atomic/pull/156
-                                // - LLVM uses `lock or` https://godbolt.org/z/vv6rjzfYd
-                                // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
-                                // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
-                                // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
-                                "xchg dword ptr [{p}], {tmp}",     // fence
-                                dst = in(reg) dst,
-                                val = in(xmm_reg) val,
-                                p = inout(reg) p.get() => _,
-                                tmp = lateout(reg) _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                }
-                #[cfg(all(
-                    any(
-                        not(target_feature = "sse"),
-                        atomic_maybe_uninit_test_prefer_x87_over_sse,
-                    ),
-                    all(
-                        any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
-                        not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
-                    ),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                //
-                // Refs:
-                // - https://www.felixcloutier.com/x86/fild
-                // - https://www.felixcloutier.com/x86/fist:fistp
-                unsafe {
-                    match order {
-                        // Relaxed and Release stores are equivalent.
-                        Ordering::Relaxed | Ordering::Release => {
-                            asm!(
-                                "fild qword ptr [{val}]",  // st.push(*val)
-                                "fistp qword ptr [{dst}]", // atomic { *dst = st.pop() }
-                                dst = in(reg) dst,
-                                val = in(reg) val.as_ptr(),
-                                out("st(0)") _,
-                                out("st(1)") _,
-                                out("st(2)") _,
-                                out("st(3)") _,
-                                out("st(4)") _,
-                                out("st(5)") _,
-                                out("st(6)") _,
-                                out("st(7)") _,
-                                // Do not use `preserves_flags` because FILD and FISTP modify condition code flags in x87 FPU status word.
-                                options(nostack),
-                            );
-                        }
-                        Ordering::SeqCst => {
-                            let p = core::cell::UnsafeCell::new(MaybeUninit::<u32>::uninit());
-                            asm!(
-                                "fild qword ptr [{val}]",      // st.push(*val)
-                                "fistp qword ptr [{dst}]",     // atomic { *dst = st.pop() }
-                                // Equivalent to `mfence`, but is up to 3.1x faster on Coffee Lake and up to 2.4x faster on Raptor Lake-H at least in simple cases.
-                                // - https://github.com/taiki-e/portable-atomic/pull/156
-                                // - LLVM uses `lock or` https://godbolt.org/z/vv6rjzfYd
-                                // - Windows uses `xchg` for x86_32 for MemoryBarrier https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
-                                // - MSVC STL uses `lock inc` https://github.com/microsoft/STL/pull/740
-                                // - boost uses `lock or` https://github.com/boostorg/atomic/commit/559eba81af71386cedd99f170dc6101c6ad7bf22
-                                "xchg dword ptr [{p}], {tmp}", // fence
-                                dst = in(reg) dst,
-                                val = in(reg) val.as_ptr(),
-                                p = inout(reg) p.get() => _,
-                                tmp = lateout(reg) _,
-                                out("st(0)") _,
-                                out("st(1)") _,
-                                out("st(2)") _,
-                                out("st(3)") _,
-                                out("st(4)") _,
-                                out("st(5)") _,
-                                out("st(6)") _,
-                                out("st(7)") _,
-                                // Do not use `preserves_flags` because FILD and FISTP modify condition code flags in x87 FPU status word.
-                                options(nostack),
-                            );
-                        }
-                        _ => unreachable!(),
-                    }
-                }
-                #[cfg(all(
-                    any(
-                        not(target_feature = "sse"),
-                        atomic_maybe_uninit_test_prefer_x87_over_sse,
-                    ),
-                    not(all(
-                        any(target_feature = "x87", atomic_maybe_uninit_target_feature = "x87"),
-                        not(atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87),
-                    )),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                //
-                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
-                unsafe {
-                    let val = MaybeUninit64 { whole: val };
-                    // CMPXCHG8B has SeqCst semantics.
-                    let _ = order;
-                    asm!(
-                        // This is based on the code generated for the first load in DW RMWs by LLVM,
-                        // but it is interesting that they generate code that does mixed-sized atomic access.
-                        //
-                        // This is not single-copy atomic reads, but this is ok because subsequent
-                        // CAS will check for consistency.
-                        "mov eax, dword ptr [edi]",           // atomic { eax = *edi }
-                        "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.byte_add(4) }
-                        "2:", // 'retry:
-                            "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
-                            "jne 2b",                         // if ZF == 0 { jump 'retry }
-                        in("ebx") val.pair.lo,
-                        in("ecx") val.pair.hi,
-                        out("eax") _,
-                        out("edx") _,
-                        in("edi") dst,
-                        // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
-                        options(nostack),
-                    );
-                }
-            }
+                // This is not single-copy atomic reads, but this is ok because subsequent
+                // CAS will check for consistency.
+                "mov eax, dword ptr [edi]",           // atomic { eax = *edi }
+                "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.byte_add(4) }
+                "2:", // 'retry:
+                    "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
+                    "jne 2b",                         // if ZF == 0 { jump 'retry }
+                in("ebx") val.pair.lo,
+                in("ecx") val.pair.hi,
+                out("eax") _,
+                out("edx") _,
+                in("edi") dst,
+                // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
+                options(nostack),
+            );
         }
-        impl AtomicSwap for $ty {
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                _order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit64 { whole: val };
-                let (mut prev_lo, mut prev_hi);
-
-                // SAFETY: the caller must uphold the safety contract.
-                // CMPXCHG8B has SeqCst semantics.
-                //
-                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
-                unsafe {
-                    asm!(
-                        // This is based on the code generated for the first load in DW RMWs by LLVM,
-                        // but it is interesting that they generate code that does mixed-sized atomic access.
-                        //
-                        // This is not single-copy atomic reads, but this is ok because subsequent
-                        // CAS will check for consistency.
-                        "mov eax, dword ptr [edi]",           // atomic { eax = *edi }
-                        "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.byte_add(4) }
-                        "2:", // 'retry:
-                            "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
-                            "jne 2b",                         // if ZF == 0 { jump 'retry }
-                        in("ebx") val.pair.lo,
-                        in("ecx") val.pair.hi,
-                        out("eax") prev_lo,
-                        out("edx") prev_hi,
-                        in("edi") dst,
-                        // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
-                        options(nostack),
-                    );
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-            }
-        }
-        impl AtomicCompareExchange for $ty {
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                _success: Ordering,
-                _failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit64 { whole: old };
-                let new = MaybeUninit64 { whole: new };
-                let (prev_lo, prev_hi);
-
-                // SAFETY: the caller must uphold the safety contract.
-                // CMPXCHG8B has SeqCst semantics.
-                //
-                // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
-                unsafe {
-                    let r: u8;
-                    asm!(
-                        "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
-                        "sete cl",                        // cl = ZF
-                        in("ebx") new.pair.lo,
-                        in("ecx") new.pair.hi,
-                        inout("eax") old.pair.lo => prev_lo,
-                        inout("edx") old.pair.hi => prev_hi,
-                        in("edi") dst,
-                        lateout("cl") r,
-                        // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
-                        options(nostack),
-                    );
-                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (
-                        MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
-                        r != 0
-                    )
-                }
-            }
-        }
-    };
+    }
 }
+#[cfg(all(target_arch = "x86", not(atomic_maybe_uninit_no_cmpxchg8b)))]
+impl AtomicSwap for u64 {
+    #[inline]
+    unsafe fn atomic_swap(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        _order: Ordering,
+    ) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let val = MaybeUninit64 { whole: val };
+        let (mut prev_lo, mut prev_hi);
 
-#[cfg(target_arch = "x86")]
-#[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-atomic64!(u64);
+        // SAFETY: the caller must uphold the safety contract.
+        // CMPXCHG8B has SeqCst semantics.
+        //
+        // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+        unsafe {
+            asm!(
+                // This is based on the code generated for the first load in DW RMWs by LLVM,
+                // but it is interesting that they generate code that does mixed-sized atomic access.
+                //
+                // This is not single-copy atomic reads, but this is ok because subsequent
+                // CAS will check for consistency.
+                "mov eax, dword ptr [edi]",           // atomic { eax = *edi }
+                "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.byte_add(4) }
+                "2:", // 'retry:
+                    "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
+                    "jne 2b",                         // if ZF == 0 { jump 'retry }
+                in("ebx") val.pair.lo,
+                in("ecx") val.pair.hi,
+                out("eax") prev_lo,
+                out("edx") prev_hi,
+                in("edi") dst,
+                // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
+                options(nostack),
+            );
+            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+    }
+}
+#[cfg(all(target_arch = "x86", not(atomic_maybe_uninit_no_cmpxchg8b)))]
+impl AtomicCompareExchange for u64 {
+    #[inline]
+    unsafe fn atomic_compare_exchange(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        _success: Ordering,
+        _failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let old = MaybeUninit64 { whole: old };
+        let new = MaybeUninit64 { whole: new };
+        let (prev_lo, prev_hi);
+
+        // SAFETY: the caller must uphold the safety contract.
+        // CMPXCHG8B has SeqCst semantics.
+        //
+        // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+        unsafe {
+            let r: u8;
+            asm!(
+                "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
+                "sete cl",                        // cl = ZF
+                in("ebx") new.pair.lo,
+                in("ecx") new.pair.hi,
+                inout("eax") old.pair.lo => prev_lo,
+                inout("edx") old.pair.hi => prev_hi,
+                in("edi") dst,
+                lateout("cl") r,
+                // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
+                options(nostack),
+            );
+            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+            (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r != 0)
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 // 128-bit atomics on x86_64

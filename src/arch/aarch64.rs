@@ -57,6 +57,9 @@ macro_rules! atomic_rmw {
     };
 }
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 #[rustfmt::skip]
 macro_rules! atomic {
     ($ty:ident, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
@@ -314,7 +317,7 @@ atomic!(u64, "", "", "");
 
 // -----------------------------------------------------------------------------
 // 128-bit atomics
-
+//
 // There are a few ways to implement 128-bit atomic operations in AArch64.
 //
 // - LDXP/STXP loop (DW LL/SC)
@@ -341,373 +344,389 @@ atomic!(u64, "", "", "");
 // See Arm Architecture Reference Manual for A-profile architecture
 // Section B2.2.1 "Requirements for single-copy atomicity", and
 // Section B2.9 "Synchronization and semaphores" for more.
-macro_rules! atomic128 {
-    ($ty:ident) => {
-        delegate_signed!(delegate_all, $ty);
-        impl AtomicLoad for $ty {
-            #[inline]
-            unsafe fn atomic_load(
-                src: *const MaybeUninit<Self>,
-                order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(src, $ty);
-                let (mut prev_lo, mut prev_hi);
 
-                #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
-                // SAFETY: the caller must guarantee that `dst` is valid for reads,
-                // 16-byte aligned, that there are no concurrent non-atomic operations.
-                // the above cfg guarantee that the CPU supports FEAT_LSE2.
-                //
-                // Refs:
-                // - LDP https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDP--Load-pair-of-registers-
-                // - LDIAPP https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
-                unsafe {
-                    macro_rules! atomic_load_relaxed {
-                        ($iap:tt, $dmb_ishld:tt) => {
-                            asm!(
-                                concat!("ld", $iap, "p {prev_lo}, {prev_hi}, [{src}]"), // atomic { prev_lo:prev_hi = *src }
-                                $dmb_ishld,                                             // fence
-                                src = in(reg) ptr_reg!(src),
-                                prev_hi = lateout(reg) prev_hi,
-                                prev_lo = lateout(reg) prev_lo,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        // if FEAT_LRCPC3 && order != relaxed => ldiapp
-                        // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
-                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
-                        Ordering::Acquire => atomic_load_relaxed!("iap", ""),
-                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
-                        Ordering::SeqCst => {
-                            asm!(
-                                // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
-                                // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
-                                "ldar {tmp}, [{src}]",                  // atomic { tmp = *src }
-                                "ldiapp {prev_lo}, {prev_hi}, [{src}]", // atomic { prev_lo:prev_hi = *src }
-                                src = in(reg) ptr_reg!(src),
-                                prev_hi = lateout(reg) prev_hi,
-                                prev_lo = lateout(reg) prev_lo,
-                                tmp = out(reg) _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
+delegate_signed!(delegate_all, u128);
+impl AtomicLoad for u128 {
+    #[inline]
+    unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(src, u128);
+        let (mut prev_lo, mut prev_hi);
 
-                        // else => ldp
-                        Ordering::Relaxed => atomic_load_relaxed!("", ""),
-                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
-                        Ordering::Acquire => atomic_load_relaxed!("", "dmb ishld"),
-                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
-                        Ordering::SeqCst => {
-                            asm!(
-                                // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
-                                // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
-                                "ldar {tmp}, [{src}]",               // atomic { tmp = *src }
-                                "ldp {prev_lo}, {prev_hi}, [{src}]", // atomic { prev_lo:prev_hi = *src }
-                                "dmb ishld",                         // fence
-                                src = in(reg) ptr_reg!(src),
-                                prev_hi = lateout(reg) prev_hi,
-                                prev_lo = lateout(reg) prev_lo,
-                                tmp = out(reg) _,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-                #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    #[cfg(target_feature = "lse")]
-                    macro_rules! atomic_load {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
-                                concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"), // atomic { if *src == x2:x3 { *dst = x2:x3 } else { x2:x3 = *dst } }
-                                src = in(reg) ptr_reg!(src),
-                                // must be allocated to even/odd register pair
-                                inout("x2") 0_u64 => prev_lo,
-                                inout("x3") 0_u64 => prev_hi,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    #[cfg(not(target_feature = "lse"))]
-                    macro_rules! atomic_load {
-                        ($acquire:tt, $release:tt) => {
-                            asm!(
-                                "2:", // 'retry:
-                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{src}]"),        // atomic { prev_lo:prev_hi = *src; EXCLUSIVE = src }
-                                    // write back to ensure atomicity
-                                    concat!("st", $release, "xp {r:w}, {prev_lo}, {prev_hi}, [{src}]"), // atomic { if EXCLUSIVE == src { *src = prev_lo:prev_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
-                                src = in(reg) ptr_reg!(src),
-                                prev_lo = out(reg) prev_lo,
-                                prev_hi = out(reg) prev_hi,
-                                r = out(reg) _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        Ordering::Relaxed => atomic_load!("", ""),
-                        Ordering::Acquire => atomic_load!("a", ""),
-                        Ordering::SeqCst => atomic_load!("a", "l"),
-                        _ => unreachable!(),
-                    }
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-            }
-        }
-        impl AtomicStore for $ty {
-            #[inline]
-            unsafe fn atomic_store(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { whole: val };
-
-                #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
-                // SAFETY: the caller must guarantee that `dst` is valid for writes,
-                // 16-byte aligned, that there are no concurrent non-atomic operations.
-                // the above cfg guarantee that the CPU supports FEAT_LSE2.
-                //
-                // Refs:
-                // - STP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STP--Store-pair-of-registers-
-                // - STILP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
-                unsafe {
-                    macro_rules! atomic_store {
-                        ($il:tt, $acquire:tt, $release:tt) => {
-                            asm!(
-                                $release,                                            // fence
-                                concat!("st", $il, "p {val_lo}, {val_hi}, [{dst}]"), // atomic { *dst = val_lo:val_hi }
-                                $acquire,                                            // fence
-                                dst = in(reg) ptr_reg!(dst),
-                                val_lo = in(reg) val.pair.lo,
-                                val_hi = in(reg) val.pair.hi,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    // Use swpp if stp requires fences.
-                    // https://reviews.llvm.org/D143506
-                    #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
-                    macro_rules! atomic_store_swpp {
-                        ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
-                            asm!(
-                                concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"), // atomic { _x = *dst; *dst = val_lo:val_hi; val_lo:val_hi = _x }
-                                dst = in(reg) ptr_reg!(dst),
-                                val_lo = inout(reg) val.pair.lo => _,
-                                val_hi = inout(reg) val.pair.hi => _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        // if FEAT_LSE128 && order == seqcst => swpp
-                        // Prefer swpp if stp requires fences. https://reviews.llvm.org/D143506
-                        // SAFETY: cfg guarantee that the CPU supports FEAT_LSE128.
-                        #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
-                        Ordering::SeqCst => atomic_rmw!(atomic_store_swpp, order),
-
-                        // if FEAT_LRCPC3 && order != relaxed => stilp
-                        // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
-                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
-                        Ordering::Release => atomic_store!("il", "", ""),
-                        // LLVM uses store-release (dmb ish; stp); dmb ish, GCC (libatomic) and Atomics ABI Standard
-                        // uses store-release (stilp) without fence for SeqCst store
-                        // (https://github.com/gcc-mirror/gcc/commit/7107574958e2bed11d916a1480ef1319f15e5ffe).
-                        // Considering https://reviews.llvm.org/D141748, LLVM's lowering seems
-                        // to be the safer option here (I'm not convinced that the libatomic's implementation is wrong).
-                        #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
-                        #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
-                        Ordering::SeqCst => atomic_store!("il", "dmb ish", ""),
-
-                        // if FEAT_LSE128 && order != relaxed => swpp
-                        // Prefer swpp if stp requires fences. https://reviews.llvm.org/D143506
-                        // SAFETY: cfg guarantee that the CPU supports FEAT_LSE128.
-                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
-                        #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
-                        Ordering::Release => atomic_rmw!(atomic_store_swpp, order),
-
-                        // else => stp
-                        Ordering::Relaxed => atomic_store!("", "", ""),
-                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
-                        #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
-                        Ordering::Release => atomic_store!("", "", "dmb ish"),
-                        #[cfg(not(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3")))]
-                        #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
-                        Ordering::SeqCst => atomic_store!("", "dmb ish", "dmb ish"),
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                }
-                #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! store {
-                        ($acquire:tt, $release:tt, $msvc_fence:tt) => {
-                            asm!(
-                                "2:", // 'retry:
-                                    concat!("ld", $acquire, "xp xzr, {tmp}, [{dst}]"),                  // atomic { xzr:tmp = *dst; EXCLUSIVE = dst }
-                                    concat!("st", $release, "xp {tmp:w}, {val_lo}, {val_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val_lo:val_hi; tmp = 0 } else { tmp = 1 }; EXCLUSIVE = None }
-                                    "cbnz {tmp:w}, 2b",                                                 // if tmp != 0 { jump 'retry }
-                                $msvc_fence,                                                            // fence
-                                dst = in(reg) ptr_reg!(dst),
-                                val_lo = in(reg) val.pair.lo,
-                                val_hi = in(reg) val.pair.hi,
-                                tmp = out(reg) _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    atomic_rmw!(store, order);
-                }
-            }
-        }
-        impl AtomicSwap for $ty {
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { whole: val };
-                let (mut prev_lo, mut prev_hi);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
-                    macro_rules! swap {
-                        ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
-                            asm!(
-                                concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"), // atomic { _x = *dst; *dst = val_lo:val_hi; val_lo:val_hi = _x }
-                                dst = in(reg) ptr_reg!(dst),
-                                val_lo = inout(reg) val.pair.lo => prev_lo,
-                                val_hi = inout(reg) val.pair.hi => prev_hi,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
-                    macro_rules! swap {
-                        ($acquire:tt, $release:tt, $msvc_fence:tt) => {
-                            asm!(
-                                "2:", // 'retry:
-                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),      // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
-                                    concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val_lo:val_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cbnz {r:w}, 2b",                                                 // if r != 0 { jump 'retry }
-                                $msvc_fence,                                                          // fence
-                                dst = in(reg) ptr_reg!(dst),
-                                val_lo = in(reg) val.pair.lo,
-                                val_hi = in(reg) val.pair.hi,
-                                prev_lo = out(reg) prev_lo,
-                                prev_hi = out(reg) prev_hi,
-                                r = out(reg) _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    atomic_rmw!(swap, order);
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-            }
-        }
-        impl AtomicCompareExchange for $ty {
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                success: Ordering,
-                failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let order = crate::utils::upgrade_success_ordering(success, failure);
-                let old = MaybeUninit128 { whole: old };
-                let new = MaybeUninit128 { whole: new };
-                let (mut prev_lo, mut prev_hi);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let mut r: i32;
-                    #[cfg(target_feature = "lse")]
-                    macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
-                            // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
-                            asm!(
-                                // casp writes the current value to the first register pair,
-                                // so copy the `old`'s value for later comparison.
-                                "mov x8, {old_lo}",                                              // x8 = old_lo
-                                "mov x9, {old_hi}",                                              // x9 = old_hi
-                                concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"), // atomic { if *src == x8:x9 { *dst = x4:x5 } else { x8:x9 = *dst } }
-                                "cmp x8, {old_lo}",                                              // if x8 == old_lo { Z = 1 } else { Z = 0 }
-                                "ccmp x9, {old_hi}, #0, eq",                                     // if Z == 1 { if x9 == old_hi { Z = 1 } else { Z = 0 } } else { Z = 0 }
-                                "cset {r:w}, eq",                                                // r = Z
-                                dst = in(reg) ptr_reg!(dst),
-                                old_lo = in(reg) old.pair.lo,
-                                old_hi = in(reg) old.pair.hi,
-                                r = lateout(reg) r,
-                                // new pair - must be allocated to even/odd register pair
-                                in("x4") new.pair.lo,
-                                in("x5") new.pair.hi,
-                                // prev pair - must be allocated to even/odd register pair
-                                out("x8") prev_lo,
-                                out("x9") prev_hi,
-                                // Do not use `preserves_flags` because CMP and CCMP modify the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    #[cfg(not(target_feature = "lse"))]
-                    macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt, $msvc_fence:tt) => {
-                            asm!(
-                                "2:", // 'retry:
-                                    concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),      // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
-                                    "cmp {prev_lo}, {old_lo}",                                        // if prev_lo == old_lo { Z = 1 } else { Z = 0 }
-                                    "ccmp {prev_hi}, {old_hi}, #0, eq",                               // if Z == 1 { if prev_hi == old_hi { Z = 1 } else { Z = 0 } } else { Z = 0 }
-                                    // write back to ensure atomicity
-                                    "csel {tmp_lo}, {new_lo}, {prev_lo}, eq",                         // if Z == 1 { tmp_lo = new_lo } else { tmp_lo = prev_lo }
-                                    "csel {tmp_hi}, {new_hi}, {prev_hi}, eq",                         // if Z == 1 { tmp_hi = new_hi } else { tmp_hi = prev_hi }
-                                    concat!("st", $release, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = tmp_lo:tmp_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cbnz {r:w}, 2b",                                                 // if r != 0 { jump 'retry }
-                                "cset {r:w}, eq",                                                     // r = Z
-                                $msvc_fence,                                                          // fence
-                                dst = in(reg) ptr_reg!(dst),
-                                old_lo = in(reg) old.pair.lo,
-                                old_hi = in(reg) old.pair.hi,
-                                new_lo = in(reg) new.pair.lo,
-                                new_hi = in(reg) new.pair.hi,
-                                prev_lo = out(reg) prev_lo,
-                                prev_hi = out(reg) prev_hi,
-                                r = out(reg) r,
-                                tmp_lo = out(reg) _,
-                                tmp_hi = out(reg) _,
-                                // Do not use `preserves_flags` because CMP and CCMP modify the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    atomic_rmw!(cmpxchg, order, write = success);
-                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (
-                        MaybeUninit128 {
-                            pair: Pair { lo: prev_lo, hi: prev_hi }
-                        }.whole,
-                        r != 0
+        #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
+        // SAFETY: the caller must guarantee that `dst` is valid for reads,
+        // 16-byte aligned, that there are no concurrent non-atomic operations.
+        // the above cfg guarantee that the CPU supports FEAT_LSE2.
+        //
+        // Refs:
+        // - LDP https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDP--Load-pair-of-registers-
+        // - LDIAPP https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/LDIAPP--Load-Acquire-RCpc-ordered-pair-of-registers-
+        unsafe {
+            macro_rules! atomic_load_relaxed {
+                ($iap:tt, $dmb_ishld:tt) => {
+                    asm!(
+                        concat!("ld", $iap, "p {prev_lo}, {prev_hi}, [{src}]"), // atomic { prev_lo:prev_hi = *src }
+                        $dmb_ishld,                                             // fence
+                        src = in(reg) ptr_reg!(src),
+                        prev_hi = lateout(reg) prev_hi,
+                        prev_lo = lateout(reg) prev_lo,
+                        options(nostack, preserves_flags),
                     )
+                };
+            }
+            match order {
+                // if FEAT_LRCPC3 && order != relaxed => ldiapp
+                // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
+                #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
+                Ordering::Acquire => atomic_load_relaxed!("iap", ""),
+                #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
+                Ordering::SeqCst => {
+                    asm!(
+                        // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
+                        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
+                        "ldar {tmp}, [{src}]",                  // atomic { tmp = *src }
+                        "ldiapp {prev_lo}, {prev_hi}, [{src}]", // atomic { prev_lo:prev_hi = *src }
+                        src = in(reg) ptr_reg!(src),
+                        prev_hi = lateout(reg) prev_hi,
+                        prev_lo = lateout(reg) prev_lo,
+                        tmp = out(reg) _,
+                        options(nostack, preserves_flags),
+                    );
                 }
+
+                // else => ldp
+                Ordering::Relaxed => atomic_load_relaxed!("", ""),
+                #[cfg(not(any(
+                    target_feature = "rcpc3",
+                    atomic_maybe_uninit_target_feature = "rcpc3"
+                )))]
+                Ordering::Acquire => atomic_load_relaxed!("", "dmb ishld"),
+                #[cfg(not(any(
+                    target_feature = "rcpc3",
+                    atomic_maybe_uninit_target_feature = "rcpc3"
+                )))]
+                Ordering::SeqCst => {
+                    asm!(
+                        // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
+                        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
+                        "ldar {tmp}, [{src}]",               // atomic { tmp = *src }
+                        "ldp {prev_lo}, {prev_hi}, [{src}]", // atomic { prev_lo:prev_hi = *src }
+                        "dmb ishld",                         // fence
+                        src = in(reg) ptr_reg!(src),
+                        prev_hi = lateout(reg) prev_hi,
+                        prev_lo = lateout(reg) prev_lo,
+                        tmp = out(reg) _,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                _ => crate::utils::unreachable_unchecked(),
+            }
+            MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+        #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            #[cfg(target_feature = "lse")]
+            macro_rules! atomic_load {
+                ($acquire:tt, $release:tt) => {
+                    asm!(
+                        // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
+                        concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"), // atomic { if *src == x2:x3 { *dst = x2:x3 } else { x2:x3 = *dst } }
+                        src = in(reg) ptr_reg!(src),
+                        // must be allocated to even/odd register pair
+                        inout("x2") 0_u64 => prev_lo,
+                        inout("x3") 0_u64 => prev_hi,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            #[cfg(not(target_feature = "lse"))]
+            macro_rules! atomic_load {
+                ($acquire:tt, $release:tt) => {
+                    asm!(
+                        "2:", // 'retry:
+                            concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{src}]"),        // atomic { prev_lo:prev_hi = *src; EXCLUSIVE = src }
+                            // write back to ensure atomicity
+                            concat!("st", $release, "xp {r:w}, {prev_lo}, {prev_hi}, [{src}]"), // atomic { if EXCLUSIVE == src { *src = prev_lo:prev_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                            "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
+                        src = in(reg) ptr_reg!(src),
+                        prev_lo = out(reg) prev_lo,
+                        prev_hi = out(reg) prev_hi,
+                        r = out(reg) _,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            match order {
+                Ordering::Relaxed => atomic_load!("", ""),
+                Ordering::Acquire => atomic_load!("a", ""),
+                Ordering::SeqCst => atomic_load!("a", "l"),
+                _ => unreachable!(),
+            }
+            MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+    }
+}
+impl AtomicStore for u128 {
+    #[inline]
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let val = MaybeUninit128 { whole: val };
+
+        #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
+        // SAFETY: the caller must guarantee that `dst` is valid for writes,
+        // 16-byte aligned, that there are no concurrent non-atomic operations.
+        // the above cfg guarantee that the CPU supports FEAT_LSE2.
+        //
+        // Refs:
+        // - STP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STP--Store-pair-of-registers-
+        // - STILP: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/STILP--Store-release-ordered-pair-of-registers-
+        unsafe {
+            macro_rules! atomic_store {
+                ($il:tt, $acquire:tt, $release:tt) => {
+                    asm!(
+                        $release,                                            // fence
+                        concat!("st", $il, "p {val_lo}, {val_hi}, [{dst}]"), // atomic { *dst = val_lo:val_hi }
+                        $acquire,                                            // fence
+                        dst = in(reg) ptr_reg!(dst),
+                        val_lo = in(reg) val.pair.lo,
+                        val_hi = in(reg) val.pair.hi,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            // Use swpp if stp requires fences.
+            // https://reviews.llvm.org/D143506
+            #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
+            macro_rules! atomic_store_swpp {
+                ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
+                    asm!(
+                        concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"), // atomic { _x = *dst; *dst = val_lo:val_hi; val_lo:val_hi = _x }
+                        dst = in(reg) ptr_reg!(dst),
+                        val_lo = inout(reg) val.pair.lo => _,
+                        val_hi = inout(reg) val.pair.hi => _,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            match order {
+                // if FEAT_LSE128 && order == seqcst => swpp
+                // Prefer swpp if stp requires fences. https://reviews.llvm.org/D143506
+                // SAFETY: cfg guarantee that the CPU supports FEAT_LSE128.
+                #[cfg(any(
+                    target_feature = "lse128",
+                    atomic_maybe_uninit_target_feature = "lse128",
+                ))]
+                Ordering::SeqCst => atomic_rmw!(atomic_store_swpp, order),
+
+                // if FEAT_LRCPC3 && order != relaxed => stilp
+                // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
+                #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
+                Ordering::Release => atomic_store!("il", "", ""),
+                // LLVM uses store-release (dmb ish; stp); dmb ish, GCC (libatomic) and Atomics ABI Standard
+                // uses store-release (stilp) without fence for SeqCst store
+                // (https://github.com/gcc-mirror/gcc/commit/7107574958e2bed11d916a1480ef1319f15e5ffe).
+                // Considering https://reviews.llvm.org/D141748, LLVM's lowering seems
+                // to be the safer option here (I'm not convinced that the libatomic's implementation is wrong).
+                #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
+                #[cfg(not(any(
+                    target_feature = "lse128",
+                    atomic_maybe_uninit_target_feature = "lse128",
+                )))]
+                Ordering::SeqCst => atomic_store!("il", "dmb ish", ""),
+
+                // if FEAT_LSE128 && order != relaxed => swpp
+                // Prefer swpp if stp requires fences. https://reviews.llvm.org/D143506
+                // SAFETY: cfg guarantee that the CPU supports FEAT_LSE128.
+                #[cfg(not(any(
+                    target_feature = "rcpc3",
+                    atomic_maybe_uninit_target_feature = "rcpc3",
+                )))]
+                #[cfg(any(
+                    target_feature = "lse128",
+                    atomic_maybe_uninit_target_feature = "lse128",
+                ))]
+                Ordering::Release => atomic_rmw!(atomic_store_swpp, order),
+
+                // else => stp
+                Ordering::Relaxed => atomic_store!("", "", ""),
+                #[cfg(not(any(
+                    target_feature = "rcpc3",
+                    atomic_maybe_uninit_target_feature = "rcpc3",
+                )))]
+                #[cfg(not(any(
+                    target_feature = "lse128",
+                    atomic_maybe_uninit_target_feature = "lse128",
+                )))]
+                Ordering::Release => atomic_store!("", "", "dmb ish"),
+                #[cfg(not(any(
+                    target_feature = "rcpc3",
+                    atomic_maybe_uninit_target_feature = "rcpc3",
+                )))]
+                #[cfg(not(any(
+                    target_feature = "lse128",
+                    atomic_maybe_uninit_target_feature = "lse128",
+                )))]
+                Ordering::SeqCst => atomic_store!("", "dmb ish", "dmb ish"),
+                _ => crate::utils::unreachable_unchecked(),
             }
         }
-    };
+        #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! store {
+                ($acquire:tt, $release:tt, $msvc_fence:tt) => {
+                    asm!(
+                        "2:", // 'retry:
+                            concat!("ld", $acquire, "xp xzr, {tmp}, [{dst}]"),                  // atomic { xzr:tmp = *dst; EXCLUSIVE = dst }
+                            concat!("st", $release, "xp {tmp:w}, {val_lo}, {val_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val_lo:val_hi; tmp = 0 } else { tmp = 1 }; EXCLUSIVE = None }
+                            "cbnz {tmp:w}, 2b",                                                 // if tmp != 0 { jump 'retry }
+                        $msvc_fence,                                                            // fence
+                        dst = in(reg) ptr_reg!(dst),
+                        val_lo = in(reg) val.pair.lo,
+                        val_hi = in(reg) val.pair.hi,
+                        tmp = out(reg) _,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            atomic_rmw!(store, order);
+        }
+    }
 }
+impl AtomicSwap for u128 {
+    #[inline]
+    unsafe fn atomic_swap(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let val = MaybeUninit128 { whole: val };
+        let (mut prev_lo, mut prev_hi);
 
-atomic128!(u128);
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            #[cfg(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128"))]
+            macro_rules! swap {
+                ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
+                    asm!(
+                        concat!("swpp", $acquire, $release, " {val_lo}, {val_hi}, [{dst}]"), // atomic { _x = *dst; *dst = val_lo:val_hi; val_lo:val_hi = _x }
+                        dst = in(reg) ptr_reg!(dst),
+                        val_lo = inout(reg) val.pair.lo => prev_lo,
+                        val_hi = inout(reg) val.pair.hi => prev_hi,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            #[cfg(not(any(
+                target_feature = "lse128",
+                atomic_maybe_uninit_target_feature = "lse128",
+            )))]
+            macro_rules! swap {
+                ($acquire:tt, $release:tt, $msvc_fence:tt) => {
+                    asm!(
+                        "2:", // 'retry:
+                            concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),      // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
+                            concat!("st", $release, "xp {r:w}, {val_lo}, {val_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = val_lo:val_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                            "cbnz {r:w}, 2b",                                                 // if r != 0 { jump 'retry }
+                        $msvc_fence,                                                          // fence
+                        dst = in(reg) ptr_reg!(dst),
+                        val_lo = in(reg) val.pair.lo,
+                        val_hi = in(reg) val.pair.hi,
+                        prev_lo = out(reg) prev_lo,
+                        prev_hi = out(reg) prev_hi,
+                        r = out(reg) _,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            atomic_rmw!(swap, order);
+            MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+    }
+}
+impl AtomicCompareExchange for u128 {
+    #[inline]
+    unsafe fn atomic_compare_exchange(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let order = crate::utils::upgrade_success_ordering(success, failure);
+        let old = MaybeUninit128 { whole: old };
+        let new = MaybeUninit128 { whole: new };
+        let (mut prev_lo, mut prev_hi);
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let mut r: i32;
+            #[cfg(target_feature = "lse")]
+            macro_rules! cmpxchg {
+                ($acquire:tt, $release:tt, $_msvc_fence:tt) => {
+                    // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
+                    asm!(
+                        // casp writes the current value to the first register pair,
+                        // so copy the `old`'s value for later comparison.
+                        "mov x8, {old_lo}",                                              // x8 = old_lo
+                        "mov x9, {old_hi}",                                              // x9 = old_hi
+                        concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"), // atomic { if *src == x8:x9 { *dst = x4:x5 } else { x8:x9 = *dst } }
+                        "cmp x8, {old_lo}",                                              // if x8 == old_lo { Z = 1 } else { Z = 0 }
+                        "ccmp x9, {old_hi}, #0, eq",                                     // if Z == 1 { if x9 == old_hi { Z = 1 } else { Z = 0 } } else { Z = 0 }
+                        "cset {r:w}, eq",                                                // r = Z
+                        dst = in(reg) ptr_reg!(dst),
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
+                        r = lateout(reg) r,
+                        // new pair - must be allocated to even/odd register pair
+                        in("x4") new.pair.lo,
+                        in("x5") new.pair.hi,
+                        // prev pair - must be allocated to even/odd register pair
+                        out("x8") prev_lo,
+                        out("x9") prev_hi,
+                        // Do not use `preserves_flags` because CMP and CCMP modify the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            #[cfg(not(target_feature = "lse"))]
+            macro_rules! cmpxchg {
+                ($acquire:tt, $release:tt, $msvc_fence:tt) => {
+                    asm!(
+                        "2:", // 'retry:
+                            concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{dst}]"),      // atomic { prev_lo:prev_hi = *dst; EXCLUSIVE = dst }
+                            "cmp {prev_lo}, {old_lo}",                                        // if prev_lo == old_lo { Z = 1 } else { Z = 0 }
+                            "ccmp {prev_hi}, {old_hi}, #0, eq",                               // if Z == 1 { if prev_hi == old_hi { Z = 1 } else { Z = 0 } } else { Z = 0 }
+                            // write back to ensure atomicity
+                            "csel {tmp_lo}, {new_lo}, {prev_lo}, eq",                         // if Z == 1 { tmp_lo = new_lo } else { tmp_lo = prev_lo }
+                            "csel {tmp_hi}, {new_hi}, {prev_hi}, eq",                         // if Z == 1 { tmp_hi = new_hi } else { tmp_hi = prev_hi }
+                            concat!("st", $release, "xp {r:w}, {tmp_lo}, {tmp_hi}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = tmp_lo:tmp_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                            "cbnz {r:w}, 2b",                                                 // if r != 0 { jump 'retry }
+                        "cset {r:w}, eq",                                                     // r = Z
+                        $msvc_fence,                                                          // fence
+                        dst = in(reg) ptr_reg!(dst),
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
+                        new_lo = in(reg) new.pair.lo,
+                        new_hi = in(reg) new.pair.hi,
+                        prev_lo = out(reg) prev_lo,
+                        prev_hi = out(reg) prev_hi,
+                        r = out(reg) r,
+                        tmp_lo = out(reg) _,
+                        tmp_hi = out(reg) _,
+                        // Do not use `preserves_flags` because CMP and CCMP modify the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            atomic_rmw!(cmpxchg, order, write = success);
+            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+            (MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r != 0)
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 // cfg macros

@@ -25,6 +25,9 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 macro_rules! atomic {
     ($ty:ident, $suffix:tt) => {
         delegate_signed!(delegate_all, $ty);

@@ -229,6 +229,9 @@ macro_rules! atomic_rmw_lr_sc {
     };
 }
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $suffix:tt) => {

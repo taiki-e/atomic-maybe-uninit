@@ -54,6 +54,9 @@ fn srl_w(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
     val
 }
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 #[rustfmt::skip]
 macro_rules! atomic_load {
     ($ty:ident, $suffix:tt) => {

@@ -443,6 +443,9 @@ cfg_sel!({
     }
 });
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
     ($ty:ident, $suffix:tt) => {
@@ -1032,591 +1035,583 @@ atomic!(u32, "");
 
 // -----------------------------------------------------------------------------
 // 64-bit atomics
-
+//
 // Refs:
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/LDREXD
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/STREXD
+
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
-#[rustfmt::skip]
-macro_rules! atomic64 {
-    ($ty:ident) => {
-        delegate_signed!(delegate_all, $ty);
-        impl AtomicLoad for $ty {
-            #[cfg_attr(
-                all(
-                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
-                    not(any(
-                        target_feature = "v7",
-                        atomic_maybe_uninit_target_feature = "v7",
-                        target_feature = "mclass",
-                        atomic_maybe_uninit_target_feature = "mclass",
-                    )),
-                    any(
-                        atomic_maybe_uninit_use_cp15_barrier,
-                        not(any(target_os = "linux", target_os = "android")),
-                    ),
-                ),
-                instruction_set(arm::a32) // needed for LL and cp15 barrier
-            )]
-            #[inline]
-            unsafe fn atomic_load(
-                src: *const MaybeUninit<Self>,
-                order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(src, $ty);
+delegate_signed!(delegate_all, u64);
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+impl AtomicLoad for u64 {
+    #[cfg_attr(
+        all(
+            any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+            not(any(
+                target_feature = "v7",
+                atomic_maybe_uninit_target_feature = "v7",
+                target_feature = "mclass",
+                atomic_maybe_uninit_target_feature = "mclass",
+            )),
+            any(
+                atomic_maybe_uninit_use_cp15_barrier,
+                not(any(target_os = "linux", target_os = "android")),
+            ),
+        ),
+        instruction_set(arm::a32) // needed for LL and cp15 barrier
+    )]
+    #[inline]
+    unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(src, u64);
 
-                #[cfg(all(
-                    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                    not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let (prev_lo, prev_hi);
-                    macro_rules! atomic_load {
-                        ($asm:ident, $acquire:expr) => {
-                            $asm!(
-                                "ldrexd r0, r1, [{src}]", // atomic { r0:r1 = *src; EXCLUSIVE = src }
-                                $acquire,                 // fence
-                                src = in(reg) src,
-                                // prev pair - must be even-numbered and not R14
-                                lateout("r0") prev_lo,
-                                lateout("r1") prev_hi,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
-                        // Acquire and SeqCst loads are equivalent.
-                        Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-                #[cfg(not(all(
-                    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                    not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-                )))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    assert_has_kuser_cmpxchg64();
-                    // __kuser_cmpxchg64 has SeqCst semantics.
-                    let _ = order;
-                    let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                    asm!(
-                        "2:", // 'retry:
-                            "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
-                            "str r0, [{out}]",         // *out = r0
-                            "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
-                            s!("mov", "r0, {out}"),    // r0 = out
-                            s!("mov", "r1, {out}"),    // r1 = out
-                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",                  // if C == 0 { jump 'retry }
-                        out = in(reg) out.as_mut_ptr(),
-                        kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                        out("r0") _, // old_val
-                        out("r1") _, // new_val
-                        in("r2") src, // ptr
-                        // __kuser_cmpxchg64 clobbers r3, lr, and flags.
-                        out("r3") _,
-                        out("lr") _,
-                        // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
-                        // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
-                    );
-                    out
-                }
+        #[cfg(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let (prev_lo, prev_hi);
+            macro_rules! atomic_load {
+                ($asm:ident, $acquire:expr) => {
+                    $asm!(
+                        "ldrexd r0, r1, [{src}]", // atomic { r0:r1 = *src; EXCLUSIVE = src }
+                        $acquire,                 // fence
+                        src = in(reg) src,
+                        // prev pair - must be even-numbered and not R14
+                        lateout("r0") prev_lo,
+                        lateout("r1") prev_hi,
+                        options(nostack, preserves_flags),
+                    )
+                };
             }
+            match order {
+                Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
+                // Acquire and SeqCst loads are equivalent.
+                Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
+                _ => crate::utils::unreachable_unchecked(),
+            }
+            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
         }
-        impl AtomicStore for $ty {
-            #[cfg_attr(
-                all(
-                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
-                    not(any(
-                        target_feature = "v7",
-                        atomic_maybe_uninit_target_feature = "v7",
-                        target_feature = "mclass",
-                        atomic_maybe_uninit_target_feature = "mclass",
-                    )),
-                    any(
-                        atomic_maybe_uninit_use_cp15_barrier,
-                        not(any(target_os = "linux", target_os = "android")),
-                    ),
-                ),
-                instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
-            )]
-            #[inline]
-            unsafe fn atomic_store(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-
-                #[cfg(all(
-                    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                    not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let val = MaybeUninit64 { whole: val };
-                    macro_rules! atomic_store {
-                        ($asm:ident, $acquire:expr, $release:expr) => {
-                            $asm!(
-                                $release,                         // fence
-                                "2:", // 'retry:
-                                    "ldrexd r4, r5, [{dst}]",     // atomic { r4:r5 = *dst; EXCLUSIVE = dst }
-                                    "strexd r4, r2, r3, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r4 = 0 } else { r4 = 1 }; EXCLUSIVE = None }
-                                    "cmp r4, #0",                 // if r4 == 0 { Z = 1 } else { Z = 0 }
-                                    "bne 2b",                     // if Z == 0 { jump 'retry }
-                                $acquire,                         // fence
-                                dst = in(reg) dst,
-                                // val pair - must be even-numbered and not R14
-                                in("r2") val.pair.lo,
-                                in("r3") val.pair.hi,
-                                // tmp pair - must be even-numbered and not R14
-                                out("r4") _,
-                                out("r5") _,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    match order {
-                        Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
-                        Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
-                        Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                }
-                #[cfg(not(all(
-                    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                    not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-                )))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    assert_has_kuser_cmpxchg64();
-                    // __kuser_cmpxchg64 has SeqCst semantics.
-                    let _ = order;
-                    let mut out_tmp = MaybeUninit::<Self>::uninit();
-                    asm!(
-                        "2:", // 'retry:
-                            "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
-                            "str r0, [{out}]",         // *out = r0
-                            "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
-                            s!("mov", "r0, {out}"),    // r0 = out
-                            s!("mov", "r1, {val}"),    // r1 = val
-                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",                  // if C == 0 { jump 'retry }
-                        out = in(reg) out_tmp.as_mut_ptr(),
-                        val = in(reg) val.as_ptr(),
-                        kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                        out("r0") _, // old_val
-                        out("r1") _, // new_val
-                        in("r2") dst, // ptr
-                        // __kuser_cmpxchg64 clobbers r3, lr, and flags.
-                        out("r3") _,
-                        out("lr") _,
-                        // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
-                        // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
-                    );
-                }
-            }
+        #[cfg(not(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        )))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            assert_has_kuser_cmpxchg64();
+            // __kuser_cmpxchg64 has SeqCst semantics.
+            let _ = order;
+            let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+            asm!(
+                "2:", // 'retry:
+                    "ldr r0, [r2]",            // atomic { r0 = *r2 }
+                    "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
+                    "str r0, [{out}]",         // *out = r0
+                    "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
+                    s!("mov", "r0, {out}"),    // r0 = out
+                    s!("mov", "r1, {out}"),    // r1 = out
+                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    "bcc 2b",                  // if C == 0 { jump 'retry }
+                out = in(reg) out.as_mut_ptr(),
+                kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
+                out("r0") _, // old_val
+                out("r1") _, // new_val
+                in("r2") src, // ptr
+                // __kuser_cmpxchg64 clobbers r3, lr, and flags.
+                out("r3") _,
+                out("lr") _,
+                // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
+                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+            );
+            out
         }
-        impl AtomicSwap for $ty {
-            #[cfg_attr(
-                all(
-                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
-                    not(any(
-                        target_feature = "v7",
-                        atomic_maybe_uninit_target_feature = "v7",
-                        target_feature = "mclass",
-                        atomic_maybe_uninit_target_feature = "mclass",
-                    )),
-                    any(
-                        atomic_maybe_uninit_use_cp15_barrier,
-                        not(any(target_os = "linux", target_os = "android")),
-                    ),
-                ),
-                instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
-            )]
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-
-                #[cfg(all(
-                    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                    not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let val = MaybeUninit64 { whole: val };
-                    let (mut prev_lo, mut prev_hi);
-                    macro_rules! swap {
-                        ($asm:ident, $acquire:expr, $release:expr) => {
-                            $asm!(
-                                $release,                          // fence
-                                "2:", // 'retry:
-                                    "ldrexd r0, r1, [{dst}]",      // atomic { r0:r1 = *dst; EXCLUSIVE = dst }
-                                    "strexd {r}, r2, r3, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cmp {r}, #0",                 // if r == 0 { Z = 1 } else { Z = 0 }
-                                    "bne 2b",                      // if Z == 0 { jump 'retry }
-                                $acquire,                          // fence
-                                dst = in(reg) dst,
-                                r = out(reg) _,
-                                // val pair - must be even-numbered and not R14
-                                in("r2") val.pair.lo,
-                                in("r3") val.pair.hi,
-                                // prev pair - must be even-numbered and not R14
-                                out("r0") prev_lo,
-                                out("r1") prev_hi,
-                                // Do not use `preserves_flags` because CMP modifies the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    atomic_rmw!(swap, order);
-                    MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-                #[cfg(not(all(
-                    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                    not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-                )))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    assert_has_kuser_cmpxchg64();
-                    // __kuser_cmpxchg64 has SeqCst semantics.
-                    let _ = order;
-                    let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                    asm!(
-                        "2:", // 'retry:
-                            "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
-                            "str r0, [{out}]",         // *out = r0
-                            "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
-                            s!("mov", "r0, {out}"),    // r0 = out
-                            s!("mov", "r1, {val}"),    // r1 = val
-                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",                  // if C == 0 { jump 'retry }
-                        out = in(reg) out.as_mut_ptr(),
-                        val = in(reg) val.as_ptr(),
-                        kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                        out("r0") _, // old_val
-                        out("r1") _, // new_val
-                        in("r2") dst, // ptr
-                        // __kuser_cmpxchg64 clobbers r3, lr, and flags.
-                        out("r3") _,
-                        out("lr") _,
-                        // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
-                        // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
-                    );
-                    out
-                }
-            }
-        }
-        impl AtomicCompareExchange for $ty {
-            #[cfg_attr(
-                all(
-                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
-                    not(any(
-                        target_feature = "v7",
-                        atomic_maybe_uninit_target_feature = "v7",
-                        target_feature = "mclass",
-                        atomic_maybe_uninit_target_feature = "mclass",
-                    )),
-                    any(
-                        atomic_maybe_uninit_use_cp15_barrier,
-                        not(any(target_os = "linux", target_os = "android")),
-                    ),
-                ),
-                instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
-            )]
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                success: Ordering,
-                failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit64 { whole: old };
-
-                #[cfg(all(
-                    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                    not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-                ))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let new = MaybeUninit64 { whole: new };
-                    let (mut prev_lo, mut prev_hi);
-                    let mut r: i32;
-                    macro_rules! cmpxchg {
-                        ($asm:ident, $acquire:expr, $fail_label:tt, $skip_success_fence:tt) => {
-                            $asm!(
-                                "2:", // 'retry:
-                                    "ldrexd r2, r3, [{dst}]",      // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                    "eor {tmp}, r3, {old_hi}",     // tmp = r3 ^ old_hi
-                                    "eor {r}, r2, {old_lo}",       // r = r2 ^ old_lo
-                                    "orrs {r}, {tmp}",             // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                    "mov {r}, #1",                       // r = 1
-                                    concat!("bne ", $fail_label),  // if Z == 0 { jump 'fail }
-                                    "strexd {r}, r4, r5, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cmp {r}, #0",                 // if r == 0 { Z = 1 } else { Z = 0 }
-                                    "bne 2b",                      // if Z == 0 { jump 'retry }
-                                    $skip_success_fence,           // jump 'skip-fence
-                                "3:", // 'emit-fence:
-                                    $acquire,                      // fence
-                                "4:", // 'skip-fence:
-                                dst = in(reg) dst,
-                                old_lo = in(reg) old.pair.lo,
-                                old_hi = in(reg) old.pair.hi,
-                                r = out(reg) r,
-                                tmp = out(reg) _,
-                                // prev pair - must be even-numbered and not R14
-                                out("r2") prev_lo,
-                                out("r3") prev_hi,
-                                // new pair - must be even-numbered and not R14
-                                in("r4") new.pair.lo,
-                                in("r5") new.pair.hi,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    macro_rules! cmpxchg_cond_release {
-                        ($acquire:expr, $fail_label:tt, $success_label:tt, $skip_fail_fence:tt) => {
-                            asm_use_dmb!(
-                                "ldrexd r2, r3, [{dst}]",            // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                "eor {tmp}, r3, {old_hi}",           // tmp = r3 ^ old_hi
-                                "eor {r}, r2, {old_lo}",             // r = r2 ^ old_lo
-                                "orrs {r}, {tmp}",                   // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                "mov {r}, #1",                       // r = 1
-                                concat!("bne ", $fail_label),        // if Z == 0 { jump 'fail }
-                                dmb!(),                              // fence
-                                "2:", // 'retry:
-                                    "strexd {r}, r4, r5, [{dst}]",   // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                    "cmp {r}, #0",                   // if r == 0 { Z = 1 } else { Z = 0 }
-                                    concat!("beq ", $success_label), // if Z == 1 { jump 'success }
-                                    "ldrexd r2, r3, [{dst}]",        // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                    "eor {tmp}, r3, {old_hi}",       // tmp = r3 ^ old_hi
-                                    "eor {r}, r2, {old_lo}",         // r = r2 ^ old_lo
-                                    "orrs {r}, {tmp}",               // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                    "mov {r}, #1",                       // r = 1
-                                    "beq 2b",                        // if Z == 1 { jump 'retry }
-                                    $skip_fail_fence,                // jump 'skip-fence
-                                "3:", // 'emit-fence:
-                                    $acquire,                        // fence
-                                "4:", // 'skip-fence:
-                                dst = in(reg) dst,
-                                old_lo = in(reg) old.pair.lo,
-                                old_hi = in(reg) old.pair.hi,
-                                r = out(reg) r,
-                                tmp = out(reg) _,
-                                // prev pair - must be even-numbered and not R14
-                                out("r2") prev_lo,
-                                out("r3") prev_hi,
-                                // new pair - must be even-numbered and not R14
-                                in("r4") new.pair.lo,
-                                in("r5") new.pair.hi,
-                                // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
-                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    // 0 if the store was successful, 1 if no store was performed
-                    (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
-                }
-                #[cfg(not(all(
-                    any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                    not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-                )))]
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    assert_has_kuser_cmpxchg64();
-                    // __kuser_cmpxchg64 has SeqCst semantics.
-                    let _ = (success, failure);
-                    let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
-                    let out_ptr = out.as_mut_ptr();
-                    let new = new.as_ptr();
-                    let mut r: i32;
-                    #[cfg(not(any(
-                        target_feature = "thumb-mode",
-                        atomic_maybe_uninit_target_feature = "thumb-mode",
-                    )))]
-                    asm!(
-                        "2:", // 'retry:
-                            "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                            "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
-                            "str r0, [{out}]",         // *out = r0
-                            "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
-                            "eor r0, {old_lo}",        // r0 ^= old_lo
-                            "eor r1, {old_hi}",        // r1 ^= old_hi
-                            "orrs r0, r1",             // r0 |= r1; if r0 == 0 { Z = 1 } else { Z = 0 }
-                            "mov r0, {out}",           // r0 = out
-                            "bne 3f",                  // if Z == 0 { jump 'cmp-fail }
-                            "mov r1, {new}",           // r1 = new
-                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",                  // if C == 0 { jump 'retry }
-                            "b 4f",                    // jump 'success
-                        "3:", // 'cmp-fail:
-                            // write back to ensure atomicity
-                            "mov r1, {out}",           // r1 = out
-                            blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",                  // if C == 0 { jump 'retry }
-                            "mov r0, #1",              // r0 = 1
-                        "4:", // 'success:
-                        new = in(reg) new,
-                        out = in(reg) out_ptr,
-                        old_lo = in(reg) old.pair.lo,
-                        old_hi = in(reg) old.pair.hi,
-                        kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                        out("r0") r, // old_val
-                        out("r1") _, // new_val
-                        in("r2") dst, // ptr
-                        // __kuser_cmpxchg64 clobbers r3, lr, and flags.
-                        out("r3") _,
-                        out("lr") _,
-                        // Do not use `preserves_flags` because CMP, ORRS, and __kuser_cmpxchg64 modify the condition flags.
-                        // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
-                    );
-                    #[cfg(any(
-                        target_feature = "thumb-mode",
-                        atomic_maybe_uninit_target_feature = "thumb-mode",
-                    ))]
-                    asm!(
-                        "sub sp, #8",
-                        "str r3, [sp]",
-                        "2:", // 'retry:
-                            "ldr r3, [sp]",
-                            "ldr r0, [r2]",        // atomic { r0 = *r2 }
-                            "ldr r1, [r2, #4]",    // atomic { r1 = *r2.byte_add(4) }
-                            "str r0, [{out}]",     // *out = r0
-                            "str r1, [{out}, #4]", // *out.byte_add(4) = r1
-                            "eors r0, {old_lo}",   // r0 ^= old_lo
-                            "eors r1, {old_hi}",   // r1 ^= old_hi
-                            "orrs r0, r1",         // r0 |= r1; if r0 == 0 { Z = 1 } else { Z = 0 }
-                            "bne 3f",              // if Z == 0 { jump 'cmp-fail }
-                            "movs r0, {out}",      // r0 = out
-                            "movs r1, {new}",      // r1 = new
-                            blx!("r3"),            // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",              // if C == 0 { jump 'retry }
-                            "b 4f",                // jump 'success
-                        "3:", // 'cmp-fail:
-                            // write back to ensure atomicity
-                            "movs r0, {out}",      // r0 = out
-                            "movs r1, {out}",      // r1 = out
-                            blx!("r3"),            // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",              // if C == 0 { jump 'retry }
-                            "movs r0, #1",         // r0 = 1
-                        "4:", // 'success:
-                        "add sp, #8",
-                        new = in(reg) new,
-                        out = in(reg) out_ptr,
-                        old_lo = in(reg) old.pair.lo,
-                        old_hi = in(reg) old.pair.hi,
-                        // kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                        out("r0") r, // old_val
-                        out("r1") _, // new_val
-                        in("r2") dst, // ptr
-                        // __kuser_cmpxchg64 clobbers r3, lr, and flags.
-                        inout("r3") KUSER_CMPXCHG64 => _,
-                        out("lr") _,
-                        // Do not use `preserves_flags` because CMP, ORRS, __kuser_cmpxchg64, and *S modify the condition flags.
-                        // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
-                    );
-                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    // 0 if the store was successful, 1 if no store was performed
-                    (out, r == 0)
-                }
-            }
-            #[cfg(all(
-                any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-                not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-            ))]
-            #[cfg_attr(
-                all(
-                    any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
-                    not(any(
-                        target_feature = "v7",
-                        atomic_maybe_uninit_target_feature = "v7",
-                        target_feature = "mclass",
-                        atomic_maybe_uninit_target_feature = "mclass",
-                    )),
-                    any(
-                        atomic_maybe_uninit_use_cp15_barrier,
-                        not(any(target_os = "linux", target_os = "android")),
-                    ),
-                ),
-                instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
-            )]
-            #[inline]
-            unsafe fn atomic_compare_exchange_weak(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                success: Ordering,
-                failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit64 { whole: old };
-                let new = MaybeUninit64 { whole: new };
-                let (mut prev_lo, mut prev_hi);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    let mut r: i32;
-                    macro_rules! cmpxchg_weak {
-                        ($asm:ident, $acquire:expr, $release:expr, $cmp_fail_label:tt, $branch_after_sc:tt) => {
-                            $asm!(
-                                "ldrexd r2, r3, [{dst}]",                 // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
-                                "eor {tmp}, r3, {old_hi}",                // tmp = r3 ^ old_hi
-                                "eor {r}, r2, {old_lo}",                  // r = r2 ^ old_lo
-                                "orrs {r}, {tmp}",                        // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                                "mov {r}, #1",                            // r = 1
-                                concat!("bne ", $cmp_fail_label),         // if Z == 0 { jump 'cmp-fail }
-                                $release,                                 // fence
-                                "strexd {r}, r4, r5, [{dst}]",            // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                                if_any!($branch_after_sc, "cmp {r}, #0"), // if r == 0 { Z = 1 } else { Z = 0 }
-                                $branch_after_sc,                         // if ? { jump '? }
-                                "3:", // 'emit-fence:
-                                    $acquire,                             // fence
-                                "4:", // 'skip-fence:
-                                dst = in(reg) dst,
-                                old_lo = in(reg) old.pair.lo,
-                                old_hi = in(reg) old.pair.hi,
-                                r = out(reg) r,
-                                tmp = out(reg) _,
-                                // prev pair - must be even-numbered and not R14
-                                out("r2") prev_lo,
-                                out("r3") prev_hi,
-                                // new pair - must be even-numbered and not R14
-                                in("r4") new.pair.lo,
-                                in("r5") new.pair.hi,
-                                // Do not use `preserves_flags` because ORRS modifies the condition flags.
-                                options(nostack),
-                            )
-                        };
-                    }
-                    atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
-                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    // 0 if the store was successful, 1 if no store was performed
-                    (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
-                }
-            }
-        }
-    };
+    }
 }
-
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
-atomic64!(u64);
+impl AtomicStore for u64 {
+    #[cfg_attr(
+        all(
+            any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+            not(any(
+                target_feature = "v7",
+                atomic_maybe_uninit_target_feature = "v7",
+                target_feature = "mclass",
+                atomic_maybe_uninit_target_feature = "mclass",
+            )),
+            any(
+                atomic_maybe_uninit_use_cp15_barrier,
+                not(any(target_os = "linux", target_os = "android")),
+            ),
+        ),
+        instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
+    )]
+    #[inline]
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+
+        #[cfg(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let val = MaybeUninit64 { whole: val };
+            macro_rules! atomic_store {
+                ($asm:ident, $acquire:expr, $release:expr) => {
+                    $asm!(
+                        $release,                         // fence
+                        "2:", // 'retry:
+                            "ldrexd r4, r5, [{dst}]",     // atomic { r4:r5 = *dst; EXCLUSIVE = dst }
+                            "strexd r4, r2, r3, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r4 = 0 } else { r4 = 1 }; EXCLUSIVE = None }
+                            "cmp r4, #0",                 // if r4 == 0 { Z = 1 } else { Z = 0 }
+                            "bne 2b",                     // if Z == 0 { jump 'retry }
+                        $acquire,                         // fence
+                        dst = in(reg) dst,
+                        // val pair - must be even-numbered and not R14
+                        in("r2") val.pair.lo,
+                        in("r3") val.pair.hi,
+                        // tmp pair - must be even-numbered and not R14
+                        out("r4") _,
+                        out("r5") _,
+                        // Do not use `preserves_flags` because CMP modifies the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            match order {
+                Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
+                Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
+                Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
+                _ => crate::utils::unreachable_unchecked(),
+            }
+        }
+        #[cfg(not(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        )))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            assert_has_kuser_cmpxchg64();
+            // __kuser_cmpxchg64 has SeqCst semantics.
+            let _ = order;
+            let mut out_tmp = MaybeUninit::<Self>::uninit();
+            asm!(
+                "2:", // 'retry:
+                    "ldr r0, [r2]",            // atomic { r0 = *r2 }
+                    "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
+                    "str r0, [{out}]",         // *out = r0
+                    "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
+                    s!("mov", "r0, {out}"),    // r0 = out
+                    s!("mov", "r1, {val}"),    // r1 = val
+                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    "bcc 2b",                  // if C == 0 { jump 'retry }
+                out = in(reg) out_tmp.as_mut_ptr(),
+                val = in(reg) val.as_ptr(),
+                kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
+                out("r0") _, // old_val
+                out("r1") _, // new_val
+                in("r2") dst, // ptr
+                // __kuser_cmpxchg64 clobbers r3, lr, and flags.
+                out("r3") _,
+                out("lr") _,
+                // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
+                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+            );
+        }
+    }
+}
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+impl AtomicSwap for u64 {
+    #[cfg_attr(
+        all(
+            any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+            not(any(
+                target_feature = "v7",
+                atomic_maybe_uninit_target_feature = "v7",
+                target_feature = "mclass",
+                atomic_maybe_uninit_target_feature = "mclass",
+            )),
+            any(
+                atomic_maybe_uninit_use_cp15_barrier,
+                not(any(target_os = "linux", target_os = "android")),
+            ),
+        ),
+        instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
+    )]
+    #[inline]
+    unsafe fn atomic_swap(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+
+        #[cfg(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let val = MaybeUninit64 { whole: val };
+            let (mut prev_lo, mut prev_hi);
+            macro_rules! swap {
+                ($asm:ident, $acquire:expr, $release:expr) => {
+                    $asm!(
+                        $release,                          // fence
+                        "2:", // 'retry:
+                            "ldrexd r0, r1, [{dst}]",      // atomic { r0:r1 = *dst; EXCLUSIVE = dst }
+                            "strexd {r}, r2, r3, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r2:r3; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                            "cmp {r}, #0",                 // if r == 0 { Z = 1 } else { Z = 0 }
+                            "bne 2b",                      // if Z == 0 { jump 'retry }
+                        $acquire,                          // fence
+                        dst = in(reg) dst,
+                        r = out(reg) _,
+                        // val pair - must be even-numbered and not R14
+                        in("r2") val.pair.lo,
+                        in("r3") val.pair.hi,
+                        // prev pair - must be even-numbered and not R14
+                        out("r0") prev_lo,
+                        out("r1") prev_hi,
+                        // Do not use `preserves_flags` because CMP modifies the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            atomic_rmw!(swap, order);
+            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+        #[cfg(not(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        )))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            assert_has_kuser_cmpxchg64();
+            // __kuser_cmpxchg64 has SeqCst semantics.
+            let _ = order;
+            let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+            asm!(
+                "2:", // 'retry:
+                    "ldr r0, [r2]",            // atomic { r0 = *r2 }
+                    "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
+                    "str r0, [{out}]",         // *out = r0
+                    "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
+                    s!("mov", "r0, {out}"),    // r0 = out
+                    s!("mov", "r1, {val}"),    // r1 = val
+                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    "bcc 2b",                  // if C == 0 { jump 'retry }
+                out = in(reg) out.as_mut_ptr(),
+                val = in(reg) val.as_ptr(),
+                kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
+                out("r0") _, // old_val
+                out("r1") _, // new_val
+                in("r2") dst, // ptr
+                // __kuser_cmpxchg64 clobbers r3, lr, and flags.
+                out("r3") _,
+                out("lr") _,
+                // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
+                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+            );
+            out
+        }
+    }
+}
+#[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
+impl AtomicCompareExchange for u64 {
+    #[cfg_attr(
+        all(
+            any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+            not(any(
+                target_feature = "v7",
+                atomic_maybe_uninit_target_feature = "v7",
+                target_feature = "mclass",
+                atomic_maybe_uninit_target_feature = "mclass",
+            )),
+            any(
+                atomic_maybe_uninit_use_cp15_barrier,
+                not(any(target_os = "linux", target_os = "android")),
+            ),
+        ),
+        instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
+    )]
+    #[inline]
+    unsafe fn atomic_compare_exchange(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let old = MaybeUninit64 { whole: old };
+
+        #[cfg(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let new = MaybeUninit64 { whole: new };
+            let (mut prev_lo, mut prev_hi);
+            let mut r: i32;
+            macro_rules! cmpxchg {
+                ($asm:ident, $acquire:expr, $fail_label:tt, $skip_success_fence:tt) => {
+                    $asm!(
+                        "2:", // 'retry:
+                            "ldrexd r2, r3, [{dst}]",      // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                            "eor {tmp}, r3, {old_hi}",     // tmp = r3 ^ old_hi
+                            "eor {r}, r2, {old_lo}",       // r = r2 ^ old_lo
+                            "orrs {r}, {tmp}",             // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
+                            "mov {r}, #1",                       // r = 1
+                            concat!("bne ", $fail_label),  // if Z == 0 { jump 'fail }
+                            "strexd {r}, r4, r5, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                            "cmp {r}, #0",                 // if r == 0 { Z = 1 } else { Z = 0 }
+                            "bne 2b",                      // if Z == 0 { jump 'retry }
+                            $skip_success_fence,           // jump 'skip-fence
+                        "3:", // 'emit-fence:
+                            $acquire,                      // fence
+                        "4:", // 'skip-fence:
+                        dst = in(reg) dst,
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
+                        r = out(reg) r,
+                        tmp = out(reg) _,
+                        // prev pair - must be even-numbered and not R14
+                        out("r2") prev_lo,
+                        out("r3") prev_hi,
+                        // new pair - must be even-numbered and not R14
+                        in("r4") new.pair.lo,
+                        in("r5") new.pair.hi,
+                        // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            macro_rules! cmpxchg_cond_release {
+                ($acquire:expr, $fail_label:tt, $success_label:tt, $skip_fail_fence:tt) => {
+                    asm_use_dmb!(
+                        "ldrexd r2, r3, [{dst}]",            // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                        "eor {tmp}, r3, {old_hi}",           // tmp = r3 ^ old_hi
+                        "eor {r}, r2, {old_lo}",             // r = r2 ^ old_lo
+                        "orrs {r}, {tmp}",                   // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
+                        "mov {r}, #1",                       // r = 1
+                        concat!("bne ", $fail_label),        // if Z == 0 { jump 'fail }
+                        dmb!(),                              // fence
+                        "2:", // 'retry:
+                            "strexd {r}, r4, r5, [{dst}]",   // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                            "cmp {r}, #0",                   // if r == 0 { Z = 1 } else { Z = 0 }
+                            concat!("beq ", $success_label), // if Z == 1 { jump 'success }
+                            "ldrexd r2, r3, [{dst}]",        // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                            "eor {tmp}, r3, {old_hi}",       // tmp = r3 ^ old_hi
+                            "eor {r}, r2, {old_lo}",         // r = r2 ^ old_lo
+                            "orrs {r}, {tmp}",               // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
+                            "mov {r}, #1",                       // r = 1
+                            "beq 2b",                        // if Z == 1 { jump 'retry }
+                            $skip_fail_fence,                // jump 'skip-fence
+                        "3:", // 'emit-fence:
+                            $acquire,                        // fence
+                        "4:", // 'skip-fence:
+                        dst = in(reg) dst,
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
+                        r = out(reg) r,
+                        tmp = out(reg) _,
+                        // prev pair - must be even-numbered and not R14
+                        out("r2") prev_lo,
+                        out("r3") prev_hi,
+                        // new pair - must be even-numbered and not R14
+                        in("r4") new.pair.lo,
+                        in("r5") new.pair.hi,
+                        // Do not use `preserves_flags` because CMP and ORRS modify the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
+            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+            // 0 if the store was successful, 1 if no store was performed
+            (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
+        }
+        #[cfg(not(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        )))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            assert_has_kuser_cmpxchg64();
+            // __kuser_cmpxchg64 has SeqCst semantics.
+            let _ = (success, failure);
+            let mut out: MaybeUninit<Self> = MaybeUninit::uninit();
+            let out_ptr = out.as_mut_ptr();
+            let new = new.as_ptr();
+            let mut r: i32;
+            #[cfg(not(any(
+                target_feature = "thumb-mode",
+                atomic_maybe_uninit_target_feature = "thumb-mode",
+            )))]
+            asm!(
+                "2:", // 'retry:
+                    "ldr r0, [r2]",            // atomic { r0 = *r2 }
+                    "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
+                    "str r0, [{out}]",         // *out = r0
+                    "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
+                    "eor r0, {old_lo}",        // r0 ^= old_lo
+                    "eor r1, {old_hi}",        // r1 ^= old_hi
+                    "orrs r0, r1",             // r0 |= r1; if r0 == 0 { Z = 1 } else { Z = 0 }
+                    "mov r0, {out}",           // r0 = out
+                    "bne 3f",                  // if Z == 0 { jump 'cmp-fail }
+                    "mov r1, {new}",           // r1 = new
+                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    "bcc 2b",                  // if C == 0 { jump 'retry }
+                    "b 4f",                    // jump 'success
+                "3:", // 'cmp-fail:
+                    // write back to ensure atomicity
+                    "mov r1, {out}",           // r1 = out
+                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    "bcc 2b",                  // if C == 0 { jump 'retry }
+                    "mov r0, #1",              // r0 = 1
+                "4:", // 'success:
+                new = in(reg) new,
+                out = in(reg) out_ptr,
+                old_lo = in(reg) old.pair.lo,
+                old_hi = in(reg) old.pair.hi,
+                kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
+                out("r0") r, // old_val
+                out("r1") _, // new_val
+                in("r2") dst, // ptr
+                // __kuser_cmpxchg64 clobbers r3, lr, and flags.
+                out("r3") _,
+                out("lr") _,
+                // Do not use `preserves_flags` because CMP, ORRS, and __kuser_cmpxchg64 modify the condition flags.
+                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+            );
+            #[cfg(any(
+                target_feature = "thumb-mode",
+                atomic_maybe_uninit_target_feature = "thumb-mode",
+            ))]
+            asm!(
+                "sub sp, #8",
+                "str r3, [sp]",
+                "2:", // 'retry:
+                    "ldr r3, [sp]",
+                    "ldr r0, [r2]",        // atomic { r0 = *r2 }
+                    "ldr r1, [r2, #4]",    // atomic { r1 = *r2.byte_add(4) }
+                    "str r0, [{out}]",     // *out = r0
+                    "str r1, [{out}, #4]", // *out.byte_add(4) = r1
+                    "eors r0, {old_lo}",   // r0 ^= old_lo
+                    "eors r1, {old_hi}",   // r1 ^= old_hi
+                    "orrs r0, r1",         // r0 |= r1; if r0 == 0 { Z = 1 } else { Z = 0 }
+                    "bne 3f",              // if Z == 0 { jump 'cmp-fail }
+                    "movs r0, {out}",      // r0 = out
+                    "movs r1, {new}",      // r1 = new
+                    blx!("r3"),            // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    "bcc 2b",              // if C == 0 { jump 'retry }
+                    "b 4f",                // jump 'success
+                "3:", // 'cmp-fail:
+                    // write back to ensure atomicity
+                    "movs r0, {out}",      // r0 = out
+                    "movs r1, {out}",      // r1 = out
+                    blx!("r3"),            // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    "bcc 2b",              // if C == 0 { jump 'retry }
+                    "movs r0, #1",         // r0 = 1
+                "4:", // 'success:
+                "add sp, #8",
+                new = in(reg) new,
+                out = in(reg) out_ptr,
+                old_lo = in(reg) old.pair.lo,
+                old_hi = in(reg) old.pair.hi,
+                // kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
+                out("r0") r, // old_val
+                out("r1") _, // new_val
+                in("r2") dst, // ptr
+                // __kuser_cmpxchg64 clobbers r3, lr, and flags.
+                inout("r3") KUSER_CMPXCHG64 => _,
+                out("lr") _,
+                // Do not use `preserves_flags` because CMP, ORRS, __kuser_cmpxchg64, and *S modify the condition flags.
+                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+            );
+            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+            // 0 if the store was successful, 1 if no store was performed
+            (out, r == 0)
+        }
+    }
+    #[cfg(all(
+        any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+        not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+    ))]
+    #[cfg_attr(
+        all(
+            any(target_feature = "thumb-mode", atomic_maybe_uninit_target_feature = "thumb-mode"),
+            not(any(
+                target_feature = "v7",
+                atomic_maybe_uninit_target_feature = "v7",
+                target_feature = "mclass",
+                atomic_maybe_uninit_target_feature = "mclass",
+            )),
+            any(
+                atomic_maybe_uninit_use_cp15_barrier,
+                not(any(target_os = "linux", target_os = "android")),
+            ),
+        ),
+        instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
+    )]
+    #[inline]
+    unsafe fn atomic_compare_exchange_weak(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let old = MaybeUninit64 { whole: old };
+        let new = MaybeUninit64 { whole: new };
+        let (mut prev_lo, mut prev_hi);
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let mut r: i32;
+            macro_rules! cmpxchg_weak {
+                ($asm:ident, $acquire:expr, $release:expr, $cmp_fail_label:tt,
+                    $branch_after_sc:tt
+                ) => {
+                    $asm!(
+                        "ldrexd r2, r3, [{dst}]",                 // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
+                        "eor {tmp}, r3, {old_hi}",                // tmp = r3 ^ old_hi
+                        "eor {r}, r2, {old_lo}",                  // r = r2 ^ old_lo
+                        "orrs {r}, {tmp}",                        // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
+                        "mov {r}, #1",                            // r = 1
+                        concat!("bne ", $cmp_fail_label),         // if Z == 0 { jump 'cmp-fail }
+                        $release,                                 // fence
+                        "strexd {r}, r4, r5, [{dst}]",            // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                        if_any!($branch_after_sc, "cmp {r}, #0"), // if r == 0 { Z = 1 } else { Z = 0 }
+                        $branch_after_sc,                         // if ? { jump '? }
+                        "3:", // 'emit-fence:
+                            $acquire,                             // fence
+                        "4:", // 'skip-fence:
+                        dst = in(reg) dst,
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
+                        r = out(reg) r,
+                        tmp = out(reg) _,
+                        // prev pair - must be even-numbered and not R14
+                        out("r2") prev_lo,
+                        out("r3") prev_hi,
+                        // new pair - must be even-numbered and not R14
+                        in("r4") new.pair.lo,
+                        in("r5") new.pair.hi,
+                        // Do not use `preserves_flags` because ORRS modifies the condition flags.
+                        options(nostack),
+                    )
+                };
+            }
+            atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
+            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+            // 0 if the store was successful, 1 if no store was performed
+            (MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, r == 0)
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 // cfg macros

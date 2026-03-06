@@ -158,6 +158,9 @@ const fn test_cr0_eq(cr: RegSize) -> bool {
     cr & 0x20000000 != 0
 }
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 macro_rules! atomic_load_store {
     ($ty:ident, $suffix:tt, $load_ext:tt) => {
         delegate_signed!(delegate_all, $ty);
@@ -610,301 +613,310 @@ atomic!(u64, "d", "", "d");
 // -----------------------------------------------------------------------------
 // 128-bit atomics on PowerPC64
 
-#[cfg(target_arch = "powerpc64")]
-#[cfg(any(
-    target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics",
+#[cfg(all(
+    target_arch = "powerpc64",
+    any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics",
+    ),
 ))]
-#[rustfmt::skip]
-macro_rules! atomic128 {
-    ($ty:ident) => {
-        delegate_signed!(delegate_all, $ty);
-        impl AtomicLoad for $ty {
-            #[inline]
-            unsafe fn atomic_load(
-                src: *const MaybeUninit<Self>,
-                order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(src, $ty);
-                let (out_hi, out_lo);
+delegate_signed!(delegate_all, u128);
+#[cfg(all(
+    target_arch = "powerpc64",
+    any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics",
+    ),
+))]
+impl AtomicLoad for u128 {
+    #[inline]
+    unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(src, u128);
+        let (out_hi, out_lo);
 
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! atomic_load_acquire {
-                        ($release:expr) => {
-                            asm!(
-                                $release,
-                                "lq %r4, 0({src})", // atomic { r4:r5 = *src }
-                                "cmpw %r4, %r4",    // if r4 == r4 { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                "bne- %cr0, 2f",    // if unlikely(cr0.EQ == 0) { jump 'never }
-                                "2:", // 'never:
-                                "isync",            // fence (works in combination with a branch that depends on the loaded value)
-                                src = in(reg_nonzero) ptr_reg!(src),
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                out("r4") out_hi,
-                                out("r5") out_lo,
-                                out("cr0") _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        Ordering::Relaxed => {
-                            asm!(
-                                "lq %r4, 0({src})", // atomic { r4:r5 = *src }
-                                src = in(reg_nonzero) ptr_reg!(src),
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                out("r4") out_hi,
-                                out("r5") out_lo,
-                                options(nostack, preserves_flags),
-                            );
-                        }
-                        Ordering::Acquire => atomic_load_acquire!(""),
-                        Ordering::SeqCst => atomic_load_acquire!("sync"),
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                    MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
-                }
-            }
-        }
-        impl AtomicStore for $ty {
-            #[inline]
-            unsafe fn atomic_store(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { whole: val };
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! atomic_store {
-                        ($release:expr) => {
-                            asm!(
-                                $release,            // fence
-                                "stq %r4, 0({dst})", // atomic { *dst = r4:r5 }
-                                dst = in(reg_nonzero) ptr_reg!(dst),
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                in("r4") val.pair.hi,
-                                in("r5") val.pair.lo,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        Ordering::Relaxed => atomic_store!(""),
-                        Ordering::Release => atomic_store!(lwsync!()),
-                        Ordering::SeqCst => atomic_store!("sync"),
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                }
-            }
-        }
-        impl AtomicSwap for $ty {
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { whole: val };
-                let (mut prev_hi, mut prev_lo);
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! swap {
-                        ($acquire:expr, $release:expr) => {
-                            asm!(
-                                $release,                   // fence
-                                "2:", // 'retry:
-                                    "lqarx %r6, 0, {dst}",  // atomic { RESERVE = (dst, 16); r6:r7 = *dst }
-                                    "stqcx. %r8, 0, {dst}", // atomic { if RESERVE == (dst, 16) { *dst = r8:r9; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne- %cr0, 2b",        // if unlikely(cr0.EQ == 0) { jump 'retry }
-                                $acquire,                   // fence
-                                dst = in(reg_nonzero) ptr_reg!(dst),
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                out("r6") prev_hi,
-                                out("r7") prev_lo,
-                                in("r8") val.pair.hi,
-                                in("r9") val.pair.lo,
-                                out("cr0") _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    atomic_rmw!(swap, order);
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-            }
-        }
-        impl AtomicCompareExchange for $ty {
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                success: Ordering,
-                failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit128 { whole: old };
-                let new = MaybeUninit128 { whole: new };
-                let (mut prev_hi, mut prev_lo);
-                let mut r;
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! cmpxchg {
-                        ($acquire:expr, $release:expr, $fail_label:tt, $skip_success_fence:tt) => {
-                            asm!(
-                                $release,
-                                "2:", // 'retry:
-                                    "lqarx %r8, 0, {dst}",               // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
-                                    "xor {tmp_lo}, %r9, {old_lo}",       // tmp_lo = r9 ^ old_lo
-                                    "xor {tmp_hi}, %r8, {old_hi}",       // tmp_hi = r8 ^ old_hi
-                                    "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",  // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                    concat!("bne- %cr0, ", $fail_label), // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
-                                    "stqcx. %r6, 0, {dst}",              // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    "bne- %cr0, 2b",                     // if unlikely(cr0.EQ == 0) { jump 'retry }
-                                    $skip_success_fence,                 // jump 'skip-fence
-                                "3:", // 'emit-fence:
-                                    $acquire,                            // fence
-                                "4:", // 'skip-fence:
-                                "mfcr {tmp_lo}",                         // tmp_lo = zero_extend(cr)
-                                dst = in(reg_nonzero) ptr_reg!(dst),
-                                old_hi = in(reg) old.pair.hi,
-                                old_lo = in(reg) old.pair.lo,
-                                tmp_hi = out(reg) _,
-                                tmp_lo = out(reg) r,
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                in("r6") new.pair.hi,
-                                in("r7") new.pair.lo,
-                                out("r8") prev_hi,
-                                out("r9") prev_lo,
-                                out("cr0") _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    macro_rules! cmpxchg_cond_release {
-                        ($acquire:expr, $release:expr, $fail_label:tt, $success_label:tt, $skip_fail_fence:tt) => {
-                            asm!(
-                                "lqarx %r8, 0, {dst}",                      // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
-                                "xor {tmp_lo}, %r9, {old_lo}",              // tmp_lo = r9 ^ old_lo
-                                "xor {tmp_hi}, %r8, {old_hi}",              // tmp_hi = r8 ^ old_hi
-                                "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",         // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                concat!("bne- %cr0, ", $fail_label),        // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
-                                $release,                                   // fence
-                                "2:", // 'retry:
-                                    "stqcx. %r6, 0, {dst}",                 // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                    concat!("beq+ %cr0, ", $success_label), // if likely(cr0.EQ == 1) { jump 'success }
-                                    "lqarx %r8, 0, {dst}",                  // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
-                                    "xor {tmp_lo}, %r9, {old_lo}",          // tmp_lo = r9 ^ old_lo
-                                    "xor {tmp_hi}, %r8, {old_hi}",          // tmp_hi = r8 ^ old_hi
-                                    "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",     // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                    "beq+ %cr0, 2b",                        // if likely(cr0.EQ != 0) { jump 'retry }
-                                    $skip_fail_fence,                       // jump 'skip-fence
-                                "3:", // 'emit-fence:
-                                    $acquire,                               // fence
-                                "4:", // 'skip-fence:
-                                "mfcr {tmp_lo}",                            // tmp_lo = zero_extend(cr)
-                                dst = in(reg_nonzero) ptr_reg!(dst),
-                                old_hi = in(reg) old.pair.hi,
-                                old_lo = in(reg) old.pair.lo,
-                                tmp_hi = out(reg) _,
-                                tmp_lo = out(reg) r,
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                in("r6") new.pair.hi,
-                                in("r7") new.pair.lo,
-                                out("r8") prev_hi,
-                                out("r9") prev_lo,
-                                out("cr0") _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
-                    // if compare failed EQ bit is cleared, if store succeeds EQ bit is set.
-                    (
-                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
-                        test_cr0_eq(r)
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! atomic_load_acquire {
+                ($release:expr) => {
+                    asm!(
+                        $release,
+                        "lq %r4, 0({src})", // atomic { r4:r5 = *src }
+                        "cmpw %r4, %r4",    // if r4 == r4 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                        "bne- %cr0, 2f",    // if unlikely(cr0.EQ == 0) { jump 'never }
+                        "2:", // 'never:
+                        "isync",            // fence (works in combination with a branch that depends on the loaded value)
+                        src = in(reg_nonzero) ptr_reg!(src),
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        out("r4") out_hi,
+                        out("r5") out_lo,
+                        out("cr0") _,
+                        options(nostack, preserves_flags),
                     )
-                }
+                };
             }
-            #[inline]
-            unsafe fn atomic_compare_exchange_weak(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                success: Ordering,
-                failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit128 { whole: old };
-                let new = MaybeUninit128 { whole: new };
-                let (mut prev_hi, mut prev_lo);
-                let mut r;
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! cmpxchg_weak {
-                        ($acquire:expr, $release_always:expr, $release_cond:expr, $cmp_fail_label:tt, $branch_after_sc:tt) => {
-                            asm!(
-                                $release_always,                         // fence
-                                "lqarx %r8, 0, {dst}",                   // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
-                                "xor {tmp_lo}, %r9, {old_lo}",           // tmp_lo = r9 ^ old_lo
-                                "xor {tmp_hi}, %r8, {old_hi}",           // tmp_hi = r8 ^ old_hi
-                                "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",      // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
-                                concat!("bne- %cr0, ", $cmp_fail_label), // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
-                                $release_cond,                           // fence
-                                "stqcx. %r6, 0, {dst}",                  // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
-                                $branch_after_sc,                        // if ? { jump '? }
-                                "3:", // 'emit-fence:
-                                    $acquire,                            // fence
-                                "4:", // 'skip-fence:
-                                "mfcr {tmp_lo}",                         // tmp_lo = zero_extend(cr)
-                                dst = in(reg_nonzero) ptr_reg!(dst),
-                                old_hi = in(reg) old.pair.hi,
-                                old_lo = in(reg) old.pair.lo,
-                                tmp_hi = out(reg) _,
-                                tmp_lo = out(reg) r,
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
-                                in("r6") new.pair.hi,
-                                in("r7") new.pair.lo,
-                                out("r8") prev_hi,
-                                out("r9") prev_lo,
-                                out("cr0") _,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
-                    // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
-                    (
-                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
-                        test_cr0_eq(r)
-                    )
+            match order {
+                Ordering::Relaxed => {
+                    asm!(
+                        "lq %r4, 0({src})", // atomic { r4:r5 = *src }
+                        src = in(reg_nonzero) ptr_reg!(src),
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        out("r4") out_hi,
+                        out("r5") out_lo,
+                        options(nostack, preserves_flags),
+                    );
                 }
+                Ordering::Acquire => atomic_load_acquire!(""),
+                Ordering::SeqCst => atomic_load_acquire!("sync"),
+                _ => crate::utils::unreachable_unchecked(),
             }
+            MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
         }
-    };
+    }
 }
-
-#[cfg(target_arch = "powerpc64")]
-#[cfg(any(
-    target_feature = "quadword-atomics",
-    atomic_maybe_uninit_target_feature = "quadword-atomics",
+#[cfg(all(
+    target_arch = "powerpc64",
+    any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics",
+    ),
 ))]
-atomic128!(u128);
+impl AtomicStore for u128 {
+    #[inline]
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let val = MaybeUninit128 { whole: val };
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! atomic_store {
+                ($release:expr) => {
+                    asm!(
+                        $release,            // fence
+                        "stq %r4, 0({dst})", // atomic { *dst = r4:r5 }
+                        dst = in(reg_nonzero) ptr_reg!(dst),
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        in("r4") val.pair.hi,
+                        in("r5") val.pair.lo,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            match order {
+                Ordering::Relaxed => atomic_store!(""),
+                Ordering::Release => atomic_store!(lwsync!()),
+                Ordering::SeqCst => atomic_store!("sync"),
+                _ => crate::utils::unreachable_unchecked(),
+            }
+        }
+    }
+}
+#[cfg(all(
+    target_arch = "powerpc64",
+    any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics",
+    ),
+))]
+impl AtomicSwap for u128 {
+    #[inline]
+    unsafe fn atomic_swap(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let val = MaybeUninit128 { whole: val };
+        let (mut prev_hi, mut prev_lo);
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! swap {
+                ($acquire:expr, $release:expr) => {
+                    asm!(
+                        $release,                   // fence
+                        "2:", // 'retry:
+                            "lqarx %r6, 0, {dst}",  // atomic { RESERVE = (dst, 16); r6:r7 = *dst }
+                            "stqcx. %r8, 0, {dst}", // atomic { if RESERVE == (dst, 16) { *dst = r8:r9; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                            "bne- %cr0, 2b",        // if unlikely(cr0.EQ == 0) { jump 'retry }
+                        $acquire,                   // fence
+                        dst = in(reg_nonzero) ptr_reg!(dst),
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        out("r6") prev_hi,
+                        out("r7") prev_lo,
+                        in("r8") val.pair.hi,
+                        in("r9") val.pair.lo,
+                        out("cr0") _,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            atomic_rmw!(swap, order);
+            MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+    }
+}
+#[cfg(all(
+    target_arch = "powerpc64",
+    any(
+        target_feature = "quadword-atomics",
+        atomic_maybe_uninit_target_feature = "quadword-atomics",
+    ),
+))]
+impl AtomicCompareExchange for u128 {
+    #[inline]
+    unsafe fn atomic_compare_exchange(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let old = MaybeUninit128 { whole: old };
+        let new = MaybeUninit128 { whole: new };
+        let (mut prev_hi, mut prev_lo);
+        let mut r;
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! cmpxchg {
+                ($acquire:expr, $release:expr, $fail_label:tt, $skip_success_fence:tt) => {
+                    asm!(
+                        $release,
+                        "2:", // 'retry:
+                            "lqarx %r8, 0, {dst}",               // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                            "xor {tmp_lo}, %r9, {old_lo}",       // tmp_lo = r9 ^ old_lo
+                            "xor {tmp_hi}, %r8, {old_hi}",       // tmp_hi = r8 ^ old_hi
+                            "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",  // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                            concat!("bne- %cr0, ", $fail_label), // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                            "stqcx. %r6, 0, {dst}",              // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                            "bne- %cr0, 2b",                     // if unlikely(cr0.EQ == 0) { jump 'retry }
+                            $skip_success_fence,                 // jump 'skip-fence
+                        "3:", // 'emit-fence:
+                            $acquire,                            // fence
+                        "4:", // 'skip-fence:
+                        "mfcr {tmp_lo}",                         // tmp_lo = zero_extend(cr)
+                        dst = in(reg_nonzero) ptr_reg!(dst),
+                        old_hi = in(reg) old.pair.hi,
+                        old_lo = in(reg) old.pair.lo,
+                        tmp_hi = out(reg) _,
+                        tmp_lo = out(reg) r,
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        in("r6") new.pair.hi,
+                        in("r7") new.pair.lo,
+                        out("r8") prev_hi,
+                        out("r9") prev_lo,
+                        out("cr0") _,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            macro_rules! cmpxchg_cond_release {
+                ($acquire:expr, $release:expr, $fail_label:tt, $success_label:tt,
+                    $skip_fail_fence:tt
+                ) => {
+                    asm!(
+                        "lqarx %r8, 0, {dst}",                      // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                        "xor {tmp_lo}, %r9, {old_lo}",              // tmp_lo = r9 ^ old_lo
+                        "xor {tmp_hi}, %r8, {old_hi}",              // tmp_hi = r8 ^ old_hi
+                        "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",         // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                        concat!("bne- %cr0, ", $fail_label),        // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                        $release,                                   // fence
+                        "2:", // 'retry:
+                            "stqcx. %r6, 0, {dst}",                 // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                            concat!("beq+ %cr0, ", $success_label), // if likely(cr0.EQ == 1) { jump 'success }
+                            "lqarx %r8, 0, {dst}",                  // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                            "xor {tmp_lo}, %r9, {old_lo}",          // tmp_lo = r9 ^ old_lo
+                            "xor {tmp_hi}, %r8, {old_hi}",          // tmp_hi = r8 ^ old_hi
+                            "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",     // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                            "beq+ %cr0, 2b",                        // if likely(cr0.EQ != 0) { jump 'retry }
+                            $skip_fail_fence,                       // jump 'skip-fence
+                        "3:", // 'emit-fence:
+                            $acquire,                               // fence
+                        "4:", // 'skip-fence:
+                        "mfcr {tmp_lo}",                            // tmp_lo = zero_extend(cr)
+                        dst = in(reg_nonzero) ptr_reg!(dst),
+                        old_hi = in(reg) old.pair.hi,
+                        old_lo = in(reg) old.pair.lo,
+                        tmp_hi = out(reg) _,
+                        tmp_lo = out(reg) r,
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        in("r6") new.pair.hi,
+                        in("r7") new.pair.lo,
+                        out("r8") prev_hi,
+                        out("r9") prev_lo,
+                        out("cr0") _,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
+            // if compare failed EQ bit is cleared, if store succeeds EQ bit is set.
+            (MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, test_cr0_eq(r))
+        }
+    }
+    #[inline]
+    unsafe fn atomic_compare_exchange_weak(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let old = MaybeUninit128 { whole: old };
+        let new = MaybeUninit128 { whole: new };
+        let (mut prev_hi, mut prev_lo);
+        let mut r;
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! cmpxchg_weak {
+                ($acquire:expr, $release_always:expr, $release_cond:expr, $cmp_fail_label:tt,
+                    $branch_after_sc:tt
+                ) => {
+                    asm!(
+                        $release_always,                         // fence
+                        "lqarx %r8, 0, {dst}",                   // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
+                        "xor {tmp_lo}, %r9, {old_lo}",           // tmp_lo = r9 ^ old_lo
+                        "xor {tmp_hi}, %r8, {old_hi}",           // tmp_hi = r8 ^ old_hi
+                        "or. {tmp_lo}, {tmp_lo}, {tmp_hi}",      // tmp_lo |= tmp_hi; if tmp_lo == 0 { cr0.EQ = 1 } else { cr0.EQ = 0 }
+                        concat!("bne- %cr0, ", $cmp_fail_label), // if unlikely(cr0.EQ == 0) { jump 'cmp-fail }
+                        $release_cond,                           // fence
+                        "stqcx. %r6, 0, {dst}",                  // atomic { if RESERVE == (dst, 16) { *dst = r6:r7; cr0.EQ = 1 } else { cr0.EQ = 0 }; RESERVE = None }
+                        $branch_after_sc,                        // if ? { jump '? }
+                        "3:", // 'emit-fence:
+                            $acquire,                            // fence
+                        "4:", // 'skip-fence:
+                        "mfcr {tmp_lo}",                         // tmp_lo = zero_extend(cr)
+                        dst = in(reg_nonzero) ptr_reg!(dst),
+                        old_hi = in(reg) old.pair.hi,
+                        old_lo = in(reg) old.pair.lo,
+                        tmp_hi = out(reg) _,
+                        tmp_lo = out(reg) r,
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        in("r6") new.pair.hi,
+                        in("r7") new.pair.lo,
+                        out("r8") prev_hi,
+                        out("r9") prev_lo,
+                        out("cr0") _,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
+            // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
+            (MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, test_cr0_eq(r))
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 // cfg macros

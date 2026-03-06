@@ -55,6 +55,9 @@ const fn extract_cc(r: i64) -> bool {
     r.wrapping_add(-268435456) & BIT != 0
 }
 
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 macro_rules! atomic_load_store {
     ($ty:ident, $l_suffix:tt, $suffix:tt) => {
         delegate_signed!(delegate_all, $ty);
@@ -279,142 +282,126 @@ atomic!(u64, "g");
 // -----------------------------------------------------------------------------
 // 128-bit atomics
 
-macro_rules! atomic128 {
-    ($ty:ident) => {
-        delegate_signed!(delegate_all, $ty);
-        impl AtomicLoad for $ty {
-            #[inline]
-            unsafe fn atomic_load(
-                src: *const MaybeUninit<Self>,
-                _order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(src, $ty);
-                let (out_hi, out_lo);
+delegate_signed!(delegate_all, u128);
+impl AtomicLoad for u128 {
+    #[inline]
+    unsafe fn atomic_load(src: *const MaybeUninit<Self>, _order: Ordering) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(src, u128);
+        let (out_hi, out_lo);
 
-                // SAFETY: the caller must uphold the safety contract.
-                // LPQ has SeqCst semantics.
-                unsafe {
-                    asm!(
-                        "lpq %r0, 0({src})", // atomic { r0:r1 = *src }
-                        src = in(reg_addr) ptr_reg!(src),
-                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        out("r0") out_hi,
-                        out("r1") out_lo,
-                        options(nostack, preserves_flags),
-                    );
-                    MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
-                }
-            }
+        // SAFETY: the caller must uphold the safety contract.
+        // LPQ has SeqCst semantics.
+        unsafe {
+            asm!(
+                "lpq %r0, 0({src})", // atomic { r0:r1 = *src }
+                src = in(reg_addr) ptr_reg!(src),
+                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                out("r0") out_hi,
+                out("r1") out_lo,
+                options(nostack, preserves_flags),
+            );
+            MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
         }
-        impl AtomicStore for $ty {
-            #[inline]
-            unsafe fn atomic_store(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                order: Ordering,
-            ) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { whole: val };
-
-                // SAFETY: the caller must uphold the safety contract.
-                unsafe {
-                    macro_rules! atomic_store {
-                        ($acquire:expr) => {
-                            asm!(
-                                "stpq %r0, 0({dst})", // atomic { *dst = r0:r1 }
-                                $acquire,             // acquire
-                                dst = in(reg_addr) ptr_reg!(dst),
-                                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                                in("r0") val.pair.hi,
-                                in("r1") val.pair.lo,
-                                options(nostack, preserves_flags),
-                            )
-                        };
-                    }
-                    match order {
-                        // Relaxed and Release stores are equivalent.
-                        Ordering::Relaxed | Ordering::Release => atomic_store!(""),
-                        Ordering::SeqCst => atomic_store!(serialization!()),
-                        _ => crate::utils::unreachable_unchecked(),
-                    }
-                }
-            }
-        }
-        impl AtomicSwap for $ty {
-            #[inline]
-            unsafe fn atomic_swap(
-                dst: *mut MaybeUninit<Self>,
-                val: MaybeUninit<Self>,
-                _order: Ordering,
-            ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let val = MaybeUninit128 { whole: val };
-                let (mut prev_hi, mut prev_lo);
-
-                // SAFETY: the caller must uphold the safety contract.
-                // CDSG has SeqCst semantics.
-                unsafe {
-                    asm!(
-                        "lg %r0, 8({dst})",             // atomic { r0 = *dst.byte_add(8) }
-                        "lg %r1, 0({dst})",             // atomic { r1 = *dst }
-                        "2:", // 'retry:
-                            "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:r13 } else { cc = 1; r0:r1 = *dst } }
-                            "jl 2b",                    // if cc == 1 { jump 'retry }
-                        dst = in(reg_addr) ptr_reg!(dst),
-                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        out("r0") prev_hi,
-                        out("r1") prev_lo,
-                        in("r12") val.pair.hi,
-                        in("r13") val.pair.lo,
-                        // Do not use `preserves_flags` because CDSG modifies the condition code.
-                        options(nostack),
-                    );
-                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
-                }
-            }
-        }
-        impl AtomicCompareExchange for $ty {
-            #[inline]
-            unsafe fn atomic_compare_exchange(
-                dst: *mut MaybeUninit<Self>,
-                old: MaybeUninit<Self>,
-                new: MaybeUninit<Self>,
-                _success: Ordering,
-                _failure: Ordering,
-            ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
-                let old = MaybeUninit128 { whole: old };
-                let new = MaybeUninit128 { whole: new };
-                let (prev_hi, prev_lo);
-                let r;
-
-                // SAFETY: the caller must uphold the safety contract.
-                // CDSG has SeqCst semantics.
-                unsafe {
-                    asm!(
-                        "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:13 } else { cc = 1; r0:r1 = *dst } }
-                        "ipm {r}",                  // r[:] = cc
-                        dst = in(reg_addr) ptr_reg!(dst),
-                        r = lateout(reg) r,
-                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        inout("r0") old.pair.hi => prev_hi,
-                        inout("r1") old.pair.lo => prev_lo,
-                        in("r12") new.pair.hi,
-                        in("r13") new.pair.lo,
-                        // Do not use `preserves_flags` because CDSG modifies the condition code.
-                        options(nostack),
-                    );
-                    (
-                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
-                        extract_cc(r)
-                    )
-                }
-            }
-        }
-    };
+    }
 }
+impl AtomicStore for u128 {
+    #[inline]
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let val = MaybeUninit128 { whole: val };
 
-atomic128!(u128);
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! atomic_store {
+                ($acquire:expr) => {
+                    asm!(
+                        "stpq %r0, 0({dst})", // atomic { *dst = r0:r1 }
+                        $acquire,             // acquire
+                        dst = in(reg_addr) ptr_reg!(dst),
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        in("r0") val.pair.hi,
+                        in("r1") val.pair.lo,
+                        options(nostack, preserves_flags),
+                    )
+                };
+            }
+            match order {
+                // Relaxed and Release stores are equivalent.
+                Ordering::Relaxed | Ordering::Release => atomic_store!(""),
+                Ordering::SeqCst => atomic_store!(serialization!()),
+                _ => crate::utils::unreachable_unchecked(),
+            }
+        }
+    }
+}
+impl AtomicSwap for u128 {
+    #[inline]
+    unsafe fn atomic_swap(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        _order: Ordering,
+    ) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let val = MaybeUninit128 { whole: val };
+        let (mut prev_hi, mut prev_lo);
+
+        // SAFETY: the caller must uphold the safety contract.
+        // CDSG has SeqCst semantics.
+        unsafe {
+            asm!(
+                "lg %r0, 8({dst})",             // atomic { r0 = *dst.byte_add(8) }
+                "lg %r1, 0({dst})",             // atomic { r1 = *dst }
+                "2:", // 'retry:
+                    "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:r13 } else { cc = 1; r0:r1 = *dst } }
+                    "jl 2b",                    // if cc == 1 { jump 'retry }
+                dst = in(reg_addr) ptr_reg!(dst),
+                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                out("r0") prev_hi,
+                out("r1") prev_lo,
+                in("r12") val.pair.hi,
+                in("r13") val.pair.lo,
+                // Do not use `preserves_flags` because CDSG modifies the condition code.
+                options(nostack),
+            );
+            MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+        }
+    }
+}
+impl AtomicCompareExchange for u128 {
+    #[inline]
+    unsafe fn atomic_compare_exchange(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        _success: Ordering,
+        _failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u128);
+        let old = MaybeUninit128 { whole: old };
+        let new = MaybeUninit128 { whole: new };
+        let (prev_hi, prev_lo);
+        let r;
+
+        // SAFETY: the caller must uphold the safety contract.
+        // CDSG has SeqCst semantics.
+        unsafe {
+            asm!(
+                "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:13 } else { cc = 1; r0:r1 = *dst } }
+                "ipm {r}",                  // r[:] = cc
+                dst = in(reg_addr) ptr_reg!(dst),
+                r = lateout(reg) r,
+                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                inout("r0") old.pair.hi => prev_hi,
+                inout("r1") old.pair.lo => prev_lo,
+                in("r12") new.pair.hi,
+                in("r13") new.pair.lo,
+                // Do not use `preserves_flags` because CDSG modifies the condition code.
+                options(nostack),
+            );
+            (MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, extract_cc(r))
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 // cfg macros
