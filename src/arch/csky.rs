@@ -13,13 +13,15 @@ Refs:
 See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicLoad, AtomicStore};
+use crate::raw::{AtomicLoad, AtomicMemcpy, AtomicStore};
 
 cfg_sel!({
     #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
@@ -82,7 +84,7 @@ cfg_sel!({
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $suffix:tt) => {
+    ($ty:ident, $size:literal, $suffix:tt) => {
         #[cfg(atomic_maybe_uninit_no_ldex_stex)]
         delegate_signed!(delegate_load_store, $ty);
         #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
@@ -149,13 +151,47 @@ macro_rules! atomic_load_store {
                 }
             }
         }
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("ld32.", $suffix, " {tmp0}, ({src}, 0)"), // atomic { tmp0 = *src }
+                    src = in(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("ld32.", $suffix, " {tmp1}, ({src}, ", $size, ")"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("ld32.", $suffix, " {tmp0}, ({src}, 0)"),           // atomic { tmp0 = *src }
+                    src = in(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("st32.", $suffix, " {tmp0}, ({dst}, 0)"), // atomic { *dst = tmp0 }
+                    dst = in(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("st32.", $suffix, " {tmp1}, ({dst}, ", $size, ")"), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("st32.", $suffix, " {tmp0}, ({dst}, 0)"),           // atomic { *dst = tmp0 }
+                    dst = in(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
     };
 }
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident) => {
-        atomic_load_store!($ty, "w");
+    ($ty:ident, $size:literal) => {
+        atomic_load_store!($ty, $size, "w");
         #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
         impl AtomicSwap for $ty {
             #[inline]
@@ -241,8 +277,8 @@ macro_rules! atomic {
 
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
-    ($ty:ident, $suffix:tt) => {
-        atomic_load_store!($ty, $suffix);
+    ($ty:ident, $size:literal, $suffix:tt) => {
+        atomic_load_store!($ty, $size, $suffix);
         #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
         impl AtomicSwap for $ty {
             #[inline]
@@ -340,9 +376,9 @@ macro_rules! atomic_sub_word {
     };
 }
 
-atomic_sub_word!(u8, "b");
-atomic_sub_word!(u16, "h");
-atomic!(u32);
+atomic_sub_word!(u8, "1", "b");
+atomic_sub_word!(u16, "2", "h");
+atomic!(u32, "4");
 
 // -----------------------------------------------------------------------------
 // cfg macros
@@ -406,4 +442,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }

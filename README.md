@@ -17,6 +17,8 @@ is [undefined behavior because the copy goes through integers][undefined-behavio
 
 This crate provides a way to soundly perform such operations.
 
+This crate also provides byte-wise atomic memcpy which is sound for the type being copied contains uninitialized bytes.
+
 ## Platform Support
 
 Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, Arm64EC, RISC-V, LoongArch, s390x, PowerPC, MIPS, SPARC, AVR, MSP430, Hexagon, M68k, C-SKY, and Xtensa) are supported.

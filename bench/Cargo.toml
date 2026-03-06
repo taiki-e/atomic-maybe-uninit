@@ -1,0 +1,21 @@
+[package]
+name = "bench"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dev-dependencies]
+atomic-maybe-uninit = { path = ".." }
+
+atomic-memcpy = "0.2"
+criterion = { default-features = false, git = "https://github.com/taiki-e/criterion.rs.git", rev = "8617cd7" } # reduce deps
+libc = "0.2"
+test-helper = { git = "https://github.com/taiki-e/test-helper.git", rev = "f68902d" }
+
+[[bench]]
+name = "memcpy"
+path = "memcpy.rs"
+harness = false
+
+[lints]
+workspace = true

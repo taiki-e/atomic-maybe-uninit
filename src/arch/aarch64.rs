@@ -24,14 +24,16 @@ See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 
 delegate_size!(delegate_all);
 
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
 use crate::{
-    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap},
     utils::{MaybeUninit128, Pair},
 };
 
@@ -62,7 +64,7 @@ macro_rules! atomic_rmw {
 
 #[rustfmt::skip]
 macro_rules! atomic {
-    ($ty:ident, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
+    ($ty:ident, $($size:literal)?, $suffix:tt, $val_modifier:tt, $cmp_ext:tt) => {
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -136,6 +138,42 @@ macro_rules! atomic {
                 }
             }
         }
+        $(
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("ldr", $suffix, " {tmp0", $val_modifier, "}, [{src}], #", $size), // atomic { tmp0 = *src }; src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("ldr", $suffix, " {tmp1", $val_modifier, "}, [{src}, #", $size, "]"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("ldr", $suffix, " {tmp0", $val_modifier, "}, [{src}], #2*", $size),   // atomic { tmp0 = *src }; src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("str", $suffix, " {tmp0", $val_modifier, "}, [{dst}], #", $size), // atomic { *dst = tmp0 }; dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("str", $suffix, " {tmp1", $val_modifier, "}, [{dst}, #", $size, "]"), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("str", $suffix, " {tmp0", $val_modifier, "}, [{dst}], #2*", $size),   // atomic { *dst = tmp0 }; dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
+        )?
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -310,10 +348,465 @@ macro_rules! atomic {
     };
 }
 
-atomic!(u8, "b", ":w", ", uxtb");
-atomic!(u16, "h", ":w", ", uxth");
-atomic!(u32, "", ":w", "");
-atomic!(u64, "", "", "");
+atomic!(u8, "1", "b", ":w", ", uxtb");
+atomic!(u16, "2", "h", ":w", ", uxth");
+atomic!(u32, "4", "", ":w", "");
+atomic!(u64,    , "", "", "");
+
+impl AtomicMemcpy for u64 {
+    #[inline]
+    unsafe fn atomic_load_memcpy<const DST_ALIGNED: bool>(
+        mut dst: *mut MaybeUninit<Self>,
+        src: *const MaybeUninit<Self>,
+        count: NonZeroUsize,
+    ) {
+        load_memcpy_opt_pre! { u64, Align64, dst, count, last, |src, tmp0, tmp1|
+            asm!(
+                "ldr {tmp0}, [{src}], #8", // atomic { tmp0 = *src }; src = src.byte_add(8)
+                src = inout(reg) src,
+                tmp0 = out(reg) tmp0,
+                options(nostack, preserves_flags),
+            ),
+            asm!(
+                "ldr {tmp1}, [{src}, #8]",   // atomic { tmp1 = *src.byte_add(8) }
+                "ldr {tmp0}, [{src}], #2*8", // atomic { tmp0 = *src }; src = src.byte_add(2*8)
+                src = inout(reg) src,
+                tmp0 = out(reg) tmp0,
+                tmp1 = out(reg) tmp1,
+                options(nostack, preserves_flags),
+            ),
+        }
+        #[cfg(all(target_feature = "neon", not(atomic_maybe_uninit_test_prefer_scalar_over_neon)))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            loop {
+                // asm!(
+                //     "ldnp q2, q3, [{src}, #8*4]",
+                //     "ldnp q0, q1, [{src}]",
+                //     "stnp q2, q3, [{dst}, #8*4]",
+                //     "stnp q0, q1, [{dst}]",
+                //     dst = in(reg) dst,
+                //     src = in(reg) src,
+                //     out("q0") _,
+                //     out("q1") _,
+                //     out("q2") _,
+                //     out("q3") _,
+                //     options(nostack, preserves_flags),
+                // );
+                // src = src.add(8);
+                // dst = dst.add(8);
+                asm!(
+                    "ldp q2, q3, [{src}, #8*4]",
+                    "ldp q0, q1, [{src}], #8*8",
+                    "stp q2, q3, [{dst}, #8*4]",
+                    "stp q0, q1, [{dst}], #8*8",
+                    dst = inout(reg) dst,
+                    src = inout(reg) src,
+                    out("q0") _,
+                    out("q1") _,
+                    out("q2") _,
+                    out("q3") _,
+                    options(nostack, preserves_flags),
+                );
+                count = count.wrapping_sub(1); // can use unchecked_sub
+                if count == 0 {
+                    break;
+                }
+            }
+        }
+        #[cfg(not(all(
+            target_feature = "neon",
+            not(atomic_maybe_uninit_test_prefer_scalar_over_neon),
+        )))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let mut tmp0: MaybeUninit<u64>;
+            let mut tmp1: MaybeUninit<u64>;
+            let mut tmp2: MaybeUninit<u64>;
+            let mut tmp3: MaybeUninit<u64>;
+            let mut tmp4: MaybeUninit<u64>;
+            let mut tmp5: MaybeUninit<u64>;
+            let mut tmp6: MaybeUninit<u64>;
+            let mut tmp7: MaybeUninit<u64>;
+            loop {
+                // asm!(
+                //     "ldp {tmp6}, {tmp7}, [{src}, #8*6]",
+                //     "ldp {tmp4}, {tmp5}, [{src}, #8*4]",
+                //     "ldp {tmp2}, {tmp3}, [{src}, #8*2]",
+                //     "ldp {tmp0}, {tmp1}, [{src}]",
+                //     src = in(reg) src,
+                //     tmp0 = out(reg) tmp0,
+                //     tmp1 = out(reg) tmp1,
+                //     tmp2 = out(reg) tmp2,
+                //     tmp3 = out(reg) tmp3,
+                //     tmp4 = out(reg) tmp4,
+                //     tmp5 = out(reg) tmp5,
+                //     tmp6 = out(reg) tmp6,
+                //     tmp7 = out(reg) tmp7,
+                //     options(nostack, preserves_flags),
+                // );
+                // src = src.add(8);
+                asm!(
+                    "ldr {tmp7}, [{src}, #8*7]",    // tmp7 = src.byte_add(8*7).read()
+                    "ldr {tmp6}, [{src}, #8*6]",    // tmp6 = src.byte_add(8*6).read()
+                    "ldr {tmp5}, [{src}, #8*5]",    // tmp5 = src.byte_add(8*5).read()
+                    "ldr {tmp4}, [{src}, #8*4]",    // tmp4 = src.byte_add(8*4).read()
+                    "ldr {tmp3}, [{src}, #8*3]",    // tmp3 = src.byte_add(8*3).read()
+                    "ldr {tmp2}, [{src}, #8*2]",    // tmp2 = src.byte_add(8*2).read()
+                    "ldr {tmp1}, [{src}, #8*1]",    // tmp1 = src.byte_add(8*1).read()
+                    "ldr {tmp0}, [{src}], #8*8",    // tmp0 = src.read(); src = src.byte_add(8*8)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    tmp2 = out(reg) tmp2,
+                    tmp3 = out(reg) tmp3,
+                    tmp4 = out(reg) tmp4,
+                    tmp5 = out(reg) tmp5,
+                    tmp6 = out(reg) tmp6,
+                    tmp7 = out(reg) tmp7,
+                    options(nostack, preserves_flags),
+                );
+                if DST_ALIGNED
+                /*|| cfg!(not(target_os = "none"))*/
+                {
+                    // asm!(
+                    //     "stnp {tmp6}, {tmp7}, [{dst}, #8*6]",
+                    //     "stnp {tmp4}, {tmp5}, [{dst}, #8*4]",
+                    //     "stnp {tmp2}, {tmp3}, [{dst}, #8*2]",
+                    //     "stnp {tmp0}, {tmp1}, [{dst}]",
+                    //     dst = in(reg) dst,
+                    //     tmp0 = in(reg) tmp0,
+                    //     tmp1 = in(reg) tmp1,
+                    //     tmp2 = in(reg) tmp2,
+                    //     tmp3 = in(reg) tmp3,
+                    //     tmp4 = in(reg) tmp4,
+                    //     tmp5 = in(reg) tmp5,
+                    //     tmp6 = in(reg) tmp6,
+                    //     tmp7 = in(reg) tmp7,
+                    //     options(nostack, preserves_flags),
+                    // );
+                    dst.add(7).write(tmp7);
+                    dst.add(6).write(tmp6);
+                    dst.add(5).write(tmp5);
+                    dst.add(4).write(tmp4);
+                    dst.add(3).write(tmp3);
+                    dst.add(2).write(tmp2);
+                    dst.add(1).write(tmp1);
+                    dst.write(tmp0);
+                } else {
+                    dst.add(7).write_unaligned(tmp7);
+                    dst.add(6).write_unaligned(tmp6);
+                    dst.add(5).write_unaligned(tmp5);
+                    dst.add(4).write_unaligned(tmp4);
+                    dst.add(3).write_unaligned(tmp3);
+                    dst.add(2).write_unaligned(tmp2);
+                    dst.add(1).write_unaligned(tmp1);
+                    dst.write_unaligned(tmp0);
+                }
+                dst = dst.add(8);
+                count = count.wrapping_sub(1); // can use unchecked_sub
+                if count == 0 {
+                    break;
+                }
+            }
+        }
+        load_memcpy_opt_post!(dst, last);
+    }
+    #[inline]
+    unsafe fn atomic_store_memcpy<const SRC_ALIGNED: bool>(
+        dst: *mut MaybeUninit<Self>,
+        mut src: *const MaybeUninit<Self>,
+        count: NonZeroUsize,
+    ) {
+        store_memcpy_opt_pre! { u64, Align64, src, count, last, |dst, tmp0, tmp1|
+            asm!(
+                "str {tmp0}, [{dst}], #8", // atomic { *dst = tmp0 }; dst = dst.byte_add(8)
+                dst = inout(reg) dst,
+                tmp0 = in(reg) tmp0,
+                options(nostack, preserves_flags),
+            ),
+            asm!(
+                "str {tmp1}, [{dst}, #8]",   // atomic { *dst.byte_add(8) = tmp1 }
+                "str {tmp0}, [{dst}], #2*8", // atomic { *dst = tmp0 }; dst = dst.byte_add(2*8)
+                dst = inout(reg) dst,
+                tmp0 = in(reg) tmp0,
+                tmp1 = in(reg) tmp1,
+                options(nostack, preserves_flags),
+            ),
+        }
+        #[cfg(all(target_feature = "neon", not(atomic_maybe_uninit_test_prefer_scalar_over_neon)))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            loop {
+                // asm!(
+                //     "ldnp q2, q3, [{src}, #8*4]",
+                //     "ldnp q0, q1, [{src}]",
+                //     "stnp q2, q3, [{dst}, #8*4]",
+                //     "stnp q0, q1, [{dst}]",
+                //     src = in(reg) src,
+                //     dst = in(reg) dst,
+                //     out("q0") _,
+                //     out("q1") _,
+                //     out("q2") _,
+                //     out("q3") _,
+                //     options(nostack, preserves_flags),
+                // );
+                // src = src.add(8);
+                // dst = dst.add(8);
+                asm!(
+                    "ldp q2, q3, [{src}, #8*4]",
+                    "ldp q0, q1, [{src}], #8*8",
+                    "stp q2, q3, [{dst}, #8*4]",
+                    "stp q0, q1, [{dst}], #8*8",
+                    dst = inout(reg) dst,
+                    src = inout(reg) src,
+                    out("q0") _,
+                    out("q1") _,
+                    out("q2") _,
+                    out("q3") _,
+                    options(nostack, preserves_flags),
+                );
+                count = count.wrapping_sub(1); // can use unchecked_sub
+                if count == 0 {
+                    break;
+                }
+            }
+        }
+        #[cfg(not(all(
+            target_feature = "neon",
+            not(atomic_maybe_uninit_test_prefer_scalar_over_neon),
+        )))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            let mut tmp0: MaybeUninit<u64>;
+            let mut tmp1: MaybeUninit<u64>;
+            let mut tmp2: MaybeUninit<u64>;
+            let mut tmp3: MaybeUninit<u64>;
+            let mut tmp4: MaybeUninit<u64>;
+            let mut tmp5: MaybeUninit<u64>;
+            let mut tmp6: MaybeUninit<u64>;
+            let mut tmp7: MaybeUninit<u64>;
+            loop {
+                if SRC_ALIGNED
+                /* || cfg!(not(target_os = "none")) */
+                {
+                    // asm!(
+                    //     "ldnp {tmp6}, {tmp7}, [{src}, #8*6]",
+                    //     "ldnp {tmp4}, {tmp5}, [{src}, #8*4]",
+                    //     "ldnp {tmp2}, {tmp3}, [{src}, #8*2]",
+                    //     "ldnp {tmp0}, {tmp1}, [{src}]",
+                    //     src = in(reg) src,
+                    //     tmp0 = out(reg) tmp0,
+                    //     tmp1 = out(reg) tmp1,
+                    //     tmp2 = out(reg) tmp2,
+                    //     tmp3 = out(reg) tmp3,
+                    //     tmp4 = out(reg) tmp4,
+                    //     tmp5 = out(reg) tmp5,
+                    //     tmp6 = out(reg) tmp6,
+                    //     tmp7 = out(reg) tmp7,
+                    //     options(nostack, preserves_flags),
+                    // );
+                    tmp7 = src.add(7).read();
+                    tmp6 = src.add(6).read();
+                    tmp5 = src.add(5).read();
+                    tmp4 = src.add(4).read();
+                    tmp3 = src.add(3).read();
+                    tmp2 = src.add(2).read();
+                    tmp1 = src.add(1).read();
+                    tmp0 = src.read();
+                } else {
+                    tmp7 = src.add(7).read_unaligned();
+                    tmp6 = src.add(6).read_unaligned();
+                    tmp5 = src.add(5).read_unaligned();
+                    tmp4 = src.add(4).read_unaligned();
+                    tmp3 = src.add(3).read_unaligned();
+                    tmp2 = src.add(2).read_unaligned();
+                    tmp1 = src.add(1).read_unaligned();
+                    tmp0 = src.read_unaligned();
+                }
+                src = src.add(8);
+                // asm!(
+                //     "stp {tmp6}, {tmp7}, [{dst}, #8*6]",
+                //     "stp {tmp4}, {tmp5}, [{dst}, #8*4]",
+                //     "stp {tmp2}, {tmp3}, [{dst}, #8*2]",
+                //     "stp {tmp0}, {tmp1}, [{dst}]",
+                //     dst = in(reg) dst,
+                //     tmp0 = in(reg) tmp0,
+                //     tmp1 = in(reg) tmp1,
+                //     tmp2 = in(reg) tmp2,
+                //     tmp3 = in(reg) tmp3,
+                //     tmp4 = in(reg) tmp4,
+                //     tmp5 = in(reg) tmp5,
+                //     tmp6 = in(reg) tmp6,
+                //     tmp7 = in(reg) tmp7,
+                //     options(nostack, preserves_flags),
+                // );
+                // dst = dst.add(8);
+                asm!(
+                    "str {tmp7}, [{dst}, #8*7]",    // dst.byte_add(8*7).write(tmp7)
+                    "str {tmp6}, [{dst}, #8*6]",    // dst.byte_add(8*6).write(tmp6)
+                    "str {tmp5}, [{dst}, #8*5]",    // dst.byte_add(8*5).write(tmp5)
+                    "str {tmp4}, [{dst}, #8*4]",    // dst.byte_add(8*4).write(tmp4)
+                    "str {tmp3}, [{dst}, #8*3]",    // dst.byte_add(8*3).write(tmp3)
+                    "str {tmp2}, [{dst}, #8*2]",    // dst.byte_add(8*2).write(tmp2)
+                    "str {tmp1}, [{dst}, #8*1]",    // dst.byte_add(8*1).write(tmp1)
+                    "str {tmp0}, [{dst}], #8*8",    // dst.write(tmp0); dst = dst.byte_add(8*8)
+                    dst = inout(reg) dst,
+                    tmp0 = in(reg) tmp0,
+                    tmp1 = in(reg) tmp1,
+                    tmp2 = in(reg) tmp2,
+                    tmp3 = in(reg) tmp3,
+                    tmp4 = in(reg) tmp4,
+                    tmp5 = in(reg) tmp5,
+                    tmp6 = in(reg) tmp6,
+                    tmp7 = in(reg) tmp7,
+                    options(nostack, preserves_flags),
+                );
+                count = count.wrapping_sub(1); // can use unchecked_sub
+                if count == 0 {
+                    break;
+                }
+            }
+        }
+        store_memcpy_opt_post!(src, last);
+    }
+}
+
+/*
+unsafe fn memcpy_neon(dst: *mut u8, src: *const u8, count: usize) {
+    // SAFETY: the caller must uphold the safety contract.
+    unsafe {
+        asm!(
+                "add {src_end}, {src}, {count}",
+                "cmp {count}, #128",
+                "bhi 129f", // 'copy_long
+                "add {dst_end}, {dst_in}, {count}",
+                "cmp {count}, #32",
+                "bhi 33f", // 'copy32_128
+                "nop",
+
+                // Small copies: 0..32 bytes.
+                "cmp {count}, #16",
+                "blo 15f", // 'copy16
+                "ldr q0, [{src}]",
+                "ldr q1, [{src_end}, #-16]",
+                "str q0, [{dst_in}]",
+                "str q1, [{dst_end}, #-16]",
+                "b 40f", // 'done
+
+                ".p2align 4",
+                // Medium copies: 33..128 bytes.
+            "33:", // 'copy32_128:
+                "ldp q0, q1, [{src}]",
+                "ldp q2, q3, [{src_end}, #-32]",
+                "cmp {count}, #64",
+                "bhi 128f", // 'copy128
+                "stp q0, q1, [{dst_in}]",
+                "stp q2, q3, [{dst_end}, #-32]",
+                "b 40f", // 'done
+
+                ".p2align 4",
+                // Copy 8-15 bytes.
+            "15:", // 'copy16:
+                "tbz {count}, #3, 7f",
+                "ldr {a}, [{src}]",
+                "ldr {b}, [{src_end}, #-8]",
+                "str {a}, [{dst_in}]",
+                "str {b}, [{dst_end}, #-8]",
+                "b 40f", // 'done
+
+                // Copy 4-7 bytes.
+            "7:", // 'copy8:
+                "tbz {count}, #2, 3f",
+                "ldr {a:w}, [{src}]",
+                "ldr {b:w}, [{src_end}, #-4]",
+                "str {a:w}, [{dst_in}]",
+                "str {b:w}, [{dst_end}, #-4]",
+                "b 40f", // 'done
+
+                // Copy 65..128 bytes.
+            "128:", // 'copy128:
+                "ldp q4, q5, [{src}, #32]",
+                "cmp {count}, #96",
+                "bls 96f", // 'copy96
+                "ldp q6, q7, [{src_end}, #-64]",
+                "stp q6, q7, [{dst_end}, #-64]",
+            "96:", // 'copy96:
+                "stp q0, q1, [{dst_in}]",
+                "stp q4, q5, [{dst_in}, #32]",
+                "stp q2, q3, [{dst_end}, #-32]",
+                "b 40f", // 'done
+
+                // Copy 0..3 bytes using a branchless sequence.
+            "3:", // 'copy4:
+                "lsr {tmp1}, {count}, #1",
+                "ldrb {a:w}, [{src}]",
+                "ldrb {c:w}, [{src_end}, #-1]",
+                "ldrb {b:w}, [{src}, {tmp1}]",
+                "strb {a:w}, [{dst_in}]",
+                "strb {b:w}, [{dst_in}, {tmp1}]",
+                "strb {c:w}, [{dst_end}, #-1]",
+                "b 40f", // 'done
+
+                ".p2align 3",
+                // Copy more than 128 bytes.
+            "129:", // 'copy_long:
+                "add {dst_end}, {dst_in}, {count}",
+                // Copy 16 bytes and then align src to 16-byte alignment.
+                "ldr q3, [{src}]",
+                "and {tmp1}, {src}, #15",
+                "bic {src}, {src}, #15",
+                "sub {dst}, {dst_in}, {tmp1}",
+                "add {count}, {count}, {tmp1}", // Count is now 16 too large.
+                "ldnp q0, q1, [{src}, #16]",
+                "str q3, [{dst_in}]",
+                "ldnp q2, q3, [{src}, #48]",
+                "subs {count}, {count}, #128 + 16", // Test and readjust count.
+                "bls 65f", // 'copy64_from_end
+            "64:", // 'loop64:
+                "stnp q0, q1, [{dst}, #16]",
+                "ldnp q0, q1, [{src}, #80]",
+                "stnp q2, q3, [{dst}, #48]",
+                "ldnp q2, q3, [{src}, #112]",
+                "add {src}, {src}, #64",
+                "add {dst}, {dst}, #64",
+                "subs {count}, {count}, #64",
+                "bhi 64b", // 'loop64
+                // Write the last iteration and copy 64 bytes from the end.
+            "65:", // 'copy64_from_end:
+                "ldnp q4, q5, [{src_end}, #-64]",
+                "stnp q0, q1, [{dst}, #16]",
+                "ldnp q0, q1, [{src_end}, #-32]",
+                "stnp q2, q3, [{dst}, #48]",
+                "stnp q4, q5, [{dst_end}, #-64]",
+                "stnp q0, q1, [{dst_end}, #-32]",
+
+            "40:", // 'done:
+
+            dst_in = inout(reg) ptr_reg!(dst) => _,
+            src = inout(reg) ptr_reg!(src) => _,
+            count = inout(reg) count as u64 => _,
+            dst = out(reg) _,
+            dst_end = out(reg) _,
+            src_end = out(reg) _,
+            a = out(reg) _,
+            b = out(reg) _,
+            c = out(reg) _,
+            tmp1 = out(reg) _,
+            out("q0") _,
+            out("q1") _,
+            out("q2") _,
+            out("q3") _,
+            out("q4") _,
+            out("q5") _,
+            out("q6") _,
+            out("q7") _,
+            // Do not use `preserves_flags` because CMP and SUBS modify the condition flags.
+            options(nostack),
+        );
+    }
+}
+*/
 
 // -----------------------------------------------------------------------------
 // 128-bit atomics
@@ -777,5 +1270,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
     ($($tt:tt)*) => {};
 }

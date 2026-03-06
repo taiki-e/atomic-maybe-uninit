@@ -26,17 +26,17 @@ macro_rules! test_atomic_all {
                 print_str!("target_has_cas: false\n");
             }
         }
-        #[cfg_attr(target_arch = "m68k", cfg(feature = "isize"))]
+        #[cfg_attr(any(target_arch = "avr", target_arch = "m68k"), cfg(feature = "isize"))]
         test_atomic!(isize);
-        #[cfg_attr(target_arch = "m68k", cfg(feature = "usize"))]
+        #[cfg_attr(any(target_arch = "avr", target_arch = "m68k"), cfg(feature = "usize"))]
         test_atomic!(usize);
-        #[cfg_attr(target_arch = "m68k", cfg(feature = "i8"))]
+        #[cfg_attr(any(target_arch = "avr", target_arch = "m68k"), cfg(feature = "i8"))]
         test_atomic!(i8);
-        #[cfg_attr(target_arch = "m68k", cfg(feature = "u8"))]
+        #[cfg_attr(any(target_arch = "avr", target_arch = "m68k"), cfg(feature = "u8"))]
         test_atomic!(u8);
-        #[cfg_attr(target_arch = "m68k", cfg(feature = "i16"))]
+        #[cfg_attr(any(target_arch = "avr", target_arch = "m68k"), cfg(feature = "i16"))]
         test_atomic!(i16);
-        #[cfg_attr(target_arch = "m68k", cfg(feature = "u16"))]
+        #[cfg_attr(any(target_arch = "avr", target_arch = "m68k"), cfg(feature = "u16"))]
         test_atomic!(u16);
         cfg_has_atomic_32! {
             #[cfg_attr(target_arch = "m68k", cfg(feature = "i32"))]
@@ -229,6 +229,53 @@ macro_rules! __test_atomic {
                 }
             }
         }
+        }
+        memcpy();
+        fn memcpy() {
+            const LARGE: usize =
+                if cfg!(target_arch = "avr") && cfg!(debug_assertions) { 130 } else { 200 };
+            unsafe {
+                let x = PerByteAtomicMaybeUninit::<$ty>::from(0);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init(), 0);
+                x.store(MaybeUninit::new(!0), Ordering::Relaxed);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init(), !0);
+                let x = PerByteAtomicMaybeUninit::<[$ty; 1]>::from([0]);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init(), [0]);
+                x.store(MaybeUninit::new([!0]), Ordering::Relaxed);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init(), [!0]);
+                // TODO
+                if !(cfg!(target_arch = "m68k")
+                    && core::mem::size_of::<$ty>() == 8
+                    && cfg!(debug_assertions))
+                {
+                    let x = PerByteAtomicMaybeUninit::<[$ty; 2]>::from([0; 2]);
+                    assert_eq!(x.load(Ordering::Relaxed).assume_init(), [0; 2]);
+                    // TODO
+                    if !(cfg!(target_arch = "m68k")
+                        && core::mem::size_of::<$ty>() != 8
+                        && !cfg!(debug_assertions))
+                    {
+                        x.store(MaybeUninit::new([!0; 2]), Ordering::Relaxed);
+                        assert_eq!(x.load(Ordering::Relaxed).assume_init(), [!0; 2]);
+                    }
+                    // TODO
+                    if !(cfg!(target_arch = "m68k") && core::mem::size_of::<$ty>() == 8) {
+                        let x = PerByteAtomicMaybeUninit::<[$ty; LARGE]>::from([0; LARGE]);
+                        assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [0; LARGE][..]);
+                        // TODO
+                        if !(cfg!(target_arch = "m68k")
+                            && core::mem::size_of::<$ty>() != 8
+                            && !cfg!(debug_assertions))
+                        {
+                            x.store(MaybeUninit::new([!0; LARGE]), Ordering::Relaxed);
+                            assert_eq!(
+                                x.load(Ordering::Relaxed).assume_init()[..],
+                                [!0; LARGE][..]
+                            );
+                        }
+                    }
+                }
+            }
         }
     };
 }

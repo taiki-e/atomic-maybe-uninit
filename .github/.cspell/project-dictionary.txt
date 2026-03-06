@@ -1,4 +1,6 @@
 abiv
+addi
+addiu
 amocas
 amoswap
 amswap
@@ -33,6 +35,7 @@ cset
 cskyv
 cxchg
 cxchgweak
+daddiu
 dbar
 devkitc
 devkitm
@@ -94,6 +97,7 @@ movi
 movlps
 movq
 movs
+movsb
 mspdebug
 msync
 muldi
@@ -169,8 +173,10 @@ xmegau
 xmmword
 xsave
 xsub
+ymmword
 zaamo
 zabha
 zacas
 zalasr
 zalrsc
+zeroupper

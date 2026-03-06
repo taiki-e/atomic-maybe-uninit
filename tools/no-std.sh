@@ -310,7 +310,7 @@ run() {
     *) bail "unrecognized target '${target}'" ;;
   esac
   case "${target}" in
-    m68k*) ;;
+    avr* | m68k*) ;;
     *) args+=(--all-features) ;;
   esac
 
@@ -358,88 +358,111 @@ run() {
         fi
         ;;
       avr*)
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
-          x_cargo "${args[@]}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
-          x_cargo "${args[@]}" --release "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-          x_cargo "${args[@]}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-          x_cargo "${args[@]}" --release "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-          x_cargo "${args[@]}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-          x_cargo "${args[@]}" --release "$@"
+        # Note: We cannot test everything at once due to size.
+        # isize, usize are covered by the run with the default feature.
+        # NB: Sync feature list with tests/avr/Cargo.toml
+        for feature in 'i8,u8' 'i16,u16'; do
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        done
+        # Note: We cannot test everything at once due to size.
+        # NB: Sync feature list with tests/avr/Cargo.toml
+        for feature in 'isize,usize' 'i8,u8' 'i16,u16'; do
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" --release "$@"
+        done
 
         # Run with qemu-system-avr.
         subcmd=run
         export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh qemu-system ${target}"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-          RUSTFLAGS="${target_rustflags}" \
-          x_cargo "${args[@]}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-          RUSTFLAGS="${target_rustflags}" \
-          x_cargo "${args[@]}" --release "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
-          x_cargo "${args[@]}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
-          x_cargo "${args[@]}" --release "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-          x_cargo "${args[@]}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-          x_cargo "${args[@]}" --release "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-          x_cargo "${args[@]}" "$@"
-        CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
-          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-          x_cargo "${args[@]}" --release "$@"
+        # Note: We cannot test everything at once due to size.
+        # NB: Sync feature list with tests/avr/Cargo.toml
+        for feature in 'isize,usize' 'i8,u8' 'i16,u16'; do
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" --release "$@"
+        done
 
         # Run with wokwi-cli.
         # TODO(avr): run test with wokwi on CI
         if type -P "${WOKWI_CLI:-wokwi-cli}" >/dev/null; then
           subcmd=run
           setup_wokwi "${target}" "${test_dir}" "mega"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-            RUSTFLAGS="${target_rustflags}" \
-            x_cargo "${args[@]}" "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-            RUSTFLAGS="${target_rustflags}" \
-            x_cargo "${args[@]}" --release "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
-            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
-            x_cargo "${args[@]}" "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
-            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
-            x_cargo "${args[@]}" --release "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
-            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-            x_cargo "${args[@]}" "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
-            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-            x_cargo "${args[@]}" --release "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
-            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-            x_cargo "${args[@]}" "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
-            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-            x_cargo "${args[@]}" --release "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-rmw" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-            x_cargo "${args[@]}" "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-rmw" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
-            x_cargo "${args[@]}" --release "$@"
+          # Note: We cannot test everything at once due to size.
+          # NB: Sync feature list with tests/avr/Cargo.toml
+          for feature in 'isize,usize' 'i8,u8' 'i16,u16'; do
+            CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+              RUSTFLAGS="${target_rustflags}" \
+              x_cargo "${args[@]}" "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+              RUSTFLAGS="${target_rustflags}" \
+              x_cargo "${args[@]}" --release "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+              RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+              x_cargo "${args[@]}" "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+              RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+              x_cargo "${args[@]}" --release "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+              RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+              x_cargo "${args[@]}" "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+              RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+              x_cargo "${args[@]}" --release "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+              RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+              x_cargo "${args[@]}" "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+              RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+              x_cargo "${args[@]}" --release "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-rmw" \
+              RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+              x_cargo "${args[@]}" "$@"
+            CARGO_TARGET_DIR="${target_dir}/no-std-test-rmw" \
+              RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+              x_cargo "${args[@]}" --release "$@"
+            done
         else
           info "no-std test for ${target} requires wokwi-cli (switched to build-only)"
         fi
