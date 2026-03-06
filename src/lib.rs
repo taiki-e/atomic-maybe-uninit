@@ -110,7 +110,17 @@ This crate uses inline assembly to implement atomic operations (this is currentl
 )]
 #![cfg_attr(atomic_maybe_uninit_no_strict_provenance, allow(unstable_name_collisions))]
 #![allow(clippy::inline_always, clippy::unreadable_literal, clippy::used_underscore_items)]
-#![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
+#![cfg_attr(
+    all(
+        atomic_maybe_uninit_unstable_asm_experimental_arch,
+        not(any(
+            // These cases currently don't use asm!
+            all(target_arch = "sparc", atomic_maybe_uninit_no_stbar),
+            all(target_arch = "mips", atomic_maybe_uninit_no_sync),
+        )),
+    ),
+    feature(asm_experimental_arch)
+)]
 
 // There are currently no 128-bit or higher builtin targets.
 // (Although some of our generic code is written with the future
