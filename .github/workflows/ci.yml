@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - dev
+      - memcpy-bench
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
@@ -1023,3 +1024,47 @@ jobs:
           retry espup install --targets esp32 --toolchain-version 1.90.0
       - run: cargo test --manifest-path tests/asm-test/Cargo.toml
       - run: cargo +esp test --manifest-path tests/asm-test/Cargo.toml
+
+  bench:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+          - target: i686-unknown-linux-gnu
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
+          - target: thumbv7neon-unknown-linux-gnueabihf
+            os: ubuntu-24.04-arm
+          - target: x86_64-apple-darwin
+            os: macos-15-intel
+          - target: aarch64-apple-darwin
+            os: macos-26
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target: aarch64-pc-windows-msvc
+            os: windows-11-arm
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    timeout-minutes: 60
+    steps:
+      - uses: taiki-e/checkout-action@v1
+      - uses: taiki-e/github-actions/install-rust@nightly
+      - uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+      - run: cargo bench -p bench
+      # no avx
+      # - run: cargo bench -p bench
+      #   env:
+      #     RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_no_outline_atomics
+      #   if: startsWith(matrix.target, 'x86_64')
+      - run: cargo bench -p bench
+        env:
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_movsb
+        if: startsWith(matrix.target, 'x86_64')
+      # - run: cargo bench -p bench
+      #   env:
+      #     RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_scalar_over_neon
+      #   if: startsWith(matrix.target, 'aarch64')

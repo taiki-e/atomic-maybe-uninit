@@ -15,7 +15,6 @@ See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 #[cfg(target_arch = "x86_64")]
-#[cfg(target_feature = "cmpxchg16b")]
 #[cfg(not(atomic_maybe_uninit_no_outline_atomics))]
 #[cfg(not(target_env = "sgx"))]
 #[cfg_attr(
@@ -55,15 +54,17 @@ use core::arch::x86::__m128i;
     any(atomic_maybe_uninit_no_outline_atomics, target_env = "sgx", not(target_feature = "sse")),
 )))]
 use core::arch::x86_64::__m128i;
+pub(crate) use core::sync::atomic::fence;
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
+    num::NonZeroUsize,
     sync::atomic::Ordering,
 };
 
 #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
 use crate::raw::AtomicCompareExchange;
-use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicLoad, AtomicMemcpy, AtomicStore, AtomicSwap};
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
 use crate::utils::{MaybeUninit64, Pair};
@@ -89,19 +90,19 @@ macro_rules! ptr_modifier {
 
 macro_rules! atomic {
     (
-        $ty:ident, $val_reg:ident, $ux_reg:ident, $ux:ident,
+        $ty:ident, $($size:literal)?, $val_reg:ident, $ux_reg:ident, $ux:ident,
         $zx:literal, $val_modifier:literal, $reg_val_modifier:tt, $zx_val_modifier:tt, $ptr_size:tt,
         $cmpxchg_cmp_reg:tt
     ) => {
         #[cfg(target_arch = "x86")]
-        atomic!($ty, $val_reg, $ux_reg, reg_abcd, $ux, $zx, $val_modifier,
+        atomic!($ty, $($size)?, $val_reg, $ux_reg, reg_abcd, $ux, $zx, $val_modifier,
             $reg_val_modifier, $zx_val_modifier, $ptr_size, $cmpxchg_cmp_reg);
         #[cfg(target_arch = "x86_64")]
-        atomic!($ty, $val_reg, $ux_reg, reg, $ux, $zx, $val_modifier,
+        atomic!($ty, $($size)?, $val_reg, $ux_reg, reg, $ux, $zx, $val_modifier,
             $reg_val_modifier, $zx_val_modifier, $ptr_size, $cmpxchg_cmp_reg);
     };
     (
-        $ty:ident, $val_reg:ident, $ux_reg:ident, $r_reg:ident, $ux:ident,
+        $ty:ident, $($size:literal)?, $val_reg:ident, $ux_reg:ident, $r_reg:ident, $ux:ident,
         $zx:literal, $val_modifier:literal, $reg_val_modifier:tt, $zx_val_modifier:tt, $ptr_size:tt,
         $cmpxchg_cmp_reg:tt
     ) => {
@@ -167,6 +168,47 @@ macro_rules! atomic {
                 }
             }
         }
+        $(
+        impl AtomicMemcpy for $ty {
+            load_memcpy! { $ty, |src, tmp0, tmp1|
+                asm!(
+                    concat!("mov", $zx, " {tmp0", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"), // atomic { tmp0 = *src }
+                    concat!("lea {src", ptr_modifier!(), "}, [{src", ptr_modifier!(), "} + ", $size, "]"),                  // src = src.byte_add($size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("mov", $zx, " {tmp1", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "} + ", $size, "]"), // atomic { tmp1 = *src.byte_add($size) }
+                    concat!("mov", $zx, " {tmp0", $zx_val_modifier, "}, ", $ptr_size, " ptr [{src", ptr_modifier!(), "}]"),               // atomic { tmp0 = *src }
+                    concat!("lea {src", ptr_modifier!(), "}, [{src", ptr_modifier!(), "} + 2*", $size, "]"),                              // src = src.byte_add(2*$size)
+                    src = inout(reg) src,
+                    tmp0 = out(reg) tmp0,
+                    tmp1 = out(reg) tmp1,
+                    options(nostack, preserves_flags),
+                ),
+            }
+            // Avoid reg_byte ($val_reg) to work around cranelift bug with multiple or lateout reg_byte.
+            store_memcpy! { $ty, |dst, tmp0, tmp1|
+                asm!(
+                    concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp0", $reg_val_modifier, "}"), // atomic { *dst = tmp0 }
+                    concat!("lea {dst", ptr_modifier!(), "}, [{dst", ptr_modifier!(), "} + ", $size, "]"),          // dst = dst.byte_add($size)
+                    dst = inout(reg) dst,
+                    tmp0 = in($ux_reg) crate::utils::extend32::$ty::$ux(tmp0),
+                    options(nostack, preserves_flags),
+                ),
+                asm!(
+                    concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "} + ", $size, "], {tmp1", $reg_val_modifier, "}"), // atomic { *dst.byte_add($size) = tmp1 }
+                    concat!("mov ", $ptr_size, " ptr [{dst", ptr_modifier!(), "}], {tmp0", $reg_val_modifier, "}"),               // atomic { *dst = tmp0 }
+                    concat!("lea {dst", ptr_modifier!(), "}, [{dst", ptr_modifier!(), "} + 2*", $size, "]"),                      // dst = dst.byte_add(2*$size)
+                    dst = inout(reg) dst,
+                    tmp0 = in($ux_reg) crate::utils::extend32::$ty::$ux(tmp0),
+                    tmp1 = in($ux_reg) crate::utils::extend32::$ty::$ux(tmp1),
+                    options(nostack, preserves_flags),
+                ),
+            }
+        }
+        )?
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -230,13 +272,429 @@ macro_rules! atomic {
 }
 
 #[cfg(target_arch = "x86")]
-atomic!(u8, reg_byte, reg_abcd, uninit, "zx", "", ":l", ":e", "byte", "al");
+atomic!(u8, "1", reg_byte, reg_abcd, uninit, "zx", "", ":l", ":e", "byte", "al");
 #[cfg(target_arch = "x86_64")]
-atomic!(u8, reg_byte, reg, uninit, "zx", "", ":l", ":e", "byte", "al");
-atomic!(u16, reg, reg, identity, "zx", ":x", ":x", ":e", "word", "ax");
-atomic!(u32, reg, reg, identity, "", ":e", ":e", ":e", "dword", "eax");
+atomic!(u8, "1", reg_byte, reg, uninit, "zx", "", ":l", ":e", "byte", "al");
+atomic!(u16, "2", reg, reg, identity, "zx", ":x", ":x", ":e", "word", "ax");
+atomic!(u32, "4", reg, reg, identity, "", ":e", ":e", ":e", "dword", "eax");
 #[cfg(target_arch = "x86_64")]
-atomic!(u64, reg, reg, identity, "", "", "", "", "qword", "rax");
+atomic!(u64,    , reg, reg, identity, "", "", "", "", "qword", "rax");
+
+#[cfg(target_arch = "x86_64")]
+impl AtomicMemcpy for u64 {
+    #[inline]
+    unsafe fn atomic_load_memcpy<const DST_ALIGNED: bool>(
+        mut dst: *mut MaybeUninit<Self>,
+        src: *const MaybeUninit<Self>,
+        count: NonZeroUsize,
+    ) {
+        #[cfg(atomic_maybe_uninit_test_prefer_movsb)]
+        if count.get() >= 32 {
+            // SAFETY: the caller must uphold the safety contract.
+            unsafe {
+                asm!(
+                    // https://doc.rust-lang.org/nightly/reference/inline-assembly.html#r-asm.rules.x86-df
+                    "cld",
+                    "rep movsb",
+                    inout("rdi") ptr_reg!(dst) => _,
+                    inout("rsi") ptr_reg!(src) => _,
+                    inout("rcx") count.get() as u64 => _,
+                    options(nostack, preserves_flags),
+                );
+            }
+            return;
+        }
+        load_memcpy_opt_pre! { u64, Align64, dst, count, last, |src, tmp0, tmp1|
+            asm!(
+                concat!("mov {tmp0}, qword ptr [{src", ptr_modifier!(), "}]"),                  // atomic { tmp0 = *src }
+                concat!("lea {src", ptr_modifier!(), "}, [{src", ptr_modifier!(), "} + 8]"),    // src = src.byte_add(8)
+                src = inout(reg) src,
+                tmp0 = out(reg) tmp0,
+                options(nostack, preserves_flags),
+            ),
+            asm!(
+                concat!("mov {tmp1}, qword ptr [{src", ptr_modifier!(), "} + 8]"),              // atomic { tmp1 = *src.byte_add(8) }
+                concat!("mov {tmp0}, qword ptr [{src", ptr_modifier!(), "}]"),                  // atomic { tmp0 = *src }
+                concat!("lea {src", ptr_modifier!(), "}, [{src", ptr_modifier!(), "} + 2*8]"),  // src = src.byte_add(2*8)
+                src = inout(reg) src,
+                tmp0 = out(reg) tmp0,
+                tmp1 = out(reg) tmp1,
+                options(nostack, preserves_flags),
+            ),
+        }
+        #[cfg(not(all(
+            not(target_feature = "avx"),
+            any(
+                atomic_maybe_uninit_no_outline_atomics,
+                target_env = "sgx",
+                not(target_feature = "sse")
+            ),
+        )))]
+        #[target_feature(enable = "avx")]
+        #[inline]
+        unsafe fn atomic_load_memcpy_large_avx(
+            mut dst: *mut MaybeUninit<u64>,
+            mut src: *const MaybeUninit<u64>,
+            mut count: usize,
+        ) -> *mut MaybeUninit<u64> {
+            // SAFETY: the caller must uphold the safety contract.
+            unsafe {
+                loop {
+                    asm!(
+                        concat!("vmovdqa ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),      // ymm0 = *src
+                        concat!("vmovdqa ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32]"), // ymm1 = *src.byte_add(32)
+                        concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),      // *dst = ymm0
+                        concat!("vmovdqu ymmword ptr [{dst", ptr_modifier!(), "} + 32], ymm1"), // *dst.byte_add(32) = ymm1
+                        dst = in(reg) dst,
+                        src = in(reg) src,
+                        out("ymm0") _,
+                        out("ymm1") _,
+                        options(nostack, preserves_flags),
+                    );
+                    src = src.add(8);
+                    dst = dst.add(8);
+                    count = count.wrapping_sub(1); // can use unchecked_sub
+                    if count == 0 {
+                        break;
+                    }
+                }
+                core::arch::x86_64::_mm256_zeroupper();
+            }
+            dst
+        }
+        #[cfg(not(target_feature = "avx"))]
+        #[inline]
+        unsafe fn atomic_load_memcpy_large_scalar<const DST_ALIGNED: bool>(
+            mut dst: *mut MaybeUninit<u64>,
+            mut src: *const MaybeUninit<u64>,
+            mut count: usize,
+        ) -> *mut MaybeUninit<u64> {
+            // SAFETY: the caller must uphold the safety contract.
+            unsafe {
+                let mut tmp0;
+                let mut tmp1;
+                let mut tmp2;
+                let mut tmp3;
+                let mut tmp4;
+                let mut tmp5;
+                let mut tmp6;
+                let mut tmp7;
+                loop {
+                    asm!(
+                        concat!("mov {tmp7}, qword ptr [{src", ptr_modifier!(), "} + 8*7]"),            // atomic { tmp7 = *src.byte_add(8*7) }
+                        concat!("mov {tmp6}, qword ptr [{src", ptr_modifier!(), "} + 8*6]"),            // atomic { tmp6 = *src.byte_add(8*6) }
+                        concat!("mov {tmp5}, qword ptr [{src", ptr_modifier!(), "} + 8*5]"),            // atomic { tmp5 = *src.byte_add(8*5) }
+                        concat!("mov {tmp4}, qword ptr [{src", ptr_modifier!(), "} + 8*4]"),            // atomic { tmp4 = *src.byte_add(8*4) }
+                        concat!("mov {tmp3}, qword ptr [{src", ptr_modifier!(), "} + 8*3]"),            // atomic { tmp3 = *src.byte_add(8*3) }
+                        concat!("mov {tmp2}, qword ptr [{src", ptr_modifier!(), "} + 8*2]"),            // atomic { tmp2 = *src.byte_add(8*2) }
+                        concat!("mov {tmp1}, qword ptr [{src", ptr_modifier!(), "} + 8*1]"),            // atomic { tmp1 = *src.byte_add(8*1) }
+                        concat!("mov {tmp0}, qword ptr [{src", ptr_modifier!(), "}]"),                  // atomic { tmp0 = *src }
+                        concat!("lea {src", ptr_modifier!(), "}, [{src", ptr_modifier!(), "} + 8*8]"),  // src = src.byte_add(8*8)
+                        src = inout(reg) src,
+                        tmp0 = out(reg) tmp0,
+                        tmp1 = out(reg) tmp1,
+                        tmp2 = out(reg) tmp2,
+                        tmp3 = out(reg) tmp3,
+                        tmp4 = out(reg) tmp4,
+                        tmp5 = out(reg) tmp5,
+                        tmp6 = out(reg) tmp6,
+                        tmp7 = out(reg) tmp7,
+                        options(nostack, preserves_flags),
+                    );
+                    inc_addr!(src, 1);
+                    if DST_ALIGNED {
+                        dst.add(7).write(tmp7);
+                        dst.add(6).write(tmp6);
+                        dst.add(5).write(tmp5);
+                        dst.add(4).write(tmp4);
+                        dst.add(3).write(tmp3);
+                        dst.add(2).write(tmp2);
+                        dst.add(1).write(tmp1);
+                        dst.write(tmp0);
+                    } else {
+                        dst.add(7).write_unaligned(tmp7);
+                        dst.add(6).write_unaligned(tmp6);
+                        dst.add(5).write_unaligned(tmp5);
+                        dst.add(4).write_unaligned(tmp4);
+                        dst.add(3).write_unaligned(tmp3);
+                        dst.add(2).write_unaligned(tmp2);
+                        dst.add(1).write_unaligned(tmp1);
+                        dst.write_unaligned(tmp0);
+                    }
+                    dst = dst.add(8);
+                    count = count.wrapping_sub(1); // can use unchecked_sub
+                    if count == 0 {
+                        break;
+                    }
+                }
+            }
+            dst
+        }
+        #[cfg(target_feature = "avx")]
+        // SAFETY: the caller must uphold the safety contract.
+        // cfg guarantees that the CPU supports AVX.
+        unsafe {
+            dst = atomic_load_memcpy_large_avx(dst, src, count);
+        }
+        #[cfg(not(target_feature = "avx"))]
+        #[cfg(not(all(
+            not(target_feature = "avx"),
+            any(
+                atomic_maybe_uninit_no_outline_atomics,
+                target_env = "sgx",
+                not(target_feature = "sse")
+            ),
+        )))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            dst = if DST_ALIGNED {
+                ifunc!(unsafe fn(
+                    dst: *mut MaybeUninit<u64>,
+                    src: *const MaybeUninit<u64>,
+                    count: usize,
+                ) -> *mut MaybeUninit<u64> {
+                    if detect::detect().avx() {
+                        atomic_load_memcpy_large_avx
+                    } else {
+                        atomic_load_memcpy_large_scalar::<true>
+                    }
+                })
+            } else {
+                ifunc!(unsafe fn(
+                    dst: *mut MaybeUninit<u64>,
+                    src: *const MaybeUninit<u64>,
+                    count: usize,
+                ) -> *mut MaybeUninit<u64> {
+                    if detect::detect().avx() {
+                        atomic_load_memcpy_large_avx
+                    } else {
+                        atomic_load_memcpy_large_scalar::<false>
+                    }
+                })
+            };
+        };
+        #[cfg(not(target_feature = "avx"))]
+        #[cfg(all(
+            not(target_feature = "avx"),
+            any(
+                atomic_maybe_uninit_no_outline_atomics,
+                target_env = "sgx",
+                not(target_feature = "sse")
+            ),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            dst = atomic_load_memcpy_large_scalar::<{ DST_ALIGNED }>(dst, src, count);
+        }
+        load_memcpy_opt_post!(dst, last);
+    }
+    #[inline]
+    unsafe fn atomic_store_memcpy<const SRC_ALIGNED: bool>(
+        dst: *mut MaybeUninit<Self>,
+        mut src: *const MaybeUninit<Self>,
+        count: NonZeroUsize,
+    ) {
+        #[cfg(atomic_maybe_uninit_test_prefer_movsb)]
+        if count.get() >= 32 {
+            // SAFETY: the caller must uphold the safety contract.
+            unsafe {
+                asm!(
+                    // https://doc.rust-lang.org/nightly/reference/inline-assembly.html#r-asm.rules.x86-df
+                    "cld",
+                    "rep movsb",
+                    inout("rdi") ptr_reg!(dst) => _,
+                    inout("rsi") ptr_reg!(src) => _,
+                    inout("rcx") count.get() as u64 => _,
+                    options(nostack, preserves_flags),
+                );
+            }
+            return;
+        }
+        store_memcpy_opt_pre! { u64, Align64, src, count, last, |dst, tmp0, tmp1|
+            asm!(
+                concat!("mov qword ptr [{dst", ptr_modifier!(), "}], {tmp0}"),                  // atomic { *dst = tmp0 }
+                concat!("lea {dst", ptr_modifier!(), "}, [{dst", ptr_modifier!(), "} + 8]"),    // dst = dst.byte_add(8)
+                dst = inout(reg) dst,
+                tmp0 = in(reg) tmp0,
+                options(nostack, preserves_flags),
+            ),
+            asm!(
+                concat!("mov qword ptr [{dst", ptr_modifier!(), "} + 8], {tmp1}"),              // atomic { *dst.byte_add(8) = tmp1 }
+                concat!("mov qword ptr [{dst", ptr_modifier!(), "}], {tmp0}"),                  // atomic { *dst = tmp0 }
+                concat!("lea {dst", ptr_modifier!(), "}, [{dst", ptr_modifier!(), "} + 2*8]"),  // dst = dst.byte_add(2*8)
+                dst = inout(reg) dst,
+                tmp0 = in(reg) tmp0,
+                tmp1 = in(reg) tmp1,
+                options(nostack, preserves_flags),
+            ),
+        }
+        #[cfg(not(all(
+            not(target_feature = "avx"),
+            any(
+                atomic_maybe_uninit_no_outline_atomics,
+                target_env = "sgx",
+                not(target_feature = "sse")
+            ),
+        )))]
+        #[target_feature(enable = "avx")]
+        #[inline]
+        unsafe fn atomic_store_memcpy_large_avx(
+            mut dst: *mut MaybeUninit<u64>,
+            mut src: *const MaybeUninit<u64>,
+            mut count: usize,
+        ) -> *const MaybeUninit<u64> {
+            // SAFETY: the caller must uphold the safety contract.
+            unsafe {
+                loop {
+                    asm!(
+                        concat!("vmovdqu ymm0, ymmword ptr [{src", ptr_modifier!(), "}]"),      // ymm0 = *src
+                        concat!("vmovdqu ymm1, ymmword ptr [{src", ptr_modifier!(), "} + 32]"), // ymm1 = *src.byte_add(32)
+                        concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "}], ymm0"),      // *dst = ymm0
+                        concat!("vmovdqa ymmword ptr [{dst", ptr_modifier!(), "} + 32], ymm1"), // *dst.byte_add(32) = ymm1
+                        dst = in(reg) dst,
+                        src = in(reg) src,
+                        out("ymm0") _,
+                        out("ymm1") _,
+                        options(nostack, preserves_flags),
+                    );
+                    src = src.add(8);
+                    dst = dst.add(8);
+                    count = count.wrapping_sub(1); // can use unchecked_sub
+                    if count == 0 {
+                        break;
+                    }
+                }
+                core::arch::x86_64::_mm256_zeroupper();
+            }
+            src
+        }
+        #[cfg(not(target_feature = "avx"))]
+        #[inline]
+        unsafe fn atomic_store_memcpy_large_scalar<const SRC_ALIGNED: bool>(
+            mut dst: *mut MaybeUninit<u64>,
+            mut src: *const MaybeUninit<u64>,
+            mut count: usize,
+        ) -> *const MaybeUninit<u64> {
+            // SAFETY: the caller must uphold the safety contract.
+            unsafe {
+                let mut tmp0;
+                let mut tmp1;
+                let mut tmp2;
+                let mut tmp3;
+                let mut tmp4;
+                let mut tmp5;
+                let mut tmp6;
+                let mut tmp7;
+                loop {
+                    if SRC_ALIGNED {
+                        tmp7 = src.add(7).read();
+                        tmp6 = src.add(6).read();
+                        tmp5 = src.add(5).read();
+                        tmp4 = src.add(4).read();
+                        tmp3 = src.add(3).read();
+                        tmp2 = src.add(2).read();
+                        tmp1 = src.add(1).read();
+                        tmp0 = src.read();
+                    } else {
+                        tmp7 = src.add(7).read_unaligned();
+                        tmp6 = src.add(6).read_unaligned();
+                        tmp5 = src.add(5).read_unaligned();
+                        tmp4 = src.add(4).read_unaligned();
+                        tmp3 = src.add(3).read_unaligned();
+                        tmp2 = src.add(2).read_unaligned();
+                        tmp1 = src.add(1).read_unaligned();
+                        tmp0 = src.read_unaligned();
+                    }
+                    src = src.add(8);
+                    asm!(
+                        concat!("mov qword ptr [{dst", ptr_modifier!(), "} + 8*7], {tmp7}"),            // atomic { *dst.byte_add(8*7) = tmp7 }
+                        concat!("mov qword ptr [{dst", ptr_modifier!(), "} + 8*6], {tmp6}"),            // atomic { *dst.byte_add(8*6) = tmp6 }
+                        concat!("mov qword ptr [{dst", ptr_modifier!(), "} + 8*5], {tmp5}"),            // atomic { *dst.byte_add(8*5) = tmp5 }
+                        concat!("mov qword ptr [{dst", ptr_modifier!(), "} + 8*4], {tmp4}"),            // atomic { *dst.byte_add(8*4) = tmp4 }
+                        concat!("mov qword ptr [{dst", ptr_modifier!(), "} + 8*3], {tmp3}"),            // atomic { *dst.byte_add(8*3) = tmp3 }
+                        concat!("mov qword ptr [{dst", ptr_modifier!(), "} + 8*2], {tmp2}"),            // atomic { *dst.byte_add(8*2) = tmp2 }
+                        concat!("mov qword ptr [{dst", ptr_modifier!(), "} + 8*1], {tmp1}"),            // atomic { *dst.byte_add(8*1) = tmp1 }
+                        concat!("mov qword ptr [{dst", ptr_modifier!(), "}], {tmp0}"),                  // atomic { *dst = tmp0 }
+                        concat!("lea {dst", ptr_modifier!(), "}, [{dst", ptr_modifier!(), "} + 8*8]"),  // dst = dst.byte_add(8*8)
+                        dst = inout(reg) dst,
+                        tmp0 = in(reg) tmp0,
+                        tmp1 = in(reg) tmp1,
+                        tmp2 = in(reg) tmp2,
+                        tmp3 = in(reg) tmp3,
+                        tmp4 = in(reg) tmp4,
+                        tmp5 = in(reg) tmp5,
+                        tmp6 = in(reg) tmp6,
+                        tmp7 = in(reg) tmp7,
+                        options(nostack, preserves_flags),
+                    );
+                    inc_addr!(dst, 8);
+                    count = count.wrapping_sub(1); // can use unchecked_sub
+                    if count == 0 {
+                        break;
+                    }
+                }
+            }
+            src
+        }
+        #[cfg(target_feature = "avx")]
+        // SAFETY: the caller must uphold the safety contract.
+        // cfg guarantees that the CPU supports AVX.
+        unsafe {
+            src = atomic_store_memcpy_large_avx(dst, src, count);
+        }
+        #[cfg(not(target_feature = "avx"))]
+        #[cfg(not(all(
+            not(target_feature = "avx"),
+            any(
+                atomic_maybe_uninit_no_outline_atomics,
+                target_env = "sgx",
+                not(target_feature = "sse")
+            ),
+        )))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            src = if SRC_ALIGNED {
+                ifunc!(unsafe fn(
+                    dst: *mut MaybeUninit<u64>,
+                    src: *const MaybeUninit<u64>,
+                    count: usize,
+                ) -> *const MaybeUninit<u64> {
+                    if detect::detect().avx() {
+                        atomic_store_memcpy_large_avx
+                    } else {
+                        atomic_store_memcpy_large_scalar::<true>
+                    }
+                })
+            } else {
+                ifunc!(unsafe fn(
+                    dst: *mut MaybeUninit<u64>,
+                    src: *const MaybeUninit<u64>,
+                    count: usize,
+                ) -> *const MaybeUninit<u64> {
+                    if detect::detect().avx() {
+                        atomic_store_memcpy_large_avx
+                    } else {
+                        atomic_store_memcpy_large_scalar::<false>
+                    }
+                })
+            };
+        }
+        #[cfg(not(target_feature = "avx"))]
+        #[cfg(all(
+            not(target_feature = "avx"),
+            any(
+                atomic_maybe_uninit_no_outline_atomics,
+                target_env = "sgx",
+                not(target_feature = "sse")
+            ),
+        ))]
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            src = atomic_store_memcpy_large_scalar::<{ SRC_ALIGNED }>(dst, src, count);
+        }
+        store_memcpy_opt_post!(src, last);
+    }
+}
 
 // -----------------------------------------------------------------------------
 // 64-bit atomics on x86_32
@@ -990,4 +1448,12 @@ macro_rules! cfg_has_atomic_cas {
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_has_atomic_memcpy {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_atomic_memcpy {
+    ($($tt:tt)*) => {};
 }

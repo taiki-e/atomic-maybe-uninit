@@ -962,7 +962,7 @@ macro_rules! __test_atomic {
 }
 
 #[allow(unused_unsafe)] // for old rustc
-fn assert_panic(f: &dyn Fn()) -> std::string::String {
+pub(crate) fn assert_panic(f: &dyn Fn()) -> std::string::String {
     let backtrace = std::env::var_os("RUST_BACKTRACE");
     let hook = std::panic::take_hook();
     // set_var/remove_var is fine as we run tests with RUST_TEST_THREADS=1
@@ -1144,7 +1144,7 @@ pub(crate) fn mark_aligned_undefined<T: ?Sized>(a: &T) {
     .unwrap();
 }
 
-fn skip_should_panic_test() -> bool {
+pub(crate) fn skip_should_panic_test() -> bool {
     // Valgrind false positive on s390x
     is_panic_abort() || cfg!(all(valgrind, target_arch = "s390x"))
 }
