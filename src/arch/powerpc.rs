@@ -121,7 +121,7 @@ macro_rules! atomic_cmpxchg {
             (Release, Acquire) => $cmpxchg_cond_release!("isync", lwsync!(), "3f" /* emit-fence-on-fail */, "4f" /* skip-fence-on-success */, "" /* emit-fence-on-fail */),
             (AcqRel, Relaxed) => $cmpxchg_cond_release!("isync", lwsync!(), "4f" /* skip-fence-on-fail */, "3f" /* emit-fence-on-success */, "b 4f" /* skip-fence-on-fail */),
             (AcqRel, Acquire) => $cmpxchg_cond_release!("isync", lwsync!(), "3f" /* emit-fence-on-fail */, "3f" /* emit-fence-on-success */, "" /* emit-fence-on-fail */),
-            // LLVM doesn't emit SYNC before LL in these cases, but seems to wrong considering load's lowing.
+            // LLVM doesn't emit SYNC before LL in these cases, but seems to wrong considering load's lowering.
             (Relaxed | Release, _) => $cmpxchg!("isync", "sync", "3f" /* emit-fence-on-fail */, "b 4f" /* skip-fence-on-success */),
             (SeqCst, Relaxed) => $cmpxchg!("isync", "sync", "4f" /* skip-fence-on-fail */, "" /* emit-fence-on-success */),
             (Acquire | AcqRel | SeqCst, _) => $cmpxchg!("isync", "sync", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-success */),
@@ -143,7 +143,7 @@ macro_rules! atomic_cmpxchg_weak {
             (Release, Acquire) => $cmpxchg_weak!("isync", "", lwsync!(), "3f" /* emit-fence-on-fail */, "beq+ %cr0, 4f" /* skip-fence-on-success */),
             (AcqRel, Relaxed) => $cmpxchg_weak!("isync", "", lwsync!(), "4f" /* skip-fence-on-fail */, "bne- %cr0, 4f" /* skip-fence-on-fail */),
             (AcqRel, Acquire) => $cmpxchg_weak!("isync", "", lwsync!(), "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
-            // LLVM doesn't emit SYNC before LL in these cases, but seems to wrong considering load's lowing.
+            // LLVM doesn't emit SYNC before LL in these cases, but seems to wrong considering load's lowering.
             (Relaxed | Release, _) => $cmpxchg_weak!("isync", "sync", "", "3f" /* emit-fence-on-fail */, "beq+ %cr0, 4f" /* skip-fence-on-success */),
             (SeqCst, Relaxed) => $cmpxchg_weak!("isync", "sync", "", "4f" /* skip-fence-on-fail */, "bne- %cr0, 4f" /* skip-fence-on-fail */),
             (Acquire | AcqRel | SeqCst, _) => $cmpxchg_weak!("isync", "sync", "", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),

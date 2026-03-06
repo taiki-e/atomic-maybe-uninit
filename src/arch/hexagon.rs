@@ -63,7 +63,7 @@ macro_rules! atomic_load_store {
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEM{UB,UH,W} has SeqCst semantics according to LLVM 22's lowing.
+                // MEM{UB,UH,W} has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     asm!(
                         concat!("{out} = mem", $load_ext, $suffix, "({src})"), // atomic { out = zero_extend(*src) }
@@ -85,7 +85,7 @@ macro_rules! atomic_load_store {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEM{UB,UH,W} has SeqCst semantics according to LLVM 22's lowing.
+                // MEM{UB,UH,W} has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     asm!(
                         concat!("mem", $suffix, "({dst}) = {val}"), // atomic { *dst = val }
@@ -113,7 +113,7 @@ macro_rules! atomic {
                 let mut out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEMW_LOCKED has SeqCst semantics according to LLVM 22's lowing.
+                // MEMW_LOCKED has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
@@ -144,7 +144,7 @@ macro_rules! atomic {
                 let r: u32;
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEMW_LOCKED has SeqCst semantics according to LLVM 22's lowing.
+                // MEMW_LOCKED has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
@@ -186,7 +186,7 @@ macro_rules! atomic_sub_word {
                 let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEMW_LOCKED has SeqCst semantics according to LLVM 22's lowing.
+                // MEMW_LOCKED has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
@@ -224,7 +224,7 @@ macro_rules! atomic_sub_word {
                 let mut r: u32;
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEMW_LOCKED has SeqCst semantics according to LLVM 22's lowing.
+                // MEMW_LOCKED has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
@@ -278,7 +278,7 @@ macro_rules! atomic64 {
                 let (prev_lo, prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEMD has SeqCst semantics according to LLVM 22's lowing.
+                // MEMD has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     asm!(
                         "{{ r3:2 = memd({src}) }}", // atomic { r2:r3 = *src }
@@ -302,7 +302,7 @@ macro_rules! atomic64 {
                 let val = MaybeUninit64 { whole: val };
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEMD has SeqCst semantics according to LLVM 22's lowing.
+                // MEMD has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     asm!(
                         "memd({dst}) = r3:2", // atomic { *dst = r2:r3 }
@@ -326,7 +326,7 @@ macro_rules! atomic64 {
                 let (mut prev_lo, mut prev_hi);
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEMD_LOCKED has SeqCst semantics according to LLVM 22's lowing.
+                // MEMD_LOCKED has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     asm!(
                         "2:", // 'retry:
@@ -361,7 +361,7 @@ macro_rules! atomic64 {
                 let r: u32;
 
                 // SAFETY: the caller must uphold the safety contract.
-                // MEMD_LOCKED has SeqCst semantics according to LLVM 22's lowing.
+                // MEMD_LOCKED has SeqCst semantics according to LLVM 22's lowering.
                 unsafe {
                     asm!(
                         "2:", // 'retry:

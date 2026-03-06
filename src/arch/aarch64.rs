@@ -521,7 +521,7 @@ macro_rules! atomic128 {
                         // LLVM uses store-release (dmb ish; stp); dmb ish, GCC (libatomic) and Atomics ABI Standard
                         // uses store-release (stilp) without fence for SeqCst store
                         // (https://github.com/gcc-mirror/gcc/commit/7107574958e2bed11d916a1480ef1319f15e5ffe).
-                        // Considering https://reviews.llvm.org/D141748, LLVM's lowing seems
+                        // Considering https://reviews.llvm.org/D141748, LLVM's lowering seems
                         // to be the safer option here (I'm not convinced that the libatomic's implementation is wrong).
                         #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
                         #[cfg(not(any(target_feature = "lse128", atomic_maybe_uninit_target_feature = "lse128")))]
