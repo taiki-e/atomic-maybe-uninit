@@ -174,8 +174,8 @@ macro_rules! atomic {
                         // Do not use `preserves_flags` because CS{,G} modifies the condition code.
                         options(nostack),
                     );
-                    (out, extract_cc(r))
                 }
+                (out, extract_cc(r))
             }
         }
     };
@@ -267,8 +267,8 @@ macro_rules! atomic_sub_word {
                         // Do not use `preserves_flags` because CS, CR, and RISBG modify the condition code.
                         options(nostack),
                     );
-                    (out, extract_cc(r))
                 }
+                (out, extract_cc(r))
             }
         }
     };

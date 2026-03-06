@@ -198,10 +198,10 @@ macro_rules! atomic {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self>;
+                let mut r: i32;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: i32;
                     #[cfg(target_feature = "lse")]
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt, $_msvc_fence:tt) => {{
@@ -272,10 +272,10 @@ macro_rules! atomic {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self>;
+                let r: i32;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let r: i32;
                     macro_rules! cmpxchg_weak {
                         ($acquire:tt, $release:tt, $msvc_fence:tt) => {
                             asm!(
@@ -302,9 +302,9 @@ macro_rules! atomic {
                     }
                     atomic_rmw!(cmpxchg_weak, order, write = success);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    // 0 if the store was successful, 1 if no store was performed
-                    (out, r == 0)
                 }
+                // 0 if the store was successful, 1 if no store was performed
+                (out, r == 0)
             }
         }
     };
@@ -659,10 +659,10 @@ impl AtomicCompareExchange for u128 {
         let old = MaybeUninit128 { whole: old };
         let new = MaybeUninit128 { whole: new };
         let (mut prev_lo, mut prev_hi);
+        let mut r: i32;
 
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
-            let mut r: i32;
             #[cfg(target_feature = "lse")]
             macro_rules! cmpxchg {
                 ($acquire:tt, $release:tt, $_msvc_fence:tt) => {

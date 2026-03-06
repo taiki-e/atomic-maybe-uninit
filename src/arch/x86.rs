@@ -553,13 +553,13 @@ impl AtomicCompareExchange for u64 {
         let old = MaybeUninit64 { whole: old };
         let new = MaybeUninit64 { whole: new };
         let (prev_lo, prev_hi);
+        let r: u8;
 
         // SAFETY: the caller must uphold the safety contract.
         // CMPXCHG8B has SeqCst semantics.
         //
         // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
         unsafe {
-            let r: u8;
             asm!(
                 "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
                 "sete cl",                        // cl = ZF
@@ -912,6 +912,7 @@ macro_rules! atomic128 {
                 let old = MaybeUninit128 { whole: old };
                 let new = MaybeUninit128 { whole: new };
                 let (prev_lo, prev_hi);
+                let r: u8;
 
                 // SAFETY: the caller must guarantee that `dst` is valid for both writes and
                 // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
@@ -920,7 +921,6 @@ macro_rules! atomic128 {
                 //
                 // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                 unsafe {
-                    let r: u8;
                     asm!(
                         "xchg r8, rbx", // save rbx which is reserved by LLVM
                         concat!("lock cmpxchg16b xmmword ptr [", $cas_dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }

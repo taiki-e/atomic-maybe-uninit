@@ -734,392 +734,362 @@ asm_test::compare_exchange::u16::release_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::seqcst_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::acqrel_acquire:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::acquire_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::relaxed_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::release_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::seqcst_acquire:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::seqcst_relaxed:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::acquire_acquire:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::acquire_relaxed:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::relaxed_acquire:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::relaxed_relaxed:
+        li                a4, 0x1
 0:
         lr.w              a3, (a0)
         bne               a3, a1, 1f
         sc.w              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::release_acquire:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u32::release_relaxed:
+        li                a4, 0x1
 0:
         lr.w              a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::acqrel_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::seqcst_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::acqrel_acquire:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::acqrel_relaxed:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::acquire_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::relaxed_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::release_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::seqcst_acquire:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::seqcst_relaxed:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::acquire_acquire:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::acquire_relaxed:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::relaxed_acquire:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::relaxed_relaxed:
+        li                a4, 0x1
 0:
         lr.d              a3, (a0)
         bne               a3, a1, 1f
         sc.d              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::release_acquire:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange::u64::release_relaxed:
+        li                a4, 0x1
 0:
         lr.d              a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
@@ -1859,392 +1829,362 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::release_seqcst:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
+        li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_acquire:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
+        li                a4, 0x1
 0:
         lr.w              a3, (a0)
         bne               a3, a1, 1f
         sc.w              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::release_acquire:
+        li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
+        li                a4, 0x1
 0:
         lr.w              a3, (a0)
         bne               a3, a1, 1f
         sc.w.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::acqrel_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::seqcst_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::acqrel_acquire:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::acqrel_relaxed:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::acquire_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::relaxed_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::release_seqcst:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::seqcst_acquire:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::seqcst_relaxed:
+        li                a4, 0x1
 0:
         lr.d.aqrl         a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::acquire_acquire:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::acquire_relaxed:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::relaxed_acquire:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::relaxed_relaxed:
+        li                a4, 0x1
 0:
         lr.d              a3, (a0)
         bne               a3, a1, 1f
         sc.d              a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::release_acquire:
+        li                a4, 0x1
 0:
         lr.d.aq           a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 
 asm_test::compare_exchange_weak::u64::release_relaxed:
+        li                a4, 0x1
 0:
         lr.d              a3, (a0)
         bne               a3, a1, 1f
         sc.d.rl           a4, a2, (a0)
         bnez              a4, 0b
 1:
-        xor               a4, a3, a1
-        seqz              a4, a4
-        snez              a1, a4
+        seqz              a1, a4
         mv                a0, a3
         ret
 

@@ -820,10 +820,10 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let mut out: MaybeUninit<Self>;
+                let mut r: i32 = 1;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: i32 = 1;
                     macro_rules! cmpxchg_weak {
                         ($asm:ident, $acquire:expr, $release:expr, $cmp_fail_label:tt, $branch_after_sc:tt) => {
                             $asm!(
@@ -849,9 +849,9 @@ macro_rules! atomic {
                     }
                     atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    // 0 if the store was successful, 1 if no store was performed
-                    (out, r == 0)
                 }
+                // 0 if the store was successful, 1 if no store was performed
+                (out, r == 0)
             }
         }
     };
@@ -910,8 +910,8 @@ macro_rules! atomic_sub_word {
                                 // Do not use `preserves_flags` because __kuser_cmpxchg and s! modify the condition flags.
                                 // Do not use `nostack` because __kuser_cmpxchg may push to stack.
                             );
-                            crate::utils::extend32::$ty::extract(lsr(out, shift))
                         }
+                        crate::utils::extend32::$ty::extract(lsr(out, shift))
                     }
                 }
                 impl AtomicCompareExchange for $ty {
@@ -926,11 +926,11 @@ macro_rules! atomic_sub_word {
                         debug_assert_atomic_unsafe_precondition!(dst, $ty);
                         let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                         let mut out: MaybeUninit<u32>;
+                        let mut r: i32;
 
                         // SAFETY: the caller must uphold the safety contract.
                         // __kuser_cmpxchg has SeqCst semantics.
                         unsafe {
-                            let mut r: i32;
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             #[cfg(not(any(
@@ -1019,9 +1019,9 @@ macro_rules! atomic_sub_word {
                                 // Do not use `nostack` because __kuser_cmpxchg may push to stack.
                             );
                             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            // 0 if the store was successful, 1 if no store was performed
-                            (crate::utils::extend32::$ty::extract(lsr(out, shift)), r == 0)
                         }
+                        // 0 if the store was successful, 1 if no store was performed
+                        (crate::utils::extend32::$ty::extract(lsr(out, shift)), r == 0)
                     }
                 }
             }

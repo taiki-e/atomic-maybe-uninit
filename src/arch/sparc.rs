@@ -394,10 +394,10 @@ macro_rules! atomic {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let out: MaybeUninit<Self>;
+                let mut r: RegSize;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: RegSize;
                     macro_rules! cmpxchg {
                         ($acquire:expr, $release:expr, $leon_nop:expr) => {
                             asm!(
@@ -419,8 +419,8 @@ macro_rules! atomic {
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (out, r != 0)
             }
         }
     };
@@ -500,10 +500,10 @@ macro_rules! atomic_sub_word {
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<u32>;
+                let mut r: RegSize;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: RegSize;
                     macro_rules! cmpxchg {
                         ($acquire:expr, $release:expr, $_leon_nop:expr) => {
                             // Implement sub-word atomic operations using word-sized CAS loop.
@@ -538,8 +538,8 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (crate::utils::extend32::$ty::extract(srl(out, shift)), r != 0)
                 }
+                (crate::utils::extend32::$ty::extract(srl(out, shift)), r != 0)
             }
         }
     };

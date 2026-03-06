@@ -236,10 +236,10 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let mut out: MaybeUninit<Self>;
+                let mut r: RegSize;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: RegSize;
                     macro_rules! cmpxchg {
                         ($failure_fence:tt) => {
                             asm!(
@@ -272,8 +272,8 @@ macro_rules! atomic {
                         _ => unreachable!(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (out, r != 0)
             }
         }
     };
@@ -330,10 +330,10 @@ macro_rules! atomic_sub_word {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<u32>;
+                let mut r: RegSize;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: RegSize;
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg {
@@ -371,8 +371,8 @@ macro_rules! atomic_sub_word {
                         _ => unreachable!(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (crate::utils::extend32::$ty::extract(srl_w(out, shift)), r != 0)
                 }
+                (crate::utils::extend32::$ty::extract(srl_w(out, shift)), r != 0)
             }
         }
     };

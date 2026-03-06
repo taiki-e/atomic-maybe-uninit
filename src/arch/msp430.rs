@@ -131,8 +131,8 @@ macro_rules! atomic {
                         // XOR modifies the status register, but `preserves_flags` is okay since SREG is restored at the end.
                         options(nostack, preserves_flags),
                     );
-                    (out, r == 0)
                 }
+                (out, r == 0)
             }
         }
     };

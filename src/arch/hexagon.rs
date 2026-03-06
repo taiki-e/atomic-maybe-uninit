@@ -167,8 +167,8 @@ macro_rules! atomic {
                         options(nostack, preserves_flags),
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (out, r != 0)
             }
         }
     };
@@ -254,8 +254,8 @@ macro_rules! atomic_sub_word {
                         options(nostack, preserves_flags),
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (crate::utils::extend32::$ty::extract(lsr(out, shift)), r != 0)
                 }
+                (crate::utils::extend32::$ty::extract(lsr(out, shift)), r != 0)
             }
         }
     };

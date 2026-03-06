@@ -349,9 +349,9 @@ macro_rules! atomic {
                         };
                     }
                     atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
-                    // if compare failed EQ bit is cleared, if store succeeds EQ bit is set.
-                    (out, test_cr0_eq(r))
                 }
+                // if compare failed EQ bit is cleared, if store succeeds EQ bit is set.
+                (out, test_cr0_eq(r))
             }
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
@@ -392,9 +392,9 @@ macro_rules! atomic {
                         };
                     }
                     atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
-                    // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
-                    (out, test_cr0_eq(r))
                 }
+                // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
+                (out, test_cr0_eq(r))
             }
         }
     };
@@ -545,9 +545,9 @@ macro_rules! atomic_sub_word {
                         };
                     }
                     atomic_cmpxchg!(cmpxchg, cmpxchg_cond_release, success, failure);
-                    // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
-                    (crate::utils::extend32::$ty::extract(srw(out, shift)), test_cr0_eq(r))
                 }
+                // if compare failed EQ bit is cleared, if stqcx succeeds EQ bit is set.
+                (crate::utils::extend32::$ty::extract(srw(out, shift)), test_cr0_eq(r))
             }
             #[inline]
             unsafe fn atomic_compare_exchange_weak(
@@ -583,7 +583,7 @@ macro_rules! atomic_sub_word {
                                 "3:", // 'emit-fence:
                                     $acquire,                            // fence
                                 "4:", // 'skip-fence:
-                                "mfcr {tmp}",                // r = zero_extend(cr)
+                                "mfcr {tmp}",                            // r = zero_extend(cr)
                                 dst = in(reg_nonzero) ptr_reg!(dst),
                                 old = in(reg) slw(crate::utils::extend32::$ty::zero(old), shift),
                                 new = in(reg) slw(crate::utils::extend32::$ty::zero(new), shift),
@@ -596,9 +596,9 @@ macro_rules! atomic_sub_word {
                         };
                     }
                     atomic_cmpxchg_weak!(cmpxchg_weak, success, failure);
-                    // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
-                    (crate::utils::extend32::$ty::extract(srw(out, shift)), test_cr0_eq(r))
                 }
+                // if compare or store failed EQ bit is cleared, if store succeeds EQ bit is set.
+                (crate::utils::extend32::$ty::extract(srw(out, shift)), test_cr0_eq(r))
             }
         }
     };

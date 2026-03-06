@@ -430,11 +430,11 @@ macro_rules! atomic {
                         debug_assert_atomic_unsafe_precondition!(dst, $ty);
                         let order = crate::utils::upgrade_success_ordering(success, failure);
                         let mut out: MaybeUninit<Self>;
+                        let mut r: RegSize;
 
                         // SAFETY: the caller must uphold the safety contract,
                         // the cfg guarantee that the CPU supports Zacas extension.
                         unsafe {
-                            let mut r: RegSize;
                             macro_rules! cmpxchg {
                                 ($fence:tt, $order:tt) => {
                                     asm!(
@@ -455,8 +455,8 @@ macro_rules! atomic {
                             }
                             atomic_rmw_amocas!(cmpxchg, order, failure = failure);
                             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            (out, r != 0)
                         }
+                        (out, r != 0)
                     }
                 }
             }
@@ -481,11 +481,11 @@ macro_rules! atomic {
                         debug_assert_atomic_unsafe_precondition!(dst, $ty);
                         let order = crate::utils::upgrade_success_ordering(success, failure);
                         let mut out: MaybeUninit<Self>;
+                        let mut r: RegSize = 1;
 
                         // SAFETY: the caller must uphold the safety contract,
                         // the cfg guarantee that the CPU supports Zalrsc extension.
                         unsafe {
-                            let mut r: RegSize;
                             macro_rules! cmpxchg {
                                 ($acquire:tt, $release:tt) => {
                                     asm!(
@@ -495,21 +495,19 @@ macro_rules! atomic {
                                             concat!("sc.", $suffix, $release, " {r}, {new}, 0({dst})"), // atomic { if RS == dst { *dst = new; r = 0 } else { r = nonzero }; RS = None }
                                             "bnez {r}, 2b",                                             // if r != 0 { jump 'retry }
                                         "3:", // 'cmp-fail:
-                                        "xor {r}, {out}, {old}",                                        // r = out ^ old
-                                        "seqz {r}, {r}",                                                // if r == 0 { r = 1 } else { r = 0 }
                                         dst = in(reg) ptr_reg!(dst),
                                         old = in(reg) old,
                                         new = in(reg) new,
                                         out = out(reg) out,
-                                        r = out(reg) r,
+                                        r = inout(reg) r,
                                         options(nostack, preserves_flags),
                                     )
                                 };
                             }
                             atomic_rmw_lr_sc!(cmpxchg, order);
-                            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            (out, r != 0)
                         }
+                        // 0 if the store was successful, 1 or nonzero if no store was performed
+                        (out, r == 0)
                     }
                 }
             }
@@ -653,11 +651,11 @@ macro_rules! atomic_sub_word {
                         debug_assert_atomic_unsafe_precondition!(dst, $ty);
                         let order = crate::utils::upgrade_success_ordering(success, failure);
                         let mut out: MaybeUninit<Self>;
+                        let mut r: RegSize;
 
                         // SAFETY: the caller must uphold the safety contract,
                         // the cfg guarantee that the CPU supports Zacas extension.
                         unsafe {
-                            let mut r: RegSize;
                             macro_rules! cmpxchg {
                                 ($fence:tt, $order:tt) => {
                                     asm!(
@@ -680,8 +678,8 @@ macro_rules! atomic_sub_word {
                             }
                             atomic_rmw_amocas!(cmpxchg, order, failure = failure);
                             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            (out, r != 0)
                         }
+                        (out, r != 0)
                     }
                 }
             }
@@ -713,11 +711,11 @@ macro_rules! atomic_sub_word {
                         let order = crate::utils::upgrade_success_ordering(success, failure);
                         let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                         let mut out: MaybeUninit<u32>;
+                        let mut r: RegSize;
 
                         // SAFETY: the caller must uphold the safety contract,
                         // the cfg guarantee that the CPU supports Zalrsc extension.
                         unsafe {
-                            let mut r: RegSize;
                             // Implement sub-word atomic operations using word-sized LL/SC loop.
                             // Based on assemblies generated by rustc/LLVM.
                             // See also create_sub_word_mask_values.
@@ -749,8 +747,8 @@ macro_rules! atomic_sub_word {
                             }
                             atomic_rmw_lr_sc!(cmpxchg, order);
                             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            (crate::utils::extend32::$ty::extract(srlw(out, shift)), r != 0)
                         }
+                        (crate::utils::extend32::$ty::extract(srlw(out, shift)), r != 0)
                     }
                 }
             }
@@ -770,11 +768,11 @@ macro_rules! atomic_sub_word {
                         let order = crate::utils::upgrade_success_ordering(success, failure);
                         let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
                         let mut out: MaybeUninit<u32>;
+                        let mut r: RegSize;
 
                         // SAFETY: the caller must uphold the safety contract.
                         unsafe {
                             use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
-                            let mut r: RegSize;
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             macro_rules! cmpxchg_fail_relaxed {
@@ -851,8 +849,8 @@ macro_rules! atomic_sub_word {
                                 _ => unreachable!(),
                             }
                             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                            (crate::utils::extend32::$ty::extract(srlw(out, shift)), r != 0)
                         }
+                        (crate::utils::extend32::$ty::extract(srlw(out, shift)), r != 0)
                     }
                 }
             }
@@ -984,11 +982,11 @@ macro_rules! atomic_dw {
                 let old = MaybeUninitDw { whole: old };
                 let new = MaybeUninitDw { whole: new };
                 let (prev_lo, prev_hi);
+                let mut r: RegSize;
 
                 // SAFETY: the caller must uphold the safety contract,
                 // the cfg guarantee that the CPU supports Zacas extension.
                 unsafe {
-                    let mut r: RegSize;
                     macro_rules! cmpxchg {
                         ($fence:tt, $order:tt) => {
                             asm!(

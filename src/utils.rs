@@ -561,28 +561,6 @@ pub(crate) mod zero_extend64 {
     }
 }
 
-/// A 128-bit value represented as a pair of 64-bit values.
-///
-/// This type is `#[repr(C)]`, both fields have the same in-memory representation
-/// and are plain old data types, so access to the fields is always safe.
-#[allow(dead_code)]
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub(crate) union MaybeUninit128 {
-    pub(crate) whole: MaybeUninit<u128>,
-    pub(crate) pair: Pair<u64>,
-}
-/// A 64-bit value represented as a pair of 32-bit values.
-///
-/// This type is `#[repr(C)]`, both fields have the same in-memory representation
-/// and are plain old data types, so access to the fields is always safe.
-#[allow(dead_code)]
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub(crate) union MaybeUninit64 {
-    pub(crate) whole: MaybeUninit<u64>,
-    pub(crate) pair: Pair<u32>,
-}
 #[allow(dead_code)]
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -605,6 +583,28 @@ pub(crate) struct Pair<T: Copy> {
     )))]
     pub(crate) lo: MaybeUninit<T>,
 }
+macro_rules! pair {
+    ($name:ident, $whole:ident, $half:ident) => {
+        const _: () = assert!(mem::size_of::<$whole>() == mem::size_of::<$half>() * 2);
+        /// An potentially uninitialized
+        #[doc = stringify!($whole)]
+        /// value that can be represented as a pair of 64-bit values.
+        ///
+        /// This type is `#[repr(C)]`, both fields have the same in-memory representation
+        /// and all fields are `MaybeUninit`, so access to the fields is always safe.
+        #[allow(dead_code)]
+        #[derive(Clone, Copy)]
+        #[repr(C)]
+        pub(crate) union $name {
+            pub(crate) whole: MaybeUninit<$whole>,
+            pub(crate) pair: Pair<$half>,
+        }
+    };
+}
+pair!(MaybeUninit128, u128, u64);
+pair!(MaybeUninit64, u64, u32);
+#[cfg(target_arch = "avr")]
+pair!(MaybeUninit16, u16, u8);
 
 #[cfg(not(target_pointer_width = "16"))]
 type MinWord = u32;

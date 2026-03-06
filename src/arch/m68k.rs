@@ -128,10 +128,10 @@ macro_rules! atomic {
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 let out: MaybeUninit<Self>;
+                let r: u8;
                 // SAFETY: the caller must uphold the safety contract.
                 // CAS has SeqCst semantics.
                 unsafe {
-                    let r: u8;
                     asm!(
                         concat!("cas.", $suffix, " {out}, {new}, ({dst})"), // atomic { if *dst == out { cc.Z = 1; *dst = new } else { cc.Z = 0; out = *dst } }
                         "seq {r}",                                          // r = if cc.Z { !0u8 } else { 0 }
@@ -142,8 +142,9 @@ macro_rules! atomic {
                         // Do not use `preserves_flags` because CAS modifies N, Z, V, and C bits in the condition codes.
                         options(nostack),
                     );
-                    (out, r != 0)
+                    debug_assert!(r == 0 || r == u8::MAX);
                 }
+                (out, r != 0)
             }
         }
     };
@@ -274,12 +275,12 @@ impl AtomicCompareExchange for u64 {
         let old = MaybeUninit64 { whole: old };
         let new = MaybeUninit64 { whole: new };
         let (prev_hi, prev_lo);
+        let r: u8;
         // SAFETY: the caller must uphold the safety contract.
         // CAS2 has SeqCst semantics.
         unsafe {
             let dst1 = dst.cast::<u32>();
             let dst2 = dst1.add(1);
-            let r: u8;
             asm!(
                 ".2byte 0x0efc",
                 ".2byte 0x8081",
@@ -309,6 +310,7 @@ impl AtomicCompareExchange for u64 {
             //     // Do not use `preserves_flags` because CAS2 modifies N, Z, V, and C bits in the condition codes.
             //     options(nostack),
             // );
+            debug_assert!(r == 0 || r == u8::MAX);
             (MaybeUninit64 { pair: Pair { hi: prev_hi, lo: prev_lo } }.whole, r != 0)
         }
     }

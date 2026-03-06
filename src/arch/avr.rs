@@ -23,7 +23,10 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::{
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+    utils::MaybeUninit16,
+};
 
 // -----------------------------------------------------------------------------
 // 8-bit atomics
@@ -126,8 +129,8 @@ impl AtomicCompareExchange for u8 {
                 // EOR modifies the status register (SREG), but `preserves_flags` is okay since SREG is restored at the end.
                 options(nostack, preserves_flags),
             );
-            (out, r == 0)
         }
+        (out, r == 0)
     }
 }
 
@@ -376,7 +379,8 @@ impl AtomicCompareExchange for u16 {
         _failure: Ordering,
     ) -> (MaybeUninit<Self>, bool) {
         let out: MaybeUninit<Self>;
-        let mut r: u8 = 0;
+        let old = MaybeUninit16 { whole: old };
+        let mut r: u8;
 
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
@@ -389,24 +393,22 @@ impl AtomicCompareExchange for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             ))]
             asm!(
-                "in {sreg}, 0x3F",      // sreg = SREG
-                "cli",                  // atomic { SREG.I = 0
-                "ld {out:l}, Z",        //   out.lo = *Z
-                "ldd {out:h}, Z+1",     //   out.hi = *Z.byte_add(1)
-                "eor {old:l}, {out:l}", //   old.lo ^= out.lo; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "eor {old:h}, {out:h}", //   old.hi ^= out.hi; if old.hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old:l}, {old:h}",  //   old.lo ^= old.hi; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "brne 2f",              //   if SREG.Z == 0 { jump 'cmp-fail }
-                "ldi {r}, 1",           //   r = 1
-                "st Z, {new:l}",        //   *Z = new.lo
-                "std Z+1, {new:h}",     //   *Z.byte_add(1) = new.hi
+                "in {sreg}, 0x3F",        // sreg = SREG
+                "cli",                    // atomic { SREG.I = 0
+                "ld {out:l}, Z",          //   out.lo = *Z
+                "ldd {out:h}, Z+1",       //   out.hi = *Z.byte_add(1)
+                "eor {old_lo}, {out:l}",  //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "eor {old_hi}, {out:h}",  //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}",  //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "brne 2f",                //   if SREG.Z == 0 { jump 'cmp-fail }
+                "st Z, {new:l}",          //   *Z = new.lo
+                "std Z+1, {new:h}",       //   *Z.byte_add(1) = new.hi
                 "2:", // 'cmp-fail:
-                "out 0x3F, {sreg}",     //   SREG = sreg }
-                old = inout(reg_pair) old => _,
+                "out 0x3F, {sreg}",       //   SREG = sreg }
+                old_lo = inout(reg) old.pair.lo => r,
+                old_hi = inout(reg) old.pair.hi => _,
                 new = in(reg_pair) new,
                 out = out(reg_pair) out,
-                // ldi requires r[16-31]
-                r = inout(reg_upper) r,
                 sreg = out(reg) _,
                 in("Z") dst,
                 // EOR and OR modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
@@ -421,24 +423,22 @@ impl AtomicCompareExchange for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             )))]
             asm!(
-                "in {sreg}, 0x3F",      // sreg = SREG
-                "cli",                  // atomic { SREG.I = 0
-                "ld {out:l}, Z",        //   out.lo = *Z
-                "ldd {out:h}, Z+1",     //   out.hi = *Z.byte_add(1)
-                "eor {old:l}, {out:l}", //   old.lo ^= out.lo; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "eor {old:h}, {out:h}", //   old.hi ^= out.hi; if old.hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old:l}, {old:h}",  //   old.lo ^= old.hi; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "brne 2f",              //   if SREG.Z == 0 { jump 'cmp-fail }
-                "ldi {r}, 1",           //   r = 1
-                "std Z+1, {new:h}",     //   *Z.byte_add(1) = new.hi
-                "st Z, {new:l}",        //   *Z = new.lo
+                "in {sreg}, 0x3F",        // sreg = SREG
+                "cli",                    // atomic { SREG.I = 0
+                "ld {out:l}, Z",          //   out.lo = *Z
+                "ldd {out:h}, Z+1",       //   out.hi = *Z.byte_add(1)
+                "eor {old_lo}, {out:l}",  //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "eor {old_hi}, {out:h}",  //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}",  //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "brne 2f",                //   if SREG.Z == 0 { jump 'cmp-fail }
+                "std Z+1, {new:h}",       //   *Z.byte_add(1) = new.hi
+                "st Z, {new:l}",          //   *Z = new.lo
                 "2:", // 'cmp-fail:
-                "out 0x3F, {sreg}",     //   SREG = sreg }
-                old = inout(reg_pair) old => _,
+                "out 0x3F, {sreg}",       //   SREG = sreg }
+                old_lo = inout(reg) old.pair.lo => r,
+                old_hi = inout(reg) old.pair.hi => _,
                 new = in(reg_pair) new,
                 out = out(reg_pair) out,
-                // ldi requires r[16-31]
-                r = inout(reg_upper) r,
                 sreg = out(reg) _,
                 in("Z") dst,
                 // EOR and OR modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
@@ -453,26 +453,24 @@ impl AtomicCompareExchange for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             ))]
             asm!(
-                "in {sreg}, 0x3F",      // sreg = SREG
-                "cli",                  // atomic { SREG.I = 0
-                "ld {out:l}, Z+",       //   out.lo = *Z; Z = Z.byte_add(1);
-                "ld {out:h}, Z",        //   out.hi = *Z
-                "eor {old:l}, {out:l}", //   old.lo ^= out.lo; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "eor {old:h}, {out:h}", //   old.hi ^= out.hi; if old.hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old:l}, {old:h}",  //   old.lo ^= old.hi; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "brne 2f",              //   if SREG.Z == 0 { jump 'cmp-fail }
-                "ldi {r}, 1",           //   r = 1
-                "subi r30, 0x01",       //   Z.lo -= 1
-                "sbci r31, 0x00",       //   Z.hi -= borrow
-                "st Z+, {new:l}",       //   Z = Z.byte_sub(1); *Z = new.lo
-                "st Z, {new:h}",        //   *Z = new.hi
+                "in {sreg}, 0x3F",        // sreg = SREG
+                "cli",                    // atomic { SREG.I = 0
+                "ld {out:l}, Z+",         //   out.lo = *Z; Z = Z.byte_add(1);
+                "ld {out:h}, Z",          //   out.hi = *Z
+                "eor {old_lo}, {out:l}",  //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "eor {old_hi}, {out:h}",  //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}",  //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "brne 2f",                //   if SREG.Z == 0 { jump 'cmp-fail }
+                "subi r30, 0x01",         //   Z.lo -= 1
+                "sbci r31, 0x00",         //   Z.hi -= borrow
+                "st Z+, {new:l}",         //   Z = Z.byte_sub(1); *Z = new.lo
+                "st Z, {new:h}",          //   *Z = new.hi
                 "2:", // 'cmp-fail:
-                "out 0x3F, {sreg}",     //   SREG = sreg }
-                old = inout(reg_pair) old => _,
+                "out 0x3F, {sreg}",       //   SREG = sreg }
+                old_lo = inout(reg) old.pair.lo => r,
+                old_hi = inout(reg) old.pair.hi => _,
                 new = in(reg_pair) new,
                 out = out(reg_pair) out,
-                // ldi requires r[16-31]
-                r = inout(reg_upper) r,
                 sreg = out(reg) _,
                 inout("Z") dst => _,
                 // EOR, OR, and SUBI modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
@@ -487,32 +485,29 @@ impl AtomicCompareExchange for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             )))]
             asm!(
-                "in {sreg}, 0x3F",      // sreg = SREG
-                "cli",                  // atomic { SREG.I = 0
-                "ld {out:l}, Z+",       //   out.lo = *Z; Z = Z.byte_add(1);
-                "ld {out:h}, Z",        //   out.hi = *Z
-                "eor {old:l}, {out:l}", //   old.lo ^= out.lo; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "eor {old:h}, {out:h}", //   old.hi ^= out.hi; if old.hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old:l}, {old:h}",  //   old.lo ^= old.hi; if old.lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "brne 2f",              //   if SREG.Z == 0 { jump 'cmp-fail }
-                "ldi {r}, 1",           //   r = 1
-                "st Z, {new:h}",        //   *Z = new.hi
-                "st -Z, {new:l}",       //   Z = Z.byte_sub(1); *Z = new.lo
+                "in {sreg}, 0x3F",        // sreg = SREG
+                "cli",                    // atomic { SREG.I = 0
+                "ld {out:l}, Z+",         //   out.lo = *Z; Z = Z.byte_add(1);
+                "ld {out:h}, Z",          //   out.hi = *Z
+                "eor {old_lo}, {out:l}",  //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "eor {old_hi}, {out:h}",  //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}",  //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "brne 2f",                //   if SREG.Z == 0 { jump 'cmp-fail }
+                "st Z, {new:h}",          //   *Z = new.hi
+                "st -Z, {new:l}",         //   Z = Z.byte_sub(1); *Z = new.lo
                 "2:", // 'cmp-fail:
-                "out 0x3F, {sreg}",     //   SREG = sreg }
-                old = inout(reg_pair) old => _,
+                "out 0x3F, {sreg}",       //   SREG = sreg }
+                old_lo = inout(reg) old.pair.lo => r,
+                old_hi = inout(reg) old.pair.hi => _,
                 new = in(reg_pair) new,
                 out = out(reg_pair) out,
-                // ldi requires r[16-31]
-                r = inout(reg_upper) r,
                 sreg = out(reg) _,
                 inout("Z") dst => _,
                 // EOR and OR modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
                 options(nostack, preserves_flags),
             );
-            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-            (out, r != 0)
         }
+        (out, r == 0)
     }
 }
 
