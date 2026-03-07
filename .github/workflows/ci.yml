@@ -157,8 +157,8 @@ jobs:
             esac
           fi
           if [[ -n "${flags}" ]]; then
-            printf '%s\n' "RUSTFLAGS=${RUSTFLAGS} ${flags}" >>"${GITHUB_ENV}"
-            printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS} ${flags}" >>"${GITHUB_ENV}"
+            printf '%s\n' "RUSTFLAGS=${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
+            printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
           fi
         env:
           TARGET: ${{ matrix.target }}
@@ -168,6 +168,13 @@ jobs:
       - name: Workaround for old LLVM bug about MIPS32
         run: printf 'RELEASE=--release\n' >>"${GITHUB_ENV}"
         if: (startsWith(matrix.target, 'mips-') || startsWith(matrix.target, 'mipsel-')) && matrix.rust == 'nightly-2023-08-24'
+      - run: |
+          # Workaround for "unknown architecture of input file `*/symbols.o' is incompatible with sparc:v8plus output"
+          printf '%s\n' "RUSTFLAGS=${RUSTFLAGS} -C target-feature=-v8plus -C link-arg=-mv8plus" >>"${GITHUB_ENV}"
+          printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS} -C target-feature=-v8plus -C link-arg=-mv8plus" >>"${GITHUB_ENV}"
+          # Workaround for "rustc-LLVM ERROR: Unsupported instruction : <MCInst 11 <MCOperand Reg:174>>" with LLVM 20-22
+          printf '%s\n' "CARGO_PROFILE_RELEASE_OPT_LEVEL=0" >>"${GITHUB_ENV}"
+        if: startsWith(matrix.target, 'sparc-')
 
       - run: tools/test.sh -vv ${TARGET:-} ${DOCTEST_XCOMPILE:-} ${BUILD_STD:-} ${RELEASE:-}
       # We test doctest only once with the default build conditions because doctest is slow.
