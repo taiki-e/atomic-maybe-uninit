@@ -28,6 +28,21 @@ use crate::{
     utils::MaybeUninit16,
 };
 
+#[rustfmt::skip]
+macro_rules! disable {
+    () => {
+        concat!(
+            "in {sreg}, 0x3F", "\n", // sreg = SREG
+            "cli",                   // atomic { SREG.I = 0
+        )
+    };
+}
+macro_rules! restore {
+    () => {
+        "out 0x3F, {sreg}" //   SREG = sreg }
+    };
+}
+
 // -----------------------------------------------------------------------------
 // 8-bit atomics
 
@@ -72,22 +87,26 @@ impl AtomicSwap for u8 {
     ) -> MaybeUninit<Self> {
         let out: MaybeUninit<Self>;
 
+        #[cfg(any(target_feature = "rmw", atomic_maybe_uninit_target_feature = "rmw"))]
         // SAFETY: the caller must uphold the safety contract.
+        // cfg guarantees that the CPU supports RMW instructions.
         unsafe {
-            #[cfg(any(target_feature = "rmw", atomic_maybe_uninit_target_feature = "rmw"))]
             asm!(
                 "xch Z, {val}", // atomic { _x = *Z; *Z = val; val = _x }
                 val = inout(reg) val => out,
                 in("Z") dst,
                 options(nostack, preserves_flags),
             );
-            #[cfg(not(any(target_feature = "rmw", atomic_maybe_uninit_target_feature = "rmw")))]
+        }
+        #[cfg(not(any(target_feature = "rmw", atomic_maybe_uninit_target_feature = "rmw")))]
+        // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+        // On single-core systems, disabling interrupts is enough to prevent data race.
+        unsafe {
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
-                "ld {out}, Z",      //   out = *Z
-                "st Z, {val}",      //   *Z = val
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                disable!(),    // atomic {
+                "ld {out}, Z", //   out = *Z
+                "st Z, {val}", //   *Z = val
+                restore!(),    // }
                 val = in(reg) val,
                 out = out(reg) out,
                 sreg = out(reg) _,
@@ -110,17 +129,17 @@ impl AtomicCompareExchange for u8 {
         let out: MaybeUninit<Self>;
         let mut r: u8;
 
-        // SAFETY: the caller must uphold the safety contract.
+        // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+        // On single-core systems, disabling interrupts is enough to prevent data race.
         unsafe {
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
+                disable!(),         // atomic {
                 "ld {out}, Z",      //   out = *Z
                 "eor {old}, {out}", //   old ^= out; if old == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "brne 2f",          //   if SREG.Z == 0 { jump 'cmp-fail }
                 "st Z, {new}",      //   *Z = new
                 "2:", // 'cmp-fail:
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                restore!(),         // }
                 old = inout(reg) old => r,
                 new = in(reg) new,
                 out = out(reg) out,
@@ -143,18 +162,18 @@ impl AtomicLoad for u16 {
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, _order: Ordering) -> MaybeUninit<Self> {
         let out: MaybeUninit<Self>;
 
-        // SAFETY: the caller must uphold the safety contract.
+        // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+        // On single-core systems, disabling interrupts is enough to prevent data race.
         unsafe {
             #[cfg(not(any(
                 target_feature = "tinyencoding",
                 atomic_maybe_uninit_target_feature = "tinyencoding",
             )))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
+                disable!(),         // atomic {
                 "ld {out:l}, Z",    //   out.lo = *Z
                 "ldd {out:h}, Z+1", //   out.hi = *Z.byte_add(1)
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                restore!(),         // }
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
                 in("Z") src,
@@ -165,11 +184,10 @@ impl AtomicLoad for u16 {
                 atomic_maybe_uninit_target_feature = "tinyencoding",
             ))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
-                "ld {out:l}, Z+",   //   out.lo = *Z; Z = Z.byte_add(1)
-                "ld {out:h}, Z",    //   out.hi = *Z
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                disable!(),       // atomic {
+                "ld {out:l}, Z+", //   out.lo = *Z; Z = Z.byte_add(1)
+                "ld {out:h}, Z",  //   out.hi = *Z
+                restore!(),       // }
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
                 inout("Z") src => _,
@@ -182,7 +200,8 @@ impl AtomicLoad for u16 {
 impl AtomicStore for u16 {
     #[inline]
     unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, _order: Ordering) {
-        // SAFETY: the caller must uphold the safety contract.
+        // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+        // On single-core systems, disabling interrupts is enough to prevent data race.
         unsafe {
             #[cfg(not(any(
                 target_feature = "tinyencoding",
@@ -193,11 +212,10 @@ impl AtomicStore for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             ))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
+                disable!(),         // atomic {
                 "st Z, {val:l}",    //   *Z = val.lo
                 "std Z+1, {val:h}", //   *Z.byte_add(1) = val.hi
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                restore!(),         // }
                 val = in(reg_pair) val,
                 sreg = out(reg) _,
                 in("Z") dst,
@@ -212,11 +230,10 @@ impl AtomicStore for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             )))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
+                disable!(),         // atomic {
                 "std Z+1, {val:h}", //   *Z.byte_add(1) = val.hi
                 "st Z, {val:l}",    //   *Z = val.lo
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                restore!(),         // }
                 val = in(reg_pair) val,
                 sreg = out(reg) _,
                 in("Z") dst,
@@ -231,11 +248,10 @@ impl AtomicStore for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             ))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
-                "st Z+, {val:l}",   //   *Z = val.lo; Z = Z.byte_add(1)
-                "st Z, {val:h}",    //   *Z = val.hi
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                disable!(),       // atomic {
+                "st Z+, {val:l}", //   *Z = val.lo; Z = Z.byte_add(1)
+                "st Z, {val:h}",  //   *Z = val.hi
+                restore!(),       // }
                 val = in(reg_pair) val,
                 sreg = out(reg) _,
                 inout("Z") dst => _,
@@ -250,11 +266,10 @@ impl AtomicStore for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             )))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
-                "st Z, {val:h}",    //   *Z = val.hi
-                "st -Z, {val:l}",   //   Z = Z.byte_sub(1); *Z = val.lo
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                disable!(),       // atomic {
+                "st Z, {val:h}",  //   *Z = val.hi
+                "st -Z, {val:l}", //   Z = Z.byte_sub(1); *Z = val.lo
+                restore!(),       // }
                 val = in(reg_pair) val,
                 sreg = out(reg) _,
                 inout("Z") dst.cast::<u8>().add(1) => _,
@@ -272,7 +287,8 @@ impl AtomicSwap for u16 {
     ) -> MaybeUninit<Self> {
         let out: MaybeUninit<Self>;
 
-        // SAFETY: the caller must uphold the safety contract.
+        // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+        // On single-core systems, disabling interrupts is enough to prevent data race.
         unsafe {
             #[cfg(not(any(
                 target_feature = "tinyencoding",
@@ -283,13 +299,12 @@ impl AtomicSwap for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             ))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
+                disable!(),         // atomic {
                 "ld {out:l}, Z",    //   out.lo = *Z
                 "ldd {out:h}, Z+1", //   out.hi = *Z.byte_add(1)
                 "st Z, {val:l}",    //   *Z = val.lo
                 "std Z+1, {val:h}", //   *Z.byte_add(1) = val.hi
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                restore!(),         // }
                 val = in(reg_pair) val,
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
@@ -305,13 +320,12 @@ impl AtomicSwap for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             )))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
+                disable!(),         // atomic {
                 "ld {out:l}, Z",    //   out.lo = *Z
                 "ldd {out:h}, Z+1", //   out.hi = *Z.byte_add(1)
                 "std Z+1, {val:h}", //   *Z.byte_add(1) = val.hi
                 "st Z, {val:l}",    //   *Z = val.lo
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                restore!(),         // }
                 val = in(reg_pair) val,
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
@@ -327,15 +341,14 @@ impl AtomicSwap for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             ))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
-                "ld {out:l}, Z+",   //   out.lo = *Z; Z = Z.byte_add(1);
-                "ld {out:h}, Z",    //   out.hi = *Z
-                "subi r30, 0x01",   //   Z.lo -= 1
-                "sbci r31, 0x00",   //   Z.hi -= borrow
-                "st Z+, {val:l}",   //   Z = Z.byte_sub(1); *Z = val.lo
-                "st Z, {val:h}",    //   *Z = val.hi
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                disable!(),       // atomic {
+                "ld {out:l}, Z+", //   out.lo = *Z; Z = Z.byte_add(1);
+                "ld {out:h}, Z",  //   out.hi = *Z
+                "subi r30, 0x01", //   Z.lo -= 1
+                "sbci r31, 0x00", //   Z.hi -= borrow
+                "st Z+, {val:l}", //   Z = Z.byte_sub(1); *Z = val.lo
+                "st Z, {val:h}",  //   *Z = val.hi
+                restore!(),       // }
                 val = in(reg_pair) val,
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
@@ -352,13 +365,12 @@ impl AtomicSwap for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             )))]
             asm!(
-                "in {sreg}, 0x3F",  // sreg = SREG
-                "cli",              // atomic { SREG.I = 0
-                "ld {out:l}, Z+",   //   out.lo = *Z; Z = Z.byte_add(1);
-                "ld {out:h}, Z",    //   out.hi = *Z
-                "st Z, {val:h}",    //   *Z = val.hi
-                "st -Z, {val:l}",   //   Z = Z.byte_sub(1); *Z = val.lo
-                "out 0x3F, {sreg}", //   SREG = sreg }
+                disable!(),       // atomic {
+                "ld {out:l}, Z+", //   out.lo = *Z; Z = Z.byte_add(1);
+                "ld {out:h}, Z",  //   out.hi = *Z
+                "st Z, {val:h}",  //   *Z = val.hi
+                "st -Z, {val:l}", //   Z = Z.byte_sub(1); *Z = val.lo
+                restore!(),       // }
                 val = in(reg_pair) val,
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
@@ -382,7 +394,8 @@ impl AtomicCompareExchange for u16 {
         let old = MaybeUninit16 { whole: old };
         let mut r: u8;
 
-        // SAFETY: the caller must uphold the safety contract.
+        // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
+        // On single-core systems, disabling interrupts is enough to prevent data race.
         unsafe {
             #[cfg(not(any(
                 target_feature = "tinyencoding",
@@ -393,18 +406,17 @@ impl AtomicCompareExchange for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             ))]
             asm!(
-                "in {sreg}, 0x3F",        // sreg = SREG
-                "cli",                    // atomic { SREG.I = 0
-                "ld {out:l}, Z",          //   out.lo = *Z
-                "ldd {out:h}, Z+1",       //   out.hi = *Z.byte_add(1)
-                "eor {old_lo}, {out:l}",  //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "eor {old_hi}, {out:h}",  //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}",  //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "brne 2f",                //   if SREG.Z == 0 { jump 'cmp-fail }
-                "st Z, {new:l}",          //   *Z = new.lo
-                "std Z+1, {new:h}",       //   *Z.byte_add(1) = new.hi
+                disable!(),              // atomic {
+                "ld {out:l}, Z",         //   out.lo = *Z
+                "ldd {out:h}, Z+1",      //   out.hi = *Z.byte_add(1)
+                "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
+                "st Z, {new:l}",         //   *Z = new.lo
+                "std Z+1, {new:h}",      //   *Z.byte_add(1) = new.hi
                 "2:", // 'cmp-fail:
-                "out 0x3F, {sreg}",       //   SREG = sreg }
+                restore!(),              // }
                 old_lo = inout(reg) old.pair.lo => r,
                 old_hi = inout(reg) old.pair.hi => _,
                 new = in(reg_pair) new,
@@ -423,18 +435,17 @@ impl AtomicCompareExchange for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             )))]
             asm!(
-                "in {sreg}, 0x3F",        // sreg = SREG
-                "cli",                    // atomic { SREG.I = 0
-                "ld {out:l}, Z",          //   out.lo = *Z
-                "ldd {out:h}, Z+1",       //   out.hi = *Z.byte_add(1)
-                "eor {old_lo}, {out:l}",  //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "eor {old_hi}, {out:h}",  //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}",  //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "brne 2f",                //   if SREG.Z == 0 { jump 'cmp-fail }
-                "std Z+1, {new:h}",       //   *Z.byte_add(1) = new.hi
-                "st Z, {new:l}",          //   *Z = new.lo
+                disable!(),              // atomic {
+                "ld {out:l}, Z",         //   out.lo = *Z
+                "ldd {out:h}, Z+1",      //   out.hi = *Z.byte_add(1)
+                "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
+                "std Z+1, {new:h}",      //   *Z.byte_add(1) = new.hi
+                "st Z, {new:l}",         //   *Z = new.lo
                 "2:", // 'cmp-fail:
-                "out 0x3F, {sreg}",       //   SREG = sreg }
+                restore!(),              // }
                 old_lo = inout(reg) old.pair.lo => r,
                 old_hi = inout(reg) old.pair.hi => _,
                 new = in(reg_pair) new,
@@ -453,20 +464,19 @@ impl AtomicCompareExchange for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             ))]
             asm!(
-                "in {sreg}, 0x3F",        // sreg = SREG
-                "cli",                    // atomic { SREG.I = 0
-                "ld {out:l}, Z+",         //   out.lo = *Z; Z = Z.byte_add(1);
-                "ld {out:h}, Z",          //   out.hi = *Z
-                "eor {old_lo}, {out:l}",  //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "eor {old_hi}, {out:h}",  //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}",  //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "brne 2f",                //   if SREG.Z == 0 { jump 'cmp-fail }
-                "subi r30, 0x01",         //   Z.lo -= 1
-                "sbci r31, 0x00",         //   Z.hi -= borrow
-                "st Z+, {new:l}",         //   Z = Z.byte_sub(1); *Z = new.lo
-                "st Z, {new:h}",          //   *Z = new.hi
+                disable!(),              // atomic {
+                "ld {out:l}, Z+",        //   out.lo = *Z; Z = Z.byte_add(1);
+                "ld {out:h}, Z",         //   out.hi = *Z
+                "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
+                "subi r30, 0x01",        //   Z.lo -= 1
+                "sbci r31, 0x00",        //   Z.hi -= borrow
+                "st Z+, {new:l}",        //   Z = Z.byte_sub(1); *Z = new.lo
+                "st Z, {new:h}",         //   *Z = new.hi
                 "2:", // 'cmp-fail:
-                "out 0x3F, {sreg}",       //   SREG = sreg }
+                restore!(),              // }
                 old_lo = inout(reg) old.pair.lo => r,
                 old_hi = inout(reg) old.pair.hi => _,
                 new = in(reg_pair) new,
@@ -485,18 +495,17 @@ impl AtomicCompareExchange for u16 {
                 atomic_maybe_uninit_target_feature = "lowbytefirst",
             )))]
             asm!(
-                "in {sreg}, 0x3F",        // sreg = SREG
-                "cli",                    // atomic { SREG.I = 0
-                "ld {out:l}, Z+",         //   out.lo = *Z; Z = Z.byte_add(1);
-                "ld {out:h}, Z",          //   out.hi = *Z
-                "eor {old_lo}, {out:l}",  //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "eor {old_hi}, {out:h}",  //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}",  //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "brne 2f",                //   if SREG.Z == 0 { jump 'cmp-fail }
-                "st Z, {new:h}",          //   *Z = new.hi
-                "st -Z, {new:l}",         //   Z = Z.byte_sub(1); *Z = new.lo
+                disable!(),              // atomic {
+                "ld {out:l}, Z+",        //   out.lo = *Z; Z = Z.byte_add(1);
+                "ld {out:h}, Z",         //   out.hi = *Z
+                "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
+                "st Z, {new:h}",         //   *Z = new.hi
+                "st -Z, {new:l}",        //   Z = Z.byte_sub(1); *Z = new.lo
                 "2:", // 'cmp-fail:
-                "out 0x3F, {sreg}",       //   SREG = sreg }
+                restore!(),              // }
                 old_lo = inout(reg) old.pair.lo => r,
                 old_hi = inout(reg) old.pair.hi => _,
                 new = in(reg_pair) new,
