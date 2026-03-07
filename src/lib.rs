@@ -16,8 +16,8 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, C-SKY, and Xtensa) are supported.
-(You can use `cfg_{has,no}_*` macros to write code based on whether or not which size of primitives is available.)
+Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, Arm64EC, RISC-V, LoongArch, s390x, PowerPC, MIPS, SPARC, AVR, MSP430, Hexagon, M68k, C-SKY, and Xtensa) are supported.
+(You can use `cfg_{has,no}_*` macros to write code based on which primitive sizes are available for the current target and Rust version.)
 
 | target_arch                                 | primitives                                          | load/store | swap/CAS |
 | ------------------------------------------- | --------------------------------------------------- |:----------:|:--------:|
@@ -27,39 +27,43 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, R
 | arm (v6+ or Linux/Android)                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | arm (except for M-profile) \[3]             | i64,u64                                             | ✓          | ✓        |
 | aarch64                                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| arm64ec \[10]                               | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | riscv32                                     | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | riscv32 (+zacas) \[4]                       | i64,u64                                             | ✓          | ✓        |
 | riscv64                                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
 | riscv64 (+zacas) \[4]                       | i128,u128                                           | ✓          | ✓        |
 | loongarch64                                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| loongarch32 \[8]                            | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| arm64ec \[7]                                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| s390x \[7]                                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| powerpc \[9]                                | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| powerpc64 \[9]                              | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| powerpc64 (+quadword-atomics) \[5] \[9]     | i128,u128                                           | ✓          | ✓        |
-| mips / mips32r6 \[10]                       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| mips64 / mips64r6 \[10]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| msp430 \[10] (experimental)                 | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| avr \[10] (experimental)                    | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| sparc \[10] (experimental)                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| sparc64 \[10] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| hexagon \[10] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| m68k \[10] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| m68k (+isa-68020) \[6] \[10] (experimental) | i64,u64                                             | ✓          | ✓        |
-| csky \[10] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| xtensa \[10] (experimental)                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| loongarch32 \[11]                           | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| s390x \[10]                                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| powerpc \[12]                               | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| powerpc64 \[12]                             | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| powerpc64 (+quadword-atomics) \[6] \[12]    | i128,u128                                           | ✓          | ✓        |
+| mips / mips32r6 \[13]                       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| mips64 / mips64r6 \[13]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| sparc \[13] (experimental)                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| sparc (+v8plus) \[8] \[13] (experimental)   | i64,u64                                             | ✓          | ✓        |
+| sparc64 \[13] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| avr \[13] (experimental)                    | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| msp430 \[13] (experimental)                 | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| hexagon \[13] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| m68k \[13] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| m68k (+isa-68020) \[9] \[13] (experimental) | i64,u64                                             | ✓          | ✓        |
+| csky \[13] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| xtensa \[13] (experimental)                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 
 \[1] Arm's RMW operations are not available on Armv6-M (thumbv6m). RISC-V's RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. 32-bit SPARC's RMW operations requires `v9` or `leoncasa` target feature (enabled by default on Linux). M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* or c860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[4] Requires `zacas` target feature.<br>
-\[5] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
-\[6] Requires target-cpu M68020+ (enabled by default on Linux).<br>
-\[7] Requires Rust 1.84+.<br>
-\[8] Requires Rust 1.91+.<br>
-\[9] Requires Rust 1.95+.<br>
-\[10] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
+\[6] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
+\[8] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
+\[9] Requires target-cpu M68020+ (enabled by default on Linux).<br>
+\[10] Requires Rust 1.84+.<br>
+\[11] Requires Rust 1.91+.<br>
+\[12] Requires Rust 1.95+.<br>
+\[13] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
+<!-- loongarch64: \[5] Requires `scq` target feature.<br> -->
+<!-- mips32r6/mips64r6: \[7] Requires Release 6 Paired LL/SC family of instructions.<br> -->
 
 See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md)
 for more information about atomic operations in these architectures.
@@ -779,7 +783,7 @@ macro_rules! int {
         impl raw::Primitive for $ty {}
         const _: () = {
             assert!(mem::size_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
-            assert!(mem::align_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
+            assert!(mem::align_of::<AtomicMaybeUninit<$ty>>() >= mem::size_of::<$ty>());
         };
         // SAFETY: the static assertion above ensures safety requirement.
         unsafe impl private::PrimitivePriv for $ty {
@@ -966,7 +970,6 @@ mod private {
     pub(crate) type AlignPtr = Align16;
 
     // Check that all cfg_ macros work.
-    #[allow(unused_imports)]
     use crate::{
         AtomicMaybeUninit, cfg_has_atomic_8, cfg_has_atomic_16, cfg_has_atomic_32,
         cfg_has_atomic_64, cfg_has_atomic_128, cfg_has_atomic_cas, cfg_has_atomic_ptr,

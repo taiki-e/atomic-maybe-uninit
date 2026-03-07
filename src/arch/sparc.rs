@@ -548,9 +548,273 @@ macro_rules! atomic_sub_word {
 atomic_sub_word!(u8, "b");
 atomic_sub_word!(u16, "h");
 atomic!(u32, "", "%icc");
-// TODO: V8+ with 64-bit g/o reg
 #[cfg(target_arch = "sparc64")]
 atomic!(u64, "x", "%xcc");
+
+// -----------------------------------------------------------------------------
+// 64-bit atomics on SPARC-V8+
+
+// Use .4byte directive because "error: instruction requires a CPU feature not currently enabled" error (as of LLVM 22)
+
+#[cfg(all(
+    target_arch = "sparc",
+    any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+    any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+))]
+const _: () = assert!(mem::align_of::<u64>() >= mem::size_of::<u64>());
+#[cfg(all(
+    target_arch = "sparc",
+    any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+    any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+))]
+delegate_signed!(delegate_all, u64);
+#[cfg(all(
+    target_arch = "sparc",
+    any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+    any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+))]
+impl AtomicLoad for u64 {
+    #[inline]
+    unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(src, u64);
+        let mut out = MaybeUninit::<Self>::uninit();
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! atomic_load {
+                ($acquire:expr) => {
+                    asm!(
+                        // "ldx [%i0], %o0", // atomic { o0 = *i0 }
+                        ".4byte 0xd05e0000",
+                        $acquire,         // fence
+                        // "stx %o0, [%i1]", // *i1 = o0
+                        ".4byte 0xd0764000",
+                        in("i0") src,
+                        in("i1") out.as_mut_ptr(),
+                        out("o0") _,
+                        options(nostack, preserves_flags),
+                    )
+                    // asm!(
+                    //     "ldx [{src}], %o0", // atomic { o0 = *src }
+                    //     $acquire,           // fence
+                    //     "stx %o0, [{out}]", // *out = o0
+                    //     src = in(reg) src,
+                    //     out = in(reg) out.as_mut_ptr(),
+                    //     out("o0") _,
+                    //     options(nostack, preserves_flags),
+                    // )
+                };
+            }
+            match order {
+                Ordering::Relaxed => atomic_load!(""),
+                // Acquire and SeqCst loads are equivalent.
+                Ordering::Acquire | Ordering::SeqCst => atomic_load!("membar #LoadStore|#LoadLoad"),
+                _ => crate::utils::unreachable_unchecked(),
+            }
+        }
+        out
+    }
+}
+#[cfg(all(
+    target_arch = "sparc",
+    any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+    any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+))]
+impl AtomicStore for u64 {
+    #[inline]
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! atomic_store {
+                ($acquire:expr, $release:expr) => {
+                    asm!(
+                        // "ldx [%i1], %o0", // o0 = *i1
+                        ".4byte 0xd05e4000",
+                        $release,         // fence
+                        // "stx %o0, [%i0]", // atomic { *i0 = o0 }
+                        ".4byte 0xd0760000",
+                        $acquire,         // fence
+                        in("i0") dst,
+                        in("i1") val.as_ptr(),
+                        out("o0") _,
+                        options(nostack, preserves_flags),
+                    )
+                    // asm!(
+                    //     "ldx [{val}], %o0", // o0 = *val
+                    //     $release,           // fence
+                    //     "stx %o0, [{dst}]", // atomic { *dst = o0 }
+                    //     $acquire,           // fence
+                    //     dst = in(reg) dst,
+                    //     val = in(reg) val.as_ptr(),
+                    //     out("o0") _,
+                    //     options(nostack, preserves_flags),
+                    // )
+                };
+            }
+            match order {
+                Ordering::Relaxed => atomic_store!("", ""),
+                Ordering::Release => atomic_store!("", "membar #StoreStore|#LoadStore"),
+                Ordering::SeqCst => atomic_store!(
+                    "membar #StoreStore|#LoadStore|#StoreLoad|#LoadLoad",
+                    "membar #StoreStore|#LoadStore"
+                ),
+                _ => crate::utils::unreachable_unchecked(),
+            }
+        }
+    }
+}
+#[cfg(all(
+    target_arch = "sparc",
+    any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+    any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+))]
+impl AtomicSwap for u64 {
+    #[inline]
+    unsafe fn atomic_swap(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) -> MaybeUninit<Self> {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let mut out = MaybeUninit::<Self>::uninit();
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! swap {
+                ($acquire:expr, $release:expr, $_leon_nop:expr) => {
+                    asm!(
+                        // "ldx [%i1], %o0",                     // o0 = *i1
+                        ".4byte 0xd05e4000",
+                        $release,                             // fence
+                        // "ldx [%i0], %o2",                     // atomic { o2 = *i0 }
+                        ".4byte 0xd45e0000",
+                        "2:", // 'retry:
+                            "mov %o0, %o1",                   // o1 = o0
+                            // cas!("x", "[%i0]", "%o2", "%o1"), // atomic { _x = *i0; if _x == o2 { *i0 = o1 }; o1 = _x }
+                            ".4byte 0xd3f6100a",
+                            "cmp %o1, %o2",                   // if o1 == o2 { cc.Z = true } else { cc.Z = false }
+                            "mov %g0, %i3",                   // i3 = 0
+                            // move_!("%xcc", "1", "%i3"),       // if cc.Z { i3 = 1 }
+                            ".4byte 0xb7647001",
+                            "cmp %i3, 1",                     // if r == 1 { cc.Z = true } else { cc.Z = false }
+                            bne_a!("%icc", "2b"),             // if !cc.Z {
+                              "mov %o1, %o2",                 //   o2 = o1; jump 'retry }
+                        $acquire,                             // fence
+                        // "stx %o1, [%i2]",                     // *i2 = o1
+                        ".4byte 0xd2768000",
+                        in("i0") dst,
+                        in("i1") val.as_ptr(),
+                        in("i2") out.as_mut_ptr(),
+                        out("o0") _, // val
+                        out("o1") _, // out
+                        out("o2") _, // tmp
+                        out("i3") _,
+                        // Do not use `preserves_flags` because CMP modifies the condition codes.
+                        options(nostack),
+                    )
+                    // asm!(
+                    //     "ldx [{val}], %o0",                     // o0 = *val
+                    //     $release,                               // fence
+                    //     "ldx [{dst}], %o2",                     // atomic { o2 = *dst }
+                    //     "2:", // 'retry:
+                    //         "mov %o0, %o1",                     // o1 = o0
+                    //         cas!("x", "[{dst}]", "%o2", "%o1"), // atomic { _x = *dst; if _x == o2 { *dst = o1 }; o1 = _x }
+                    //         "cmp %o1, %o2",                     // if o1 == o2 { cc.Z = true } else { cc.Z = false }
+                    //         bne_a!("%xcc", "2b"),               // if !cc.Z {
+                    //           "mov %o1, %o2",                   //   o2 = o1; jump 'retry }
+                    //     $acquire,                               // fence
+                    //     "stx %o1, [{out}]",                     // *out = o1
+                    //     dst = in(reg) dst,
+                    //     val = in(reg) val.as_ptr(),
+                    //     out = in(reg) out.as_mut_ptr(),
+                    //     out("o0") _, // val
+                    //     out("o1") _, // out
+                    //     out("o2") _, // tmp
+                    //     // Do not use `preserves_flags` because CMP modifies the condition codes.
+                    //     options(nostack),
+                    // )
+                };
+            }
+            atomic_rmw!(swap, order);
+        }
+        out
+    }
+}
+#[cfg(all(
+    target_arch = "sparc",
+    any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+    any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+))]
+impl AtomicCompareExchange for u64 {
+    #[inline]
+    unsafe fn atomic_compare_exchange(
+        dst: *mut MaybeUninit<Self>,
+        old: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        debug_assert_atomic_unsafe_precondition!(dst, u64);
+        let order = crate::utils::upgrade_success_ordering(success, failure);
+        let mut out = new;
+        let mut r: RegSize;
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            macro_rules! cmpxchg {
+                ($acquire:expr, $release:expr, $_leon_nop:expr) => {
+                    asm!(
+                        // "ldx [%i1], %o0",                 // o0 = *i1
+                        ".4byte 0xd05e4000",
+                        // "ldx [%i2], %o1",                 // o1 = *i2
+                        ".4byte 0xd25e8000",
+                        $release,                         // fence
+                        // cas!("x", "[%i0]", "%o0", "%o1"), // atomic { _x = *i0; if _x == o0 { *i0 = o1 }; o1 = _x }
+                        ".4byte 0xd3f61008",
+                        "cmp %o1, %o0",                   // if o1 == o0 { cc.Z = true } else { cc.Z = false }
+                        $acquire,                         // fence
+                        // "stx %o1, [%i2]",                 // *i2 = o1
+                        ".4byte 0xd2768000",
+                        "mov %g0, %i2",                   // i2 = 0
+                        // move_!("%xcc", "1", "%i2"),       // if cc.Z { i2 = 1 }
+                        ".4byte 0xb5647001",
+                        in("i0") dst,
+                        in("i1") old.as_ptr(),
+                        in("i2") out.as_mut_ptr(),
+                        lateout("i2") r,
+                        out("o0") _, // old
+                        out("o1") _, // new => out
+                        // Do not use `preserves_flags` because CMP modifies the condition codes.
+                        options(nostack),
+                    )
+                    // asm!(
+                    //     "ldx [{old}], %o0",                 // o0 = *old
+                    //     "ldx [{out}], %o1",                 // o1 = *out
+                    //     $release,                           // fence
+                    //     cas!("x", "[{dst}]", "%o0", "%o1"), // atomic { _x = *dst; if _x == o0 { *dst = o1 }; o1 = _x }
+                    //     "cmp %o1, %o0",                     // if o1 == o0 { cc.Z = true } else { cc.Z = false }
+                    //     $acquire,                           // fence
+                    //     "stx %o1, [{out}]",                 // *out = o1
+                    //     "mov %g0, {r}",                     // r = 0
+                    //     move_!("%xcc", "1", "{r}"),         // if cc.Z { r = 1 }
+                    //     dst = in(reg) dst,
+                    //     old = in(reg) old.as_ptr(),
+                    //     out = in(reg) out.as_mut_ptr(),
+                    //     r = lateout(reg) r,
+                    //     out("o0") _, // old
+                    //     out("o1") _, // new => out
+                    //     // Do not use `preserves_flags` because CMP modifies the condition codes.
+                    //     options(nostack),
+                    // )
+                };
+            }
+            atomic_rmw!(cmpxchg, order);
+            crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+        }
+        (out, r != 0)
+    }
+}
 
 // -----------------------------------------------------------------------------
 // cfg macros
@@ -579,24 +843,50 @@ macro_rules! cfg_has_atomic_32 {
 macro_rules! cfg_no_atomic_32 {
     ($($tt:tt)*) => {};
 }
-// TODO: V8+ with 64-bit g/o reg
-#[cfg(target_arch = "sparc")]
+#[cfg(not(any(
+    target_arch = "sparc64",
+    all(
+        target_arch = "sparc",
+        any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+        any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+    ),
+)))]
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
     ($($tt:tt)*) => {};
 }
-// TODO: V8+ with 64-bit g/o reg
-#[cfg(target_arch = "sparc")]
+#[cfg(not(any(
+    target_arch = "sparc64",
+    all(
+        target_arch = "sparc",
+        any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+        any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+    ),
+)))]
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(target_arch = "sparc64")]
+#[cfg(any(
+    target_arch = "sparc64",
+    all(
+        target_arch = "sparc",
+        any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+        any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+    ),
+))]
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(target_arch = "sparc64")]
+#[cfg(any(
+    target_arch = "sparc64",
+    all(
+        target_arch = "sparc",
+        any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+        any(target_feature = "v8plus", atomic_maybe_uninit_target_feature = "v8plus"),
+    ),
+))]
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => {};

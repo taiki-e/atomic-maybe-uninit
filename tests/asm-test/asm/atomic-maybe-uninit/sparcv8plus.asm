@@ -1225,6 +1225,390 @@ asm_test::compare_exchange::u32::release_relaxed:
         ret
         restore           %g0, %i2, %o0
 
+asm_test::compare_exchange::u64::acqrel_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::seqcst_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::acqrel_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::acqrel_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::acquire_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::relaxed_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::release_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::seqcst_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::seqcst_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::acquire_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::acquire_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::relaxed_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::relaxed_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::release_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange::u64::release_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         save              %sp, -96, %sp
         and               %i0, -4, %i3
@@ -2452,6 +2836,390 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
         ret
         restore           %g0, %i2, %o0
 
+asm_test::compare_exchange_weak::u64::acqrel_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::seqcst_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::acqrel_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::acqrel_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::acquire_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::relaxed_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::release_seqcst:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::seqcst_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::seqcst_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::acquire_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::acquire_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::relaxed_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::relaxed_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::release_acquire:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
+asm_test::compare_exchange_weak::u64::release_relaxed:
+        save              %sp, -112, %sp
+        mov               %i4, %g3
+        mov               %i2, %l1
+        ld                [ %fp + 0x40 ], %i4
+        mov               %i1, %l0
+        sttw              %l0, [ %fp + -16 ]
+        add               %fp, -16, %i1
+        add               %fp, -8, %i2
+        mov               %i3, %g2
+        sttw              %g2, [ %fp + -8 ]
+        ldx               [ %i1 ], %o0
+        ldx               [ %i2 ], %o1
+        membar            #StoreStore|#LoadStore
+        casx              [ %i0 ], %o0, %o1
+        cmp               %o1, %o0
+        stx               %o1, [ %i2 ]
+        mov               %g0, %i2
+        move              %xcc, 1, %i2
+        ldtw              [ %fp + -8 ], %i0
+        sttw              %i0, [ %i4 ]
+        stb               %i2, [ %i4 + 8 ]
+        jmp               %i7 + 0xc
+        restore           %g0, %i4, %o0
+
 asm_test::load::u8::seqcst:
         save              %sp, -96, %sp
         ldub              [ %i0 ], %i0
@@ -2509,6 +3277,35 @@ asm_test::load::u32::acquire:
 asm_test::load::u32::relaxed:
         save              %sp, -96, %sp
         ld                [ %i0 ], %i0
+        ret
+        restore
+
+asm_test::load::u64::seqcst:
+        save              %sp, -104, %sp
+        add               %fp, -8, %i1
+        ldx               [ %i0 ], %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o0, [ %i1 ]
+        ldtw              [ %fp + -8 ], %i0
+        ret
+        restore
+
+asm_test::load::u64::acquire:
+        save              %sp, -104, %sp
+        add               %fp, -8, %i1
+        ldx               [ %i0 ], %o0
+        membar            #LoadStore|#LoadLoad
+        stx               %o0, [ %i1 ]
+        ldtw              [ %fp + -8 ], %i0
+        ret
+        restore
+
+asm_test::load::u64::relaxed:
+        save              %sp, -104, %sp
+        add               %fp, -8, %i1
+        ldx               [ %i0 ], %o0
+        stx               %o0, [ %i1 ]
+        ldtw              [ %fp + -8 ], %i0
         ret
         restore
 
@@ -2805,6 +3602,132 @@ asm_test::swap::u32::release:
         ret
         restore           %g0, %i2, %o0
 
+asm_test::swap::u64::acqrel:
+        save              %sp, -112, %sp
+        mov               %i2, %i5
+        add               %fp, -16, %i3
+        add               %fp, -8, %i2
+        mov               %i1, %i4
+        sttw              %i4, [ %fp + -16 ]
+        mov               %i3, %i1
+        ldx               [ %i1 ], %o0
+        membar            #StoreStore|#LoadStore
+        ldx               [ %i0 ], %o2
+0:
+        mov               %o0, %o1
+        casx              [ %i0 ], %o2, %o1
+        cmp               %o1, %o2
+        mov               %g0, %i3
+        move              %xcc, 1, %i3
+        cmp               %i3, 1
+        bne,a             %icc, 0b
+        mov               %o1, %o2
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        ldtw              [ %fp + -8 ], %i0
+        ret
+        restore
+
+asm_test::swap::u64::seqcst:
+        save              %sp, -112, %sp
+        mov               %i2, %i5
+        add               %fp, -16, %i3
+        add               %fp, -8, %i2
+        mov               %i1, %i4
+        sttw              %i4, [ %fp + -16 ]
+        mov               %i3, %i1
+        ldx               [ %i1 ], %o0
+        membar            #StoreStore|#LoadStore
+        ldx               [ %i0 ], %o2
+0:
+        mov               %o0, %o1
+        casx              [ %i0 ], %o2, %o1
+        cmp               %o1, %o2
+        mov               %g0, %i3
+        move              %xcc, 1, %i3
+        cmp               %i3, 1
+        bne,a             %icc, 0b
+        mov               %o1, %o2
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        ldtw              [ %fp + -8 ], %i0
+        ret
+        restore
+
+asm_test::swap::u64::acquire:
+        save              %sp, -112, %sp
+        mov               %i2, %i5
+        add               %fp, -16, %i3
+        add               %fp, -8, %i2
+        mov               %i1, %i4
+        sttw              %i4, [ %fp + -16 ]
+        mov               %i3, %i1
+        ldx               [ %i1 ], %o0
+        ldx               [ %i0 ], %o2
+0:
+        mov               %o0, %o1
+        casx              [ %i0 ], %o2, %o1
+        cmp               %o1, %o2
+        mov               %g0, %i3
+        move              %xcc, 1, %i3
+        cmp               %i3, 1
+        bne,a             %icc, 0b
+        mov               %o1, %o2
+        membar            #LoadStore|#LoadLoad
+        stx               %o1, [ %i2 ]
+        ldtw              [ %fp + -8 ], %i0
+        ret
+        restore
+
+asm_test::swap::u64::relaxed:
+        save              %sp, -112, %sp
+        mov               %i2, %i5
+        add               %fp, -16, %i3
+        add               %fp, -8, %i2
+        mov               %i1, %i4
+        sttw              %i4, [ %fp + -16 ]
+        mov               %i3, %i1
+        ldx               [ %i1 ], %o0
+        ldx               [ %i0 ], %o2
+0:
+        mov               %o0, %o1
+        casx              [ %i0 ], %o2, %o1
+        cmp               %o1, %o2
+        mov               %g0, %i3
+        move              %xcc, 1, %i3
+        cmp               %i3, 1
+        bne,a             %icc, 0b
+        mov               %o1, %o2
+        stx               %o1, [ %i2 ]
+        ldtw              [ %fp + -8 ], %i0
+        ret
+        restore
+
+asm_test::swap::u64::release:
+        save              %sp, -112, %sp
+        mov               %i2, %i5
+        add               %fp, -16, %i3
+        add               %fp, -8, %i2
+        mov               %i1, %i4
+        sttw              %i4, [ %fp + -16 ]
+        mov               %i3, %i1
+        ldx               [ %i1 ], %o0
+        membar            #StoreStore|#LoadStore
+        ldx               [ %i0 ], %o2
+0:
+        mov               %o0, %o1
+        casx              [ %i0 ], %o2, %o1
+        cmp               %o1, %o2
+        mov               %g0, %i3
+        move              %xcc, 1, %i3
+        cmp               %i3, 1
+        bne,a             %icc, 0b
+        mov               %o1, %o2
+        stx               %o1, [ %i2 ]
+        ldtw              [ %fp + -8 ], %i0
+        ret
+        restore
+
 asm_test::store::u8::seqcst:
         save              %sp, -96, %sp
         membar            #StoreStore|#LoadStore
@@ -2865,5 +3788,44 @@ asm_test::store::u32::release:
         save              %sp, -96, %sp
         membar            #StoreStore|#LoadStore
         st                %i1, [ %i0 ]
+        ret
+        restore
+
+asm_test::store::u64::seqcst:
+        save              %sp, -104, %sp
+        mov               %i2, %i5
+        add               %fp, -8, %i2
+        mov               %i1, %i4
+        sttw              %i4, [ %fp + -8 ]
+        mov               %i2, %i1
+        ldx               [ %i1 ], %o0
+        membar            #StoreStore|#LoadStore
+        stx               %o0, [ %i0 ]
+        membar            #StoreStore|#LoadStore|#StoreLoad|#LoadLoad
+        ret
+        restore
+
+asm_test::store::u64::relaxed:
+        save              %sp, -104, %sp
+        mov               %i2, %i5
+        add               %fp, -8, %i2
+        mov               %i1, %i4
+        sttw              %i4, [ %fp + -8 ]
+        mov               %i2, %i1
+        ldx               [ %i1 ], %o0
+        stx               %o0, [ %i0 ]
+        ret
+        restore
+
+asm_test::store::u64::release:
+        save              %sp, -104, %sp
+        mov               %i2, %i5
+        add               %fp, -8, %i2
+        mov               %i1, %i4
+        sttw              %i4, [ %fp + -8 ]
+        mov               %i2, %i1
+        ldx               [ %i1 ], %o0
+        membar            #StoreStore|#LoadStore
+        stx               %o0, [ %i0 ]
         ret
         restore
