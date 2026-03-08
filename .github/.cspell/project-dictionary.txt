@@ -68,6 +68,7 @@ ldxp
 leoncasa
 lgcc
 libatomic
+libboost
 libcu
 libnspr
 linkall

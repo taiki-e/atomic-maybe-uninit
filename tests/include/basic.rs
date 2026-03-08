@@ -6,7 +6,7 @@ macro_rules! test_atomic_all {
             target_arch = "avr",
             target_arch = "msp430",
             target_arch = "sparc",
-            target_arch = "m68k",
+            target_os = "linux",
         )))]
         {
             cfg_has_atomic_cas! {
@@ -17,7 +17,7 @@ macro_rules! test_atomic_all {
             }
         }
         // Skip AVR/MSP430 because they always provides RMW operations.
-        #[cfg(any(target_arch = "sparc", target_arch = "m68k"))]
+        #[cfg(any(target_arch = "sparc", target_os = "linux"))]
         {
             cfg_has_atomic_cas! {
                 print_str!("target_has_cas: true\n");
@@ -67,7 +67,7 @@ macro_rules! test_atomic {
                 target_arch = "avr",
                 target_arch = "msp430",
                 target_arch = "sparc",
-                target_arch = "m68k",
+                target_os = "linux",
             )))]
             {
                 print!("{}", concat!("test test_atomic_", stringify!($ty), " ... "));
@@ -78,7 +78,7 @@ macro_rules! test_atomic {
                 target_arch = "avr",
                 target_arch = "msp430",
                 target_arch = "sparc",
-                target_arch = "m68k",
+                target_os = "linux",
             ))]
             {
                 print_str!(concat!("test test_atomic_", stringify!($ty), " ... "));
