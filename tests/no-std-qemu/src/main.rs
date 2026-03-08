@@ -13,26 +13,5 @@ use semihosting::{print, println};
 
 semihosting_no_std_test_rt::entry!(run);
 fn run() {
-    cfg_has_atomic_cas! {
-        println!("target_has_cas: true");
-    }
-    cfg_no_atomic_cas! {
-        println!("target_has_cas: false");
-    }
-    test_atomic!(isize);
-    test_atomic!(usize);
-    test_atomic!(i8);
-    test_atomic!(u8);
-    test_atomic!(i16);
-    test_atomic!(u16);
-    test_atomic!(i32);
-    test_atomic!(u32);
-    cfg_has_atomic_64! {
-        test_atomic!(i64);
-        test_atomic!(u64);
-    }
-    cfg_has_atomic_128! {
-        test_atomic!(i128);
-        test_atomic!(u128);
-    }
+    test_atomic_all!();
 }

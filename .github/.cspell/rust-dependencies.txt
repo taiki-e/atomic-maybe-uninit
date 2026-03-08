@@ -5,4 +5,3 @@ asmtest
 crabgrind
 fastrand
 quickcheck
-ufmt

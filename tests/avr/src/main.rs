@@ -17,25 +17,15 @@ fn main() -> ! {
     let pins = arduino_hal::pins!(dp);
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
-    macro_rules! print {
+    macro_rules! print_str {
         ($($tt:tt)*) => {{
-            let _ = ufmt::uwrite!(serial, $($tt)*);
-        }};
-    }
-    macro_rules! println {
-        ($($tt:tt)*) => {{
-            let _ = ufmt::uwriteln!(serial, $($tt)*);
+            sim::write_str(&mut serial, $($tt)*);
         }};
     }
 
-    test_atomic!(isize);
-    test_atomic!(usize);
-    test_atomic!(i8);
-    test_atomic!(u8);
-    test_atomic!(i16);
-    test_atomic!(u16);
+    test_atomic_all!();
 
-    println!("Tests finished successfully");
+    print_str!("Tests finished successfully\n");
 
     sim::exit(0)
 }
@@ -49,14 +39,21 @@ fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
     let pins = arduino_hal::pins!(dp);
     let mut serial = sim::Usart(arduino_hal::default_serial!(dp, pins, 57600));
 
-    macro_rules! println {
-        ($($tt:tt)*) => {{
-            use core::fmt::Write as _;
-            let _ = writeln!(serial, $($tt)*);
-        }};
+    #[cfg(debug_assertions)]
+    {
+        let _ = info;
+        sim::write_str(&mut serial.0, "panicked\n");
     }
-
-    println!("{info}");
+    #[cfg(not(debug_assertions))]
+    {
+        macro_rules! println {
+            ($($tt:tt)*) => {{
+                use core::fmt::Write as _;
+                let _ = writeln!(serial, $($tt)*);
+            }};
+        }
+        println!("{info}");
+    }
     sim::exit(1)
 }
 
@@ -74,6 +71,15 @@ mod sim {
         loop {}
     }
 
+    pub fn write_str<USART, RX, TX>(usart: &mut arduino_hal::usart::Usart<USART, RX, TX>, s: &str)
+    where
+        USART: arduino_hal::usart::UsartOps<arduino_hal::hal::Atmega, RX, TX>,
+    {
+        for b in s.bytes() {
+            usart.write_byte(b);
+        }
+    }
+    #[repr(transparent)]
     pub struct Usart<USART, RX, TX>(pub arduino_hal::usart::Usart<USART, RX, TX>)
     where
         USART: arduino_hal::usart::UsartOps<arduino_hal::hal::Atmega, RX, TX>;
@@ -82,9 +88,7 @@ mod sim {
         USART: arduino_hal::usart::UsartOps<arduino_hal::hal::Atmega, RX, TX>,
     {
         fn write_str(&mut self, s: &str) -> fmt::Result {
-            for b in s.bytes() {
-                self.0.write_byte(b);
-            }
+            write_str(&mut self.0, s);
             Ok(())
         }
     }

@@ -507,8 +507,6 @@ jobs:
           rm -rf -- ./qemu-system
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: rm -- tests/avr/rust-toolchain.toml
-        if: startsWith(matrix.rust, 'nightly-')
       - run: tools/no-std.sh
         env:
           ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
