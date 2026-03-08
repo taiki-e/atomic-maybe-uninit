@@ -45,8 +45,6 @@ jobs:
       repository-projects: read # for gh pr edit --add-assignee
       security-events: write # for github/codeql-action/*
     secrets: inherit
-    with:
-      clippy: false # covered by TESTS=1 ./tools/build.sh
 
   prepare:
     runs-on: ubuntu-slim

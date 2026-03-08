@@ -91,10 +91,12 @@ This crate uses inline assembly to implement atomic operations (this is currentl
 #![no_std]
 #![doc(test(
     no_crate_inject,
-    attr(
-        deny(warnings, rust_2018_idioms, single_use_lifetimes),
-        allow(dead_code, unused_variables)
-    )
+    attr(allow(
+        dead_code,
+        unused_variables,
+        clippy::undocumented_unsafe_blocks,
+        clippy::unused_trait_names,
+    ))
 ))]
 #![warn(
     // Lints that may help when writing public library.
@@ -482,7 +484,6 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// To work around this problem, you need to use a helper like the following.
     ///
     /// ```
-    /// # if cfg!(valgrind) { return; }
     /// # use std::{
     /// #     mem::{self, MaybeUninit},
     /// #     sync::atomic::Ordering,
@@ -497,8 +498,8 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///     mut current: Test,
     ///     new: Test,
     /// ) -> Result<Test, Test> {
-    ///     let mut current_raw = mem::transmute::<Test, MaybeUninit<u32>>(current);
-    ///     let new_raw = mem::transmute::<Test, MaybeUninit<u32>>(new);
+    ///     let mut current_raw = unsafe { mem::transmute::<Test, MaybeUninit<u32>>(current) };
+    ///     let new_raw = unsafe { mem::transmute::<Test, MaybeUninit<u32>>(new) };
     ///     loop {
     ///         match v.compare_exchange_weak(current_raw, new_raw, Ordering::AcqRel, Ordering::Acquire)
     ///         {
@@ -507,7 +508,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///                 break Ok(current);
     ///             }
     ///             Err(previous_raw) => {
-    ///                 let previous = mem::transmute::<MaybeUninit<u32>, Test>(previous_raw);
+    ///                 let previous = unsafe { mem::transmute::<MaybeUninit<u32>, Test>(previous_raw) };
     ///
     ///                 if !Test::eq(&previous, &current) {
     ///                     break Err(previous);
@@ -523,6 +524,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///         }
     ///     }
     /// }
+    /// # if cfg!(valgrind) { return; }
     ///
     /// unsafe {
     ///     let x = mem::transmute::<Test, MaybeUninit<u32>>(Test(0, 0));
