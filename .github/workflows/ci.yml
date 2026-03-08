@@ -167,7 +167,7 @@ jobs:
               # TODO(macos): error: linker stderr: ld: ignoring duplicate libraries: '-lc', '-lm'
               # TODO(windows): error: linker stdout: C:\a\portable-atomic\portable-atomic\target\debug\deps\portable_atomic-6f0d7f05900c9263.exe : warning LNK4072: section count 101 exceeds max (96); image may not run
               # TODO(csky): error: linker stderr: /home/runner/gcc-csky-linux-gnuabiv2/bin/../lib/gcc/csky-linux-gnuabiv2/6.3.0/../../../../csky-linux-gnuabiv2/bin/ld: file ....o's arch flag ck860 conflict with target ck810,set target arch flag to ck860
-              *-darwin* | aarch64*-windows-* | csky*) ;;
+              *-darwin* | *-windows-* | csky*) ;;
               *) flags+=" -D linker_messages" ;;
             esac
           fi
