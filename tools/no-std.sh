@@ -356,6 +356,16 @@ run() {
             RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
             x_cargo "${args[@]}" --release "$@"
         fi
+        # TODO: enable once QEMU 11.0 released https://github.com/qemu/qemu/commit/26154585c69c9fde612d78a1adeddb3ea71e24ce
+        # # Support for Zalasr extension requires LLVM 22+.
+        # if [[ "${llvm_version}" -ge 22 ]]; then
+        #   CARGO_TARGET_DIR="${target_dir}/no-std-test-zalasr" \
+        #     RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
+        #     x_cargo "${args[@]}" "$@"
+        #   CARGO_TARGET_DIR="${target_dir}/no-std-test-zalasr" \
+        #     RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
+        #     x_cargo "${args[@]}" --release "$@"
+        # fi
         ;;
       avr*)
         CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \

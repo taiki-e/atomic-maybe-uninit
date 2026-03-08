@@ -341,6 +341,14 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+zacas --cfg atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+zacas --cfg atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word
         if: startsWith(matrix.target, 'riscv')
+      # TODO: enable once QEMU 11.0 released https://github.com/qemu/qemu/commit/26154585c69c9fde612d78a1adeddb3ea71e24ce
+      # riscv +zalasr
+      # - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
+      #   env:
+      #     RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+zalasr
+      #     RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+zalasr
+      #   # Support for Zalasr extension requires LLVM 22+.
+      #   if: startsWith(matrix.target, 'riscv') && !startsWith(matrix.rust, 'nightly-2023') && !startsWith(matrix.rust, 'nightly-2024') && !startsWith(matrix.rust, 'nightly-2025') && !startsWith(matrix.rust, 'nightly-2026-01')
       # s390x z196 (arch9)
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
         env:

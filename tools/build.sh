@@ -494,6 +494,12 @@ build() {
           RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
           x_cargo "${args[@]}" "$@"
       fi
+      # Support for Zalasr extension requires LLVM 22+.
+      if [[ "${llvm_version}" -ge 22 ]]; then
+        CARGO_TARGET_DIR="${target_dir}/zalasr" \
+          RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
+          x_cargo "${args[@]}" "$@"
+      fi
       ;;
     s390x*)
       CARGO_TARGET_DIR="${target_dir}/z196" \

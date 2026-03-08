@@ -105,11 +105,15 @@ fn test() {
             .rustc_args(["-C", "target-feature=+zacas"]),
         Revision::new("riscv64gc_zabha_zacas", "riscv64gc-unknown-linux-gnu")
             .rustc_args(["-C", "target-feature=+zabha,+zacas"]),
+        Revision::new("riscv64gc_zalasr", "riscv64gc-unknown-linux-gnu")
+            .rustc_args(["-C", "target-feature=+zalasr"]),
         Revision::new("riscv32imac", "riscv32imac-unknown-none-elf"),
         Revision::new("riscv32imac_zacas", "riscv32imac-unknown-none-elf")
             .rustc_args(["-C", "target-feature=+zacas"]),
         Revision::new("riscv32imac_zabha_zacas", "riscv32imac-unknown-none-elf")
             .rustc_args(["-C", "target-feature=+zabha,+zacas"]),
+        Revision::new("riscv32imac_zalasr", "riscv32imac-unknown-none-elf")
+            .rustc_args(["-C", "target-feature=+zalasr"]),
         Revision::new("riscv32i_zalrsc", "riscv32i-unknown-none-elf")
             .rustc_args(["-C", "target-feature=+zalrsc"]),
         Revision::new("riscv32i_zacas", "riscv32i-unknown-none-elf")

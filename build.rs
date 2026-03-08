@@ -32,7 +32,9 @@ fn main() {
     };
 
     if version.minor >= 80 {
-        println!(r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization"))"#);
+        println!(
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization","zalasr"))"#
+        );
 
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -42,7 +44,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8","v8m","v8plus","v9","x87","zaamo","zabha","zacas","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8","v8m","v8plus","v9","x87","zaamo","zabha","zacas","zalasr","zalrsc"))"#
         );
     }
 
@@ -306,6 +308,11 @@ fn main() {
             }
         }
         "riscv32" | "riscv64" => {
+            // As of rustc 1.93, target_feature "zalasr" is not available on rustc side:
+            if version.llvm >= 22 {
+                // available non-experimental since LLVM 22 https://github.com/llvm/llvm-project/pull/177331
+                target_feature_fallback("zalasr", false);
+            }
             // zabha and zacas imply zaamo in GCC, LLVM 20+, and Rust, but do not in LLVM 19.
             // However, enabling them without zaamo or a is not allowed in LLVM 19, so we can assume
             // zaamo is available when zabha is enabled).

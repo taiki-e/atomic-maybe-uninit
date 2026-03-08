@@ -259,9 +259,24 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
+                    #[cfg(any(target_feature = "zalasr", atomic_maybe_uninit_target_feature = "zalasr"))]
+                    macro_rules! atomic_load_zalasr {
+                        ($order:tt) => {
+                            asm!(
+                                concat!("l", $suffix, $order, " {out}, ({src})"), // atomic { out = sign_extend(*src) }
+                                src = in(reg) ptr_reg!(src),
+                                out = lateout(reg) out,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
                     match order {
                         Ordering::Relaxed => atomic_load!("", ""),
+                        #[cfg(any(target_feature = "zalasr", atomic_maybe_uninit_target_feature = "zalasr"))]
+                        Ordering::Acquire => atomic_load_zalasr!(".aq"),
+                        #[cfg(not(any(target_feature = "zalasr", atomic_maybe_uninit_target_feature = "zalasr")))]
                         Ordering::Acquire => atomic_load!("fence r, rw", ""),
+                        // LLVM 22.1.0 lowers this to l*.aq when zalasr enabled, but seems to potentially wrong considering non-zalasr case's lowering.
                         Ordering::SeqCst => atomic_load!("fence r, rw", "fence rw, rw"),
                         _ => crate::utils::unreachable_unchecked(),
                     }
@@ -292,10 +307,25 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
+                    #[cfg(any(target_feature = "zalasr", atomic_maybe_uninit_target_feature = "zalasr"))]
+                    macro_rules! atomic_store_zalasr {
+                        ($order:tt) => {
+                            asm!(
+                                concat!("s", $suffix, $order, " {val}, ({dst})"), // atomic { *dst = val }
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) val,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
                     match order {
                         Ordering::Relaxed => atomic_store!("", ""),
+                        #[cfg(any(target_feature = "zalasr", atomic_maybe_uninit_target_feature = "zalasr"))]
+                        Ordering::Release => atomic_store_zalasr!(".rl"),
+                        #[cfg(not(any(target_feature = "zalasr", atomic_maybe_uninit_target_feature = "zalasr")))]
                         Ordering::Release => atomic_store!("", "fence rw, w"),
                         // https://github.com/llvm/llvm-project/commit/3ea8f2526541884e03d5bd4f4e46f4eb190990b6
+                        // LLVM 22.1.0 lowers this to s*.rl when zalasr enabled, but seems to potentially wrong considering non-zalasr case's lowering.
                         Ordering::SeqCst => atomic_store!("fence rw, rw", "fence rw, w"),
                         _ => crate::utils::unreachable_unchecked(),
                     }
