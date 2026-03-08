@@ -267,12 +267,28 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
         if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v7 big endian
+      # arm v7 big endian (BE-8)
       # armeb-unknown-linux-gnueabi is v8 by default, use custom target instead
       - run: tools/test.sh -vv --tests --target armebv7-unknown-linux-gnueabi -Z build-std
         env:
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_LINKER: armeb-unknown-linux-gnueabi-gcc
           CARGO_TARGET_ARMEBV7_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
+        # Skip pre-1.91 because target-pointer-width change
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2023') && !startsWith(matrix.rust, 'nightly-2024') && !startsWith(matrix.rust, 'nightly-2025-01') && !startsWith(matrix.rust, 'nightly-2025-02')
+      # arm v6 big endian (BE-8)
+      # armeb-unknown-linux-gnueabi is v8 by default, use custom target instead
+      - run: tools/test.sh -vv --tests --target armebv6-unknown-linux-gnueabi -Z build-std
+        env:
+          CARGO_TARGET_ARMEBV6_UNKNOWN_LINUX_GNUEABI_LINKER: armeb-unknown-linux-gnueabi-gcc
+          CARGO_TARGET_ARMEBV6_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
+        # Skip pre-1.91 because target-pointer-width change
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2023') && !startsWith(matrix.rust, 'nightly-2024') && !startsWith(matrix.rust, 'nightly-2025-01') && !startsWith(matrix.rust, 'nightly-2025-02')
+      # arm v5te big endian (BE-32)
+      # armeb-unknown-linux-gnueabi is v8 by default, use custom target instead
+      - run: tools/test.sh -vv --tests --target armebv5te-unknown-linux-gnueabi -Z build-std
+        env:
+          CARGO_TARGET_ARMEBV5TE_UNKNOWN_LINUX_GNUEABI_LINKER: armeb-unknown-linux-gnueabi-gcc
+          CARGO_TARGET_ARMEBV5TE_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
         # Skip pre-1.91 because target-pointer-width change
         if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2023') && !startsWith(matrix.rust, 'nightly-2024') && !startsWith(matrix.rust, 'nightly-2025-01') && !startsWith(matrix.rust, 'nightly-2025-02')
       # arm v6 legacy cp15_barrier

@@ -5,15 +5,16 @@
   "data-layout": "E-m:e-p:32:32-Fi8-i64:64-v128:64:128-a:0:32-n32-S64",
   "dynamic-linking": true,
   "env": "gnu",
-  "features": "+v7,+thumb2,+soft-float,-neon",
+  "features": "+strict-align,+soft-float",
   "has-rpath": true,
   "has-thread-local": true,
+  "has-thumb-interworking": true,
   "late-link-args": {
-    "gnu-cc": ["--be8"],
-    "gnu-lld-cc": ["--be8"]
+    "gnu-cc": ["--be32"],
+    "gnu-lld-cc": ["--be32"]
   },
   "llvm-floatabi": "soft",
-  "llvm-target": "armebv7-unknown-linux-gnueabi",
+  "llvm-target": "armebv5te-unknown-linux-gnueabi",
   "max-atomic-width": 64,
   "os": "linux",
   "position-independent-executables": true,
