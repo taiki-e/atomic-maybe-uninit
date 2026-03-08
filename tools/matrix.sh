@@ -40,8 +40,9 @@ targets=(
   arm64ec-pc-windows-msvc
 
   # arm
+  armv4t-unknown-linux-gnueabi        # Armv4T A32
   armv5te-unknown-linux-gnueabi       # Armv5TE A32
-  arm-unknown-linux-gnueabi           # Armv6 A32
+  arm-unknown-linux-gnueabi           # Armv6K A32
   armv7-unknown-linux-gnueabi         # Armv7 A32 sf
   armv7-unknown-linux-gnueabihf       # Armv7 A32 hf
   thumbv7neon-unknown-linux-gnueabihf # Armv7 T32 hf
@@ -55,6 +56,7 @@ targets=(
   hexagon-unknown-linux-musl
 
   # loongarch
+  # loongarch32-unknown-linux-gnu # TODO(loongarch32): https://inbox.sourceware.org/libc-alpha/20251225024222.1375100-6-mengqinggang@loongson.cn/t/
   loongarch64-unknown-linux-gnu
 
   # m68k
@@ -85,6 +87,9 @@ targets=(
   # sparc
   sparc-unknown-linux-gnu
   sparc64-unknown-linux-gnu
+
+  # xtensa
+  # xtensa-unknown-linux-gnu # TODO(xtensa): https://wiki.linux-xtensa.org
 )
 
 # See also LLVM version table in https://github.com/taiki-e/portable-atomic/blob/HEAD/tools/matrix.sh.
@@ -92,7 +97,7 @@ toolchains=(
   1.81 # LLVM 18
   1.86 # LLVM 19
   1.90 # LLVM 20
-  # 1.94 # LLVM 21
+  1.94 # LLVM 21
   stable
   beta
   nightly
@@ -141,6 +146,7 @@ convert_toolchain_for_unstable_asm() {
     1.8[2-6])
       # LLVM 19
       case "${target}" in
+        sparc-*) toolchain='' ;;                     # see min nightly toolchain
         aarch64_be*) toolchain=nightly-2024-11-07 ;; # Rust 1.84 (broken on nightly-2025-02-17 due to https://github.com/rust-lang/stdarch/issues/1484)
         *) toolchain=nightly-2025-02-17 ;;           # Rust 1.87
       esac
@@ -154,7 +160,7 @@ convert_toolchain_for_unstable_asm() {
       ;;
     1.9[1-4])
       # LLVM 21
-      toolchain=nightly-2026-01-28
+      toolchain=nightly-2026-01-28 # Rust 1.95
       ;;
     1.*) bail "unhandled ${toolchain}" ;;
     stable | beta) toolchain='' ;; # ignore
@@ -212,15 +218,6 @@ for target in "${targets[@]}"; do
   esac
   os="${base_os}"
 
-  base_flags=''
-  case "${target}" in
-    # +crt-static: Workaround for C-SKY QEMU issue
-    csky*hf) base_flags="-C target-feature=+crt-static" ;;
-    # +crt-static: Workaround for C-SKY QEMU issue
-    # ldex/stex requires ck860*
-    csky*) base_flags="-C target-feature=+crt-static -C target-cpu=ck860" ;;
-  esac
-
   test_only_on_nightly=''
   case "${target}" in
     # x86_64-apple-darwin:
@@ -229,25 +226,25 @@ for target in "${targets[@]}"; do
     # aarch64-pc-windows-msvc:
     #   We test only one version because we do not have Windows-specific code and
     #   AArch64-specific code is also tested on Linux using multiple versions.
-    # armv7-unknown-linux-gnueabi:
-    #   We test only one version because we do not have soft-float-specific code and
-    #   Armv7-specific code is also tested on hard-float target using multiple versions.
-    x86_64-apple-darwin | aarch64-pc-windows-msvc | armv7-unknown-linux-gnueabi) test_only_on_nightly=1 ;;
+    x86_64-apple-darwin | aarch64-pc-windows-msvc) test_only_on_nightly=1 ;;
+    # Tested with Arm runner in test-container job.
+    armv4t-unknown-linux-gnueabi | armv5te-unknown-linux-gnueabi | arm-unknown-linux-gnueabi | armv7-unknown-linux-gnueabi) test_only_on_nightly=1 ;;
   esac
 
   if [[ -z "${test_only_on_nightly}" ]]; then
     # Test with min stable toolchain.
-    flags="${base_flags}"
+    flags=''
     min_stable_toolchain
     add_matrix
     # Test with min nightly toolchain.
-    flags="${base_flags}"
+    flags=''
     min_nightly_toolchain
     add_matrix
   fi
   # Test other toolchains.
   for toolchain in "${toolchains[@]}"; do
-    # To test other Rust/LLVM versions, comment out the following and test_only_on_nightly above:
+    # To test other Rust/LLVM versions, comment out the following and test_only_on_nightly above
+    # (you also need to disable "nightly" in toolchains due to job limits of GitHub Actions):
     case "${toolchain}" in
       beta)
         case "${target}" in
@@ -262,7 +259,7 @@ for target in "${targets[@]}"; do
       nightly) ;;
       *) [[ -z "${test_only_on_nightly}" ]] || continue ;;
     esac
-    flags="${base_flags}"
+    flags=''
     case "${target}" in
       arm64ec* | s390x*)
         case "${toolchain}" in
@@ -276,7 +273,7 @@ for target in "${targets[@]}"; do
         ;;
       arm-unknown-linux-gnueabi | armv7-unknown-linux-gnueabi | armeb-unknown-linux-gnueabi)
         case "${toolchain}" in
-          1.8[7-9] | 1.9[0-4]) toolchain='' ;; # SIGILL on QEMU with LLVM 20-22
+          1.8[7-9] | 1.9[0-5]) toolchain='' ;; # SIGILL on QEMU with LLVM 20-22
           # TODO(arm): SIGILL on QEMU with LLVM 20-22
           stable | beta) toolchain='' ;;
           nightly) toolchain=nightly-2025-02-17 ;;
@@ -286,12 +283,12 @@ for target in "${targets[@]}"; do
         case "${toolchain}" in
           1.9[1-4]) toolchain='' ;; # "symbol 'fma' is already defined" error fixed in Rust 1.95 https://github.com/rust-lang/compiler-builtins/pull/1066
           # TODO(hexagon): "symbol 'fma' is already defined" error fixed in Rust 1.95 https://github.com/rust-lang/compiler-builtins/pull/1066
-          stable | beta) toolchain='' ;;
+          stable) toolchain='' ;;
         esac
         ;;
       sparc64-unknown-linux-gnu)
         case "${toolchain}" in
-          1.8[7-9] | 1.9[0-4]) toolchain='' ;; # "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-22
+          1.8[7-9] | 1.9[0-5]) toolchain='' ;; # "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-22
           # TODO(sprac): "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-22
           stable | beta) toolchain='' ;;
           nightly) toolchain=nightly-2025-02-17 ;;
@@ -299,8 +296,10 @@ for target in "${targets[@]}"; do
         ;;
       mipsisa32r6*)
         case "${toolchain}" in
-          1.95) toolchain='' ;;                    # compiler SIGILL with LLVM 22
-          nightly) toolchain=nightly-2026-01-28 ;; # TODO(mips): compiler SIGILL with LLVM 22
+          1.95) toolchain='' ;; # compiler SIGILL with LLVM 22
+          # TODO(mips): compiler SIGILL with LLVM 22
+          beta) toolchain='' ;;
+          nightly) toolchain=nightly-2026-01-28 ;;
         esac
         ;;
     esac
@@ -316,7 +315,7 @@ for target in "${targets[@]}"; do
           ;;
       esac
       os=''
-      flags="${base_flags}"
+      flags=''
       add_matrix
       os="${base_os}"
       ;;
@@ -326,7 +325,7 @@ for target in "${targets[@]}"; do
     x86_64-apple-darwin)
       toolchain=nightly
       os='macos-latest'
-      flags="${base_flags}"
+      flags=''
       add_matrix
       os="${base_os}"
       ;;
@@ -335,7 +334,7 @@ for target in "${targets[@]}"; do
   case "${target}" in
     x86_64-unknown-linux-gnu)
       toolchain=nightly
-      flags="${base_flags} -C panic=abort -Z panic_abort_tests"
+      flags="-C panic=abort -Z panic_abort_tests"
       add_matrix
       ;;
   esac
@@ -346,7 +345,7 @@ for target in "${targets[@]}"; do
     # TODO(cranelift): riscv64gc-unknown-linux-gnu: cranelift doesn't support cfg(target_feature) yet: https://github.com/rust-lang/rustc_codegen_cranelift/issues/1400
     x86_64-unknown-linux-gnu | aarch64-unknown-linux-gnu | x86_64-apple-darwin | aarch64-apple-darwin | x86_64-pc-windows-msvc)
       toolchain=nightly
-      flags="${base_flags} -Z codegen-backend=cranelift"
+      flags="-Z codegen-backend=cranelift"
       add_matrix
       ;;
   esac
@@ -355,7 +354,7 @@ for target in "${targets[@]}"; do
     # TODO(gcc): m68k-unknown-linux-gnu
     x86_64-unknown-linux-gnu)
       toolchain=nightly
-      flags="${base_flags} -Z codegen-backend=gcc"
+      flags="-Z codegen-backend=gcc"
       add_matrix
       ;;
   esac
