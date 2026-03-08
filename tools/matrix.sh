@@ -46,7 +46,7 @@ targets=(
   armv7-unknown-linux-gnueabi         # Armv7 A32 sf
   armv7-unknown-linux-gnueabihf       # Armv7 A32 hf
   thumbv7neon-unknown-linux-gnueabihf # Armv7 T32 hf
-  armeb-unknown-linux-gnueabi         # Armv8 big A32 sf
+  armeb-unknown-linux-gnueabi         # Armv8 big (BE-8) A32 sf
 
   # csky
   csky-unknown-linux-gnuabiv2

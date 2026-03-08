@@ -33,9 +33,13 @@ default_targets=(
   # v5TE
   armv5te-unknown-linux-gnueabi
   armv5te-none-eabi # no atomic
+  # v5TE big endian
+  armebv5te-unknown-linux-gnueabi # custom target
   # v6
   arm-unknown-linux-gnueabi
   arm-unknown-linux-gnueabihf
+  # v6 big endian
+  armebv6-unknown-linux-gnueabi # custom target
   # v7-A
   armv7-unknown-linux-gnueabi
   armv7-unknown-linux-gnueabihf
@@ -220,6 +224,7 @@ rustc_minor_version="${rustc_version#*.}"
 rustc_minor_version="${rustc_minor_version%%.*}"
 llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | { grep -E '^LLVM version:' || true; } | cut -d' ' -f3)
 llvm_version="${llvm_version%%.*}"
+commit_date=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^commit-date:' | cut -d' ' -f2)
 host=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^host:' | cut -d' ' -f2)
 workspace_dir=$(pwd)
 target_dir="${workspace_dir}/target"
@@ -270,17 +275,20 @@ build() {
       info "target '${target}' not available on ${rustc_version} (skipped all checks)"
       return 0
     fi
-    if [[ "${rustc_minor_version}" -lt 91 ]] && [[ "${target}" != "avr"* ]]; then
-      # Skip pre-1.91 because target-pointer-width change
-      info "target '${target}' requires 1.91-nightly or later (skipped)"
-      return 0
-    fi
     if { cargo ${pre_args[@]+"${pre_args[@]}"} -Z help || true; } | grep -Fq json-target-spec; then
       args+=(-Z json-target-spec)
       rustc_target_flags+=(-Z unstable-options)
     fi
-    args+=(--target "${workspace_dir}/target-specs/${target}.json")
-    rustc_target_flags+=(--target "${workspace_dir}/target-specs/${target}.json")
+    if [[ "${rustc_minor_version}" -lt 91 ]] || [[ "${commit_date}" == '2025-08-05' ]]; then
+      # Handle target-pointer-width change.
+      mkdir -p -- tmp/target-specs
+      sed -E 's/"target-(c-int|pointer)-width": ([0-9]+)/"target-\1-width": "\2"/g' "target-specs/${target}.json" >|"tmp/target-specs/${target}.json"
+      args+=(--target "${workspace_dir}/tmp/target-specs/${target}.json")
+      rustc_target_flags+=(--target "${workspace_dir}/tmp/target-specs/${target}.json")
+    else
+      args+=(--target "${workspace_dir}/target-specs/${target}.json")
+      rustc_target_flags+=(--target "${workspace_dir}/target-specs/${target}.json")
+    fi
   elif [[ "${target}" != "${host}" ]]; then
     args+=(--target "${target}")
     rustc_target_flags+=(--target "${target}")
@@ -324,7 +332,7 @@ build() {
         info "target '${target}' requires LLVM 20+ (skipped all checks)"
         return 0
       fi
-      # Workaround for compiler SIGSEGV.
+      # Workaround for compiler hang/SIGSEGV with LLVM 20-22.
       target_rustflags+=" -C opt-level=s"
       ;;
   esac

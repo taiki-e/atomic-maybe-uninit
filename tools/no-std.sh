@@ -145,11 +145,10 @@ run() {
   local target="$1"
   shift
   local target_rustflags="${RUSTFLAGS:-}"
-  if [[ "${target}" == "avr-none" ]]; then
-    if [[ "${rustc_minor_version}" -lt 88 ]]; then
-      target=avr-unknown-gnu-atmega2560 # custom target
-    fi
+  if [[ "${target}" == "avr-none" ]] && [[ "${rustc_minor_version}" -lt 88 ]]; then
+    target=avr-unknown-gnu-atmega2560 # custom target
   fi
+  local target_flags=()
   if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
     if [[ "${target}" == "riscv64im-unknown-none-elf" ]]; then
       target=riscv64i-unknown-none-elf # custom target
@@ -161,19 +160,19 @@ run() {
       info "target '${target}' not available on ${rustc_version} (skipped)"
       return 0
     fi
-    if { [[ "${rustc_minor_version}" -lt 91 ]] || [[ "${commit_date}" == '2025-08-05' ]]; } && [[ "${target}" != "avr"* ]]; then
-      # Skip pre-1.91 because target-pointer-width change
-      info "target '${target}' requires 1.91-nightly or later (skipped)"
-      return 0
-    fi
-    local target_flags=(--target "${workspace_dir}/target-specs/${target}.json")
     if { cargo ${pre_args[@]+"${pre_args[@]}"} -Z help || true; } | grep -Fq json-target-spec; then
-      if [[ "${target}" != "avr-unknown-gnu-atmega2560" ]]; then
-        target_flags+=(-Z json-target-spec)
-      fi
+      target_flags+=(-Z json-target-spec)
+    fi
+    if [[ "${rustc_minor_version}" -lt 91 ]] || [[ "${commit_date}" == '2025-08-05' ]]; then
+      # Handle target-pointer-width change.
+      mkdir -p -- tmp/target-specs
+      sed -E 's/"target-(c-int|pointer)-width": ([0-9]+)/"target-\1-width": "\2"/g' "target-specs/${target}.json" >|"tmp/target-specs/${target}.json"
+      target_flags+=(--target "${workspace_dir}/tmp/target-specs/${target}.json")
+    else
+      target_flags+=(--target "${workspace_dir}/target-specs/${target}.json")
     fi
   else
-    local target_flags=(--target "${target}")
+    target_flags+=(--target "${target}")
   fi
   target_lower="${target//-/_}"
   target_lower="${target_lower//./_}"
@@ -227,8 +226,12 @@ run() {
         loongarch*)
           # TODO: The patched QEMU needed (see semihosting crate's README.md for details).
           if [[ -z "${LOONGARCH_QEMU_BIN_DIR:-}" ]]; then
-            info "LoongArch semihosting support doesn't yet merged in upstream (skipped)"
-            return 0
+            if [[ -z "${CI:-}" ]]; then
+              info "LoongArch semihosting support doesn't yet merged in upstream (skipped)"
+              return 0
+            else
+              bail "LoongArch semihosting support doesn't yet merged in upstream"
+            fi
           fi
           local cpu=''
           case "${target}" in
