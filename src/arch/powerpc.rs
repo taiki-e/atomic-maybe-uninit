@@ -298,7 +298,7 @@ macro_rules! atomic {
                     macro_rules! cmpxchg {
                         ($acquire:expr, $release:expr, $fail_label:tt, $skip_success_fence:tt) => {
                             asm!(
-                                $release,
+                                $release,                                          // fence
                                 "2:", // 'retry:
                                     concat!("l", $suffix, "arx {out}, 0, {dst}"),  // atomic { RESERVE = (dst, size_of($ty)); out = zero_extend(*dst) }
                                     concat!("cmp", $cmp_size, " {old}, {out}"),    // if old == out { cr0.EQ = 1 } else { cr0.EQ = 0 }
@@ -485,7 +485,7 @@ macro_rules! atomic_sub_word {
                     macro_rules! cmpxchg {
                         ($acquire:expr, $release:expr, $fail_label:tt, $skip_success_fence:tt) => {
                             asm!(
-                                $release,
+                                $release,                                // fence
                                 "2:", // 'retry:
                                     "lwarx {out}, 0, {dst}",             // atomic { RESERVE = (dst, 4); out = zero_extend(*dst) }
                                     "and {tmp}, {out}, {mask}",          // tmp = out & mask
@@ -786,7 +786,7 @@ impl AtomicCompareExchange for u128 {
             macro_rules! cmpxchg {
                 ($acquire:expr, $release:expr, $fail_label:tt, $skip_success_fence:tt) => {
                     asm!(
-                        $release,
+                        $release,                                // fence
                         "2:", // 'retry:
                             "lqarx %r8, 0, {dst}",               // atomic { RESERVE = (dst, 16); r8:r9 = *dst }
                             "xor {tmp_lo}, %r9, {old_lo}",       // tmp_lo = r9 ^ old_lo
