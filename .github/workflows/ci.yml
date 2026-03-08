@@ -1002,24 +1002,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # x86_64
           - target: x86_64-unknown-linux-gnu
-          - target: i686-unknown-linux-gnu
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
-          - target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
-          - target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
           - target: x86_64-apple-darwin
             os: macos-15-intel
-          - target: aarch64-apple-darwin
-            os: macos-26
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-          - target: aarch64-pc-windows-msvc
-            os: windows-11-arm
+          # x86
+          - target: i686-unknown-linux-gnu
+          # # aarch64
+          # - target: aarch64-unknown-linux-gnu
+          #   os: ubuntu-24.04-arm
+          # - target: aarch64-apple-darwin
+          #   os: macos-26
+          # - target: aarch64-pc-windows-msvc
+          #   os: windows-11-arm
+          # # arm
+          # - target: armv7-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
+          # - target: thumbv7neon-unknown-linux-gnueabihf
+          #   os: ubuntu-24.04-arm
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    # timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@v1
       - uses: taiki-e/github-actions/install-rust@nightly
@@ -1028,14 +1032,14 @@ jobs:
           target: ${{ matrix.target }}
       - run: cargo bench -p bench
       # no avx
-      # - run: cargo bench -p bench
-      #   env:
-      #     RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_no_outline_atomics
-      #   if: startsWith(matrix.target, 'x86_64')
       - run: cargo bench -p bench
         env:
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_movsb
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_no_outline_atomics
         if: startsWith(matrix.target, 'x86_64')
+      # - run: cargo bench -p bench
+      #   env:
+      #     RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_movsb
+      #   if: startsWith(matrix.target, 'x86_64')
       # - run: cargo bench -p bench
       #   env:
       #     RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_scalar_over_neon
