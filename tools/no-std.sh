@@ -23,8 +23,8 @@ default_targets=(
   thumbv8m.main-none-eabi
   thumbv8m.main-none-eabihf
   # v6
-  # armv6-none-eabi # TODO(arm): Hang on 64-bit atomics
-  # thumbv6-none-eabi # TODO(arm): "rustc-LLVM ERROR: Cannot select: intrinsic %llvm.arm.hint" will be fixed in https://github.com/rust-lang/rust/pull/150138
+  # armv6-none-eabi # TODO(arm): Hang on 64-bit atomics test in release mode
+  thumbv6-none-eabi
 
   # riscv32
   riscv32i-unknown-none-elf
@@ -49,7 +49,7 @@ default_targets=(
   sparc-unknown-none-elf
 
   # avr
-  avr-unknown-gnu-atmega2560 # custom target
+  avr-none
 
   # msp430
   msp430-none-elf
@@ -144,10 +144,12 @@ setup_wokwi() {
 run() {
   local target="$1"
   shift
-  target_lower="${target//-/_}"
-  target_lower="${target_lower//./_}"
-  target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
   local target_rustflags="${RUSTFLAGS:-}"
+  if [[ "${target}" == "avr-none" ]]; then
+    if [[ "${rustc_minor_version}" -lt 88 ]]; then
+      target=avr-unknown-gnu-atmega2560 # custom target
+    fi
+  fi
   if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
     if [[ "${target}" == "riscv64im-unknown-none-elf" ]]; then
       target=riscv64i-unknown-none-elf # custom target
@@ -159,7 +161,7 @@ run() {
       info "target '${target}' not available on ${rustc_version} (skipped)"
       return 0
     fi
-    if [[ "${rustc_minor_version}" -lt 91 ]] && [[ "${target}" != "avr"* ]]; then
+    if { [[ "${rustc_minor_version}" -lt 91 ]] || [[ "${commit_date}" == '2025-08-05' ]]; } && [[ "${target}" != "avr"* ]]; then
       # Skip pre-1.91 because target-pointer-width change
       info "target '${target}' requires 1.91-nightly or later (skipped)"
       return 0
@@ -173,6 +175,9 @@ run() {
   else
     local target_flags=(--target "${target}")
   fi
+  target_lower="${target//-/_}"
+  target_lower="${target_lower//./_}"
+  target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
   subcmd=run
   if [[ -z "${CI:-}" ]]; then
     case "${target}" in
@@ -252,11 +257,20 @@ run() {
     avr*)
       test_dir=tests/avr
       export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh simavr ${target}"
+      if [[ "${target}" == "avr-none" ]]; then
+        # "error: target requires explicitly specifying a cpu with `-C target-cpu`"
+        target_rustflags+=" -C target-cpu=atmega2560"
+      fi
       ;;
     msp430*)
       case "${commit_date}" in
         2023-08-23)
           # multiple definition of `__muldi3'
+          info "target '${target}' in broken on this version (skipped)"
+          return 0
+          ;;
+        2025-08-05)
+          # "invalid signature for `extern "msp430-interrupt"` function" due to https://github.com/rust-lang/rust/issues/143072
           info "target '${target}' in broken on this version (skipped)"
           return 0
           ;;

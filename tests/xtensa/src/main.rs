@@ -13,20 +13,7 @@ use esp_println::{print, println};
 
 #[esp_hal::main]
 fn main() -> ! {
-    cfg_has_atomic_cas! {
-        println!("target_has_cas: true");
-    }
-    cfg_no_atomic_cas! {
-        println!("target_has_cas: false");
-    }
-    test_atomic!(isize);
-    test_atomic!(usize);
-    test_atomic!(i8);
-    test_atomic!(u8);
-    test_atomic!(i16);
-    test_atomic!(u16);
-    test_atomic!(i32);
-    test_atomic!(u32);
+    test_atomic_all!();
 
     println!("Tests finished successfully");
 

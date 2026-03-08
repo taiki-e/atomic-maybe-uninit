@@ -154,8 +154,6 @@ ultrasparc
 umax
 umin
 usart
-uwrite
-uwriteln
 uxtb
 uxth
 versatilepb

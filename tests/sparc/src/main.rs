@@ -10,37 +10,17 @@ use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
 use atomic_maybe_uninit::*;
 
-macro_rules! print {
+macro_rules! print_str {
     ($($tt:tt)*) => {{
-        use core::fmt::Write as _;
-        let _ = write!(sim::Console, $($tt)*);
-    }};
-}
-macro_rules! println {
-    ($($tt:tt)*) => {{
-        use core::fmt::Write as _;
-        let _ = writeln!(sim::Console, $($tt)*);
+        let _ = sim::write_str($($tt)*);
     }};
 }
 
 #[no_mangle]
 extern "C" fn main() -> i32 {
-    cfg_has_atomic_cas! {
-        println!("target_has_cas: true");
-    }
-    cfg_no_atomic_cas! {
-        println!("target_has_cas: false");
-    }
-    test_atomic!(isize);
-    test_atomic!(usize);
-    test_atomic!(i8);
-    test_atomic!(u8);
-    test_atomic!(i16);
-    test_atomic!(u16);
-    test_atomic!(i32);
-    test_atomic!(u32);
+    test_atomic_all!();
 
-    println!("Tests finished successfully");
+    print_str!("Tests finished successfully\n");
 
     0
 }
@@ -48,6 +28,13 @@ extern "C" fn main() -> i32 {
 #[inline(never)]
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo<'_>) -> ! {
+    macro_rules! println {
+        ($($tt:tt)*) => {{
+            use core::fmt::Write as _;
+            let _ = writeln!(sim::Console, $($tt)*);
+        }};
+    }
+
     println!("{info}");
     // Note that this doesn't make tsim-leon3 to be exit with non-zero exit code.
     unsafe { sim::_exit(1) }
@@ -63,12 +50,15 @@ mod sim {
         pub fn _exit(code: i32) -> !;
     }
 
+    pub fn write_str(s: &str) {
+        for &b in s.as_bytes() {
+            unsafe { putchar(b as i32) }
+        }
+    }
     pub struct Console;
     impl fmt::Write for Console {
         fn write_str(&mut self, s: &str) -> fmt::Result {
-            for &b in s.as_bytes() {
-                unsafe { putchar(b as i32) }
-            }
+            write_str(s);
             Ok(())
         }
     }
