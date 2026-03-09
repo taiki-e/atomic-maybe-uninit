@@ -137,24 +137,32 @@ pub mod swap {
             }
         };
     }
-    atomic_maybe_uninit::cfg_has_atomic_8! {
-        t!(u8);
+    atomic_maybe_uninit::cfg_has_atomic_cas! {
+        atomic_maybe_uninit::cfg_has_atomic_8! {
+            t!(u8);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_16! {
+            t!(u16);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_32! {
+            t!(u32);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_64! {
+            t!(u64);
+        }
+        #[cfg(all(target_arch = "arm", target_os = "linux"))]
+        atomic_maybe_uninit::cfg_no_atomic_64! {
+            t!(u64);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_128! {
+            t!(u128);
+        }
     }
-    atomic_maybe_uninit::cfg_has_atomic_16! {
-        t!(u16);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_32! {
-        t!(u32);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_64! {
-        t!(u64);
-    }
-    #[cfg(all(target_arch = "arm", target_os = "linux"))]
-    atomic_maybe_uninit::cfg_no_atomic_64! {
-        t!(u64);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_128! {
-        t!(u128);
+    #[cfg(target_arch = "sparc")]
+    atomic_maybe_uninit::cfg_no_atomic_cas! {
+        atomic_maybe_uninit::cfg_has_atomic_32! {
+            t!(u32);
+        }
     }
 }
 #[cfg(feature = "atomic-maybe-uninit")]
@@ -326,24 +334,26 @@ pub mod compare_exchange {
             }
         };
     }
-    atomic_maybe_uninit::cfg_has_atomic_8! {
-        t!(u8);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_16! {
-        t!(u16);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_32! {
-        t!(u32);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_64! {
-        t!(u64);
-    }
-    #[cfg(all(target_arch = "arm", target_os = "linux"))]
-    atomic_maybe_uninit::cfg_no_atomic_64! {
-        t!(u64);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_128! {
-        t!(u128);
+    atomic_maybe_uninit::cfg_has_atomic_cas! {
+        atomic_maybe_uninit::cfg_has_atomic_8! {
+            t!(u8);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_16! {
+            t!(u16);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_32! {
+            t!(u32);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_64! {
+            t!(u64);
+        }
+        #[cfg(all(target_arch = "arm", target_os = "linux"))]
+        atomic_maybe_uninit::cfg_no_atomic_64! {
+            t!(u64);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_128! {
+            t!(u128);
+        }
     }
 }
 #[cfg(feature = "atomic-maybe-uninit")]
@@ -515,24 +525,26 @@ pub mod compare_exchange_weak {
             }
         };
     }
-    atomic_maybe_uninit::cfg_has_atomic_8! {
-        t!(u8);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_16! {
-        t!(u16);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_32! {
-        t!(u32);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_64! {
-        t!(u64);
-    }
-    #[cfg(all(target_arch = "arm", target_os = "linux"))]
-    atomic_maybe_uninit::cfg_no_atomic_64! {
-        t!(u64);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_128! {
-        t!(u128);
+    atomic_maybe_uninit::cfg_has_atomic_cas! {
+        atomic_maybe_uninit::cfg_has_atomic_8! {
+            t!(u8);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_16! {
+            t!(u16);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_32! {
+            t!(u32);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_64! {
+            t!(u64);
+        }
+        #[cfg(all(target_arch = "arm", target_os = "linux"))]
+        atomic_maybe_uninit::cfg_no_atomic_64! {
+            t!(u64);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_128! {
+            t!(u128);
+        }
     }
 }
 

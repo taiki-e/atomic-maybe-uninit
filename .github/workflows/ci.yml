@@ -362,12 +362,18 @@ jobs:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=z196
         if: startsWith(matrix.target, 's390x')
-      # loongarch64 no amswap
+      # loongarch64 test loongarch32 path
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap
         if: startsWith(matrix.target, 'loongarch64')
+      # sparc/sparc64 test v8 path
+      - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_swap_over_cas
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_swap_over_cas
+        if: startsWith(matrix.target, 'sparc')
 
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-}
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-} --direct

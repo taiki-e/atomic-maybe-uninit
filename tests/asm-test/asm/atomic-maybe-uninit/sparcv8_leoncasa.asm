@@ -3497,16 +3497,9 @@ asm_test::swap::u32::acqrel:
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i0 ], %i3
-0:
-        mov               %i1, %i2
-        nop
-        casa              [ %i0 ] (10), %i3, %i2
-        cmp               %i2, %i3
-        bne,a             0b
-        mov               %i2, %i3
+        swap              [ %i0 ], %i1
         ret
-        restore           %g0, %i2, %o0
+        restore           %g0, %i1, %o0
 
 asm_test::swap::u32::seqcst:
         save              %sp, -96, %sp
@@ -3514,42 +3507,21 @@ asm_test::swap::u32::seqcst:
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i0 ], %i3
-0:
-        mov               %i1, %i2
-        nop
-        casa              [ %i0 ] (10), %i3, %i2
-        cmp               %i2, %i3
-        bne,a             0b
-        mov               %i2, %i3
+        swap              [ %i0 ], %i1
         ret
-        restore           %g0, %i2, %o0
+        restore           %g0, %i1, %o0
 
 asm_test::swap::u32::acquire:
         save              %sp, -96, %sp
-        ld                [ %i0 ], %i3
-0:
-        mov               %i1, %i2
-        nop
-        casa              [ %i0 ] (10), %i3, %i2
-        cmp               %i2, %i3
-        bne,a             0b
-        mov               %i2, %i3
+        swap              [ %i0 ], %i1
         ret
-        restore           %g0, %i2, %o0
+        restore           %g0, %i1, %o0
 
 asm_test::swap::u32::relaxed:
         save              %sp, -96, %sp
-        ld                [ %i0 ], %i3
-0:
-        mov               %i1, %i2
-        nop
-        casa              [ %i0 ] (10), %i3, %i2
-        cmp               %i2, %i3
-        bne,a             0b
-        mov               %i2, %i3
+        swap              [ %i0 ], %i1
         ret
-        restore           %g0, %i2, %o0
+        restore           %g0, %i1, %o0
 
 asm_test::swap::u32::release:
         save              %sp, -96, %sp
@@ -3557,16 +3529,9 @@ asm_test::swap::u32::release:
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
-        ld                [ %i0 ], %i3
-0:
-        mov               %i1, %i2
-        nop
-        casa              [ %i0 ] (10), %i3, %i2
-        cmp               %i2, %i3
-        bne,a             0b
-        mov               %i2, %i3
+        swap              [ %i0 ], %i1
         ret
-        restore           %g0, %i2, %o0
+        restore           %g0, %i1, %o0
 
 asm_test::store::u8::seqcst:
         save              %sp, -96, %sp

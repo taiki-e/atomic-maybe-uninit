@@ -22,7 +22,7 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicLoad, AtomicStore};
+use crate::raw::{AtomicLoad, AtomicStore, AtomicSwap};
 
 cfg_sel!({
     #[cfg(any(
@@ -127,7 +127,6 @@ cfg_sel!({
                 ".balign 16\n"
             };
         }
-        #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
         macro_rules! atomic_rmw {
             ($op:ident, $order:ident) => {
                 // op(acquire, release, leon_nop)
@@ -158,10 +157,7 @@ cfg_sel!({
         atomic_maybe_uninit_target_feature = "leoncasa",
     ))]
     {
-        use crate::{
-            raw::{AtomicCompareExchange, AtomicSwap},
-            utils::RegSize,
-        };
+        use crate::{raw::AtomicCompareExchange, utils::RegSize};
 
         delegate_size!(delegate_all);
 
@@ -199,6 +195,7 @@ cfg_sel!({
     #[cfg(else)]
     {
         delegate_size!(delegate_load_store);
+        delegate_size!(delegate_swap);
     }
 });
 
@@ -327,16 +324,79 @@ macro_rules! atomic_load_store {
 }
 
 #[rustfmt::skip]
-macro_rules! atomic {
-    ($ty:ident, $suffix:tt, $cc:tt) => {
-        atomic_load_store!($ty, $suffix, "");
-        #[cfg(any(
+macro_rules! atomic_swap {
+    (u32, $suffix:tt, $cc:tt) => {
+        // SWAP instruction has been deprecated in SPARC-V9.
+        #[cfg(all(
+            any(
+                target_arch = "sparc64",
+                target_feature = "v9",
+                atomic_maybe_uninit_target_feature = "v9",
+            ),
+            not(atomic_maybe_uninit_test_prefer_swap_over_cas),
+        ))]
+        atomic_swap_v9!(u32, $suffix, $cc);
+        #[cfg(not(any(
             target_arch = "sparc64",
             target_feature = "v9",
             atomic_maybe_uninit_target_feature = "v9",
             target_feature = "leoncasa",
             atomic_maybe_uninit_target_feature = "leoncasa",
-        ))]
+        )))]
+        delegate_signed!(delegate_swap, u32);
+        #[cfg(not(all(
+            any(
+                target_arch = "sparc64",
+                target_feature = "v9",
+                atomic_maybe_uninit_target_feature = "v9",
+            ),
+            not(atomic_maybe_uninit_test_prefer_swap_over_cas),
+        )))]
+        impl AtomicSwap for u32 {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert_atomic_unsafe_precondition!(dst, u32);
+                let mut out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    macro_rules! swap {
+                        ($acquire:expr, $release:expr, $_leon_nop:expr) => {
+                            asm!(
+                                $release,              // fence
+                                "swap [{dst}], {out}", // atomic { _x = *dst; *dst = out; out = zero_extend(_x) }
+                                $acquire,              // fence
+                                dst = in(reg) ptr_reg!(dst),
+                                out = inout(reg) val => out,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    atomic_rmw!(swap, order);
+                }
+                out
+            }
+        }
+    };
+    (u64, $suffix:tt, $cc:tt) => {
+        atomic_swap_v9!(u64, $suffix, $cc);
+    };
+}
+
+#[cfg(any(
+    target_arch = "sparc64",
+    all(
+        any(target_feature = "v9", atomic_maybe_uninit_target_feature = "v9"),
+        not(atomic_maybe_uninit_test_prefer_swap_over_cas),
+    ),
+))]
+#[rustfmt::skip]
+macro_rules! atomic_swap_v9 {
+    ($ty:ident, $suffix:tt, $cc:tt) => {
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -375,6 +435,14 @@ macro_rules! atomic {
                 out
             }
         }
+    };
+}
+
+#[rustfmt::skip]
+macro_rules! atomic {
+    ($ty:ident, $suffix:tt, $cc:tt) => {
+        atomic_load_store!($ty, $suffix, "");
+        atomic_swap!($ty, $suffix, $cc);
         #[cfg(any(
             target_arch = "sparc64",
             target_feature = "v9",
