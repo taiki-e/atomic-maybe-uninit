@@ -290,6 +290,13 @@ jobs:
           CARGO_TARGET_ARMEBV5TE_UNKNOWN_LINUX_GNUEABI_LINKER: armeb-unknown-linux-gnueabi-gcc
           CARGO_TARGET_ARMEBV5TE_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
         if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi'
+      # arm v4t big endian (BE-32)
+      # armeb-unknown-linux-gnueabi is v8 by default, use custom target instead
+      - run: tools/test.sh -vv --tests --target armebv4t-unknown-linux-gnueabi -Z build-std
+        env:
+          CARGO_TARGET_ARMEBV4T_UNKNOWN_LINUX_GNUEABI_LINKER: armeb-unknown-linux-gnueabi-gcc
+          CARGO_TARGET_ARMEBV4T_UNKNOWN_LINUX_GNUEABI_RUNNER: qemu-armeb
+        if: startsWith(matrix.rust, 'nightly') && matrix.target == 'armeb-unknown-linux-gnueabi'
       # arm v6 legacy cp15_barrier
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
         env:

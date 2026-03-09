@@ -30,6 +30,8 @@ default_targets=(
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end'
   # v4T
   armv4t-unknown-linux-gnueabi
+  # v4T big endian
+  armebv4t-unknown-linux-gnueabi # custom target
   # v5TE
   armv5te-unknown-linux-gnueabi
   armv5te-none-eabi # no atomic
