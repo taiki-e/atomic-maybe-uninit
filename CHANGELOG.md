@@ -12,6 +12,38 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support 64-bit atomics on SPARC-V8+ (e.g., sparc-unknown-linux-gnu). ([#57](https://github.com/taiki-e/atomic-maybe-uninit/pull/57))
+
+- Support pre-v6 Arm Linux/Android in Thumb mode. ([b1bbcac](https://github.com/taiki-e/atomic-maybe-uninit/commit/b1bbcac11e7c8693cdad66d8308616e2ebcaaafc))
+
+- Support load/store on all SPARC-V8 CPUs. Previously `v9` or `leoncasa` target feature was required. ([e9db1ac](https://github.com/taiki-e/atomic-maybe-uninit/commit/e9db1ac356571ff0404f04e6defdefea33350aec))
+
+- Support 32-bit swap on all SPARC-V8 CPUs. Previously `v9` or `leoncasa` target feature was required. ([4871adb](https://github.com/taiki-e/atomic-maybe-uninit/commit/4871adb0c4fc1999161455286a5c2915936981e3))
+
+- Support MIPS R5900. ([1c406f4](https://github.com/taiki-e/atomic-maybe-uninit/commit/1c406f4b3a117d3debeb18ef2c533ba46cc6592d))
+
+- Implement workaround for Arm Cortex-A15 erratum 830321. ([11c6161](https://github.com/taiki-e/atomic-maybe-uninit/commit/11c6161b49af2673f912acfa6dcc3715763df83d))
+
+- Implement workaround for SPARC errata GRLIB-TN-0009 & GRLIB-TN-0010. Previously it was partially implemented. ([291228f](https://github.com/taiki-e/atomic-maybe-uninit/commit/291228fa19d8dee92b53a07949009086714362c6))
+
+- Partially implement workaround for SPARC errata GRLIB-TN-0004. There is no known workaround for the remaining part. ([291228f](https://github.com/taiki-e/atomic-maybe-uninit/commit/291228fa19d8dee92b53a07949009086714362c6))
+
+- Various optimizations:
+  - Support run-time detection of AVX (optimized 128-bit load/store) on x86_64. ([0f5e4f8](https://github.com/taiki-e/atomic-maybe-uninit/commit/0f5e4f8676f8551f154bbf4f9a488eeed8494a10))
+  - Optimize SeqCst atomics on AArch64 Windows MSVC. ([f8b02bb](https://github.com/taiki-e/atomic-maybe-uninit/commit/f8b02bb5225cac1bdc33d94a437c1f7b2cea504a))
+  - Optimize CAS on Armv6+. ([11c6161](https://github.com/taiki-e/atomic-maybe-uninit/commit/11c6161b49af2673f912acfa6dcc3715763df83d))
+  - Optimize {32,64}-bit CAS on RISC-V. ([317f8cf](https://github.com/taiki-e/atomic-maybe-uninit/commit/317f8cfbef2f1caa2054a2c3ab2270f03f45da38))
+  - Optimize Acquire load and Release store on RISC-V when Zalasr extension is available. ([1a90421](https://github.com/taiki-e/atomic-maybe-uninit/commit/1a90421b2b9ca056ea96aaf96eec9e3aa216487c))
+  - Optimize swap/CAS on PowerPC/PowerPC64. ([3e5e173](https://github.com/taiki-e/atomic-maybe-uninit/commit/3e5e1736de10aa93a136005b7cd87a38d4f154cf))
+  - Optimize swap/CAS on MIPS/MIPS64. ([1c406f4](https://github.com/taiki-e/atomic-maybe-uninit/commit/1c406f4b3a117d3debeb18ef2c533ba46cc6592d))
+  - Optimize non-relaxed atomics on SPARC/SPARC64. ([291228f](https://github.com/taiki-e/atomic-maybe-uninit/commit/291228fa19d8dee92b53a07949009086714362c6))
+  - Optimize swap/CAS on Hexagon. ([0016af6](https://github.com/taiki-e/atomic-maybe-uninit/commit/0016af62e398a3c240444922327c6ccbc8593726))
+  - Optimize 16-bit atomics on AVR. ([5c85b66](https://github.com/taiki-e/atomic-maybe-uninit/commit/5c85b6605b8281fc0b7e292d4437e8ca064a0c22), [317f8cf](https://github.com/taiki-e/atomic-maybe-uninit/commit/317f8cfbef2f1caa2054a2c3ab2270f03f45da38))
+  - Optimize {8,16}-bit swap/CAS when return value is not used on pre-v7 Arm Linux/Android, C-SKY, Hexagon, LoongArch, MIPS, PowerPC, RISC-V, SPARC, and Xtensa. ([9346849](https://github.com/taiki-e/atomic-maybe-uninit/commit/9346849ba24b68a7b706fb0c436ba83af14c9a0f), [b1bbcac](https://github.com/taiki-e/atomic-maybe-uninit/commit/b1bbcac11e7c8693cdad66d8308616e2ebcaaafc))
+  - Optimize load/store/CAS when not inlined. ([a9db0ec](https://github.com/taiki-e/atomic-maybe-uninit/commit/a9db0ece9e3d7618871aa6f28f36802f2739449a), [e0818e1](e0818e1b6a0c894ef66c1a0e0fbbc67c9ab0b49b))
+
+- Improve compile-time detection of AVR target features. ([e3832c3](https://github.com/taiki-e/atomic-maybe-uninit/commit/e3832c32c5ebfbd44b96ceabde408445744fe365))
+
 ## [0.3.15] - 2026-01-28
 
 - Update to stabilized [PowerPC](https://github.com/rust-lang/rust/pull/147996) inline assembly. ([c4cb5b1](https://github.com/taiki-e/atomic-maybe-uninit/commit/c4cb5b1f10857004852307c4a78ceec7ddeccd4f))
