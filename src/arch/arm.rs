@@ -7,7 +7,7 @@ See "Atomic operation overview by architecture" for atomic operations in this ar
 https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md#arm
 
 LLVM emits CLREX for Armv7 for (minor) performance (https://github.com/llvm/llvm-project/commit/07a844d758f09e1dd07ca17eb38a22d69d63fae3),
-but we don't generate it for now to work around Cortex-A15 erratum 830321.
+but we don't emit it for now to work around Cortex-A15 erratum 830321.
 Not all CPUs require workarounds, but since we currently have no way to accurately catch
 the flag that tells LLVM to enable workarounds for these (see comments in build script),
 we always do it for now.
