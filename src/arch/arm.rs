@@ -111,7 +111,7 @@ cfg_sel!({
                     // AcqRel and SeqCst compare_exchange are equivalent.
                     (AcqRel | SeqCst, Relaxed) => $cmpxchg_cond_release!(dmb!(), "4f" /* skip-fence-on-fail */, "3f" /* emit-fence-on-success */, "b 4f" /* skip-fence-on-fail */),
                     (AcqRel | SeqCst, _) => $cmpxchg_cond_release!(dmb!(), "3f" /* emit-fence-on-fail */, "3f" /* emit-fence-on-success */, "" /* emit-fence-on-fail */),
-                    _ => unreachable!(),
+                    _ => crate::utils::unreachable_unchecked(),
                 }
             }};
         }
@@ -134,7 +134,7 @@ cfg_sel!({
                     // AcqRel and SeqCst compare_exchange_weak are equivalent.
                     (AcqRel | SeqCst, Relaxed) => $cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!(), "4f" /* skip-fence-on-fail */, "bne 4f" /* skip-fence-on-fail */),
                     (AcqRel | SeqCst, _) => $cmpxchg_weak!(asm_use_dmb, dmb!(), dmb!(), "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
-                    _ => unreachable!(),
+                    _ => crate::utils::unreachable_unchecked(),
                 }
             }};
         }

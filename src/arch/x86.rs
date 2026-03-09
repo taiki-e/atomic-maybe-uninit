@@ -460,7 +460,7 @@ impl AtomicStore for u64 {
                         options(nostack),
                     );
                 }
-                _ => unreachable!(),
+                _ => crate::utils::unreachable_unchecked(),
             }
         }
         #[cfg(all(
@@ -839,7 +839,7 @@ macro_rules! atomic128 {
                                 }
                             });
                         }
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 #[cfg(not(target_feature = "avx"))]

@@ -269,7 +269,7 @@ macro_rules! atomic {
                         Ordering::Acquire => cmpxchg!("dbar 20"),
                         // TODO: LLVM uses dbar 20 (Acquire) here, but should it not be dbar 16 (SeqCst)?
                         Ordering::SeqCst => cmpxchg!("dbar 16"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                 }
@@ -368,7 +368,7 @@ macro_rules! atomic_sub_word {
                         Ordering::Acquire => cmpxchg!("dbar 20"),
                         // TODO: LLVM uses dbar 20 (Acquire) here, but should it not be dbar 16 (SeqCst)?
                         Ordering::SeqCst => cmpxchg!("dbar 16"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                 }

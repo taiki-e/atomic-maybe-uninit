@@ -125,7 +125,7 @@ macro_rules! atomic_cmpxchg {
             (Relaxed | Release, _) => $cmpxchg!("isync", "sync", "3f" /* emit-fence-on-fail */, "b 4f" /* skip-fence-on-success */),
             (SeqCst, Relaxed) => $cmpxchg!("isync", "sync", "4f" /* skip-fence-on-fail */, "" /* emit-fence-on-success */),
             (Acquire | AcqRel | SeqCst, _) => $cmpxchg!("isync", "sync", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-success */),
-            _ => unreachable!(),
+            _ => crate::utils::unreachable_unchecked(),
         }
     }};
 }
@@ -147,7 +147,7 @@ macro_rules! atomic_cmpxchg_weak {
             (Relaxed | Release, _) => $cmpxchg_weak!("isync", "sync", "", "3f" /* emit-fence-on-fail */, "beq+ %cr0, 4f" /* skip-fence-on-success */),
             (SeqCst, Relaxed) => $cmpxchg_weak!("isync", "sync", "", "4f" /* skip-fence-on-fail */, "bne- %cr0, 4f" /* skip-fence-on-fail */),
             (Acquire | AcqRel | SeqCst, _) => $cmpxchg_weak!("isync", "sync", "", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
-            _ => unreachable!(),
+            _ => crate::utils::unreachable_unchecked(),
         }
     }};
 }

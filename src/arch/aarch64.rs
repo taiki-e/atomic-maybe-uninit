@@ -460,7 +460,7 @@ impl AtomicLoad for u128 {
                 Ordering::Relaxed => atomic_load!("", ""),
                 Ordering::Acquire => atomic_load!("a", ""),
                 Ordering::SeqCst => atomic_load!("a", "l"),
-                _ => unreachable!(),
+                _ => crate::utils::unreachable_unchecked(),
             }
             MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
         }

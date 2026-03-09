@@ -871,12 +871,12 @@ macro_rules! atomic_sub_word {
                             match (order, failure) {
                                 (Relaxed, _) => cmpxchg_fail_relaxed!("", ""),
                                 (Acquire, Relaxed) => cmpxchg_fail_relaxed!("", ".aq"),
-                                (Acquire, Acquire) => cmpxchg!("", ".aq"),
+                                (Acquire, _) => cmpxchg!("", ".aq"),
                                 (Release, _) => cmpxchg_fail_relaxed!("", ".rl"),
                                 (AcqRel | SeqCst, Relaxed) => cmpxchg_fail_relaxed!("", ".aqrl"),
                                 (AcqRel | SeqCst, Acquire) => cmpxchg!("", ".aqrl"),
                                 (SeqCst, SeqCst) => cmpxchg!("fence rw,rw", ".aqrl"),
-                                _ => unreachable!(),
+                                _ => crate::utils::unreachable_unchecked(),
                             }
                             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
                         }
