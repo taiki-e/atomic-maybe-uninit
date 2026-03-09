@@ -367,6 +367,7 @@ jobs:
 
   test-container:
     needs: tidy
+    name: test (${{ matrix.target }}, ${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:

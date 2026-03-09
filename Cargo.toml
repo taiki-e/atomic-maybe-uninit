@@ -34,7 +34,7 @@ doc-scrape-examples = false
 fastrand = "2"
 paste = "1"
 quickcheck = { version = "1", default-features = false, git = "https://github.com/taiki-e/quickcheck.git", rev = "f0c7237" } # https://github.com/BurntSushi/quickcheck/pull/304 + https://github.com/BurntSushi/quickcheck/pull/282 + https://github.com/BurntSushi/quickcheck/pull/296 + rand -> fastrand + lower MSRV
-test-helper = { features = ["std", "sys"], git = "https://github.com/taiki-e/test-helper.git", rev = "46ff7ac" }
+test-helper = { features = ["std", "sys"], git = "https://github.com/taiki-e/test-helper.git", rev = "c78a65c" }
 
 [target.'cfg(valgrind)'.dev-dependencies]
 crabgrind = "0.2"
@@ -66,6 +66,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(target_feature,values("isa-68020"))', # 1.85+ https://github.com/rust-lang/rust/pull/134329
     'cfg(target_feature,values("zacas"))', # 1.87+ https://github.com/rust-lang/rust/pull/137417
     'cfg(target_feature,values("msync"))', # 1.87+ https://github.com/rust-lang/rust/pull/137860
+    'cfg(target_feature,values("ztso"))', # 1.88+ https://github.com/rust-lang/rust/pull/139440
     'cfg(target_feature,values("tinyencoding","lowbytefirst","rmw"))', # 1.95+ https://github.com/rust-lang/rust/pull/146900
     'cfg(target_pointer_width,values("128"))',
     # Known custom cfgs, excluding those that may be set by build script.
