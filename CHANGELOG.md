@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.16] - 2026-03-09
+
 - Support 64-bit atomics on SPARC-V8+ (e.g., sparc-unknown-linux-gnu). ([#57](https://github.com/taiki-e/atomic-maybe-uninit/pull/57))
 
 - Support pre-v6 Arm Linux/Android in Thumb mode. ([b1bbcac](https://github.com/taiki-e/atomic-maybe-uninit/commit/b1bbcac11e7c8693cdad66d8308616e2ebcaaafc))
@@ -437,7 +439,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.15...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.16...HEAD
+[0.3.16]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.15...v0.3.16
 [0.3.15]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.14...v0.3.15
 [0.3.14]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.13...v0.3.14
 [0.3.13]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.12...v0.3.13
