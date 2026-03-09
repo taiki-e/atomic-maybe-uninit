@@ -75,7 +75,7 @@ Feel free to submit an issue if your target is not supported yet.
 
 ## Limitations
 
-This crate uses inline assembly to implement atomic operations (this is currently the only sound way to perform atomic operations on uninitialized values), so it is not compatible with Miri and Sanitizers.
+This crate uses inline assembly to implement atomic operations (this is currently the only sound way to perform atomic operations on uninitialized values), so it is not compatible with [Miri](https://github.com/rust-lang/miri/issues/11) and [most kinds of Sanitizers](https://github.com/google/sanitizers/issues/192).
 
 ## Related Projects
 

@@ -42,7 +42,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
   - Optimize swap/CAS on Hexagon. ([0016af6](https://github.com/taiki-e/atomic-maybe-uninit/commit/0016af62e398a3c240444922327c6ccbc8593726))
   - Optimize 16-bit atomics on AVR. ([5c85b66](https://github.com/taiki-e/atomic-maybe-uninit/commit/5c85b6605b8281fc0b7e292d4437e8ca064a0c22), [317f8cf](https://github.com/taiki-e/atomic-maybe-uninit/commit/317f8cfbef2f1caa2054a2c3ab2270f03f45da38))
   - Optimize {8,16}-bit swap/CAS when return value is not used on pre-v7 Arm Linux/Android, C-SKY, Hexagon, LoongArch, MIPS, PowerPC, RISC-V, SPARC, and Xtensa. ([9346849](https://github.com/taiki-e/atomic-maybe-uninit/commit/9346849ba24b68a7b706fb0c436ba83af14c9a0f), [b1bbcac](https://github.com/taiki-e/atomic-maybe-uninit/commit/b1bbcac11e7c8693cdad66d8308616e2ebcaaafc))
-  - Optimize load/store/CAS when not inlined. ([a9db0ec](https://github.com/taiki-e/atomic-maybe-uninit/commit/a9db0ece9e3d7618871aa6f28f36802f2739449a), [e0818e1](e0818e1b6a0c894ef66c1a0e0fbbc67c9ab0b49b))
+  - Optimize load/store/CAS when not inlined. ([a9db0ec](https://github.com/taiki-e/atomic-maybe-uninit/commit/a9db0ece9e3d7618871aa6f28f36802f2739449a), [e0818e1](https://github.com/taiki-e/atomic-maybe-uninit/commit/e0818e1b6a0c894ef66c1a0e0fbbc67c9ab0b49b))
 
 - Improve compile-time detection of AVR target features. ([e3832c3](https://github.com/taiki-e/atomic-maybe-uninit/commit/e3832c32c5ebfbd44b96ceabde408445744fe365))
 
