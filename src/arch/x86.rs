@@ -563,24 +563,24 @@ impl AtomicCompareExchange for u64 {
 #[cfg(target_arch = "x86_64")]
 #[cfg(target_feature = "cmpxchg16b")]
 macro_rules! atomic128 {
-    ($ty:ident) => {
+    () => {
         // rdi and rsi are call-preserved on Windows.
         #[cfg(not(windows))]
         #[cfg(target_pointer_width = "32")]
-        atomic128!($ty, "edi", "esi", "rsi");
+        atomic128!("edi", "esi", "rsi");
         #[cfg(not(windows))]
         #[cfg(target_pointer_width = "64")]
-        atomic128!($ty, "rdi", "rsi", "rsi");
+        atomic128!("rdi", "rsi", "rsi");
         #[cfg(windows)]
         #[cfg(target_pointer_width = "32")]
-        atomic128!($ty, "r9d", "r11d", "r8");
+        atomic128!("r9d", "r11d", "r8");
         #[cfg(windows)]
         #[cfg(target_pointer_width = "64")]
-        atomic128!($ty, "r9", "r11", "r8");
+        atomic128!("r9", "r11", "r8");
     };
-    ($ty:ident, $dst:tt, $cas_dst:tt, $save:tt) => {
-        delegate_signed!(delegate_all, $ty);
-        impl AtomicLoad for $ty {
+    ($dst:tt, $cas_dst:tt, $save:tt) => {
+        delegate_signed!(delegate_all, u128);
+        impl AtomicLoad for u128 {
             #[inline]
             unsafe fn atomic_load(
                 src: *const MaybeUninit<Self>,
@@ -597,8 +597,8 @@ macro_rules! atomic128 {
                 #[target_feature(enable = "avx")]
                 #[inline]
                 unsafe fn atomic_load_avx(
-                    src: *const MaybeUninit<$ty>,
-                ) -> MaybeUninit<$ty> {
+                    src: *const MaybeUninit<u128>,
+                ) -> MaybeUninit<u128> {
                     // SAFETY: the caller must guarantee that `src` is valid for reads,
                     // 16-byte aligned, and that there are no concurrent non-atomic operations.
                     // load by VMOVDQA has SeqCst semantics.
@@ -610,14 +610,14 @@ macro_rules! atomic128 {
                             out = lateout(xmm_reg) out,
                             options(nostack, preserves_flags),
                         );
-                        mem::transmute::<MaybeUninit<__m128i>, MaybeUninit<$ty>>(out)
+                        mem::transmute::<MaybeUninit<__m128i>, MaybeUninit<u128>>(out)
                     }
                 }
                 #[cfg(not(target_feature = "avx"))]
                 #[inline]
                 unsafe fn atomic_load_cmpxchg16b(
-                    src: *const MaybeUninit<$ty>,
-                ) -> MaybeUninit<$ty> {
+                    src: *const MaybeUninit<u128>,
+                ) -> MaybeUninit<u128> {
                     // SAFETY: the caller must guarantee that `src` is valid for both writes and
                     // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
                     // CMPXCHG16B has SeqCst semantics.
@@ -627,7 +627,7 @@ macro_rules! atomic128 {
                         let (prev_lo, prev_hi);
                         asm!(
                             concat!("mov ", $save, ", rbx"), // save rbx which is reserved by LLVM
-                            "xor rbx, rbx",       // zeroed rbx
+                            "xor rbx, rbx", // zeroed rbx
                             concat!("lock cmpxchg16b xmmword ptr [", $dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
                             concat!("mov rbx, ", $save), // restore rbx
                             // set old/new args of CMPXCHG16B to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
@@ -642,7 +642,7 @@ macro_rules! atomic128 {
                         MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
                     }
                 }
-                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                debug_assert_atomic_unsafe_precondition!(src, u128);
 
                 #[cfg(target_feature = "avx")]
                 // SAFETY: the caller must uphold the safety contract.
@@ -658,7 +658,7 @@ macro_rules! atomic128 {
                 // SAFETY: the caller must uphold the safety contract.
                 // cfg guarantees that the CPU supports CMPXCHG16B.
                 unsafe {
-                    ifunc!(unsafe fn(src: *const MaybeUninit<$ty>) -> MaybeUninit<$ty> {
+                    ifunc!(unsafe fn(src: *const MaybeUninit<u128>) -> MaybeUninit<u128> {
                         if detect::detect().avx() {
                             atomic_load_avx
                         } else {
@@ -678,7 +678,7 @@ macro_rules! atomic128 {
                 }
             }
         }
-        impl AtomicStore for $ty {
+        impl AtomicStore for u128 {
             #[inline]
             unsafe fn atomic_store(
                 dst: *mut MaybeUninit<Self>,
@@ -696,8 +696,8 @@ macro_rules! atomic128 {
                 #[target_feature(enable = "avx")]
                 #[inline]
                 unsafe fn atomic_store_avx(
-                    dst: *mut MaybeUninit<$ty>,
-                    val: MaybeUninit<$ty>,
+                    dst: *mut MaybeUninit<u128>,
+                    val: MaybeUninit<u128>,
                     order: Ordering,
                 ) {
                     // SAFETY: the caller must guarantee that `dst` is valid for writes,
@@ -740,8 +740,8 @@ macro_rules! atomic128 {
                 #[cfg(not(target_feature = "avx"))]
                 #[inline]
                 unsafe fn atomic_store_cmpxchg16b(
-                    dst: *mut MaybeUninit<$ty>,
-                    val: MaybeUninit<$ty>,
+                    dst: *mut MaybeUninit<u128>,
+                    val: MaybeUninit<u128>,
                 ) {
                     // SAFETY: the caller must uphold the safety contract.
                     unsafe {
@@ -749,7 +749,7 @@ macro_rules! atomic128 {
                         <u128 as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
                     }
                 }
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
+                debug_assert_atomic_unsafe_precondition!(dst, u128);
 
                 #[cfg(target_feature = "avx")]
                 // SAFETY: the caller must uphold the safety contract.
@@ -767,7 +767,7 @@ macro_rules! atomic128 {
                 unsafe {
                     fn_alias! {
                         #[target_feature(enable = "avx")]
-                        unsafe fn(dst: *mut MaybeUninit<$ty>, val: MaybeUninit<$ty>);
+                        unsafe fn(dst: *mut MaybeUninit<u128>, val: MaybeUninit<u128>);
                         // atomic store by vmovdqa has at least release semantics.
                         atomic_store_avx_non_seqcst = atomic_store_avx(Ordering::Release);
                         atomic_store_avx_seqcst = atomic_store_avx(Ordering::SeqCst);
@@ -776,7 +776,7 @@ macro_rules! atomic128 {
                         // Relaxed and Release stores are equivalent in all implementations
                         // that may be called here.
                         Ordering::Relaxed | Ordering::Release => {
-                            ifunc!(unsafe fn(dst: *mut MaybeUninit<$ty>, val: MaybeUninit<$ty>) {
+                            ifunc!(unsafe fn(dst: *mut MaybeUninit<u128>, val: MaybeUninit<u128>) {
                                 if detect::detect().avx() {
                                     atomic_store_avx_non_seqcst
                                 } else {
@@ -785,7 +785,7 @@ macro_rules! atomic128 {
                             });
                         }
                         Ordering::SeqCst => {
-                            ifunc!(unsafe fn(dst: *mut MaybeUninit<$ty>, val: MaybeUninit<$ty>) {
+                            ifunc!(unsafe fn(dst: *mut MaybeUninit<u128>, val: MaybeUninit<u128>) {
                                 if detect::detect().avx() {
                                     atomic_store_avx_seqcst
                                 } else {
@@ -810,14 +810,14 @@ macro_rules! atomic128 {
                 }
             }
         }
-        impl AtomicSwap for $ty {
+        impl AtomicSwap for u128 {
             #[inline]
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
             ) -> MaybeUninit<Self> {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
+                debug_assert_atomic_unsafe_precondition!(dst, u128);
                 let val = MaybeUninit128 { whole: val };
                 let (mut prev_lo, mut prev_hi);
 
@@ -853,7 +853,7 @@ macro_rules! atomic128 {
                 }
             }
         }
-        impl AtomicCompareExchange for $ty {
+        impl AtomicCompareExchange for u128 {
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -862,7 +862,7 @@ macro_rules! atomic128 {
                 _success: Ordering,
                 _failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
-                debug_assert_atomic_unsafe_precondition!(dst, $ty);
+                debug_assert_atomic_unsafe_precondition!(dst, u128);
                 let old = MaybeUninit128 { whole: old };
                 let new = MaybeUninit128 { whole: new };
                 let (prev_lo, prev_hi);
@@ -878,7 +878,7 @@ macro_rules! atomic128 {
                     asm!(
                         "xchg r8, rbx", // save rbx which is reserved by LLVM
                         concat!("lock cmpxchg16b xmmword ptr [", $cas_dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
-                        "sete cl",                                           // cl = ZF
+                        "sete cl",                                               // cl = ZF
                         "mov rbx, r8", // restore rbx
                         inout("r8") new.pair.lo => _,
                         in("rcx") new.pair.hi,
@@ -902,7 +902,7 @@ macro_rules! atomic128 {
 
 #[cfg(target_arch = "x86_64")]
 #[cfg(target_feature = "cmpxchg16b")]
-atomic128!(u128);
+atomic128!();
 
 // -----------------------------------------------------------------------------
 // cfg macros
