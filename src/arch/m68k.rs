@@ -203,10 +203,11 @@ impl AtomicLoad for u64 {
 #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
 impl AtomicStore for u64 {
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, _order: Ordering) {
         // SAFETY: the caller must uphold the safety contract.
+        // CAS2 has SeqCst semantics.
         unsafe {
-            <u64 as AtomicSwap>::atomic_swap(dst, val, order);
+            <Self as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
         }
     }
 }

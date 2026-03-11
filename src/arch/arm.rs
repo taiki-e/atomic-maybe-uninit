@@ -1154,6 +1154,7 @@ impl AtomicStore for u64 {
             not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
         ))]
         // SAFETY: the caller must uphold the safety contract.
+        // Do not use atomic_swap because it needs extra registers to implement store.
         unsafe {
             let val = MaybeUninit64 { whole: val };
             macro_rules! atomic_store {
@@ -1191,32 +1192,9 @@ impl AtomicStore for u64 {
         )))]
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
-            assert_has_kuser_cmpxchg64();
             // __kuser_cmpxchg64 has SeqCst semantics.
             let _ = order;
-            let mut out_tmp = MaybeUninit::<Self>::uninit();
-            asm!(
-                "2:", // 'retry:
-                    "ldr r0, [r2]",            // atomic { r0 = *r2 }
-                    "ldr r1, [r2, #4]",        // atomic { r1 = *r2.byte_add(4) }
-                    "str r0, [{out}]",         // *out = r0
-                    "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
-                    s!("mov", "r0, {out}"),    // r0 = out
-                    s!("mov", "r1, {val}"),    // r1 = val
-                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                    "bcc 2b",                  // if C == 0 { jump 'retry }
-                out = in(reg) out_tmp.as_mut_ptr(),
-                val = in(reg) val.as_ptr(),
-                kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
-                out("r0") _, // old_val
-                out("r1") _, // new_val
-                in("r2") dst, // ptr
-                // __kuser_cmpxchg64 clobbers r3, lr, and flags.
-                out("r3") _,
-                out("lr") _,
-                // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
-                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
-            );
+            <u64 as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
         }
     }
 }

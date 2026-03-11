@@ -349,6 +349,7 @@ impl AtomicStore for u64 {
         let val = MaybeUninit64 { whole: val };
 
         // SAFETY: the caller must uphold the safety contract.
+        // Do not use atomic_swap because it needs extra registers to implement store.
         unsafe {
             macro_rules! atomic_store {
                 ($acquire:tt, $release:tt) => {

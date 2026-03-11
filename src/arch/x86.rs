@@ -471,31 +471,10 @@ impl AtomicStore for u64 {
             )),
         ))]
         // SAFETY: the caller must uphold the safety contract.
-        //
-        // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
         unsafe {
-            let val = MaybeUninit64 { whole: val };
             // CMPXCHG8B has SeqCst semantics.
             let _ = order;
-            asm!(
-                // This is based on the code generated for the first load in DW RMWs by LLVM,
-                // but it is interesting that they generate code that does mixed-sized atomic access.
-                //
-                // This is not single-copy atomic reads, but this is ok because subsequent
-                // CAS will check for consistency.
-                "mov eax, dword ptr [edi]",           // atomic { eax = *edi }
-                "mov edx, dword ptr [edi + 4]",       // atomic { edx = *edi.byte_add(4) }
-                "2:", // 'retry:
-                    "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
-                    "jne 2b",                         // if ZF == 0 { jump 'retry }
-                in("ebx") val.pair.lo,
-                in("ecx") val.pair.hi,
-                out("eax") _,
-                out("edx") _,
-                in("edi") dst,
-                // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
-                options(nostack),
-            );
+            <Self as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
         }
     }
 }
@@ -764,35 +743,10 @@ macro_rules! atomic128 {
                     dst: *mut MaybeUninit<$ty>,
                     val: MaybeUninit<$ty>,
                 ) {
-                    // SAFETY: the caller must guarantee that `dst` is valid for both writes and
-                    // reads, 16-byte aligned, and that there are no concurrent non-atomic operations.
-                    // cfg guarantees that the CPU supports CMPXCHG16B.
-                    // CMPXCHG16B has SeqCst semantics.
-                    //
-                    // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+                    // SAFETY: the caller must uphold the safety contract.
                     unsafe {
-                        let val = MaybeUninit128 { whole: val };
-                        asm!(
-                            concat!("xchg ", $save, ", rbx"), // save rbx which is reserved by LLVM
-                            // This is based on the code generated for the first load in DW RMWs by LLVM,
-                            // but it is interesting that they generate code that does mixed-sized atomic access.
-                            //
-                            // This is not single-copy atomic reads, but this is ok because subsequent
-                            // CAS will check for consistency.
-                            concat!("mov rax, qword ptr [", $dst, "]"),              // atomic { rax = *$rdi }
-                            concat!("mov rdx, qword ptr [", $dst, " + 8]"),          // atomic { rdx = *$rdi.byte_add(8) }
-                            "2:", // 'retry:
-                                concat!("lock cmpxchg16b xmmword ptr [", $dst, "]"), // atomic { if *$rdi == rdx:rax { ZF = 1; *$rdi = rcx:rbx } else { ZF = 0; rdx:rax = *$rdi } }
-                                "jne 2b",                                            // if ZF == 0 { jump 'retry }
-                            concat!("mov rbx, ", $save), // restore rbx
-                            inout($save) val.pair.lo => _,
-                            in("rcx") val.pair.hi,
-                            out("rax") _,
-                            out("rdx") _,
-                            in($dst) dst,
-                            // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
-                            options(nostack),
-                        );
+                        // CMPXCHG16B has SeqCst semantics.
+                        <u128 as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
                     }
                 }
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);

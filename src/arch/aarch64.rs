@@ -572,6 +572,7 @@ impl AtomicStore for u128 {
         }
         #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
         // SAFETY: the caller must uphold the safety contract.
+        // Do not use atomic_swap because it needs extra registers to implement store.
         unsafe {
             macro_rules! store {
                 ($acquire:tt, $release:tt, $msvc_fence:tt) => {
