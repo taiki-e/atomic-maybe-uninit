@@ -215,7 +215,7 @@ fn main() {
             subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
             let (mut subarch, suffix) = subarch.split_once('.').unwrap_or((subarch, "")); // .base/.main suffix
             let mut known = true;
-            // As of rustc nightly-2025-12-17, there are the following "vN*" patterns:
+            // As of rustc nightly-2026-03-08, there are the following "vN*" patterns:
             // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
             // ""
             // "v4t"
@@ -283,6 +283,7 @@ fn main() {
                     // That said, LLVM handles thumbv8m.main without v8m like v6m, not v7m: https://godbolt.org/z/Ph96v9zae
                     // TODO: Armv9-M has not yet been released,
                     // so it is not clear how it will be handled here.
+                    v7 = suffix == "main";
                     (false, true)
                 } else {
                     (true, false)
@@ -304,7 +305,7 @@ fn main() {
                 let thumb_mode =
                     target.starts_with("thumb") || generated::ARM_BUT_THUMB_MODE.contains(&target);
                 target_feature_fallback("thumb-mode", thumb_mode);
-                target_feature_fallback("thumb2", v7 || v8m && suffix == "main");
+                target_feature_fallback("thumb2", v7);
             }
         }
         "riscv32" | "riscv64" => {
