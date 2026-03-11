@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.17] - 2026-03-11
+
 - Improve support for thumbv8m.main. ([b083741](https://github.com/taiki-e/atomic-maybe-uninit/commit/b083741c25bcee1194c7d095cad5c074ab0b49b5))
 
 - Optimize 16-bit swap on AVR. ([23634cd](https://github.com/taiki-e/atomic-maybe-uninit/commit/23634cd6c8d569cedae0c41ccc73cda158ef58a4))
@@ -445,7 +447,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.16...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.17...HEAD
+[0.3.17]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.16...v0.3.17
 [0.3.16]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.15...v0.3.16
 [0.3.15]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.14...v0.3.15
 [0.3.14]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.13...v0.3.14
