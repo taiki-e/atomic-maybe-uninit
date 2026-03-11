@@ -12,6 +12,12 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Improve support for thumbv8m.main. ([b083741](https://github.com/taiki-e/atomic-maybe-uninit/commit/b083741c25bcee1194c7d095cad5c074ab0b49b5))
+
+- Optimize 16-bit swap on AVR. ([23634cd](https://github.com/taiki-e/atomic-maybe-uninit/commit/23634cd6c8d569cedae0c41ccc73cda158ef58a4))
+
+- Optimize 64-bit store when not inlined on pre-v6 Arm Linux/Android and M68k. ([94c325c](https://github.com/taiki-e/atomic-maybe-uninit/commit/94c325c3023e27babab48f01a29530c85d750a78))
+
 ## [0.3.16] - 2026-03-09
 
 - Support 64-bit atomics on SPARC-V8+ (e.g., sparc-unknown-linux-gnu). ([#57](https://github.com/taiki-e/atomic-maybe-uninit/pull/57))
