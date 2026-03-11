@@ -37,7 +37,7 @@ See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
 use core::{
-    arch::{asm, asm as asm_no_dmb},
+    arch::asm,
     mem::{self, MaybeUninit},
     sync::atomic::Ordering,
 };
@@ -82,7 +82,7 @@ cfg_sel!({
             ($op:ident, $order:ident) => {
                 // op(asm, acquire, release)
                 match $order {
-                    Ordering::Relaxed => $op!(asm_no_dmb, "", ""),
+                    Ordering::Relaxed => $op!(asm, "", ""),
                     Ordering::Acquire => $op!(asm_use_dmb, dmb!(), ""),
                     Ordering::Release => $op!(asm_use_dmb, "", dmb!()),
                     // AcqRel and SeqCst swaps are equivalent.
@@ -102,7 +102,7 @@ cfg_sel!({
                 // cmpxchg(asm, acquire, fail_label, skip_success_fence)
                 // cmpxchg_cond_release(acquire, fail_label, success_label, skip_fail_fence)
                 match ($success, $failure) {
-                    (Relaxed, Relaxed) => $cmpxchg!(asm_no_dmb, "", "4f", ""),
+                    (Relaxed, Relaxed) => $cmpxchg!(asm, "", "4f", ""),
                     (Relaxed, _) => $cmpxchg!(asm_use_dmb, dmb!(), "3f" /* emit-fence-on-fail */, "b 4f" /* skip-fence-on-success */),
                     (Acquire, Relaxed) => $cmpxchg!(asm_use_dmb, dmb!(), "4f" /* skip-fence-on-fail */, ""),
                     (Acquire, _) => $cmpxchg!(asm_use_dmb, dmb!(), "3f" /* emit-fence-on-fail */, ""),
@@ -125,7 +125,7 @@ cfg_sel!({
                 use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
                 // cmpxchg_weak(asm:ident, acquire, release, cmp_fail_label, branch_after_sc)
                 match ($success, $failure) {
-                    (Relaxed, Relaxed) => $cmpxchg_weak!(asm_no_dmb, "", "", "4f", ""),
+                    (Relaxed, Relaxed) => $cmpxchg_weak!(asm, "", "", "4f", ""),
                     (Relaxed, _) => $cmpxchg_weak!(asm_use_dmb, dmb!(), "", "3f" /* emit-fence-on-fail */, "beq 4f" /* skip-fence-on-success */),
                     (Acquire, Relaxed) => $cmpxchg_weak!(asm_use_dmb, dmb!(), "", "4f" /* skip-fence-on-fail */, "bne 4f" /* skip-fence-on-fail */),
                     (Acquire, _) => $cmpxchg_weak!(asm_use_dmb, dmb!(), "", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
@@ -160,6 +160,8 @@ cfg_sel!({
         )),
     ))]
     {
+        use core::arch::asm as asm_use_dmb;
+
         // Only a full system barrier exists in the M-class architectures.
         #[cfg(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass"))]
         macro_rules! dmb {
@@ -171,11 +173,6 @@ cfg_sel!({
         macro_rules! dmb {
             () => {
                 "dmb ish"
-            };
-        }
-        macro_rules! asm_use_dmb {
-            ($($asm:tt)*) => {
-                asm!($($asm)*)
             };
         }
     }
@@ -195,12 +192,14 @@ cfg_sel!({
         )))]
         const KUSER_HELPER_VERSION: usize = 0xFFFF0FFC;
         // __kuser_cmpxchg
-        // __kuser_helper_version >= 2 (kernel version 2.6.12+)
-        // https://github.com/torvalds/linux/blob/v2.6.12/arch/arm/kernel/entry-armv.S#L617-L660
+        // https://github.com/torvalds/linux/blob/v2.6.12/arch/arm/kernel/entry-armv.S#L567-L660
         // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L769-L827
         // Note:
+        // - __kuser_helper_version >= 2 (kernel version 2.6.12+)
         // - has SeqCst semantics (smp_dmb arm)
-        // - push to the stack when kuser_cmpxchg32_fixup called
+        // - push to the stack when kuser_cmpxchg32_fixup called or NEEDS_SYSCALL_FOR_CMPXCHG
+        //   (removed in kernel version 4.4: https://github.com/torvalds/linux/commit/db695c0509d6ec9046ee5e4c520a19fa17d9fce2)
+        //   is enabled.
         // - inout: r0, in: r1, r2, lr, clobbered: r3, ip, flags
         #[cfg(not(all(
             any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
@@ -208,15 +207,27 @@ cfg_sel!({
         )))]
         const KUSER_CMPXCHG: usize = 0xFFFF0FC0;
         // __kuser_memory_barrier
-        // __kuser_helper_version >= 3 (kernel version 2.6.15+)
+        // https://github.com/torvalds/linux/blob/v2.6.15/arch/arm/kernel/entry-armv.S#L614-L651
+        // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L763-L767
+        // Note:
+        // - __kuser_helper_version >= 3 (kernel version 2.6.15+)
+        // - has SeqCst semantics (smp_dmb arm)
+        // - in: lr
+        //   In pre-2.6.24 kernel, this might clobber the Z flag: https://github.com/torvalds/linux/commit/b49c0f24cf6744a3f4fd09289fe7cade349dead5
+        //   However, we don't care about this because as of Rust 1.47 which added platform support
+        //   page, the documented kernel version requirement for all Arm targets is at least 3.2:
+        //   https://doc.rust-lang.org/1.47.0/rustc/platform-support.html
+        //   (And with Rust 1.64, the kernel version requirement for other architectures also be at least 3.2:
+        //   https://blog.rust-lang.org/2022/08/01/Increasing-glibc-kernel-requirements/).
         const KUSER_MEMORY_BARRIER: usize = 0xFFFF0FA0;
         // __kuser_cmpxchg64
-        // __kuser_helper_version >= 5 (kernel version 3.1+)
         // https://github.com/torvalds/linux/blob/v3.1/arch/arm/kernel/entry-armv.S#L730-L814
+        // https://github.com/torvalds/linux/blob/v3.1/Documentation/arm/kernel_user_helpers.txt#L205-L257
         // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L693-L761
         // Note:
+        // - __kuser_helper_version >= 5 (kernel version 3.1+)
         // - has SeqCst semantics (smp_dmb arm)
-        // - push to the stack in both cases
+        // - push to the stack in all cases
         // - inout: r0, r1, lr, in: r2, clobbered: r3, flags
         #[cfg(not(all(
             any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
@@ -333,6 +344,14 @@ cfg_sel!({
                         concat!($op, " ", $operand)
                     };
                 }
+                macro_rules! asm_use_s {
+                    ($($asm:tt)*) => {
+                        asm!(
+                            $($asm)*
+                            options(preserves_flags),
+                        )
+                    };
+                }
                 macro_rules! if_arm {
                     ($($tt:tt)*) => {
                         $($tt)*
@@ -343,35 +362,11 @@ cfg_sel!({
                         ""
                     };
                 }
-                #[inline(always)]
-                fn lsl(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
-                    // SAFETY: calling LSL is safe
-                    unsafe {
-                        asm!(
-                            "lsl {val}, {shift}", // val <<= shift
-                            val = inout(reg) val,
-                            shift = in(reg) shift,
-                            options(pure, nomem, nostack, preserves_flags),
-                        );
-                    }
-                    val
-                }
-                #[inline(always)]
-                fn lsr(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
-                    // SAFETY: calling LSR is safe
-                    unsafe {
-                        asm!(
-                            "lsr {val}, {shift}", // val >>= shift
-                            val = inout(reg) val,
-                            shift = in(reg) shift,
-                            options(pure, nomem, nostack, preserves_flags),
-                        );
-                    }
-                    val
-                }
             }
             #[cfg(else)]
             {
+                use core::arch::asm as asm_use_s;
+
                 macro_rules! s {
                     ($op:tt, $operand:tt) => {
                         concat!($op, "s ", $operand)
@@ -387,36 +382,45 @@ cfg_sel!({
                         $($tt)*
                     };
                 }
-                #[inline(always)]
-                fn lsl(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
-                    // SAFETY: calling LSLS is safe
-                    unsafe {
-                        asm!(
-                            "lsls {val}, {shift}", // val <<= shift
-                            val = inout(reg) val,
-                            shift = in(reg) shift,
-                            // Do not use `preserves_flags` because LSLS modifies the condition flags.
-                            options(pure, nomem, nostack),
-                        );
-                    }
-                    val
-                }
-                #[inline(always)]
-                fn lsr(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
-                    // SAFETY: calling LSRS is safe
-                    unsafe {
-                        asm!(
-                            "lsrs {val}, {shift}", // val >>= shift
-                            val = inout(reg) val,
-                            shift = in(reg) shift,
-                            // Do not use `preserves_flags` because LSRS modifies the condition flags.
-                            options(pure, nomem, nostack),
-                        );
-                    }
-                    val
-                }
             }
         });
+
+        #[cfg(not(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        )))]
+        #[inline(always)]
+        fn lsl(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+            // SAFETY: calling LSL{,S} is safe
+            unsafe {
+                asm_use_s!(
+                    s!("lsl", "{val}, {shift}"), // val <<= shift
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    // `preserves_flags` is set by asm_use_s! when s! doesn't modify the condition flags.
+                    options(pure, nomem, nostack),
+                );
+            }
+            val
+        }
+        #[cfg(not(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        )))]
+        #[inline(always)]
+        fn lsr(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+            // SAFETY: calling LSR{,S} is safe
+            unsafe {
+                asm_use_s!(
+                    s!("lsr", "{val}, {shift}"), // val >>= shift
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    // `preserves_flags` is set by asm_use_s! when s! doesn't modify the condition flags.
+                    options(pure, nomem, nostack),
+                );
+            }
+            val
+        }
     }
     // Armv6 does not support DMB instruction, so use use special instruction equivalent to it.
     //
@@ -498,7 +502,7 @@ macro_rules! atomic_load_store {
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
+                        Ordering::Relaxed => atomic_load!(asm, ""),
                         // Acquire and SeqCst loads are equivalent.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
                         _ => crate::utils::unreachable_unchecked(),
@@ -547,7 +551,7 @@ macro_rules! atomic_load_store {
                         };
                     }
                     match order {
-                        Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
+                        Ordering::Relaxed => atomic_store!(asm, "", ""),
                         Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
                         Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
                         _ => crate::utils::unreachable_unchecked(),
@@ -888,14 +892,14 @@ macro_rules! atomic_sub_word {
                             // See also create_sub_word_mask_values.
                             asm!(
                                 "2:", // 'retry:
-                                    "ldr {out}, [r2]",                 // atomic { out = *r2 }
-                                    s!("mov", "r0, {out}"),            // r0 = out
-                                    if_arm!("and r1, r0, {inv_mask}"), // r1 = r0 & inv_mask
-                                    if_thumb!("movs r1, r0"),          // r1 = r0
-                                    if_thumb!("ands r1, {inv_mask}"),  // r1 &= inv_mask
-                                    s!("orr", "r1, {val}"),            // r1 |= val
-                                    blx!("{kuser_cmpxchg}"),           // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                                    "bcc 2b",                          // if C == 0 { jump 'retry }
+                                    "ldr {out}, [r2]",                    // atomic { out = *r2 }
+                                    s!("mov", "r0, {out}"),               // r0 = out
+                                    if_arm!("and r1, {out}, {inv_mask}"), // r1 = out & inv_mask
+                                    if_thumb!("movs r1, {out}"),          // r1 = out
+                                    if_thumb!("ands r1, {inv_mask}"),     // r1 &= inv_mask
+                                    s!("orr", "r1, {val}"),               // r1 |= val
+                                    blx!("{kuser_cmpxchg}"),              // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                                    "bcc 2b",                             // if C == 0 { jump 'retry }
                                 val = in(reg) lsl(crate::utils::extend32::$ty::zero(val), shift),
                                 out = out(reg) out,
                                 inv_mask = in(reg) !mask,
@@ -1085,7 +1089,7 @@ impl AtomicLoad for u64 {
                 };
             }
             match order {
-                Ordering::Relaxed => atomic_load!(asm_no_dmb, ""),
+                Ordering::Relaxed => atomic_load!(asm, ""),
                 // Acquire and SeqCst loads are equivalent.
                 Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
                 _ => crate::utils::unreachable_unchecked(),
@@ -1110,7 +1114,7 @@ impl AtomicLoad for u64 {
                     "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
                     s!("mov", "r0, {out}"),    // r0 = out
                     s!("mov", "r1, {out}"),    // r1 = out
-                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 }; r1 = ? }
                     "bcc 2b",                  // if C == 0 { jump 'retry }
                 out = in(reg) out.as_mut_ptr(),
                 kuser_cmpxchg64 = in(reg) KUSER_CMPXCHG64,
@@ -1180,7 +1184,7 @@ impl AtomicStore for u64 {
                 };
             }
             match order {
-                Ordering::Relaxed => atomic_store!(asm_no_dmb, "", ""),
+                Ordering::Relaxed => atomic_store!(asm, "", ""),
                 Ordering::Release => atomic_store!(asm_use_dmb, "", dmb!()),
                 Ordering::SeqCst => atomic_store!(asm_use_dmb, dmb!(), dmb!()),
                 _ => crate::utils::unreachable_unchecked(),
@@ -1276,7 +1280,7 @@ impl AtomicSwap for u64 {
                     "str r1, [{out}, #4]",     // *out.byte_add(4) = r1
                     s!("mov", "r0, {out}"),    // r0 = out
                     s!("mov", "r1, {val}"),    // r1 = val
-                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 }; r1 = ? }
                     "bcc 2b",                  // if C == 0 { jump 'retry }
                 out = in(reg) out.as_mut_ptr(),
                 val = in(reg) val.as_ptr(),
@@ -1340,7 +1344,7 @@ impl AtomicCompareExchange for u64 {
                             "eor {tmp}, r3, {old_hi}",     // tmp = r3 ^ old_hi
                             "eor {r}, r2, {old_lo}",       // r = r2 ^ old_lo
                             "orrs {r}, {tmp}",             // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                            "mov {r}, #1",                       // r = 1
+                            "mov {r}, #1",                 // r = 1
                             concat!("bne ", $fail_label),  // if Z == 0 { jump 'fail }
                             "strexd {r}, r4, r5, [{dst}]", // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                             "cmp {r}, #0",                 // if r == 0 { Z = 1 } else { Z = 0 }
@@ -1383,7 +1387,7 @@ impl AtomicCompareExchange for u64 {
                             "eor {tmp}, r3, {old_hi}",       // tmp = r3 ^ old_hi
                             "eor {r}, r2, {old_lo}",         // r = r2 ^ old_lo
                             "orrs {r}, {tmp}",               // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
-                            "mov {r}, #1",                       // r = 1
+                            "mov {r}, #1",                   // r = 1
                             "beq 2b",                        // if Z == 1 { jump 'retry }
                             $skip_fail_fence,                // jump 'skip-fence
                         "3:", // 'emit-fence:
@@ -1439,13 +1443,13 @@ impl AtomicCompareExchange for u64 {
                     "mov r0, {out}",           // r0 = out
                     "bne 3f",                  // if Z == 0 { jump 'cmp-fail }
                     "mov r1, {new}",           // r1 = new
-                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 }; r1 = ? }
                     "bcc 2b",                  // if C == 0 { jump 'retry }
                     "b 4f",                    // jump 'success
                 "3:", // 'cmp-fail:
                     // write back to ensure atomicity
                     "mov r1, {out}",           // r1 = out
-                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    blx!("{kuser_cmpxchg64}"), // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 }; r1 = ? }
                     "bcc 2b",                  // if C == 0 { jump 'retry }
                     "mov r0, #1",              // r0 = 1
                 "4:", // 'success:
@@ -1460,7 +1464,7 @@ impl AtomicCompareExchange for u64 {
                 // __kuser_cmpxchg64 clobbers r3, lr, and flags.
                 out("r3") _,
                 out("lr") _,
-                // Do not use `preserves_flags` because CMP, ORRS, and __kuser_cmpxchg64 modify the condition flags.
+                // Do not use `preserves_flags` because ORRS and __kuser_cmpxchg64 modify the condition flags.
                 // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
             );
             #[cfg(any(
@@ -1482,14 +1486,14 @@ impl AtomicCompareExchange for u64 {
                     "bne 3f",              // if Z == 0 { jump 'cmp-fail }
                     "movs r0, {out}",      // r0 = out
                     "movs r1, {new}",      // r1 = new
-                    blx!("r3"),            // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    blx!("r3"),            // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 }; r1 = ? }
                     "bcc 2b",              // if C == 0 { jump 'retry }
                     "b 4f",                // jump 'success
                 "3:", // 'cmp-fail:
                     // write back to ensure atomicity
                     "movs r0, {out}",      // r0 = out
                     "movs r1, {out}",      // r1 = out
-                    blx!("r3"),            // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                    blx!("r3"),            // atomic { if *r2 == *r0 { *r2 = *r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 }; r1 = ? }
                     "bcc 2b",              // if C == 0 { jump 'retry }
                     "movs r0, #1",         // r0 = 1
                 "4:", // 'success:
@@ -1505,7 +1509,7 @@ impl AtomicCompareExchange for u64 {
                 // __kuser_cmpxchg64 clobbers r3, lr, and flags.
                 inout("r3") KUSER_CMPXCHG64 => _,
                 out("lr") _,
-                // Do not use `preserves_flags` because CMP, ORRS, __kuser_cmpxchg64, and *S modify the condition flags.
+                // Do not use `preserves_flags` because ORRS, __kuser_cmpxchg64, and *S modify the condition flags.
                 // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
             );
             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test

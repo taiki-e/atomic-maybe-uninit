@@ -78,8 +78,6 @@ lmul
 lowbytefirst
 lqarx
 lrcpc
-lsls
-lsrs
 lwarx
 lwsync
 mcpu
@@ -147,6 +145,7 @@ stxp
 subarch
 subi
 swpp
+syscall
 tinyencoding
 tsim
 uart

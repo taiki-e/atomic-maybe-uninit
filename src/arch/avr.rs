@@ -353,8 +353,8 @@ impl AtomicSwap for u16 {
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
                 inout("Z") dst => _,
-                // Do not use `preserves_flags` because SUBI modifies the status register (SREG).
-                options(nostack),
+                // SUBI and SBCI modify the status register (SREG), but `preserves_flags` is okay since SREG is restored at the end.
+                options(nostack, preserves_flags),
             );
             #[cfg(any(
                 target_feature = "tinyencoding",
@@ -423,7 +423,7 @@ impl AtomicCompareExchange for u16 {
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
                 in("Z") dst,
-                // EOR and OR modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
+                // EOR and OR modify the status register (SREG), but `preserves_flags` is okay since SREG is restored at the end.
                 options(nostack, preserves_flags),
             );
             #[cfg(not(any(
@@ -452,7 +452,7 @@ impl AtomicCompareExchange for u16 {
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
                 in("Z") dst,
-                // EOR and OR modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
+                // EOR and OR modify the status register (SREG), but `preserves_flags` is okay since SREG is restored at the end.
                 options(nostack, preserves_flags),
             );
             #[cfg(any(
@@ -483,7 +483,7 @@ impl AtomicCompareExchange for u16 {
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
                 inout("Z") dst => _,
-                // EOR, OR, and SUBI modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
+                // EOR, OR, SUBI, and SUBI modify the status register (SREG), but `preserves_flags` is okay since SREG is restored at the end.
                 options(nostack, preserves_flags),
             );
             #[cfg(any(
@@ -512,7 +512,7 @@ impl AtomicCompareExchange for u16 {
                 out = out(reg_pair) out,
                 sreg = out(reg) _,
                 inout("Z") dst => _,
-                // EOR and OR modify the status register (SREG), but preserves_flags is okay since SREG is restored at the end.
+                // EOR and OR modify the status register (SREG), but `preserves_flags` is okay since SREG is restored at the end.
                 options(nostack, preserves_flags),
             );
         }

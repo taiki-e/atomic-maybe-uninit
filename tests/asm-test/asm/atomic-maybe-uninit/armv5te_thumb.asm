@@ -5884,7 +5884,7 @@ asm_test::swap::u8::acqrel:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7
@@ -5919,7 +5919,7 @@ asm_test::swap::u8::seqcst:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7
@@ -5954,7 +5954,7 @@ asm_test::swap::u8::acquire:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7
@@ -5989,7 +5989,7 @@ asm_test::swap::u8::relaxed:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7
@@ -6024,7 +6024,7 @@ asm_test::swap::u8::release:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7
@@ -6059,7 +6059,7 @@ asm_test::swap::u16::acqrel:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7
@@ -6096,7 +6096,7 @@ asm_test::swap::u16::seqcst:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7
@@ -6133,7 +6133,7 @@ asm_test::swap::u16::acquire:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7
@@ -6170,7 +6170,7 @@ asm_test::swap::u16::relaxed:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7
@@ -6207,7 +6207,7 @@ asm_test::swap::u16::release:
 0:
         ldr               r5, [r2]
         movs              r0, r5
-        movs              r1, r0
+        movs              r1, r5
         ands              r1, r6
         orrs              r1, r4
         blx               r7

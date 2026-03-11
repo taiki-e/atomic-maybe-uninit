@@ -140,7 +140,7 @@ macro_rules! atomic {
                         new = in(reg) new,
                         out = out(reg) out,
                         sr = out(reg) _,
-                        // XOR modifies the status register, but `preserves_flags` is okay since SREG is restored at the end.
+                        // XOR modifies the status register, but `preserves_flags` is okay since SR is restored at the end.
                         options(nostack, preserves_flags),
                     );
                 }

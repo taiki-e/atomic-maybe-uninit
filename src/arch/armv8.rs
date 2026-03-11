@@ -466,7 +466,7 @@ impl AtomicCompareExchange for u64 {
                         // new pair - must be even-numbered and not R14
                         in("r4") new.pair.lo,
                         in("r5") new.pair.hi,
-                        // Do not use `preserves_flags` because CMP, ORRS, cbz!, and s! modify the condition flags.
+                        // Do not use `preserves_flags` because ORRS, cbz!, and s! modify the condition flags.
                         options(nostack),
                     )
                 };
