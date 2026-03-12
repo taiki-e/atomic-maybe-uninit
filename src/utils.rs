@@ -105,7 +105,7 @@ macro_rules! cfg_sel {
 /// (Currently, all uses of this macro in our code are in this case.)
 #[allow(unused_macros)]
 #[cfg(not(atomic_maybe_uninit_no_outline_atomics))]
-#[cfg(all(target_arch = "x86_64", not(target_env = "sgx")))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(target_env = "sgx")))]
 macro_rules! ifunc {
     (unsafe fn($($arg_pat:ident: $arg_ty:ty),* $(,)?) $(-> $ret_ty:ty)? { $($init_body:tt)* }) => {{
         type FnTy = unsafe fn($($arg_ty),*) $(-> $ret_ty)?;
@@ -523,12 +523,13 @@ macro_rules! load_memcpy {
         unsafe fn atomic_load_memcpy<const DST_ALIGNED: bool>(
             mut dst: *mut MaybeUninit<$ty>,
             src: *const MaybeUninit<$ty>,
-            mut count: NonZeroUsize,
+            count: NonZeroUsize,
         ) {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             let mut $src = src;
             #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
             let mut $src = ptr_reg!(src);
+            let mut count = count.get();
             let mut $tmp0;
             if crate::utils::OPT_FOR_SIZE {
                 // SAFETY: the caller must uphold the safety contract.
@@ -549,11 +550,9 @@ macro_rules! load_memcpy {
                             dst.write_unaligned($tmp0);
                         }
                         dst = dst.add(1);
-                        match NonZeroUsize::new(
-                            count.get().wrapping_sub(1), /* can use unchecked_sub */
-                        ) {
-                            Some(v) => count = v,
-                            None => return,
+                        count = count.wrapping_sub(1); // can use unchecked_sub
+                        if count == 0 {
+                            return;
                         }
                     }
                 }
@@ -561,7 +560,7 @@ macro_rules! load_memcpy {
                 let mut $tmp1;
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    if count.get() & 1 != 0 {
+                    if count & 1 != 0 {
                         $load1;
                         inc_addr!($src, 1);
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -577,11 +576,9 @@ macro_rules! load_memcpy {
                             dst.write_unaligned($tmp0);
                         }
                         dst = dst.add(1);
-                        match NonZeroUsize::new(
-                            count.get().wrapping_sub(1), /* can use unchecked_sub */
-                        ) {
-                            Some(v) => count = v,
-                            None => return,
+                        count = count.wrapping_sub(1); // can use unchecked_sub
+                        if count == 0 {
+                            return;
                         }
                     }
                     loop {
@@ -604,11 +601,9 @@ macro_rules! load_memcpy {
                             dst.write_unaligned($tmp0);
                         }
                         dst = dst.add(2);
-                        match NonZeroUsize::new(
-                            count.get().wrapping_sub(2), /* can use unchecked_sub */
-                        ) {
-                            Some(v) => count = v,
-                            None => return,
+                        count = count.wrapping_sub(2); // can use unchecked_sub
+                        if count == 0 {
+                            return;
                         }
                     }
                 }
@@ -623,12 +618,13 @@ macro_rules! store_memcpy {
         unsafe fn atomic_store_memcpy<const SRC_ALIGNED: bool>(
             dst: *mut MaybeUninit<$ty>,
             mut src: *const MaybeUninit<$ty>,
-            mut count: NonZeroUsize,
+            count: NonZeroUsize,
         ) {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             let mut $dst = dst;
             #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
             let mut $dst = ptr_reg!(dst);
+            let mut count = count.get();
             let mut $tmp0;
             if crate::utils::OPT_FOR_SIZE {
                 // SAFETY: the caller must uphold the safety contract.
@@ -642,11 +638,9 @@ macro_rules! store_memcpy {
                         src = src.add(1);
                         $store1;
                         inc_addr!($dst, 1);
-                        match NonZeroUsize::new(
-                            count.get().wrapping_sub(1), /* can use unchecked_sub */
-                        ) {
-                            Some(v) => count = v,
-                            None => return,
+                        count = count.wrapping_sub(1); // can use unchecked_sub
+                        if count == 0 {
+                            return;
                         }
                     }
                 }
@@ -654,7 +648,7 @@ macro_rules! store_memcpy {
                 let mut $tmp1;
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    if count.get() & 1 != 0 {
+                    if count & 1 != 0 {
                         if SRC_ALIGNED {
                             $tmp0 = src.read();
                         } else {
@@ -663,11 +657,9 @@ macro_rules! store_memcpy {
                         src = src.add(1);
                         $store1;
                         inc_addr!($dst, 1);
-                        match NonZeroUsize::new(
-                            count.get().wrapping_sub(1), /* can use unchecked_sub */
-                        ) {
-                            Some(v) => count = v,
-                            None => return,
+                        count = count.wrapping_sub(1); // can use unchecked_sub
+                        if count == 0 {
+                            return;
                         }
                     }
                     loop {
@@ -681,11 +673,9 @@ macro_rules! store_memcpy {
                         src = src.add(2);
                         $store2;
                         inc_addr!($dst, 2);
-                        match NonZeroUsize::new(
-                            count.get().wrapping_sub(2), /* can use unchecked_sub */
-                        ) {
-                            Some(v) => count = v,
-                            None => return,
+                        count = count.wrapping_sub(2); // can use unchecked_sub
+                        if count == 0 {
+                            return;
                         }
                     }
                 }
@@ -695,13 +685,10 @@ macro_rules! store_memcpy {
 }
 #[allow(unused_macros)]
 macro_rules! load_memcpy_opt_pre {
-    ($ty:ident, $align:ident, $dst:ident, $count:ident, $last:ident,
-        |$src:ident, $tmp0:ident, $tmp1:ident| $load1:expr, $load2:expr,
-    ) => {
-        load_memcpy! { $ty, |$src, $tmp0, $tmp1| $load1, $load2, }
+    ($ty:ident, $align:ty, $dst:ident, $src:ident, $count:ident, $last:ident) => {
         if crate::utils::OPT_FOR_SIZE
             || $count.get() < const_eval!(=> usize {
-                core::mem::size_of::<crate::private::$align>() << 1
+                core::mem::size_of::<$align>() << 1
             })
         {
             // SAFETY: the caller must uphold the safety contract.
@@ -719,14 +706,14 @@ macro_rules! load_memcpy_opt_pre {
         };
         // SAFETY: MaybeUninit is valid representation for all types.
         let (first, mid, $last) = unsafe {
-            src.align_to::<core::cell::UnsafeCell<MaybeUninit<crate::private::$align>>>()
+            src.align_to::<core::cell::UnsafeCell<MaybeUninit<$align>>>()
         };
         if let Some(count) = NonZeroUsize::new(first.len()) {
             // SAFETY: the caller must uphold the safety contract.
             unsafe {
                 atomic_load_memcpy::<DST_ALIGNED>(
                     $dst,
-                    first.as_ptr().cast::<MaybeUninit<Self>>(),
+                    first.as_ptr().cast::<MaybeUninit<_>>(),
                     count,
                 );
                 $dst = $dst.add(count.get());
@@ -750,9 +737,9 @@ macro_rules! load_memcpy_opt_post {
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
             if let Some(count) = NonZeroUsize::new($last.len()) {
-                atomic_load_memcpy::<DST_ALIGNED>(
+                atomic_load_memcpy::<{ DST_ALIGNED }>(
                     $dst,
-                    $last.as_ptr().cast::<MaybeUninit<Self>>(),
+                    $last.as_ptr().cast::<MaybeUninit<_>>(),
                     count,
                 );
             }
@@ -769,9 +756,8 @@ macro_rules! load_memcpy_opt64 {
             $src: *const MaybeUninit<Self>,
             count: NonZeroUsize,
         ) {
-            load_memcpy_opt_pre! { u64, Align64, dst, count, last, |$src, $tmp0, $tmp1|
-                $load1, $load2,
-            }
+            load_memcpy! { u64, |$src, $tmp0, $tmp1| $load1, $load2, }
+            load_memcpy_opt_pre!(u64, crate::Align64, dst, $src, count, last);
             // SAFETY: the caller must uphold the safety contract.
             unsafe {
                 let mut $tmp0;
@@ -817,13 +803,10 @@ macro_rules! load_memcpy_opt64 {
 }
 #[allow(unused_macros)]
 macro_rules! store_memcpy_opt_pre {
-    ($ty:ident, $align:ident, $src:ident, $count:ident, $last:ident,
-        |$dst:ident, $tmp0:ident, $tmp1:ident| $store1:expr, $store2:expr,
-    ) => {
-        store_memcpy! { $ty, |$dst, $tmp0, $tmp1| $store1, $store2, }
+    ($ty:ident, $align:ty, $dst:ident, $src:ident, $count:ident, $last:ident) => {
         if crate::utils::OPT_FOR_SIZE
             || $count.get() < const_eval!(=> usize {
-                core::mem::size_of::<crate::private::$align>() << 1
+                core::mem::size_of::<$align>() << 1
             })
         {
             // SAFETY: the caller must uphold the safety contract.
@@ -840,13 +823,13 @@ macro_rules! store_memcpy_opt_pre {
         };
         // SAFETY: MaybeUninit is valid representation for all types.
         let (first, mid, $last) = unsafe {
-            dst.align_to_mut::<core::cell::UnsafeCell<MaybeUninit<crate::private::$align>>>()
+            dst.align_to_mut::<core::cell::UnsafeCell<MaybeUninit<$align>>>()
         };
         if let Some(count) = NonZeroUsize::new(first.len()) {
             // SAFETY: the caller must uphold the safety contract.
             unsafe {
                 atomic_store_memcpy::<SRC_ALIGNED>(
-                    first.as_mut_ptr().cast::<MaybeUninit<Self>>(),
+                    first.as_mut_ptr().cast::<MaybeUninit<_>>(),
                     $src,
                     count,
                 );
@@ -871,8 +854,8 @@ macro_rules! store_memcpy_opt_post {
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
             if let Some(count) = NonZeroUsize::new($last.len()) {
-                atomic_store_memcpy::<SRC_ALIGNED>(
-                    $last.as_mut_ptr().cast::<MaybeUninit<Self>>(),
+                atomic_store_memcpy::<{ SRC_ALIGNED }>(
+                    $last.as_mut_ptr().cast::<MaybeUninit<_>>(),
                     $src,
                     count,
                 );
@@ -890,9 +873,8 @@ macro_rules! store_memcpy_opt64 {
             mut src: *const MaybeUninit<Self>,
             count: NonZeroUsize,
         ) {
-            store_memcpy_opt_pre! { u64, Align64, src, count, last, |$dst, $tmp0, $tmp1|
-                $store1, $store2,
-            }
+            store_memcpy! { u64, |$dst, $tmp0, $tmp1| $store1, $store2, }
+            store_memcpy_opt_pre!(u64, crate::Align64, $dst, src, count, last);
             // SAFETY: the caller must uphold the safety contract.
             unsafe {
                 let mut $tmp0;

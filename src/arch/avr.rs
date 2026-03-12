@@ -314,6 +314,103 @@ impl AtomicStore for u16 {
         }
     }
 }
+#[inline]
+pub(crate) unsafe fn atomic_load16_memcpy1(src: *const MaybeUninit<u16>) -> MaybeUninit<u16> {
+    let out: MaybeUninit<u16>;
+
+    // SAFETY: the caller must uphold the safety contract.
+    unsafe {
+        #[cfg(not(any(
+            target_feature = "tinyencoding",
+            atomic_maybe_uninit_target_feature = "tinyencoding",
+        )))]
+        asm!(
+            "ld {out:l}, Z",    // atomic { out.lo = *Z }
+            "ldd {out:h}, Z+1", // atomic { out.hi = *Z.byte_add(1) }
+            out = out(reg_pair) out,
+            in("Z") src,
+            options(nostack, preserves_flags),
+        );
+        #[cfg(any(
+            target_feature = "tinyencoding",
+            atomic_maybe_uninit_target_feature = "tinyencoding",
+        ))]
+        asm!(
+            "ld {out:l}, Z+", // atomic { out.lo = *Z; Z = Z.byte_add(1) }
+            "ld {out:h}, Z",  // atomic { out.hi = *Z }
+            out = out(reg_pair) out,
+            inout("Z") src => _,
+            options(nostack, preserves_flags),
+        );
+    }
+    out
+}
+#[inline]
+pub(crate) unsafe fn atomic_store16_memcpy1(dst: *mut MaybeUninit<u16>, val: MaybeUninit<u16>) {
+    // SAFETY: the caller must uphold the safety contract.
+    unsafe {
+        #[cfg(not(any(
+            target_feature = "tinyencoding",
+            atomic_maybe_uninit_target_feature = "tinyencoding",
+        )))]
+        #[cfg(any(
+            target_feature = "lowbytefirst",
+            atomic_maybe_uninit_target_feature = "lowbytefirst",
+        ))]
+        asm!(
+            "st Z, {val:l}",    // atomic { *Z = val.lo }
+            "std Z+1, {val:h}", // atomic { *Z.byte_add(1) = val.hi }
+            val = in(reg_pair) val,
+            in("Z") dst,
+            options(nostack, preserves_flags),
+        );
+        #[cfg(not(any(
+            target_feature = "tinyencoding",
+            atomic_maybe_uninit_target_feature = "tinyencoding",
+        )))]
+        #[cfg(not(any(
+            target_feature = "lowbytefirst",
+            atomic_maybe_uninit_target_feature = "lowbytefirst",
+        )))]
+        asm!(
+            "std Z+1, {val:h}", // atomic { *Z.byte_add(1) = val.hi }
+            "st Z, {val:l}",    // atomic { *Z = val.lo }
+            val = in(reg_pair) val,
+            in("Z") dst,
+            options(nostack, preserves_flags),
+        );
+        #[cfg(any(
+            target_feature = "tinyencoding",
+            atomic_maybe_uninit_target_feature = "tinyencoding",
+        ))]
+        #[cfg(any(
+            target_feature = "lowbytefirst",
+            atomic_maybe_uninit_target_feature = "lowbytefirst",
+        ))]
+        asm!(
+            "st Z+, {val:l}", // atomic { *Z = val.lo; Z = Z.byte_add(1) }
+            "st Z, {val:h}",  // atomic { *Z = val.hi }
+            val = in(reg_pair) val,
+            inout("Z") dst => _,
+            options(nostack, preserves_flags),
+        );
+        #[cfg(any(
+            target_feature = "tinyencoding",
+            atomic_maybe_uninit_target_feature = "tinyencoding",
+        ))]
+        #[cfg(not(any(
+            target_feature = "lowbytefirst",
+            atomic_maybe_uninit_target_feature = "lowbytefirst",
+        )))]
+        asm!(
+            "st Z, {val:h}",  // atomic { *Z = val.hi }
+            "st -Z, {val:l}", // atomic { Z = Z.byte_sub(1); *Z = val.lo }
+            val = in(reg_pair) val,
+            inout("Z") dst.cast::<u8>().add(1) => _,
+            options(nostack, preserves_flags),
+        );
+    }
+}
 impl AtomicSwap for u16 {
     #[inline]
     unsafe fn atomic_swap(

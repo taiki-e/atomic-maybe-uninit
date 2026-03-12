@@ -354,6 +354,79 @@ atomic!(u32, "4", "", ":w", "");
 atomic!(u64,    , "", "", "");
 
 impl AtomicMemcpy for u64 {
+    load_memcpy_opt64! { |src, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7|
+        asm!(
+            "ldr {tmp0}, [{src}], #8", // atomic { tmp0 = *src }; src = src.byte_add(8)
+            src = inout(reg) src,
+            tmp0 = out(reg) tmp0,
+            options(nostack, preserves_flags),
+        ),
+        asm!(
+            "ldr {tmp1}, [{src}, #8]",   // atomic { tmp1 = *src.byte_add(8) }
+            "ldr {tmp0}, [{src}], #2*8", // atomic { tmp0 = *src }; src = src.byte_add(2*8)
+            src = inout(reg) src,
+            tmp0 = out(reg) tmp0,
+            tmp1 = out(reg) tmp1,
+            options(nostack, preserves_flags),
+        ),
+        asm!(
+            "ldr {tmp7}, [{src}, #8*7]",    // tmp7 = src.byte_add(8*7).read()
+            "ldr {tmp6}, [{src}, #8*6]",    // tmp6 = src.byte_add(8*6).read()
+            "ldr {tmp5}, [{src}, #8*5]",    // tmp5 = src.byte_add(8*5).read()
+            "ldr {tmp4}, [{src}, #8*4]",    // tmp4 = src.byte_add(8*4).read()
+            "ldr {tmp3}, [{src}, #8*3]",    // tmp3 = src.byte_add(8*3).read()
+            "ldr {tmp2}, [{src}, #8*2]",    // tmp2 = src.byte_add(8*2).read()
+            "ldr {tmp1}, [{src}, #8*1]",    // tmp1 = src.byte_add(8*1).read()
+            "ldr {tmp0}, [{src}], #8*8",    // tmp0 = src.read(); src = src.byte_add(8*8)
+            src = inout(reg) src,
+            tmp0 = out(reg) tmp0,
+            tmp1 = out(reg) tmp1,
+            tmp2 = out(reg) tmp2,
+            tmp3 = out(reg) tmp3,
+            tmp4 = out(reg) tmp4,
+            tmp5 = out(reg) tmp5,
+            tmp6 = out(reg) tmp6,
+            tmp7 = out(reg) tmp7,
+            options(nostack, preserves_flags),
+        ),
+    }
+    store_memcpy_opt64! { |dst, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7|
+        asm!(
+            "str {tmp0}, [{dst}], #8", // atomic { *dst = tmp0 }; dst = dst.byte_add(8)
+            dst = inout(reg) dst,
+            tmp0 = in(reg) tmp0,
+            options(nostack, preserves_flags),
+        ),
+        asm!(
+            "str {tmp1}, [{dst}, #8]",   // atomic { *dst.byte_add(8) = tmp1 }
+            "str {tmp0}, [{dst}], #2*8", // atomic { *dst = tmp0 }; dst = dst.byte_add(2*8)
+            dst = inout(reg) dst,
+            tmp0 = in(reg) tmp0,
+            tmp1 = in(reg) tmp1,
+            options(nostack, preserves_flags),
+        ),
+        asm!(
+            "str {tmp7}, [{dst}, #8*7]",    // dst.byte_add(8*7).write(tmp7)
+            "str {tmp6}, [{dst}, #8*6]",    // dst.byte_add(8*6).write(tmp6)
+            "str {tmp5}, [{dst}, #8*5]",    // dst.byte_add(8*5).write(tmp5)
+            "str {tmp4}, [{dst}, #8*4]",    // dst.byte_add(8*4).write(tmp4)
+            "str {tmp3}, [{dst}, #8*3]",    // dst.byte_add(8*3).write(tmp3)
+            "str {tmp2}, [{dst}, #8*2]",    // dst.byte_add(8*2).write(tmp2)
+            "str {tmp1}, [{dst}, #8*1]",    // dst.byte_add(8*1).write(tmp1)
+            "str {tmp0}, [{dst}], #8*8",    // dst.write(tmp0); dst = dst.byte_add(8*8)
+            dst = inout(reg) dst,
+            tmp0 = in(reg) tmp0,
+            tmp1 = in(reg) tmp1,
+            tmp2 = in(reg) tmp2,
+            tmp3 = in(reg) tmp3,
+            tmp4 = in(reg) tmp4,
+            tmp5 = in(reg) tmp5,
+            tmp6 = in(reg) tmp6,
+            tmp7 = in(reg) tmp7,
+            options(nostack, preserves_flags),
+        ),
+    }
+    /*
     #[inline]
     unsafe fn atomic_load_memcpy<const DST_ALIGNED: bool>(
         mut dst: *mut MaybeUninit<Self>,
@@ -670,6 +743,7 @@ impl AtomicMemcpy for u64 {
         }
         store_memcpy_opt_post!(src, last);
     }
+    */
 }
 
 /*

@@ -252,13 +252,19 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
 
 crate::cfg_has_atomic_memcpy! {
 #[cfg(not(doc))]
-#[cfg(not(target_arch = "avr"))]
+#[cfg(not(any(
+    all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"),
+    target_arch = "avr",
+)))]
 use core::cell::UnsafeCell;
 use core::{mem, num::NonZeroUsize};
 
 #[cfg(doc)]
 use crate::PerByteAtomicMaybeUninit;
-#[cfg(not(target_arch = "avr"))]
+#[cfg(not(any(
+    all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"),
+    target_arch = "avr",
+)))]
 use crate::{private::PrimitivePriv, utils::RegSize};
 
 pub(crate) trait AtomicMemcpy: Primitive {
@@ -413,17 +419,91 @@ pub unsafe fn atomic_load_memcpy<T>(
     else {
         return;
     };
-    let Some(count) = NonZeroUsize::new(count) else { return };
+    let count = match count {
+        0 => return,
+        1 => {
+            // Optimization for single small value.
+            crate::cfg_has_atomic_64! {
+                if const_eval!(T => bool {
+                    mem::size_of::<T>() == 8 && mem::align_of::<T>() >= 8
+                        // Skip 32-bit architectures since 64-bit atomics are usually slow on them.
+                        && mem::size_of::<crate::utils::RegSize>() >= 8
+                }) {
+                    unsafe {
+                        *dst = mem::transmute_copy(
+                            &u64::atomic_load(src.cast::<MaybeUninit<u64>>(), Ordering::Relaxed)
+                        );
+                    }
+                    return;
+                }
+            }
+            crate::cfg_has_atomic_32! {
+                if const_eval!(T => bool {
+                    mem::size_of::<T>() == 4 && mem::align_of::<T>() >= 4
+                }) {
+                    unsafe {
+                        *dst = mem::transmute_copy(
+                            &u32::atomic_load(src.cast::<MaybeUninit<u32>>(), Ordering::Relaxed)
+                        );
+                    }
+                    return;
+                }
+            }
+            crate::cfg_has_atomic_16! {
+                if const_eval!(T => bool {
+                    mem::size_of::<T>() == 2 && mem::align_of::<T>() >= 2
+                }) {
+                    #[cfg(not(target_arch = "avr"))] // AVR's 16-bit load disable interrupts, but it's needless for atomic memcpy.
+                    unsafe {
+                        *dst = mem::transmute_copy(
+                            &u16::atomic_load(src.cast::<MaybeUninit<u16>>(), Ordering::Relaxed)
+                        );
+                    }
+                    #[cfg(target_arch = "avr")]
+                    unsafe {
+                        *dst = mem::transmute_copy(
+                            &crate::arch::atomic_load16_memcpy1(src.cast::<MaybeUninit<u16>>())
+                        );
+                    }
+                    return;
+                }
+            }
+            crate::cfg_has_atomic_8! {
+                if const_eval!(T => bool { mem::size_of::<T>() == 1 }) {
+                    unsafe {
+                        *dst = mem::transmute_copy(
+                            &u8::atomic_load(src.cast::<MaybeUninit<u8>>(), Ordering::Relaxed)
+                        );
+                    }
+                    return;
+                }
+            }
+            unsafe { NonZeroUsize::new_unchecked(count) }
+        }
+        _ => unsafe { NonZeroUsize::new_unchecked(count) },
+    };
 
     // SAFETY: the caller must guarantee that `count * size_of::<T>()` doesn't overflow.
     let count = unsafe { count.checked_mul(size).unwrap_unchecked() };
 
-    #[cfg_attr(target_arch = "avr", allow(unused_mut))]
+    #[cfg_attr(any(
+        all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"),
+        target_arch = "avr",
+    ), allow(unused_mut))]
     let mut dst = dst.cast::<MaybeUninit<u8>>();
     let src = src.cast::<MaybeUninit<u8>>();
 
+    #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"))]
+    if count.get() >= 4 {
+        unsafe { crate::arch::atomic_memcpy::<IS_LOAD>(dst, src, count) }
+        return;
+    }
+
     // Handle cases where the alignment is smaller than the register size.
-    #[cfg(not(target_arch = "avr"))] // AVR's actual register size is 8-bit.
+    #[cfg(not(any(
+        all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"), // Handled above.
+        target_arch = "avr", // AVR's actual register size is 8-bit.
+    )))]
     if const_eval!(T => bool { mem::align_of::<T>() < mem::size_of::<RegSize>() })
         && (
             // If RegSize is 32-bit:
@@ -526,17 +606,100 @@ pub unsafe fn atomic_store_memcpy<T>(
     else {
         return;
     };
-    let Some(count) = NonZeroUsize::new(count) else { return };
+    let count = match count {
+        0 => return,
+        1 => {
+            // Optimization for single small value.
+            crate::cfg_has_atomic_64! {
+                if const_eval!(T => bool {
+                    mem::size_of::<T>() == 8 && mem::align_of::<T>() >= 8
+                        // Skip 32-bit architectures since 64-bit atomics are usually slow on them.
+                        && mem::size_of::<crate::utils::RegSize>() >= 8
+                }) {
+                    unsafe {
+                        u64::atomic_store(
+                            dst.cast::<MaybeUninit<u64>>(),
+                            *src.cast::<MaybeUninit<u64>>(),
+                            Ordering::Relaxed,
+                        );
+                    }
+                    return;
+                }
+            }
+            crate::cfg_has_atomic_32! {
+                if const_eval!(T => bool {
+                    mem::size_of::<T>() == 4 && mem::align_of::<T>() >= 4
+                }) {
+                    unsafe {
+                        u32::atomic_store(
+                            dst.cast::<MaybeUninit<u32>>(),
+                            *src.cast::<MaybeUninit<u32>>(),
+                            Ordering::Relaxed,
+                        );
+                    }
+                    return;
+                }
+            }
+            crate::cfg_has_atomic_16! {
+                if const_eval!(T => bool {
+                    mem::size_of::<T>() == 2 && mem::align_of::<T>() >= 2
+                }) {
+                    #[cfg(not(target_arch = "avr"))] // AVR's 16-bit load disable interrupts, but it's needless for atomic memcpy.
+                    unsafe {
+                        u16::atomic_store(
+                            dst.cast::<MaybeUninit<u16>>(),
+                            *src.cast::<MaybeUninit<u16>>(),
+                            Ordering::Relaxed,
+                        );
+                    }
+                    #[cfg(target_arch = "avr")]
+                    unsafe {
+                        crate::arch::atomic_store16_memcpy1(
+                            dst.cast::<MaybeUninit<u16>>(),
+                            *src.cast::<MaybeUninit<u16>>(),
+                        );
+                    }
+                    return;
+                }
+            }
+            crate::cfg_has_atomic_8! {
+                if const_eval!(T => bool { mem::size_of::<T>() == 1 }) {
+                    unsafe {
+                        u8::atomic_store(
+                            dst.cast::<MaybeUninit<u8>>(),
+                            *src.cast::<MaybeUninit<u8>>(),
+                            Ordering::Relaxed,
+                        );
+                    }
+                    return;
+                }
+            }
+            unsafe { NonZeroUsize::new_unchecked(count) }
+        }
+        _ => unsafe { NonZeroUsize::new_unchecked(count) },
+    };
 
     // SAFETY: the caller must guarantee that `count * size_of::<T>()` doesn't overflow.
     let count = unsafe { count.checked_mul(size).unwrap_unchecked() };
 
     let dst = dst.cast::<MaybeUninit<u8>>();
-    #[cfg_attr(target_arch = "avr", allow(unused_mut))]
+    #[cfg_attr(any(
+        all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"),
+        target_arch = "avr",
+    ), allow(unused_mut))]
     let mut src = src.cast::<MaybeUninit<u8>>();
 
+    #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"))]
+    if count.get() >= 4 {
+        unsafe { crate::arch::atomic_memcpy::<IS_LOAD>(dst, src, count) }
+        return;
+    }
+
     // Handle cases where the alignment is smaller than the register size.
-    #[cfg(not(target_arch = "avr"))] // AVR's actual register size is 8-bit.
+    #[cfg(not(any(
+        all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sse2"), // Handled above.
+        target_arch = "avr", // AVR's actual register size is 8-bit.
+    )))]
     if const_eval!(T => bool { mem::align_of::<T>() < mem::size_of::<RegSize>() })
         && (
             // If RegSize is 32-bit:

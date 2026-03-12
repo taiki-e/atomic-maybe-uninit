@@ -94,9 +94,20 @@ macro_rules! flags {
 // rustc definitions: https://github.com/rust-lang/rust/blob/ddaf12390d3ffb7d5ba74491a48f3cd528e5d777/compiler/rustc_target/src/target_features.rs
 
 // LLVM definitions: https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/X86/X86.td
-#[cfg(target_arch = "x86_64")]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 flags! {
+    #[allow(dead_code)]
     avx("avx", any(target_feature)),
+    avx2("avx2", any(target_feature)),
+    #[allow(dead_code)]
+    avx512f("avx512f", any(target_feature)),
+    #[allow(dead_code)]
+    ermsb("ermsb", any(target_feature /* nightly */)),
+    #[allow(dead_code)]
+    fsrm("fsrm", any(/*  */)),
+
+    // Ice Lake, Zen 4, or later CPUs.
+    icelake_or_later("icelake-or-later", any(/* shorthand for some avx512* */)),
 }
 
 #[allow(

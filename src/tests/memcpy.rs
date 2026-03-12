@@ -18,10 +18,15 @@ use super::helper::{assert_panic, skip_should_panic_test};
 use crate::utils::ptr::MutPtrExt as _;
 use crate::{PerByteAtomicMaybeUninit, raw};
 
+// TODO: quickcheck
+// TODO: test slice variants
+
 macro_rules! test_int {
     ($test_name:ident, $ty:ident) => {
         #[test]
         fn $test_name() {
+            const L256: usize = 256 / mem::size_of::<$ty>();
+            const L4096: usize = 4096 / mem::size_of::<$ty>();
             unsafe {
                 let x = PerByteAtomicMaybeUninit::<$ty>::from(0);
                 assert_eq!(x.load(Ordering::Relaxed).assume_init(), 0);
@@ -47,10 +52,14 @@ macro_rules! test_int {
                 assert_eq!(x.load(Ordering::Relaxed).assume_init(), [0; 5]);
                 x.store(MaybeUninit::new([!0; 5]), Ordering::Relaxed);
                 assert_eq!(x.load(Ordering::Relaxed).assume_init(), [!0; 5]);
-                let x = PerByteAtomicMaybeUninit::<[$ty; 200]>::from([0; 200]);
-                assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [0; 200][..]);
-                x.store(MaybeUninit::new([!0; 200]), Ordering::Relaxed);
-                assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [!0; 200][..]);
+                let x = PerByteAtomicMaybeUninit::<[$ty; L256]>::from([0; L256]);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [0; L256][..]);
+                x.store(MaybeUninit::new([!0; L256]), Ordering::Relaxed);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [!0; L256][..]);
+                let x = PerByteAtomicMaybeUninit::<[$ty; L4096]>::from([0; L4096]);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [0; L4096][..]);
+                x.store(MaybeUninit::new([!0; L4096]), Ordering::Relaxed);
+                assert_eq!(x.load(Ordering::Relaxed).assume_init()[..], [!0; L4096][..]);
             }
         }
     };
