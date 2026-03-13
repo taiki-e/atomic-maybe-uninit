@@ -160,7 +160,9 @@ convert_toolchain_for_unstable_asm() {
       ;;
     1.9[1-4])
       # LLVM 21
-      toolchain=nightly-2026-01-28 # Rust 1.95
+      case "${target}" in
+        *) toolchain=nightly-2026-01-28 ;; # Rust 1.95
+      esac
       ;;
     1.*) bail "unhandled ${toolchain}" ;;
     stable | beta) toolchain='' ;; # ignore
@@ -178,7 +180,7 @@ add_matrix() {
     # TODO: uncomment once 1.95 is stable
     # powerpc*)
     #   case "${toolchain}" in
-    #     1.7[4-9] | 1.8[0-9] | 1.9[0-4]) convert_toolchain_for_unstable_asm ;;
+    #     1.[7-8][0-9] | 1.9[0-4]) convert_toolchain_for_unstable_asm ;;
     #   esac
     #   ;;
     *) [[ -z "${require_nightly}" ]] || convert_toolchain_for_unstable_asm ;;
@@ -201,6 +203,7 @@ for target in "${targets[@]}"; do
   # Check target with unstable asm or tier 3 target.
   require_nightly=''
   case "${target}" in
+    # TODO: remove powerpc once 1.95 is stable
     aarch64_be* | armeb* | riscv32* | csky* | hexagon* | m68k* | mips* | powerpc* | sparc*)
       require_nightly=1
       ;;

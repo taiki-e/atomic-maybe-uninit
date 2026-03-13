@@ -204,8 +204,8 @@ macro_rules! __test_atomic {
                     );
                 }
             }
-            test_load_ordering(|order| VAR.load(order));
-            test_store_ordering(|order| VAR.store(MaybeUninit::new(10), order));
+            test_load_ordering(&|order| { VAR.load(order); });
+            test_store_ordering(&|order| VAR.store(MaybeUninit::new(10), order));
             for (load_order, store_order) in LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS) {
                 unsafe {
                     assert_eq!(VAR.load(load_order).assume_init(), 10);
@@ -323,7 +323,7 @@ macro_rules! __test_atomic {
             if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
                 mark_aligned_defined(&a);
             }
-            test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
+            test_swap_ordering(&|order| { a.swap(MaybeUninit::new(5), order); });
             for order in SWAP_ORDERINGS {
                 unsafe {
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
@@ -502,8 +502,13 @@ macro_rules! __test_atomic {
             if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
                 mark_aligned_defined(&a);
             }
-            test_compare_exchange_ordering(|success, failure| {
-                a.compare_exchange(MaybeUninit::new(5), MaybeUninit::new(5), success, failure)
+            test_compare_exchange_ordering(&|success, failure| {
+                let _ = a.compare_exchange(
+                    MaybeUninit::new(5),
+                    MaybeUninit::new(5),
+                    success,
+                    failure,
+                );
             });
             for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                 unsafe {
@@ -581,13 +586,13 @@ macro_rules! __test_atomic {
             if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
                 mark_aligned_defined(&a);
             }
-            test_compare_exchange_ordering(|success, failure| {
-                a.compare_exchange_weak(
+            test_compare_exchange_ordering(&|success, failure| {
+                let _ = a.compare_exchange_weak(
                     MaybeUninit::new(5),
                     MaybeUninit::new(5),
                     success,
                     failure,
-                )
+                );
             });
             for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                 unsafe {
@@ -633,8 +638,8 @@ macro_rules! __test_atomic {
             if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
                 mark_aligned_defined(&a);
             }
-            test_compare_exchange_ordering(|set, fetch| {
-                a.fetch_update(set, fetch, |x| Some(x))
+            test_compare_exchange_ordering(&|set, fetch| {
+                let _ = a.fetch_update(set, fetch, |x| Some(x));
             });
             for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                 unsafe {
@@ -957,8 +962,7 @@ macro_rules! __test_atomic {
 }
 
 #[allow(unused_unsafe)] // for old rustc
-#[track_caller]
-fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::String {
+fn assert_panic(f: &dyn Fn()) -> std::string::String {
     let backtrace = std::env::var_os("RUST_BACKTRACE");
     let hook = std::panic::take_hook();
     // set_var/remove_var is fine as we run tests with RUST_TEST_THREADS=1
@@ -981,19 +985,17 @@ pub(crate) const LOAD_ORDERINGS: [Ordering; 3] =
 pub(crate) fn rand_load_ordering(rng: &mut fastrand::Rng) -> Ordering {
     LOAD_ORDERINGS[rng.usize(0..LOAD_ORDERINGS.len())]
 }
-#[track_caller]
-pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
+pub(crate) fn test_load_ordering(f: &dyn Fn(Ordering)) {
     for order in LOAD_ORDERINGS {
         f(order);
     }
-
     if !skip_should_panic_test() {
         assert_eq!(
-            assert_panic(|| f(Ordering::Release)),
+            assert_panic(&|| f(Ordering::Release)),
             "there is no such thing as a release load"
         );
         assert_eq!(
-            assert_panic(|| f(Ordering::AcqRel)),
+            assert_panic(&|| f(Ordering::AcqRel)),
             "there is no such thing as an acquire-release load"
         );
     }
@@ -1003,19 +1005,17 @@ pub(crate) const STORE_ORDERINGS: [Ordering; 3] =
 pub(crate) fn rand_store_ordering(rng: &mut fastrand::Rng) -> Ordering {
     STORE_ORDERINGS[rng.usize(0..STORE_ORDERINGS.len())]
 }
-#[track_caller]
-pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
+pub(crate) fn test_store_ordering(f: &dyn Fn(Ordering)) {
     for order in STORE_ORDERINGS {
         f(order);
     }
-
     if !skip_should_panic_test() {
         assert_eq!(
-            assert_panic(|| f(Ordering::Acquire)),
+            assert_panic(&|| f(Ordering::Acquire)),
             "there is no such thing as an acquire store"
         );
         assert_eq!(
-            assert_panic(|| f(Ordering::AcqRel)),
+            assert_panic(&|| f(Ordering::AcqRel)),
             "there is no such thing as an acquire-release store"
         );
     }
@@ -1025,7 +1025,7 @@ pub(crate) const SWAP_ORDERINGS: [Ordering; 5] =
 pub(crate) fn rand_swap_ordering(rng: &mut fastrand::Rng) -> Ordering {
     SWAP_ORDERINGS[rng.usize(0..SWAP_ORDERINGS.len())]
 }
-pub(crate) fn test_swap_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
+pub(crate) fn test_swap_ordering(f: &dyn Fn(Ordering)) {
     for order in SWAP_ORDERINGS {
         f(order);
     }
@@ -1050,23 +1050,20 @@ pub(crate) const COMPARE_EXCHANGE_ORDERINGS: [(Ordering, Ordering); 15] = [
 pub(crate) fn rand_compare_exchange_ordering(rng: &mut fastrand::Rng) -> (Ordering, Ordering) {
     COMPARE_EXCHANGE_ORDERINGS[rng.usize(0..COMPARE_EXCHANGE_ORDERINGS.len())]
 }
-pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
-    f: impl Fn(Ordering, Ordering) -> T,
-) {
+pub(crate) fn test_compare_exchange_ordering(f: &dyn Fn(Ordering, Ordering)) {
     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
         f(success, failure);
     }
-
     if !skip_should_panic_test() {
         for order in SWAP_ORDERINGS {
-            let msg = assert_panic(|| f(order, Ordering::AcqRel));
+            let msg = assert_panic(&|| f(order, Ordering::AcqRel));
             assert!(
                 msg == "there is no such thing as an acquire-release failure ordering"
                     || msg == "there is no such thing as an acquire-release load",
                 "{}",
                 msg
             );
-            let msg = assert_panic(|| f(order, Ordering::Release));
+            let msg = assert_panic(&|| f(order, Ordering::Release));
             assert!(
                 msg == "there is no such thing as a release failure ordering"
                     || msg == "there is no such thing as a release load",
@@ -1076,9 +1073,10 @@ pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
         }
     }
 }
+
 // Used in stress tests to find atomicity bug generated by __test_atomic macro.
 pub(crate) fn stress_test_config(rng: &mut fastrand::Rng) -> (usize, usize) {
-    let iterations = if cfg!(debug_assertions) { 5_000 } else { 25_000 };
+    let iterations = if cfg!(any(debug_assertions, qemu, valgrind)) { 5_000 } else { 25_000 };
     let threads = if cfg!(debug_assertions) { 2 } else { rng.usize(2..=8) };
     eprintln!("threads={threads}");
     (iterations, threads)
@@ -1147,7 +1145,8 @@ pub(crate) fn mark_aligned_undefined<T: ?Sized>(a: &T) {
 }
 
 fn skip_should_panic_test() -> bool {
-    is_panic_abort()
+    // Valgrind false positive on s390x
+    is_panic_abort() || cfg!(all(valgrind, target_arch = "s390x"))
 }
 
 // For -C panic=abort -Z panic_abort_tests: https://github.com/rust-lang/rust/issues/67650
@@ -1225,7 +1224,7 @@ impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
 
 // Stress tests to find memory ordering bug.
 // Note that this is not exhaustive and only tests a few cases.
-macro_rules! __stress_test_acquire_release {
+macro_rules! __stress_acquire_release {
     (should_pass, $ty:ident, $read:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             #[test]
@@ -1261,7 +1260,7 @@ macro_rules! __stress_test_acquire_release {
         // }
     };
 }
-macro_rules! __stress_test_seqcst {
+macro_rules! __stress_seqcst {
     (should_pass, $ty:ident, $read:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             #[test]
@@ -1310,7 +1309,7 @@ macro_rules! __stress_test_seqcst {
     };
 }
 // To test this working correctly:
-// - Uncomment can_panic case in __stress_test_seqcst,
+// - Uncomment can_panic case in __stress_seqcst,
 //   and run test with `--release -- acquire_release1 --ignored`.
 //   At least on AArch64 machine, some "panicked as expected" will be shown.
 pub(crate) fn acquire_release1<T: Send + Sync>(
@@ -1321,7 +1320,7 @@ pub(crate) fn acquire_release1<T: Send + Sync>(
     store: impl Fn(&T, isize) + Send + Sync,
     #[allow(unused_variables)] do_rmw: bool,
 ) {
-    let n: usize = 50_000;
+    let n: usize = if cfg!(any(qemu, valgrind)) { 5_000 } else { 50_000 };
 
     // TODO(riscv): wrong result (as of Valgrind 3.26)
     #[cfg(valgrind)]
@@ -1369,7 +1368,7 @@ pub(crate) fn acquire_release1<T: Send + Sync>(
     });
 }
 // To test this working correctly:
-// - Uncomment can_panic case in __stress_test_seqcst,
+// - Uncomment can_panic case in __stress_seqcst,
 //   and run test with `--release -- seqcst1 --ignored`.
 //   At least on AArch64 machine, some "panicked as expected" will be shown.
 // - Change aarch64.rs's 128-bit seqcst load from `ldar; ldp; dmb ishld` to `ldp; dmb ish`
@@ -1384,7 +1383,13 @@ pub(crate) fn seqcst1<T: Send + Sync>(
     store: impl Fn(&T, isize) + Send + Sync,
     #[allow(unused_variables)] do_rmw: bool,
 ) {
-    let n: usize = if cfg!(valgrind) { 50 } else { 50_000 };
+    let n: usize = if cfg!(valgrind) {
+        50
+    } else if cfg!(qemu) {
+        5_000
+    } else {
+        50_000
+    };
 
     // TODO(riscv): wrong result (as of Valgrind 3.26)
     #[cfg(valgrind)]
@@ -1524,7 +1529,7 @@ macro_rules! __call_stress_test_fn {
             |a, v| {
                 a.$write(MaybeUninit::new(v as $ty), Ordering::$store_order);
             },
-            stringify!($write) == "swap",
+            stringify!($write) == "swap", // do_rmw
         )
     };
     ($name:ident, $ty:ident, cas, $write:ident, $load_order:ident, $store_order:ident) => {
@@ -1595,25 +1600,25 @@ macro_rules! stress_test {
 
                 use crate::{AtomicMaybeUninit, tests::helper::*};
 
-                __stress_test_acquire_release!(can_panic, $ty, load, store, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, load, store, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $ty, load, store, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, load, store, Acquire, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, load, store, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $ty, load, store, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, load, store, SeqCst, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, load, store, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $ty, load, store, SeqCst, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, store, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, store, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, load, store, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, store, Acquire, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, load, store, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, load, store, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, store, SeqCst, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, load, store, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, load, store, SeqCst, SeqCst);
 
-                __stress_test_seqcst!(can_panic, $ty, load, store, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, load, store, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $ty, load, store, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, load, store, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, load, store, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $ty, load, store, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, load, store, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, load, store, SeqCst, Release);
-                __stress_test_seqcst!(should_pass, $ty, load, store, SeqCst, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, store, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, store, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, load, store, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, store, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, store, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, load, store, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, store, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, store, SeqCst, Release);
+                __stress_seqcst!(should_pass, $ty, load, store, SeqCst, SeqCst);
             }
         }
         #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
@@ -1634,37 +1639,37 @@ macro_rules! stress_test {
 
                 use crate::{AtomicMaybeUninit, tests::helper::*};
 
-                __stress_test_acquire_release!(can_panic, $ty, load, swap, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, load, swap, Relaxed, Acquire);
-                __stress_test_acquire_release!(can_panic, $ty, load, swap, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $ty, load, swap, Relaxed, AcqRel);
-                __stress_test_acquire_release!(can_panic, $ty, load, swap, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, load, swap, Acquire, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, load, swap, Acquire, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, load, swap, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $ty, load, swap, Acquire, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, load, swap, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, load, swap, SeqCst, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, load, swap, SeqCst, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, load, swap, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $ty, load, swap, SeqCst, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, load, swap, SeqCst, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, Acquire);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Acquire, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Acquire, Acquire);
+                __stress_acquire_release!(should_pass, $ty, load, swap, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, load, swap, Acquire, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, load, swap, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, swap, SeqCst, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, swap, SeqCst, Acquire);
+                __stress_acquire_release!(should_pass, $ty, load, swap, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, load, swap, SeqCst, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, load, swap, SeqCst, SeqCst);
 
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Relaxed, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Relaxed, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Acquire, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Acquire, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, SeqCst, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, SeqCst, Release);
-                __stress_test_seqcst!(can_panic, $ty, load, swap, SeqCst, AcqRel);
-                __stress_test_seqcst!(should_pass, $ty, load, swap, SeqCst, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, AcqRel);
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, AcqRel);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, swap, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, swap, SeqCst, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, swap, SeqCst, Release);
+                __stress_seqcst!(can_panic, $ty, load, swap, SeqCst, AcqRel);
+                __stress_seqcst!(should_pass, $ty, load, swap, SeqCst, SeqCst);
             }
         }
         #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
@@ -1686,205 +1691,205 @@ macro_rules! stress_test {
 
                 use crate::{AtomicMaybeUninit, tests::helper::*};
 
-                __stress_test_acquire_release!(can_panic, $ty, cas, store, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas, store, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $ty, cas, store, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas, store, Acquire, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, cas, store, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas, store, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas, store, Release, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas, store, Release, Release);
-                __stress_test_acquire_release!(can_panic, $ty, cas, store, Release, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas, store, AcqRel, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, cas, store, AcqRel, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas, store, AcqRel, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas, store, SeqCst, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, cas, store, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas, store, SeqCst, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Acquire, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas, store, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, store, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Release, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Release, Release);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Release, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, store, AcqRel, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas, store, AcqRel, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, store, AcqRel, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, store, SeqCst, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas, store, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, store, SeqCst, SeqCst);
 
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, store, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, store, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, store, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, store, Acquire, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, store, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, store, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, store, Release, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, store, Release, Release);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, store, Release, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, store, AcqRel, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, store, AcqRel, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, store, AcqRel, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, store, SeqCst, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, store, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, store, SeqCst, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Acquire, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Release, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Release, Release);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Release, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, AcqRel, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, AcqRel, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, AcqRel, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, SeqCst, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, SeqCst, SeqCst);
 
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Relaxed, Acquire);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Relaxed, AcqRel);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Acquire, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Acquire, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, cas, swap, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas, swap, Acquire, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, cas, swap, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Release, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Release, Acquire);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Release, Release);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Release, AcqRel);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, Release, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, AcqRel, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, AcqRel, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, cas, swap, AcqRel, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas, swap, AcqRel, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, cas, swap, AcqRel, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, SeqCst, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas, swap, SeqCst, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, cas, swap, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas, swap, SeqCst, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, cas, swap, SeqCst, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, Acquire);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Acquire, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Acquire, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, Acquire, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, Acquire);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, Release);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, AcqRel, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, AcqRel, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, AcqRel, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, AcqRel, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, AcqRel, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, SeqCst, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, SeqCst, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, SeqCst, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, SeqCst, SeqCst);
 
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, Acquire);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, AcqRel);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Acquire, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Acquire, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, swap, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, swap, Acquire, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, swap, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Release, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Release, Acquire);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Release, Release);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Release, AcqRel);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, Release, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, AcqRel, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, AcqRel, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, swap, AcqRel, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, swap, AcqRel, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, swap, AcqRel, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, SeqCst, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, cas_weak, swap, SeqCst, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, swap, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, swap, SeqCst, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, cas_weak, swap, SeqCst, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, Acquire);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Acquire, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Acquire, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, Acquire, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, Acquire);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, Release);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, AcqRel, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, AcqRel, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, AcqRel, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, AcqRel, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, AcqRel, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, SeqCst, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, SeqCst, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, SeqCst, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, SeqCst, SeqCst);
 
-                __stress_test_acquire_release!(can_panic, $ty, load, cas, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, load, cas, Relaxed, Acquire);
-                __stress_test_acquire_release!(can_panic, $ty, load, cas, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $ty, load, cas, Relaxed, AcqRel);
-                __stress_test_acquire_release!(can_panic, $ty, load, cas, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, load, cas, Acquire, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, load, cas, Acquire, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, load, cas, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $ty, load, cas, Acquire, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, load, cas, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, load, cas, SeqCst, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, load, cas, SeqCst, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, load, cas, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $ty, load, cas, SeqCst, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, load, cas, SeqCst, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, Acquire);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Acquire, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Acquire, Acquire);
+                __stress_acquire_release!(should_pass, $ty, load, cas, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, load, cas, Acquire, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, load, cas, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, cas, SeqCst, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, cas, SeqCst, Acquire);
+                __stress_acquire_release!(should_pass, $ty, load, cas, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, load, cas, SeqCst, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, load, cas, SeqCst, SeqCst);
 
-                __stress_test_seqcst!(can_panic, $ty, cas, store, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, Release, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, Release, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, Release, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, AcqRel, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, AcqRel, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, AcqRel, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, store, SeqCst, Release);
-                __stress_test_seqcst!(should_pass, $ty, cas, store, SeqCst, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, store, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, cas, store, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, store, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, cas, store, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, store, Release, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, Release, Release);
+                __stress_seqcst!(can_panic, $ty, cas, store, Release, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, store, AcqRel, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, AcqRel, Release);
+                __stress_seqcst!(can_panic, $ty, cas, store, AcqRel, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, store, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, SeqCst, Release);
+                __stress_seqcst!(should_pass, $ty, cas, store, SeqCst, SeqCst);
 
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, Release, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, Release, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, Release, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, AcqRel, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, AcqRel, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, AcqRel, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, store, SeqCst, Release);
-                __stress_test_seqcst!(should_pass, $ty, cas_weak, store, SeqCst, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Release, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Release, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Release, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, AcqRel, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, AcqRel, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, AcqRel, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, SeqCst, Release);
+                __stress_seqcst!(should_pass, $ty, cas_weak, store, SeqCst, SeqCst);
 
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Relaxed, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Relaxed, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Acquire, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Acquire, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Release, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Release, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Release, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Release, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, Release, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, AcqRel, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, AcqRel, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, AcqRel, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, AcqRel, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, AcqRel, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, SeqCst, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, SeqCst, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas, swap, SeqCst, AcqRel);
-                __stress_test_seqcst!(should_pass, $ty, cas, swap, SeqCst, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, swap, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, SeqCst, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, SeqCst, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, SeqCst, AcqRel);
+                __stress_seqcst!(should_pass, $ty, cas, swap, SeqCst, SeqCst);
 
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Release, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Release, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Release, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Release, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, Release, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, Release);
-                __stress_test_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, AcqRel);
-                __stress_test_seqcst!(should_pass, $ty, cas_weak, swap, SeqCst, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, AcqRel);
+                __stress_seqcst!(should_pass, $ty, cas_weak, swap, SeqCst, SeqCst);
 
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Relaxed, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Relaxed, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Acquire, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Acquire, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, SeqCst, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, SeqCst, Release);
-                __stress_test_seqcst!(can_panic, $ty, load, cas, SeqCst, AcqRel);
-                __stress_test_seqcst!(should_pass, $ty, load, cas, SeqCst, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, AcqRel);
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, AcqRel);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, cas, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, cas, SeqCst, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, cas, SeqCst, Release);
+                __stress_seqcst!(can_panic, $ty, load, cas, SeqCst, AcqRel);
+                __stress_seqcst!(should_pass, $ty, load, cas, SeqCst, SeqCst);
             }
         }
     };
