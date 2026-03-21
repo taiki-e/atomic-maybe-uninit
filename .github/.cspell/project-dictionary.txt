@@ -18,6 +18,7 @@ bnez
 boundedly
 brne
 bswap
+callthru
 casp
 cbnz
 ccmp
@@ -28,6 +29,7 @@ cmpne
 cmpw
 cmpxchg
 cpuid
+cpus
 csel
 cset
 cskyv
@@ -96,6 +98,7 @@ mspdebug
 msync
 muldi
 mvns
+mysim
 noat
 nomacro
 noreorder
@@ -146,6 +149,7 @@ subarch
 subi
 swpp
 syscall
+systemsim
 tinyencoding
 tsim
 uart
