@@ -10,7 +10,7 @@ Refs:
 - Arm A-profile A64 Instruction Set Architecture
   https://developer.arm.com/documentation/ddi0602/2025-06
 - C/C++ Atomics Application Binary Interface Standard for the Arm® 64-bit Architecture
-  https://github.com/ARM-software/abi-aa/blob/2025Q1/atomicsabi64/atomicsabi64.rst
+  https://github.com/ARM-software/abi-aa/blob/2025Q4/atomicsabi64/atomicsabi64.rst
 - Arm® Compiler armasm User Guide
   https://developer.arm.com/documentation/dui0801/latest
 - Arm® Architecture Reference Manual for A-profile architecture
@@ -46,8 +46,9 @@ macro_rules! atomic_rmw {
             Ordering::Acquire => $op!("a", "", ""),
             Ordering::Release => $op!("", "l", ""),
             Ordering::AcqRel => $op!("a", "l", ""),
-            // In MSVC environments, SeqCst stores/writes needs fences after writes.
+            // In MSVC environments, SeqCst stores/writes by non-LSE* instructions needs fences after writes.
             // https://reviews.llvm.org/D141748
+            // https://github.com/llvm/llvm-project/commit/1ea201d73be2fdf03347e9c6be09ebed5f8e0e00
             #[cfg(target_env = "msvc")]
             Ordering::SeqCst if $write == Ordering::SeqCst => $op!("a", "l", "dmb ish"),
             // AcqRel and SeqCst RMWs are equivalent in non-MSVC environments.
@@ -459,6 +460,7 @@ impl AtomicLoad for u128 {
             match order {
                 Ordering::Relaxed => atomic_load!("", ""),
                 Ordering::Acquire => atomic_load!("a", ""),
+                // TODO: in atomicsabi64, seqcst load is the same as acquire load
                 Ordering::SeqCst => atomic_load!("a", "l"),
                 _ => crate::utils::unreachable_unchecked(),
             }
@@ -522,6 +524,7 @@ impl AtomicStore for u128 {
                 // SAFETY: cfg guarantee that the CPU supports FEAT_LRCPC3.
                 #[cfg(any(target_feature = "rcpc3", atomic_maybe_uninit_target_feature = "rcpc3"))]
                 Ordering::Release => atomic_store!("il", "", ""),
+                // TODO: in atomicsabi64, seqcst store is the same as release store
                 // LLVM uses store-release (dmb ish; stp); dmb ish, GCC (libatomic) and Atomics ABI Standard
                 // uses store-release (stilp) without fence for SeqCst store
                 // (https://github.com/gcc-mirror/gcc/commit/7107574958e2bed11d916a1480ef1319f15e5ffe).

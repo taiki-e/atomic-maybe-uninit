@@ -511,6 +511,7 @@ fn main() {
             if r5900 {
                 // R5900 has no LL/SC.
                 // https://github.com/llvm/llvm-project/blob/32134a64b195f7804698418b6f416e761d890dea/llvm/lib/Target/Mips/Mips64InstrInfo.td#L259
+                // Note that: R5900 short loop erratum fix is needless in our code since only LL/SC code path has loop in asm!.
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_ll_sc");
             }
         }

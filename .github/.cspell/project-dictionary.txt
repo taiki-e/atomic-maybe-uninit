@@ -6,6 +6,7 @@ andc
 andn
 aqrl
 armasm
+atomicsabi
 attiny
 atxmega
 avrtiny

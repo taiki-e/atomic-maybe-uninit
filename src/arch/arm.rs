@@ -194,6 +194,7 @@ cfg_sel!({
         // __kuser_cmpxchg
         // https://github.com/torvalds/linux/blob/v2.6.12/arch/arm/kernel/entry-armv.S#L567-L660
         // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L769-L827
+        // https://github.com/torvalds/linux/blob/v6.19/arch/arm64/kernel/kuser32.S#L44-L52
         // Note:
         // - __kuser_helper_version >= 2 (kernel version 2.6.12+)
         // - has SeqCst semantics (smp_dmb arm)
@@ -209,6 +210,7 @@ cfg_sel!({
         // __kuser_memory_barrier
         // https://github.com/torvalds/linux/blob/v2.6.15/arch/arm/kernel/entry-armv.S#L614-L651
         // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L763-L767
+        // https://github.com/torvalds/linux/blob/v6.19/arch/arm64/kernel/kuser32.S#L39-L41
         // Note:
         // - __kuser_helper_version >= 3 (kernel version 2.6.15+)
         // - has SeqCst semantics (smp_dmb arm)
@@ -224,6 +226,7 @@ cfg_sel!({
         // https://github.com/torvalds/linux/blob/v3.1/arch/arm/kernel/entry-armv.S#L730-L814
         // https://github.com/torvalds/linux/blob/v3.1/Documentation/arm/kernel_user_helpers.txt#L205-L257
         // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L693-L761
+        // https://github.com/torvalds/linux/blob/v6.19/arch/arm64/kernel/kuser32.S#L23-L36
         // Note:
         // - __kuser_helper_version >= 5 (kernel version 3.1+)
         // - has SeqCst semantics (smp_dmb arm)
