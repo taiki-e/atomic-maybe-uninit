@@ -706,8 +706,11 @@ jobs:
             done
             "$@"
           }
+          apt_packages=(
+            device-tree-compiler
+          )
           if [[ "${{ matrix.rust }}" == "nightly"* ]]; then
-            apt_packages=(
+            apt_packages+=(
               avr-libc
               gcc-avr
               gcc-m68k-linux-gnu
@@ -726,9 +729,20 @@ jobs:
                 )
               fi
             fi
-            retry sudo apt-get -o Acquire::Retries=10 -qq update
-            retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends "${apt_packages[@]}"
           fi
+          retry sudo apt-get -o Acquire::Retries=10 -qq update
+          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends "${apt_packages[@]}"
+          (
+            cd
+            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 --retry-all-errors https://github.com/taiki-e/riscv-isa-sim/releases/download/v1.1.0-76ced61/riscv-isa-sim-ubuntu-24.04.tar.xz \
+              | tar xJf -
+            retry docker create --name gcc-riscv64-linux-musl ghcr.io/taiki-e/rust-cross-toolchain:riscv64gc-unknown-linux-musl-dev
+            docker cp -- gcc-riscv64-linux-musl:/riscv64gc-unknown-linux-musl gcc-riscv64-linux-musl
+            docker rm -f -- gcc-riscv64-linux-musl >/dev/null
+            rm -- gcc-riscv64-linux-musl/bin/qemu-*
+          )
+          printf '%s\n' "${HOME}"/riscv-isa-sim/bin >>"${GITHUB_PATH}"
+          printf '%s\n' "${HOME}"/gcc-riscv64-linux-musl/bin >>"${GITHUB_PATH}"
           if [[ "${{ matrix.rust }}" == "nightly"* ]]; then
             if [[ "${{ matrix.rust }}" != "nightly-2023-08-24" ]]; then
               mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}

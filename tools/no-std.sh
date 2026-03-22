@@ -41,6 +41,7 @@ default_targets=(
   riscv64im-unknown-none-elf
   riscv64imac-unknown-none-elf
   riscv64gc-unknown-none-elf
+  riscv64gc-unknown-linux-musl
 
   # loongarch32
   loongarch32-unknown-none
@@ -180,6 +181,12 @@ run() {
   subcmd=run
   if [[ -z "${CI:-}" ]]; then
     case "${target}" in
+      riscv*-linux-*)
+        if ! type -P "${SPIKE:-spike}" >/dev/null; then
+          info "no-std test for ${target} requires spike (switched to build-only)"
+          subcmd=build
+        fi
+        ;;
       sparc*)
         if ! type -P "${TSIM_LEON3:-tsim-leon3}" >/dev/null; then
           info "no-std test for ${target} requires tsim-leon3 (switched to build-only)"
@@ -221,6 +228,18 @@ run() {
 
   local test_dir
   case "${target}" in
+    riscv*-linux-*)
+      test_dir=tests/no-std-linux
+      local xlen=''
+      case "${target}" in
+        riscv32*) xlen=32 ;;
+        riscv64*) xlen=64 ;;
+      esac
+      local isa_sim_dir
+      isa_sim_dir="$(dirname -- "$(dirname -- "$(type -P "${SPIKE:-spike}")")")"
+      export "CARGO_TARGET_${target_upper}_RUNNER"="${SPIKE:-spike} --isa=rv${xlen}gcv_zabha_zacas ${isa_sim_dir}/riscv${xlen}-linux-gnu/bin/pk"
+      target_rustflags+=" -C target-feature=+crt-static -C link-self-contained=no"
+      ;;
     arm* | thumb* | riscv* | loongarch*)
       case "${target}" in
         loongarch*)
@@ -356,15 +375,20 @@ run() {
             RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
             x_cargo "${args[@]}" --release "$@"
         fi
-        # Support for Zalasr extension requires LLVM 22+.
-        if [[ "${llvm_version}" -ge 22 ]]; then
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-zalasr" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
-            x_cargo "${args[@]}" "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-zalasr" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
-            x_cargo "${args[@]}" --release "$@"
-        fi
+        case "${target}" in
+          riscv*-linux-*) ;;
+          *)
+            # Support for Zalasr extension requires LLVM 22+.
+            if [[ "${llvm_version}" -ge 22 ]]; then
+              CARGO_TARGET_DIR="${target_dir}/no-std-test-zalasr" \
+                RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
+                x_cargo "${args[@]}" "$@"
+              CARGO_TARGET_DIR="${target_dir}/no-std-test-zalasr" \
+                RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
+                x_cargo "${args[@]}" --release "$@"
+            fi
+            ;;
+        esac
         ;;
       avr*)
         CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
