@@ -2825,6 +2825,7 @@
         str               x0, [x19]
         strb              w9, [x19, #0x8]
         ldr               x0, [x8]
+        mov               x8, x19
         ldp               x29, x30, [sp, #0xa8]
         ldr               x19, [sp, #0xa0]
         ldp               q14, q15, [sp, #0x80]
@@ -2897,6 +2898,7 @@
         adrp              x8, 0x0 <.wowthk$aa>
         stp               x0, x1, [x19]
         ldr               x0, [x8]
+        mov               x8, x19
         ldp               x29, x30, [sp, #0xa8]
         ldr               x19, [sp, #0xa0]
         ldp               q14, q15, [sp, #0x80]
@@ -2942,6 +2944,7 @@
         adrp              x8, 0x0 <.wowthk$aa>
         stp               x0, x1, [x19]
         ldr               x0, [x8]
+        mov               x8, x19
         ldp               x29, x30, [sp, #0xa8]
         ldr               x19, [sp, #0xa0]
         ldp               q14, q15, [sp, #0x80]
