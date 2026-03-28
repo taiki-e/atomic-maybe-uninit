@@ -301,7 +301,7 @@ macro_rules! __test_atomic {
                         }
                         eprintln!("load end={:?}", now.elapsed());
                         for v in v {
-                            assert!(set.contains(&v), "v={}", v);
+                            assert!(set.contains(&v), "load unexpected={}", v);
                         }
                     });
                 }
@@ -462,7 +462,7 @@ macro_rules! __test_atomic {
                             }
                             eprintln!("load end={:?}", now.elapsed());
                             for v in v {
-                                assert!(set.contains(&v), "v={}", v);
+                                assert!(set.contains(&v), "load unexpected={}", v);
                             }
                         });
                     }
@@ -482,7 +482,7 @@ macro_rules! __test_atomic {
                         }
                         eprintln!("swap end={:?}", now.elapsed());
                         for v in v {
-                            assert!(set.contains(&v), "v={}", v);
+                            assert!(set.contains(&v), "swap unexpected={}", v);
                         }
                     });
                 }
@@ -845,7 +845,7 @@ macro_rules! __test_atomic {
                             }
                             eprintln!("load end={:?}", now.elapsed());
                             for v in v {
-                                assert!(set.contains(&v), "v={}", v);
+                                assert!(set.contains(&v), "load unexpected={}", v);
                             }
                         });
                     }
@@ -870,7 +870,7 @@ macro_rules! __test_atomic {
                         }
                         eprintln!("compare_exchange end={:?}", now.elapsed());
                         for v in v {
-                            assert!(set.contains(&v), "v={}", v);
+                            assert!(set.contains(&v), "cas unexpected={}", v);
                         }
                     });
                 }
@@ -930,7 +930,7 @@ macro_rules! __test_atomic {
                             }
                             eprintln!("load end={:?}", now.elapsed());
                             for v in v {
-                                assert!(set.contains(&v), "v={}", v);
+                                assert!(set.contains(&v), "load unexpected={}", v);
                             }
                         });
                     }
@@ -950,9 +950,9 @@ macro_rules! __test_atomic {
                                     .assume_init();
                             }
                         }
-                        eprintln!("swap end={:?}", now.elapsed());
+                        eprintln!("fetch_update end={:?}", now.elapsed());
                         for v in v {
-                            assert!(set.contains(&v), "v={}", v);
+                            assert!(set.contains(&v), "fetch_update unexpected={}", v);
                         }
                     });
                 }
