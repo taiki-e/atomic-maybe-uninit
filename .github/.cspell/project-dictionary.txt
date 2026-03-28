@@ -19,6 +19,7 @@ bnez
 boundedly
 brne
 bswap
+buildx
 callthru
 casp
 cbnz

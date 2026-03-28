@@ -7,7 +7,7 @@ trap -- 'printf >&2 "%s\n" "${0##*/}: trapped SIGINT"; exit 1' SIGINT
 cd -- "$(dirname -- "$0")"/..
 
 # USAGE:
-#    GH_TOKEN=$(gh auth token) ./tools/tidy.sh
+#    GITHUB_TOKEN=$(gh auth token) ./tools/tidy.sh
 #
 # Note: This script requires the following tools:
 # - git 1.8+
@@ -989,6 +989,7 @@ if [[ ${#zizmor_targets[@]} -gt 0 ]]; then
     warn "this check is skipped on NetBSD/OpenBSD/Dragonfly/illumos/Solaris due to installing zizmor is hard on these platform"
   elif check_install zizmor; then
     # zizmor can also be used via pipx, but old version will be installed if glibc version is old.
+    # Do not use `zizmor -q .` here because it also attempts to check submodules.
     IFS=' '
     info "running \`zizmor -q ${zizmor_targets[*]}\`"
     IFS=$'\n\t'
