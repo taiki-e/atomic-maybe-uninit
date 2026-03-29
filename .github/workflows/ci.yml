@@ -43,7 +43,8 @@ jobs:
       contents: write # for creating branch for pr
       pull-requests: write # unused (used in `codegen-automerge: true` case)
       security-events: write # for github/codeql-action/*
-    secrets: inherit
+    secrets:
+      PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
 
   prepare:
     runs-on: ubuntu-slim
@@ -709,7 +710,7 @@ jobs:
           apt_packages=(
             device-tree-compiler
           )
-          if [[ "${{ matrix.rust }}" == "nightly"* ]]; then
+          if [[ "${RUST}" == "nightly"* ]]; then
             apt_packages+=(
               avr-libc
               gcc-avr
@@ -717,12 +718,12 @@ jobs:
               libc6-dev-m68k-cross
               simavr
             )
-            if [[ "${{ matrix.rust }}" != "nightly-2023-08-24" ]]; then
+            if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
               # TODO: QEMU 10.2-11.0 exits with 1
               apt_packages+=(
                 qemu-system-sparc
               )
-              if [[ "${{ matrix.rust }}" != "nightly-2025-08-06" ]]; then
+              if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
                 apt_packages+=(
                   libnspr4
                   mspdebug
@@ -743,10 +744,10 @@ jobs:
           )
           printf '%s\n' "${HOME}"/riscv-isa-sim/bin >>"${GITHUB_PATH}"
           printf '%s\n' "${HOME}"/gcc-riscv64-linux-musl/bin >>"${GITHUB_PATH}"
-          if [[ "${{ matrix.rust }}" == "nightly"* ]]; then
-            if [[ "${{ matrix.rust }}" != "nightly-2023-08-24" ]]; then
+          if [[ "${RUST}" == "nightly"* ]]; then
+            if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
               mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}
-              if [[ "${{ matrix.rust }}" != "nightly-2025-08-06" ]]; then
+              if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
                 # https://www.ti.com/tool/MSP430-GCC-OPENSOURCE
                 retry curl --proto '=https' --tlsv1.2 -fsSL https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-LlCjWuAbzH/9.3.1.2/msp430-gcc-9.3.1.11_linux64.tar.bz2 \
                   | tar xjf - --strip-components 1 -C "${HOME}"/msp430-gcc
@@ -775,7 +776,7 @@ jobs:
             docker rm -f -- qemu-user >/dev/null
             sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
             rm -rf -- ./qemu-user
-          elif [[ "${{ matrix.rust }}" == "stable" ]]; then
+          elif [[ "${RUST}" == "stable" ]]; then
             # TODO: Use the latest toolchain once upstream bug fixed.
             retry espup install --targets esp32,esp32s2,esp32s3 --toolchain-version 1.90.0
           fi
@@ -786,6 +787,7 @@ jobs:
           rm -rf -- ./qemu
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUST: ${{ matrix.rust }}
       - run: tools/no-std.sh
         env:
           ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
