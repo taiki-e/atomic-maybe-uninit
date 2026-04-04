@@ -45,8 +45,10 @@ eors
 espup
 fild
 fistp
+fstat
 gaisler
 getex
+gettime
 GRLIB
 Halfword
 hwsync

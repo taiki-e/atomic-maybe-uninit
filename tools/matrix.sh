@@ -287,6 +287,8 @@ for target in "${targets[@]}"; do
           1.9[1-4]) toolchain='' ;; # "symbol 'fma' is already defined" error fixed in Rust 1.95 https://github.com/rust-lang/compiler-builtins/pull/1066
           # TODO(hexagon): "symbol 'fma' is already defined" error fixed in Rust 1.95 https://github.com/rust-lang/compiler-builtins/pull/1066
           stable) toolchain='' ;;
+          # TODO(hexagon): undefined symbol: __fstat_time64/__stat_time64/__clock_gettime64
+          nightly) toolchain='nightly-2026-03-31' ;;
         esac
         ;;
       sparc64-unknown-linux-gnu)
