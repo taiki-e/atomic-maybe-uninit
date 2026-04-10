@@ -133,7 +133,7 @@ cfg_sel!({
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $suffix:tt, $l_u_suffix:tt) => {
+    ($ty:ident, $suffix:tt) => {
         #[cfg(atomic_maybe_uninit_no_ll_sc)]
         delegate_signed!(delegate_load_store, $ty);
         #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
@@ -214,7 +214,7 @@ macro_rules! atomic_load_store {
 #[rustfmt::skip]
 macro_rules! atomic {
     ($ty:ident, $suffix:tt, $ll_sc_suffix:tt) => {
-        atomic_load_store!($ty, $suffix, "");
+        atomic_load_store!($ty, $suffix);
         #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicSwap for $ty {
             #[inline]
@@ -320,7 +320,7 @@ macro_rules! atomic {
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
-        atomic_load_store!($ty, $suffix, "u");
+        atomic_load_store!($ty, $suffix);
         #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicSwap for $ty {
             #[inline]
