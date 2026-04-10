@@ -544,6 +544,46 @@ macro_rules! __test_atomic {
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
                     }
 
+                    for base in [0, !0] {
+                        for bit in 0..$ty::BITS {
+                            let flipped = base ^ (1 << bit);
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
+                            #[cfg(valgrind)]
+                            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                                mark_aligned_defined(&a);
+                            }
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(flipped),
+                                    MaybeUninit::new(flipped),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                base,
+                                "flipped bit: {bit}"
+                            );
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(flipped));
+                            #[cfg(valgrind)]
+                            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                                mark_aligned_defined(&a);
+                            }
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(base),
+                                    MaybeUninit::new(base),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                flipped,
+                                "flipped bit: {bit}"
+                            );
+                        }
+                    }
+
                     let mut u = MaybeUninit::uninit();
                     #[cfg(valgrind)]
                     mark_defined(&u);
@@ -622,6 +662,46 @@ macro_rules! __test_atomic {
                             }
                         }
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), x.wrapping_add(2));
+                    }
+
+                    for base in [0, !0] {
+                        for bit in 0..$ty::BITS {
+                            let flipped = base ^ (1 << bit);
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
+                            #[cfg(valgrind)]
+                            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                                mark_aligned_defined(&a);
+                            }
+                            assert_eq!(
+                                a.compare_exchange_weak(
+                                    MaybeUninit::new(flipped),
+                                    MaybeUninit::new(flipped),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                base,
+                                "flipped bit: {bit}"
+                            );
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(flipped));
+                            #[cfg(valgrind)]
+                            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                                mark_aligned_defined(&a);
+                            }
+                            assert_eq!(
+                                a.compare_exchange_weak(
+                                    MaybeUninit::new(base),
+                                    MaybeUninit::new(base),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                flipped,
+                                "flipped bit: {bit}"
+                            );
+                        }
                     }
                 }
             }

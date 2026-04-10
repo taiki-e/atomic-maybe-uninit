@@ -167,6 +167,38 @@ macro_rules! __test_atomic {
                         );
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
                     }
+
+                    for base in [0, !0] {
+                        for bit in 0..$ty::BITS {
+                            let flipped = base ^ (1 << bit);
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(flipped),
+                                    MaybeUninit::new(flipped),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                base,
+                                "flipped bit: {bit}"
+                            );
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(flipped));
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(base),
+                                    MaybeUninit::new(base),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                flipped,
+                                "flipped bit: {bit}"
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -196,6 +228,38 @@ macro_rules! __test_atomic {
                             }
                         }
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), x.wrapping_add(2));
+                    }
+
+                    for base in [0, !0] {
+                        for bit in 0..$ty::BITS {
+                            let flipped = base ^ (1 << bit);
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(flipped),
+                                    MaybeUninit::new(flipped),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                base,
+                                "flipped bit: {bit}"
+                            );
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(flipped));
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(base),
+                                    MaybeUninit::new(base),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                flipped,
+                                "flipped bit: {bit}"
+                            );
+                        }
                     }
                 }
             }
