@@ -165,7 +165,7 @@ delegate_signed!(delegate_all, u64);
 impl AtomicLoad for u64 {
     #[inline]
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, _order: Ordering) -> MaybeUninit<Self> {
-        let (prev_hi, prev_lo);
+        let (out_hi, out_lo);
         // SAFETY: the caller must uphold the safety contract.
         // CAS2 has SeqCst semantics.
         unsafe {
@@ -180,8 +180,8 @@ impl AtomicLoad for u64 {
                 in("a1") ptr_reg!(src2),
                 in("d2") 0_u32, // new1
                 in("d3") 0_u32, // new2
-                inout("d1") 0_u32 => prev_hi, // out1
-                inout("d0") 0_u32 => prev_lo, // out2
+                inout("d1") 0_u32 => out_hi, // out1
+                inout("d0") 0_u32 => out_lo, // out2
                 // Do not use `preserves_flags` because CAS2 modifies N, Z, V, and C bits in the condition codes.
                 options(nostack),
             );
@@ -191,12 +191,12 @@ impl AtomicLoad for u64 {
             //     src2 = in(reg_addr) ptr_reg!(src2),
             //     new1 = in(reg_data) 0_u32,
             //     new2 = in(reg_data) 0_u32,
-            //     out1 = inout(reg_data) 0_u32 => prev_hi,
-            //     out2 = inout(reg_data) 0_u32 => prev_lo,
+            //     out1 = inout(reg_data) 0_u32 => out_hi,
+            //     out2 = inout(reg_data) 0_u32 => out_lo,
             //     // Do not use `preserves_flags` because CAS2 modifies N, Z, V, and C bits in the condition codes.
             //     options(nostack),
             // );
-            MaybeUninit64 { pair: Pair { hi: prev_hi, lo: prev_lo } }.whole
+            MaybeUninit64 { pair: Pair { hi: out_hi, lo: out_lo } }.whole
         }
     }
 }

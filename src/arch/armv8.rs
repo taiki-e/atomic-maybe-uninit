@@ -314,7 +314,7 @@ impl AtomicLoad for u64 {
     #[inline]
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self> {
         debug_assert_atomic_unsafe_precondition!(src, u64);
-        let (prev_lo, prev_hi);
+        let (out_lo, out_hi);
 
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
@@ -324,9 +324,9 @@ impl AtomicLoad for u64 {
                         concat!("ld", $acquire, "exd r0, r1, [{src}]"), // atomic { r0:r1 = *src; EXCLUSIVE = src }
                         "clrex",                                        // EXCLUSIVE = None
                         src = in(reg) src,
-                        // prev pair - must be even-numbered and not R14
-                        lateout("r0") prev_lo,
-                        lateout("r1") prev_hi,
+                        // out pair - must be even-numbered and not R14
+                        lateout("r0") out_lo,
+                        lateout("r1") out_hi,
                         options(nostack, preserves_flags),
                     )
                 };
@@ -337,7 +337,7 @@ impl AtomicLoad for u64 {
                 Ordering::Acquire | Ordering::SeqCst => atomic_load!("a"),
                 _ => crate::utils::unreachable_unchecked(),
             }
-            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+            MaybeUninit64 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
         }
     }
 }

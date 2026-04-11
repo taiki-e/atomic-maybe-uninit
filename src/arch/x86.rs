@@ -336,19 +336,19 @@ impl AtomicLoad for u64 {
         //
         // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
         unsafe {
-            let (prev_lo, prev_hi);
+            let (out_lo, out_hi);
             asm!(
                 "lock cmpxchg8b qword ptr [edi]", // atomic { if *edi == edx:eax { ZF = 1; *edi = ecx:ebx } else { ZF = 0; edx:eax = *edi } }
                 // set old/new args of CMPXCHG8B to 0
                 in("ebx") 0_u32,
                 in("ecx") 0_u32,
-                inout("eax") 0_u32 => prev_lo,
-                inout("edx") 0_u32 => prev_hi,
+                inout("eax") 0_u32 => out_lo,
+                inout("edx") 0_u32 => out_hi,
                 in("edi") src,
                 // Do not use `preserves_flags` because CMPXCHG8B modifies the ZF flag.
                 options(nostack),
             );
-            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+            MaybeUninit64 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
         }
     }
 }
@@ -624,7 +624,7 @@ macro_rules! atomic128 {
                     //
                     // Refs: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
                     unsafe {
-                        let (prev_lo, prev_hi);
+                        let (out_lo, out_hi);
                         asm!(
                             concat!("mov ", $save, ", rbx"), // save rbx which is reserved by LLVM
                             "xor rbx, rbx", // zeroed rbx
@@ -633,13 +633,13 @@ macro_rules! atomic128 {
                             // set old/new args of CMPXCHG16B to 0 (rbx is zeroed after saved to rbx_tmp, to avoid xchg)
                             out($save) _,
                             in("rcx") 0_u64,
-                            inout("rax") 0_u64 => prev_lo,
-                            inout("rdx") 0_u64 => prev_hi,
+                            inout("rax") 0_u64 => out_lo,
+                            inout("rdx") 0_u64 => out_hi,
                             in($dst) src,
                             // Do not use `preserves_flags` because CMPXCHG16B modifies the ZF flag.
                             options(nostack),
                         );
-                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+                        MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
                     }
                 }
                 debug_assert_atomic_unsafe_precondition!(src, u128);

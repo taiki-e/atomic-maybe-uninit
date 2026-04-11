@@ -273,7 +273,7 @@ impl AtomicLoad for u64 {
     #[inline]
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, _order: Ordering) -> MaybeUninit<Self> {
         debug_assert_atomic_unsafe_precondition!(src, u64);
-        let (prev_lo, prev_hi);
+        let (out_lo, out_hi);
 
         // SAFETY: the caller must uphold the safety contract.
         // MEMD has SeqCst semantics according to LLVM 22's lowering.
@@ -281,11 +281,11 @@ impl AtomicLoad for u64 {
             asm!(
                 "{{ r3:2 = memd({src}) }}", // atomic { r2:r3 = *src }
                 src = in(reg) src,
-                out("r2") prev_lo,
-                out("r3") prev_hi,
+                out("r2") out_lo,
+                out("r3") out_hi,
                 options(nostack, preserves_flags),
             );
-            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+            MaybeUninit64 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
         }
     }
 }

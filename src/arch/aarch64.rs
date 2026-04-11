@@ -351,7 +351,7 @@ impl AtomicLoad for u128 {
     #[inline]
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self> {
         debug_assert_atomic_unsafe_precondition!(src, u128);
-        let (mut prev_lo, mut prev_hi);
+        let (mut out_lo, mut out_hi);
 
         #[cfg(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2"))]
         // SAFETY: the caller must guarantee that `dst` is valid for reads,
@@ -365,11 +365,11 @@ impl AtomicLoad for u128 {
             macro_rules! atomic_load_relaxed {
                 ($iap:tt, $dmb_ishld:tt) => {
                     asm!(
-                        concat!("ld", $iap, "p {prev_lo}, {prev_hi}, [{src}]"), // atomic { prev_lo:prev_hi = *src }
-                        $dmb_ishld,                                             // fence
+                        concat!("ld", $iap, "p {out_lo}, {out_hi}, [{src}]"), // atomic { out_lo:out_hi = *src }
+                        $dmb_ishld,                                           // fence
                         src = in(reg) ptr_reg!(src),
-                        prev_hi = lateout(reg) prev_hi,
-                        prev_lo = lateout(reg) prev_lo,
+                        out_hi = lateout(reg) out_hi,
+                        out_lo = lateout(reg) out_lo,
                         options(nostack, preserves_flags),
                     )
                 };
@@ -384,11 +384,11 @@ impl AtomicLoad for u128 {
                     asm!(
                         // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
                         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
-                        "ldar {tmp}, [{src}]",                  // atomic { tmp = *src }
-                        "ldiapp {prev_lo}, {prev_hi}, [{src}]", // atomic { prev_lo:prev_hi = *src }
+                        "ldar {tmp}, [{src}]",                // atomic { tmp = *src }
+                        "ldiapp {out_lo}, {out_hi}, [{src}]", // atomic { out_lo:out_hi = *src }
                         src = in(reg) ptr_reg!(src),
-                        prev_hi = lateout(reg) prev_hi,
-                        prev_lo = lateout(reg) prev_lo,
+                        out_hi = lateout(reg) out_hi,
+                        out_lo = lateout(reg) out_lo,
                         tmp = out(reg) _,
                         options(nostack, preserves_flags),
                     );
@@ -409,19 +409,19 @@ impl AtomicLoad for u128 {
                     asm!(
                         // ldar (or dmb ishld) is required to prevent reordering with preceding stlxp.
                         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108891
-                        "ldar {tmp}, [{src}]",               // atomic { tmp = *src }
-                        "ldp {prev_lo}, {prev_hi}, [{src}]", // atomic { prev_lo:prev_hi = *src }
-                        "dmb ishld",                         // fence
+                        "ldar {tmp}, [{src}]",             // atomic { tmp = *src }
+                        "ldp {out_lo}, {out_hi}, [{src}]", // atomic { out_lo:out_hi = *src }
+                        "dmb ishld",                       // fence
                         src = in(reg) ptr_reg!(src),
-                        prev_hi = lateout(reg) prev_hi,
-                        prev_lo = lateout(reg) prev_lo,
+                        out_hi = lateout(reg) out_hi,
+                        out_lo = lateout(reg) out_lo,
                         tmp = out(reg) _,
                         options(nostack, preserves_flags),
                     );
                 }
                 _ => crate::utils::unreachable_unchecked(),
             }
-            MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+            MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
         }
         #[cfg(not(any(target_feature = "lse2", atomic_maybe_uninit_target_feature = "lse2")))]
         // SAFETY: the caller must uphold the safety contract.
@@ -434,8 +434,8 @@ impl AtomicLoad for u128 {
                         concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"), // atomic { if *src == x2:x3 { *dst = x2:x3 } else { x2:x3 = *dst } }
                         src = in(reg) ptr_reg!(src),
                         // must be allocated to even/odd register pair
-                        inout("x2") 0_u64 => prev_lo,
-                        inout("x3") 0_u64 => prev_hi,
+                        inout("x2") 0_u64 => out_lo,
+                        inout("x3") 0_u64 => out_hi,
                         options(nostack, preserves_flags),
                     )
                 };
@@ -445,13 +445,13 @@ impl AtomicLoad for u128 {
                 ($acquire:tt, $release:tt) => {
                     asm!(
                         "2:", // 'retry:
-                            concat!("ld", $acquire, "xp {prev_lo}, {prev_hi}, [{src}]"),        // atomic { prev_lo:prev_hi = *src; EXCLUSIVE = src }
+                            concat!("ld", $acquire, "xp {out_lo}, {out_hi}, [{src}]"),        // atomic { out_lo:out_hi = *src; EXCLUSIVE = src }
                             // write back to ensure atomicity
-                            concat!("st", $release, "xp {r:w}, {prev_lo}, {prev_hi}, [{src}]"), // atomic { if EXCLUSIVE == src { *src = prev_lo:prev_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
-                            "cbnz {r:w}, 2b",                                                   // if r != 0 { jump 'retry }
+                            concat!("st", $release, "xp {r:w}, {out_lo}, {out_hi}, [{src}]"), // atomic { if EXCLUSIVE == src { *src = out_lo:out_hi; r = 0 } else { r = 1 }; EXCLUSIVE = None }
+                            "cbnz {r:w}, 2b",                                                 // if r != 0 { jump 'retry }
                         src = in(reg) ptr_reg!(src),
-                        prev_lo = out(reg) prev_lo,
-                        prev_hi = out(reg) prev_hi,
+                        out_lo = out(reg) out_lo,
+                        out_hi = out(reg) out_hi,
                         r = out(reg) _,
                         options(nostack, preserves_flags),
                     )
@@ -464,7 +464,7 @@ impl AtomicLoad for u128 {
                 Ordering::SeqCst => atomic_load!("a", "l"),
                 _ => crate::utils::unreachable_unchecked(),
             }
-            MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+            MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
         }
     }
 }

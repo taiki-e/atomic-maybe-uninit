@@ -1077,16 +1077,16 @@ impl AtomicLoad for u64 {
         ))]
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
-            let (prev_lo, prev_hi);
+            let (out_lo, out_hi);
             macro_rules! atomic_load {
                 ($asm:ident, $acquire:expr) => {
                     $asm!(
                         "ldrexd r0, r1, [{src}]", // atomic { r0:r1 = *src; EXCLUSIVE = src }
                         $acquire,                 // fence
                         src = in(reg) src,
-                        // prev pair - must be even-numbered and not R14
-                        lateout("r0") prev_lo,
-                        lateout("r1") prev_hi,
+                        // out pair - must be even-numbered and not R14
+                        lateout("r0") out_lo,
+                        lateout("r1") out_hi,
                         options(nostack, preserves_flags),
                     )
                 };
@@ -1097,7 +1097,7 @@ impl AtomicLoad for u64 {
                 Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
                 _ => crate::utils::unreachable_unchecked(),
             }
-            MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+            MaybeUninit64 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
         }
         #[cfg(not(all(
             any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
