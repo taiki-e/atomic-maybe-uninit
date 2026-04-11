@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Optimize 128-bit swap on s390x.
+
 ## [0.3.17] - 2026-03-11
 
 - Improve support for thumbv8m.main. ([b083741](https://github.com/taiki-e/atomic-maybe-uninit/commit/b083741c25bcee1194c7d095cad5c074ab0b49b5))

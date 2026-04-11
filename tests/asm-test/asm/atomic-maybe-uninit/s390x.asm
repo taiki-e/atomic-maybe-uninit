@@ -2758,8 +2758,8 @@ asm_test::swap::u128::acqrel:
         stmg              %r12,%r15,96(%r15)
         lg                %r12,0(%r4)
         lg                %r13,8(%r4)
-        lg                %r0,8(%r3)
-        lg                %r1,0(%r3)
+        lg                %r1,8(%r3)
+        lg                %r0,0(%r3)
 0:
         cdsg              %r0,%r12,0(%r3)
         jl                0b
@@ -2772,8 +2772,8 @@ asm_test::swap::u128::seqcst:
         stmg              %r12,%r15,96(%r15)
         lg                %r12,0(%r4)
         lg                %r13,8(%r4)
-        lg                %r0,8(%r3)
-        lg                %r1,0(%r3)
+        lg                %r1,8(%r3)
+        lg                %r0,0(%r3)
 0:
         cdsg              %r0,%r12,0(%r3)
         jl                0b
@@ -2786,8 +2786,8 @@ asm_test::swap::u128::acquire:
         stmg              %r12,%r15,96(%r15)
         lg                %r12,0(%r4)
         lg                %r13,8(%r4)
-        lg                %r0,8(%r3)
-        lg                %r1,0(%r3)
+        lg                %r1,8(%r3)
+        lg                %r0,0(%r3)
 0:
         cdsg              %r0,%r12,0(%r3)
         jl                0b
@@ -2800,8 +2800,8 @@ asm_test::swap::u128::relaxed:
         stmg              %r12,%r15,96(%r15)
         lg                %r12,0(%r4)
         lg                %r13,8(%r4)
-        lg                %r0,8(%r3)
-        lg                %r1,0(%r3)
+        lg                %r1,8(%r3)
+        lg                %r0,0(%r3)
 0:
         cdsg              %r0,%r12,0(%r3)
         jl                0b
@@ -2814,8 +2814,8 @@ asm_test::swap::u128::release:
         stmg              %r12,%r15,96(%r15)
         lg                %r12,0(%r4)
         lg                %r13,8(%r4)
-        lg                %r0,8(%r3)
-        lg                %r1,0(%r3)
+        lg                %r1,8(%r3)
+        lg                %r0,0(%r3)
 0:
         cdsg              %r0,%r12,0(%r3)
         jl                0b

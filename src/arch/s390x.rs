@@ -349,8 +349,8 @@ impl AtomicSwap for u128 {
         // CDSG has SeqCst semantics.
         unsafe {
             asm!(
-                "lg %r0, 8({dst})",             // atomic { r0 = *dst.byte_add(8) }
-                "lg %r1, 0({dst})",             // atomic { r1 = *dst }
+                "lg %r1, 8({dst})",             // atomic { r1 = *dst.byte_add(8) }
+                "lg %r0, 0({dst})",             // atomic { r0 = *dst }
                 "2:", // 'retry:
                     "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:r13 } else { cc = 1; r0:r1 = *dst } }
                     "jl 2b",                    // if cc == 1 { jump 'retry }
