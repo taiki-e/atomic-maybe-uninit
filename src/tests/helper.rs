@@ -242,28 +242,29 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_load_store(x: $ty, y: $ty) -> bool {
-                let mut rng = fastrand::Rng::new();
                 for base in [0, !0] {
-                    let mut arr = Array::new(base, &mut rng);
-                    for (load_order, store_order) in
-                        LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS)
-                    {
-                        unsafe {
-                            arr.set(x);
-                            let a = arr.get();
-                            assert_eq!(a.load(load_order).assume_init(), x);
-                            a.store(MaybeUninit::new(y), store_order);
-                            assert_eq!(a.load(load_order).assume_init(), y);
-                            a.store(MaybeUninit::new(x), store_order);
-                            assert_eq!(a.load(load_order).assume_init(), x);
-                            let v = MaybeUninit::uninit();
-                            #[cfg(valgrind)]
-                            if IMP_ARM_LINUX && mem::size_of::<$ty>() == 8 {
-                                mark_defined(&v);
+                    for idx in Array::<$ty>::indices() {
+                        let mut arr = Array::new(base, idx);
+                        for (load_order, store_order) in
+                            LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS)
+                        {
+                            unsafe {
+                                arr.set(x);
+                                let a = arr.get();
+                                assert_eq!(a.load(load_order).assume_init(), x);
+                                a.store(MaybeUninit::new(y), store_order);
+                                assert_eq!(a.load(load_order).assume_init(), y);
+                                a.store(MaybeUninit::new(x), store_order);
+                                assert_eq!(a.load(load_order).assume_init(), x);
+                                let v = MaybeUninit::uninit();
+                                #[cfg(valgrind)]
+                                if IMP_ARM_LINUX && mem::size_of::<$ty>() == 8 {
+                                    mark_defined(&v);
+                                }
+                                a.store(v, store_order);
+                                let _v = a.load(load_order);
+                                arr.assert();
                             }
-                            a.store(v, store_order);
-                            let _v = a.load(load_order);
-                            arr.assert();
                         }
                     }
                 }
@@ -381,27 +382,28 @@ macro_rules! __test_atomic {
                 {
                     return true;
                 }
-                let mut rng = fastrand::Rng::new();
                 for base in [0, !0] {
-                    let mut arr = Array::new(base, &mut rng);
-                    for order in SWAP_ORDERINGS {
-                        unsafe {
-                            arr.set(x);
-                            let a = arr.get();
-                            assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
-                            assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
-                            let v = MaybeUninit::uninit();
-                            #[cfg(valgrind)]
-                            if cfg!(target_arch = "aarch64")
-                                && (cfg!(not(target_feature = "lse"))
-                                    || cfg!(not(target_feature = "lse128")) && mem::size_of::<$ty>() == 16)
-                                || cfg!(target_arch = "arm")
-                                || cfg!(target_arch = "s390x") && mem::size_of::<$ty>() == 16
-                            {
-                                mark_defined(&v);
+                    for idx in Array::<$ty>::indices() {
+                        let mut arr = Array::new(base, idx);
+                        for order in SWAP_ORDERINGS {
+                            unsafe {
+                                arr.set(x);
+                                let a = arr.get();
+                                assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
+                                assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
+                                let v = MaybeUninit::uninit();
+                                #[cfg(valgrind)]
+                                if cfg!(target_arch = "aarch64")
+                                    && (cfg!(not(target_feature = "lse"))
+                                        || cfg!(not(target_feature = "lse128")) && mem::size_of::<$ty>() == 16)
+                                    || cfg!(target_arch = "arm")
+                                    || cfg!(target_arch = "s390x") && mem::size_of::<$ty>() == 16
+                                {
+                                    mark_defined(&v);
+                                }
+                                assert_eq!(a.swap(v, order).assume_init(), x);
+                                arr.assert();
                             }
-                            assert_eq!(a.swap(v, order).assume_init(), x);
-                            arr.assert();
                         }
                     }
                 }
@@ -767,55 +769,57 @@ macro_rules! __test_atomic {
                     }
                 };
                 for base in [0, !0] {
-                    let mut arr = Array::new(base, &mut rng);
-                    for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                        unsafe {
-                            arr.set(x);
-                            let a = arr.get();
-                            assert_eq!(
-                                a.compare_exchange(
-                                    MaybeUninit::new(x),
-                                    MaybeUninit::new(y),
-                                    success,
-                                    failure
-                                )
-                                .unwrap()
-                                .assume_init(),
-                                x
-                            );
-                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
-                            assert_eq!(
-                                a.compare_exchange(
-                                    MaybeUninit::new(z),
-                                    MaybeUninit::new(z),
-                                    success,
-                                    failure
-                                )
-                                .unwrap_err()
-                                .assume_init(),
-                                y
-                            );
-                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
-                            let v = MaybeUninit::uninit();
-                            #[cfg(valgrind)]
-                            if cfg!(target_arch = "arm") && mem::size_of::<$ty>() == 8
-                                || cfg!(target_arch = "aarch64") && cfg!(not(target_feature = "lse"))
-                            {
-                                mark_defined(&v);
+                    for idx in Array::<$ty>::indices() {
+                        let mut arr = Array::new(base, idx);
+                        for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+                            unsafe {
+                                arr.set(x);
+                                let a = arr.get();
+                                assert_eq!(
+                                    a.compare_exchange(
+                                        MaybeUninit::new(x),
+                                        MaybeUninit::new(y),
+                                        success,
+                                        failure
+                                    )
+                                    .unwrap()
+                                    .assume_init(),
+                                    x
+                                );
+                                assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                                assert_eq!(
+                                    a.compare_exchange(
+                                        MaybeUninit::new(z),
+                                        MaybeUninit::new(z),
+                                        success,
+                                        failure
+                                    )
+                                    .unwrap_err()
+                                    .assume_init(),
+                                    y
+                                );
+                                assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                                let v = MaybeUninit::uninit();
+                                #[cfg(valgrind)]
+                                if cfg!(target_arch = "arm") && mem::size_of::<$ty>() == 8
+                                    || cfg!(target_arch = "aarch64") && cfg!(not(target_feature = "lse"))
+                                {
+                                    mark_defined(&v);
+                                }
+                                assert_eq!(
+                                    a.compare_exchange(
+                                        MaybeUninit::new(y),
+                                        v,
+                                        success,
+                                        failure
+                                    )
+                                    .unwrap()
+                                    .assume_init(),
+                                    y
+                                );
+                                let _v = a.load(Ordering::Relaxed);
+                                arr.assert();
                             }
-                            assert_eq!(
-                                a.compare_exchange(
-                                    MaybeUninit::new(y),
-                                    v,
-                                    success,
-                                    failure
-                                )
-                                .unwrap()
-                                .assume_init(),
-                                y
-                            );
-                            let _v = a.load(Ordering::Relaxed);
-                            arr.assert();
                         }
                     }
                 }
@@ -835,36 +839,38 @@ macro_rules! __test_atomic {
                     }
                 };
                 for base in [0, !0] {
-                    let mut arr = Array::new(base, &mut rng);
-                    for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                        unsafe {
-                            arr.set(x);
-                            let a = arr.get();
-                            assert_eq!(
-                                a.fetch_update(success, failure, |_| Some(MaybeUninit::new(y)))
-                                .unwrap()
-                                .assume_init(),
-                                x
-                            );
-                            assert_eq!(
-                                a.fetch_update(success, failure, |_| Some(MaybeUninit::new(z)))
-                                .unwrap()
-                                .assume_init(),
-                                y
-                            );
-                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
-                            assert_eq!(
-                                a.fetch_update(success, failure, |z| if z.assume_init() == y {
-                                    Some(z)
-                                } else {
-                                    None
-                                })
-                                .unwrap_err()
-                                .assume_init(),
-                                z
-                            );
-                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
-                            arr.assert();
+                    for idx in Array::<$ty>::indices() {
+                        let mut arr = Array::new(base, idx);
+                        for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+                            unsafe {
+                                arr.set(x);
+                                let a = arr.get();
+                                assert_eq!(
+                                    a.fetch_update(success, failure, |_| Some(MaybeUninit::new(y)))
+                                    .unwrap()
+                                    .assume_init(),
+                                    x
+                                );
+                                assert_eq!(
+                                    a.fetch_update(success, failure, |_| Some(MaybeUninit::new(z)))
+                                    .unwrap()
+                                    .assume_init(),
+                                    y
+                                );
+                                assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
+                                assert_eq!(
+                                    a.fetch_update(success, failure, |z| if z.assume_init() == y {
+                                        Some(z)
+                                    } else {
+                                        None
+                                    })
+                                    .unwrap_err()
+                                    .assume_init(),
+                                    z
+                                );
+                                assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
+                                arr.assert();
+                            }
                         }
                     }
                 }
@@ -1243,7 +1249,18 @@ pub(crate) struct Array<T: Primitive> {
     idx: usize,
 }
 impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
-    pub(crate) fn new(base: T, rng: &mut fastrand::Rng) -> Self {
+    pub(crate) fn indices() -> core::ops::Range<usize> {
+        match mem::size_of::<T>() {
+            // 0 1 2 3 4 5 6 7 8 9
+            //       ^ ^ ^ ^
+            1 => 3..7,
+            // 0 1 2 3 4 5 6 7 8 9
+            //       ^ ^
+            _ => 3..5,
+        }
+    }
+
+    pub(crate) fn new(base: T, idx: usize) -> Self {
         Self {
             arr: Box::new(Align16([
                 AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
@@ -1258,9 +1275,7 @@ impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
                 AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
             ])),
             base,
-            // 0 1 2 3 4 5 6 7 8 9
-            //       ^ ^ ^ ^
-            idx: rng.usize(3..=6),
+            idx,
         }
     }
     pub(crate) fn get(&self) -> &AtomicMaybeUninit<T> {
@@ -1291,13 +1306,16 @@ impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
     pub(crate) unsafe fn assert(&self) {
         #[cfg(valgrind)]
         mark_defined(&self.arr.0);
-        for i in (0..self.idx).chain(self.idx + 1..self.arr.0.len()) {
-            assert_eq!(
-                unsafe { self.arr.0[i].load(Ordering::Relaxed).assume_init() },
-                self.base,
-                "value at index {i} has changed, but must not change other than value at index {}",
-                self.idx,
-            );
+        let base = self.base;
+        let idx = self.idx;
+        for i in 0..self.arr.0.len() {
+            if i != idx {
+                assert_eq!(
+                    unsafe { (*self.arr.0[i].as_ptr()).assume_init() },
+                    base,
+                    "value at index {i} has changed, but must not change other than value at index {idx}"
+                );
+            }
         }
     }
 }
