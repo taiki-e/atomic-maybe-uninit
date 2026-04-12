@@ -1046,6 +1046,15 @@ atomic!(u32, "");
 // Refs:
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/LDREXD
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/STREXD
+//
+// Section A3.5.3 "Atomicity in the ARM architecture" of ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition says:
+// > Memory accesses caused by an LDREXD/STREXD to a doubleword-aligned location for which the STREXD
+// > succeeds cause single-copy atomic updates of the doubleword being accessed.
+// > Note
+// > The way to atomically load two 32-bit quantities is to perform an LDREXD/STREXD sequence, reading and writing
+// > the same value, for which the STREXD succeeds, and use the read values.
+// However, both GCC and LLVM use LDREXD without corresponding STREXD for load.
+// https://godbolt.org/z/aa9GYd45a
 
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 delegate_signed!(delegate_all, u64);

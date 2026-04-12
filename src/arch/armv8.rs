@@ -306,6 +306,10 @@ atomic!(u32, "");
 
 // -----------------------------------------------------------------------------
 // 64-bit atomics
+//
+// Unlike AArch64's LDXP, Armv8 AArch32's LDREXD is atomic without corresponding STREXD.
+// See Arm® Architecture Reference Manual for A-profile architecture
+// Section E2.2 "Atomicity in the Arm architecture" for more.
 
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 delegate_signed!(delegate_all, u64);
