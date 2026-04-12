@@ -160,6 +160,7 @@ uart
 ultrasparc
 umax
 umin
+unguaranteed
 usart
 uxtb
 uxth

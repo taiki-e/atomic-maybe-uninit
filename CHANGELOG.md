@@ -12,7 +12,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Optimize 128-bit swap on s390x.
+- Remove reliance on unguaranteed behavior of the compiler. ([ad48602](https://github.com/taiki-e/atomic-maybe-uninit/commit/ad48602ec2f57132baed41d6d86b5b912bd2e59a))
+
+- Optimize swap/CAS on Hexagon. ([996e7ee](https://github.com/taiki-e/atomic-maybe-uninit/commit/996e7ee6275b8c04eb121918fd76678275932498))
+
+- Optimize 128-bit swap on s390x. ([78e6f18](https://github.com/taiki-e/atomic-maybe-uninit/commit/78e6f18c483d61f87a0223f5722e33ef048b92c8))
 
 ## [0.3.17] - 2026-03-11
 
