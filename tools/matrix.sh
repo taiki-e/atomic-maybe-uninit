@@ -21,75 +21,75 @@ bail() {
 }
 
 targets=(
-  # x86_64
-  x86_64-unknown-linux-gnu
-  x86_64-apple-darwin
-  x86_64-pc-windows-msvc
+  # # x86_64
+  # x86_64-unknown-linux-gnu
+  # x86_64-apple-darwin
+  # x86_64-pc-windows-msvc
 
-  # x86
-  i586-unknown-linux-gnu
-  i686-unknown-linux-gnu
+  # # x86
+  # i586-unknown-linux-gnu
+  # i686-unknown-linux-gnu
 
-  # aarch64
-  aarch64-unknown-linux-gnu    # Linux little
-  aarch64-apple-darwin         # macOS
-  aarch64-pc-windows-msvc      # Windows
-  aarch64_be-unknown-linux-gnu # Linux big
+  # # aarch64
+  # aarch64-unknown-linux-gnu    # Linux little
+  # aarch64-apple-darwin         # macOS
+  # aarch64-pc-windows-msvc      # Windows
+  # aarch64_be-unknown-linux-gnu # Linux big
 
-  # arm64ec
-  arm64ec-pc-windows-msvc
+  # # arm64ec
+  # arm64ec-pc-windows-msvc
 
-  # arm
-  armv4t-unknown-linux-gnueabi        # Armv4T A32
-  armv5te-unknown-linux-gnueabi       # Armv5TE A32
-  arm-unknown-linux-gnueabi           # Armv6K A32
-  armv7-unknown-linux-gnueabi         # Armv7 A32 sf
-  armv7-unknown-linux-gnueabihf       # Armv7 A32 hf
-  thumbv7neon-unknown-linux-gnueabihf # Armv7 T32 hf
-  armeb-unknown-linux-gnueabi         # Armv8 big (BE-8) A32 sf
+  # # arm
+  # armv4t-unknown-linux-gnueabi        # Armv4T A32
+  # armv5te-unknown-linux-gnueabi       # Armv5TE A32
+  # arm-unknown-linux-gnueabi           # Armv6K A32
+  # armv7-unknown-linux-gnueabi         # Armv7 A32 sf
+  # armv7-unknown-linux-gnueabihf       # Armv7 A32 hf
+  # thumbv7neon-unknown-linux-gnueabihf # Armv7 T32 hf
+  # armeb-unknown-linux-gnueabi         # Armv8 big (BE-8) A32 sf
 
-  # csky
-  csky-unknown-linux-gnuabiv2
-  csky-unknown-linux-gnuabiv2hf
+  # # csky
+  # csky-unknown-linux-gnuabiv2
+  # csky-unknown-linux-gnuabiv2hf
 
-  # hexagon
-  hexagon-unknown-linux-musl
+  # # hexagon
+  # hexagon-unknown-linux-musl
 
-  # loongarch
-  # loongarch32-unknown-linux-gnu # TODO(loongarch32): https://inbox.sourceware.org/libc-alpha/20251225024222.1375100-6-mengqinggang@loongson.cn/t/
-  loongarch64-unknown-linux-gnu
+  # # loongarch
+  # # loongarch32-unknown-linux-gnu # TODO(loongarch32): https://inbox.sourceware.org/libc-alpha/20251225024222.1375100-6-mengqinggang@loongson.cn/t/
+  # loongarch64-unknown-linux-gnu
 
-  # m68k
-  # m68k-unknown-linux-gnu # TODO(m68k): relocation truncated to fit: R_68K_PC16 against
+  # # m68k
+  # # m68k-unknown-linux-gnu # TODO(m68k): relocation truncated to fit: R_68K_PC16 against
 
-  # mips
-  mips-unknown-linux-gnu
-  mipsel-unknown-linux-gnu
-  mips64-unknown-linux-gnuabi64
-  mips64el-unknown-linux-gnuabi64
-  mipsisa32r6-unknown-linux-gnu
-  mipsisa32r6el-unknown-linux-gnu
-  mipsisa64r6-unknown-linux-gnuabi64
-  mipsisa64r6el-unknown-linux-gnuabi64
+  # # mips
+  # mips-unknown-linux-gnu
+  # mipsel-unknown-linux-gnu
+  # mips64-unknown-linux-gnuabi64
+  # mips64el-unknown-linux-gnuabi64
+  # mipsisa32r6-unknown-linux-gnu
+  # mipsisa32r6el-unknown-linux-gnu
+  # mipsisa64r6-unknown-linux-gnuabi64
+  # mipsisa64r6el-unknown-linux-gnuabi64
 
-  # powerpc
-  powerpc-unknown-linux-gnu
-  powerpc64-unknown-linux-gnu
-  powerpc64le-unknown-linux-gnu
+  # # powerpc
+  # powerpc-unknown-linux-gnu
+  # powerpc64-unknown-linux-gnu
+  # powerpc64le-unknown-linux-gnu
 
-  # riscv
-  riscv32gc-unknown-linux-gnu
-  riscv64gc-unknown-linux-gnu
+  # # riscv
+  # riscv32gc-unknown-linux-gnu
+  # riscv64gc-unknown-linux-gnu
 
-  # s390x
-  s390x-unknown-linux-gnu
+  # # s390x
+  # s390x-unknown-linux-gnu
 
   # sparc
   sparc-unknown-linux-gnu
-  sparc64-unknown-linux-gnu
+  # sparc64-unknown-linux-gnu
 
-  # xtensa
-  # xtensa-unknown-linux-gnu # TODO(xtensa): https://wiki.linux-xtensa.org
+  # # xtensa
+  # # xtensa-unknown-linux-gnu # TODO(xtensa): https://wiki.linux-xtensa.org
 )
 
 # See also LLVM version table in https://github.com/taiki-e/portable-atomic/blob/HEAD/tools/matrix.sh.
@@ -121,7 +121,7 @@ min_nightly_toolchain() {
     csky*) toolchain=nightly-2025-02-14 ;;    # Rust 1.86, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
     hexagon*) toolchain=nightly-2024-11-29 ;; # Rust 1.85, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
     sparc64*) toolchain=nightly-2024-11-08 ;; # Rust 1.84, LLVM 19 (oldest version we can use asm_experimental_arch on this target)
-    sparc*) toolchain=nightly-2025-02-18 ;;   # Rust 1.87, LLVM 20 (Workaround by -v8plus only works on LLVM 20+)
+    sparc*) toolchain='' ;;
     mipsisa*) toolchain=nightly-2023-09-20 ;; # Rust 1.74, LLVM 17 (cannot built with nightly-2023-08-24 due to compiler failure from libc when building std)
     *) toolchain=nightly-2023-08-24 ;;        # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
   esac
@@ -289,6 +289,11 @@ for target in "${targets[@]}"; do
           stable) toolchain='' ;;
           # TODO(hexagon): undefined symbol: __fstat_time64/__stat_time64/__clock_gettime64
           nightly) toolchain='nightly-2026-03-31' ;;
+        esac
+        ;;
+      sparc-unknown-linux-gnu)
+        case "${toolchain}" in
+          nightly) toolchain='nightly-2026-03-07' ;;
         esac
         ;;
       sparc64-unknown-linux-gnu)
