@@ -255,7 +255,7 @@ macro_rules! atomic_sub_word {
                                     "wsr {tmp}, scompare1",     // scompare1 = tmp
                                     "xor {out}, {tmp}, {val}",  // out = tmp ^ val
                                     "and {out}, {out}, {mask}", // out &= mask
-                                    "xor {out}, {out}, {tmp}",  // out ^= out
+                                    "xor {out}, {out}, {tmp}",  // out ^= tmp
                                     "s32c1i {out}, {dst}, 0",   // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
                                     "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
                                 $acquire,                       // fence

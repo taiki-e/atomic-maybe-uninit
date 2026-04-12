@@ -31,7 +31,7 @@ macro_rules! sll_w {
         // SAFETY: calling SLL.W is safe
         unsafe {
             asm!(
-                "sll.w {val}, {val}, {shift}", // val <<= shift & 31
+                "sll.w {val}, {val}, {shift}", // val = sign_extend(val << (shift & 31))
                 val = inout(reg) val,
                 shift = in(reg) shift,
                 options(pure, nomem, nostack, preserves_flags),
@@ -45,7 +45,7 @@ fn srl_w(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
     // SAFETY: calling SRL.W is safe
     unsafe {
         asm!(
-            "srl.w {val}, {val}, {shift}", // val >>= shift & 31
+            "srl.w {val}, {val}, {shift}", // val = sign_extend(val >> (shift & 31))
             val = inout(reg) val,
             shift = in(reg) shift,
             options(pure, nomem, nostack, preserves_flags),
@@ -340,7 +340,7 @@ macro_rules! atomic_sub_word {
                         ($failure_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    "ll.w {out}, {dst}, 0",      // atomic { tmp = sign_extend(*dst); LL = dst }
+                                    "ll.w {out}, {dst}, 0",      // atomic { out = sign_extend(*dst); LL = dst }
                                     "and {tmp}, {out}, {mask}",  // tmp = out & mask
                                     "bne {tmp}, {old}, 3f",      // if tmp != old { jump 'cmp-fail }
                                     "andn {tmp}, {out}, {mask}", // tmp = out & !mask

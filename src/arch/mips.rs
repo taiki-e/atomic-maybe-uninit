@@ -45,7 +45,7 @@ cfg_sel!({
                     asm!(
                         ".set push",
                         ".set noat",
-                        "sllv {val}, {val}, {shift}", // val <<= shift & 31
+                        "sllv {val}, {val}, {shift}", // val = sign_extend(val << (shift & 31))
                         ".set pop",
                         val = inout(reg) val,
                         shift = in(reg) shift,
@@ -62,7 +62,7 @@ cfg_sel!({
                 asm!(
                     ".set push",
                     ".set noat",
-                    "srlv {val}, {val}, {shift}", // val >>= shift & 31
+                    "srlv {val}, {val}, {shift}", // val = sign_extend(val >> (shift & 31))
                     ".set pop",
                     val = inout(reg) val,
                     shift = in(reg) shift,

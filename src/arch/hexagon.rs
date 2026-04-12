@@ -38,7 +38,7 @@ fn asl(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
 }
 #[inline(always)]
 fn lsr(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
-    // SAFETY: calling ASR is safe
+    // SAFETY: calling LSR is safe
     unsafe {
         asm!(
             "{val} = lsr({val},{shift})", // val >>= shift

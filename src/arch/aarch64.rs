@@ -215,7 +215,7 @@ macro_rules! atomic {
                                 // so copy the `old`'s value for later comparison.
                                 concat!("mov {out", $val_modifier, "}, {old", $val_modifier, "}"),                                           // out = old
                                 concat!("cas", $acquire, $release, $suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"), // atomic { if *dst == out { *dst = new } else { out = zero_extend(*dst) } }
-                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),                                 // if out == old { Z = 1 } else { Z = 0 }
+                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),                                 // if zero_extend(out) == zero_extend(old) { Z = 1 } else { Z = 0 }
                                 "cset {r:w}, eq",                                                                                            // r = Z
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
@@ -235,7 +235,7 @@ macro_rules! atomic {
                             asm!(
                                 "2:", // 'retry:
                                     concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
-                                    concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),         // if out == old { Z = 1 } else { Z = 0 }
+                                    concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),         // if zero_extend(out) == zero_extend(old) { Z = 1 } else { Z = 0 }
                                     "b.ne 3f",                                                                           // if Z == 0 { jump 'cmp-fail }
                                     concat!("st", $release, "xr", $suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                     "cbnz {r:w}, 2b",                                                                    // if r != 0 { jump 'retry }
@@ -281,7 +281,7 @@ macro_rules! atomic {
                         ($acquire:tt, $release:tt, $msvc_fence:tt) => {
                             asm!(
                                 concat!("ld", $acquire, "xr", $suffix, " {out", $val_modifier, "}, [{dst}]"),        // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
-                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),         // if out == old { Z = 1 } else { Z = 0 }
+                                concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),         // if zero_extend(out) == zero_extend(old) { Z = 1 } else { Z = 0 }
                                 "b.ne 3f",                                                                           // if Z == 0 { jump 'cmp-fail }
                                 concat!("st", $release, "xr", $suffix, " {r:w}, {new", $val_modifier, "}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                 if_any!($msvc_fence, "cbnz {r:w}, 4f"),                                              // if r != 0 { jump 'end }

@@ -417,8 +417,8 @@ macro_rules! atomic_swap_v9 {
                                 "2:", // 'retry:
                                     "mov {val}, {out}",                         // out = val
                                     cas!($suffix, "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
-                                    "cmp {out}, {tmp}",                         // if out == tmp { cc.Z = true } else { cc.Z = false }
-                                    bne_a!($cc, "2b"),                          // if !cc.Z {
+                                    "cmp {out}, {tmp}",                         // icc.Z = out[:31] == tmp[:31]; xcc.Z = out == tmp
+                                    bne_a!($cc, "2b"),                          // if !$cc.Z {
                                       "mov {out}, {tmp}",                       //   tmp = out; jump 'retry }
                                 $acquire,                                       // fence
                                 dst = in(reg) ptr_reg!(dst),
@@ -472,9 +472,9 @@ macro_rules! atomic {
                                 $leon_nop, // Workaround for errata (GRLIB-TN-0010).
                                 $release,                                   // fence
                                 cas!($suffix, "[{dst}]", "{old}", "{out}"), // atomic { _x = *dst; if _x == old { *dst = out }; out = zero_extend(_x) }
-                                "cmp {out}, {old}",                         // if out == old { cc.Z = true } else { cc.Z = false }
+                                "cmp {out}, {old}",                         // icc.Z = out[:31] == old[:31]; xcc.Z = out == old
                                 "mov %g0, {r}",                             // r = 0
-                                move_!($cc, "1", "{r}"),                    // if cc.Z { r = 1 }
+                                move_!($cc, "1", "{r}"),                    // if $cc.Z { r = 1 }
                                 $acquire,                                   // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
@@ -529,9 +529,9 @@ macro_rules! atomic_sub_word {
                                     "andn {tmp}, {mask}, {out}",           // out = tmp & !mask
                                     "or {out}, {val}, {out}",              // out |= val
                                     cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
-                                    "cmp {out}, {tmp}",                    // if out == tmp { cc.Z = true } else { cc.Z = false }
-                                    bne_a!("%icc", "2b"),                  // if !cc.Z {
-                                      "mov {out}, {tmp}",                //   tmp = out; jump 'retry }
+                                    "cmp {out}, {tmp}",                    // icc.Z = out[:31] == tmp[:31]; xcc.Z = out == tmp
+                                    bne_a!("%icc", "2b"),                  // if !icc.Z {
+                                      "mov {out}, {tmp}",                  //   tmp = out; jump 'retry }
                                 $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) sll!(crate::utils::extend32::$ty::zero(val), shift),
@@ -581,16 +581,16 @@ macro_rules! atomic_sub_word {
                                 "ld [{dst}], {out}",                       // atomic { out = zero_extend(*dst) }
                                 "2:", // 'retry:
                                     "and {out}, {mask}, {tmp}",            // tmp = out & mask
-                                    "cmp {old}, {tmp}",                    // if old == tmp { cc.Z = true } else { cc.Z = false }
-                                    bne_a!("%icc", "3f"),                  // if !cc.Z {
-                                      "mov %g0, {tmp}",                  //   tmp = 0; jump 'cmp-fail }
+                                    "cmp {old}, {tmp}",                    // icc.Z = old[:31] == tmp[:31]; xcc.Z = old == tmp
+                                    bne_a!("%icc", "3f"),                  // if !icc.Z {
+                                      "mov %g0, {tmp}",                    //   tmp = 0; jump 'cmp-fail }
                                     "mov {out}, {tmp}",                    // tmp = out
                                     "andn {out}, {mask}, {out}",           // out &= !mask
                                     "or {out}, {new}, {out}",              // out |= new
                                     cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
-                                    "cmp {out}, {tmp}",                    // if out == tmp { cc.Z = true } else { cc.Z = false }
-                                    bne!("%icc", "2b"),                    // if !cc.Z {
-                                      "mov 1, {tmp}",                    //   tmp = 1; jump 'retry } else { tmp = 1 }
+                                    "cmp {out}, {tmp}",                    // icc.Z = out[:31] == tmp[:31]; xcc.Z = out == tmp
+                                    bne!("%icc", "2b"),                    // if !icc.Z {
+                                      "mov 1, {tmp}",                      //   tmp = 1; jump 'retry } else { tmp = 1 }
                                 "3:", // 'cmp-fail:
                                 $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
@@ -761,12 +761,12 @@ impl AtomicSwap for u64 {
                             "mov %o0, %o1",                   // o1 = o0
                             // cas!("x", "[%i0]", "%o2", "%o1"), // atomic { _x = *i0; if _x == o2 { *i0 = o1 }; o1 = _x }
                             ".4byte 0xd3f6100a",
-                            "cmp %o1, %o2",                   // if o1 == o2 { cc.Z = true } else { cc.Z = false }
+                            "cmp %o1, %o2",                   // icc.Z = o1[:31] == o2[:31]; xcc.Z = o1 == o2
                             "mov %g0, %i3",                   // i3 = 0
-                            // move_!("%xcc", "1", "%i3"),       // if cc.Z { i3 = 1 }
+                            // move_!("%xcc", "1", "%i3"),       // if xcc.Z { i3 = 1 }
                             ".4byte 0xb7647001",
-                            "cmp %i3, 1",                     // if r == 1 { cc.Z = true } else { cc.Z = false }
-                            bne_a!("%icc", "2b"),             // if !cc.Z {
+                            "cmp %i3, 1",                     // icc.Z = i3 == 1
+                            bne_a!("%icc", "2b"),             // if !icc.Z {
                               "mov %o1, %o2",                 //   o2 = o1; jump 'retry }
                         $acquire,                             // fence
                         // "stx %o1, [%i2]",                     // *i2 = o1
@@ -788,8 +788,8 @@ impl AtomicSwap for u64 {
                     //     "2:", // 'retry:
                     //         "mov %o0, %o1",                     // o1 = o0
                     //         cas!("x", "[{dst}]", "%o2", "%o1"), // atomic { _x = *dst; if _x == o2 { *dst = o1 }; o1 = _x }
-                    //         "cmp %o1, %o2",                     // if o1 == o2 { cc.Z = true } else { cc.Z = false }
-                    //         bne_a!("%xcc", "2b"),               // if !cc.Z {
+                    //         "cmp %o1, %o2",                     // icc.Z = o1[:31] == o2[:31]; xcc.Z = o1 == o2
+                    //         bne_a!("%xcc", "2b"),               // if !xcc.Z {
                     //           "mov %o1, %o2",                   //   o2 = o1; jump 'retry }
                     //     $acquire,                               // fence
                     //     "stx %o1, [{out}]",                     // *out = o1
@@ -840,12 +840,12 @@ impl AtomicCompareExchange for u64 {
                         $release,                         // fence
                         // cas!("x", "[%i0]", "%o0", "%o1"), // atomic { _x = *i0; if _x == o0 { *i0 = o1 }; o1 = _x }
                         ".4byte 0xd3f61008",
-                        "cmp %o1, %o0",                   // if o1 == o0 { cc.Z = true } else { cc.Z = false }
+                        "cmp %o1, %o0",                   // icc.Z = o1[:31] == o0[:31]; xcc.Z = o1 == o0
                         $acquire,                         // fence
                         // "stx %o1, [%i2]",                 // *i2 = o1
                         ".4byte 0xd2768000",
                         "mov %g0, %i2",                   // i2 = 0
-                        // move_!("%xcc", "1", "%i2"),       // if cc.Z { i2 = 1 }
+                        // move_!("%xcc", "1", "%i2"),       // if xcc.Z { i2 = 1 }
                         ".4byte 0xb5647001",
                         in("i0") dst,
                         in("i1") old.as_ptr(),
@@ -861,11 +861,11 @@ impl AtomicCompareExchange for u64 {
                     //     "ldx [{out}], %o1",                 // o1 = *out
                     //     $release,                           // fence
                     //     cas!("x", "[{dst}]", "%o0", "%o1"), // atomic { _x = *dst; if _x == o0 { *dst = o1 }; o1 = _x }
-                    //     "cmp %o1, %o0",                     // if o1 == o0 { cc.Z = true } else { cc.Z = false }
+                    //     "cmp %o1, %o0",                     // icc.Z = o1[:31] == o0[:31]; xcc.Z = o1 == o0
                     //     $acquire,                           // fence
                     //     "stx %o1, [{out}]",                 // *out = o1
                     //     "mov %g0, {r}",                     // r = 0
-                    //     move_!("%xcc", "1", "{r}"),         // if cc.Z { r = 1 }
+                    //     move_!("%xcc", "1", "{r}"),         // if xcc.Z { r = 1 }
                     //     dst = in(reg) dst,
                     //     old = in(reg) old.as_ptr(),
                     //     out = in(reg) out.as_mut_ptr(),

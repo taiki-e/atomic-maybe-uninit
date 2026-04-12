@@ -114,7 +114,7 @@ cfg_sel!({
                 // SAFETY: calling SLL{,W} is safe
                 unsafe {
                     asm!(
-                        concat!("sll", w!(), " {val}, {val}, {shift}"), // val <<= shift & 31
+                        concat!("sll", w!(), " {val}, {val}, {shift}"), // val = sign_extend(val << (shift & 31))
                         val = inout(reg) val,
                         shift = in(reg) shift,
                         options(pure, nomem, nostack, preserves_flags),
@@ -128,7 +128,7 @@ cfg_sel!({
             // SAFETY: calling SRL{,W} is safe
             unsafe {
                 asm!(
-                    concat!("srl", w!(), " {val}, {val}, {shift}"), // val >>= shift & 31
+                    concat!("srl", w!(), " {val}, {val}, {shift}"), // val = sign_extend(val >> (shift & 31))
                     val = inout(reg) val,
                     shift = in(reg) shift,
                     options(pure, nomem, nostack, preserves_flags),
@@ -818,7 +818,7 @@ macro_rules! atomic_sub_word {
                                             "xor {tmp}, {out}, {new}",                              // tmp = out ^ new
                                             "and {tmp}, {tmp}, {mask}",                             // tmp &= mask
                                             "xor {tmp}, {tmp}, {out}",                              // tmp ^= out
-                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { tmp = sign_extend(*dst) } }
+                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = sign_extend(*dst) } }
                                             "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
                                         "3:", // 'cmp-fail:
                                         "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
@@ -848,7 +848,7 @@ macro_rules! atomic_sub_word {
                                             "xor {tmp}, {out}, {new}",                              // tmp = out ^ new
                                             "and {tmp}, {tmp}, {mask}",                             // tmp &= mask
                                             "xor {tmp}, {tmp}, {out}",                              // tmp ^= out
-                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { tmp = sign_extend(*dst) } }
+                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = sign_extend(*dst) } }
                                             "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
                                             "j 4f",                                                 // jump 'success
                                         "3:", // 'cmp-fail:
