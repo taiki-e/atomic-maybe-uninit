@@ -39,6 +39,22 @@ macro_rules! sll_w {
         }
         val
     }};
+    ($val:expr => $out:ty, $shift:expr) => {{
+        let out: $out;
+        let shift: RegSize = $shift;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling SLL.W is safe
+        unsafe {
+            asm!(
+                "sll.w {out}, {val}, {shift}", // out = sign_extend(val << (shift & 31))
+                out = lateout(reg) out,
+                val = in(reg) $val,
+                shift = in(reg) shift,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        out
+    }};
 }
 #[inline(always)]
 fn srl_w(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
@@ -52,6 +68,32 @@ fn srl_w(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
         );
     }
     val
+}
+#[cfg(target_arch = "loongarch32")]
+macro_rules! sign_extend {
+    ($val:expr, u32) => {
+        $val
+    };
+}
+#[cfg(target_arch = "loongarch64")]
+macro_rules! sign_extend {
+    ($val:expr, u64) => {
+        $val
+    };
+    ($val:expr, u32) => {{
+        let out: MaybeUninit<u64>;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling SLLI.W is safe
+        unsafe {
+            asm!(
+                "slli.w {out}, {val}, 0", // out = sign_extend(val << 0)
+                out = lateout(reg) out,
+                val = in(reg) $val,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        out
+    }};
 }
 
 // -----------------------------------------------------------------------------
@@ -255,7 +297,7 @@ macro_rules! atomic {
                                     "move {tmp}, $zero",                         // tmp = 0
                                 "4:", // 'success:
                                 dst = in(reg) ptr_reg!(dst),
-                                old = in(reg) old,
+                                old = in(reg) sign_extend!(old, $ty),
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 tmp = out(reg) r,
@@ -279,6 +321,7 @@ macro_rules! atomic {
     };
 }
 
+#[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
         atomic_load!($ty, $suffix);
@@ -353,7 +396,7 @@ macro_rules! atomic_sub_word {
                                     "move {tmp}, $zero",         // tmp = 0
                                 "4:", // 'success:
                                 dst = in(reg) ptr_reg!(dst),
-                                old = in(reg) sll_w!(crate::utils::extend32::$ty::zero(old), shift),
+                                old = in(reg) sll_w!(crate::utils::extend32::$ty::zero(old) => MaybeUninit<RegSize>, shift),
                                 new = in(reg) sll_w!(crate::utils::extend32::$ty::zero(new), shift),
                                 out = out(reg) out,
                                 mask = in(reg) sll_w!(mask, shift),

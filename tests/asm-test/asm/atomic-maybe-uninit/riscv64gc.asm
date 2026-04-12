@@ -14,8 +14,8 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -38,8 +38,8 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -62,8 +62,8 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -86,8 +86,8 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -110,8 +110,8 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -134,8 +134,8 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -158,8 +158,8 @@ asm_test::compare_exchange::u8::release_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -182,8 +182,8 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -206,8 +206,8 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -230,8 +230,8 @@ asm_test::compare_exchange::u8::acquire_acquire:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -254,8 +254,8 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -278,8 +278,8 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -302,8 +302,8 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -326,8 +326,8 @@ asm_test::compare_exchange::u8::release_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -350,8 +350,8 @@ asm_test::compare_exchange::u8::release_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -375,8 +375,8 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -400,8 +400,8 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -425,8 +425,8 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -450,8 +450,8 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -475,8 +475,8 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -500,8 +500,8 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -525,8 +525,8 @@ asm_test::compare_exchange::u16::release_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -550,8 +550,8 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -575,8 +575,8 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -600,8 +600,8 @@ asm_test::compare_exchange::u16::acquire_acquire:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -625,8 +625,8 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -650,8 +650,8 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -675,8 +675,8 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -700,8 +700,8 @@ asm_test::compare_exchange::u16::release_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -725,8 +725,8 @@ asm_test::compare_exchange::u16::release_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -734,6 +734,7 @@ asm_test::compare_exchange::u16::release_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -746,6 +747,7 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
         ret
 
 asm_test::compare_exchange::u32::seqcst_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -758,6 +760,7 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         ret
 
 asm_test::compare_exchange::u32::acqrel_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -770,6 +773,7 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         ret
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -782,6 +786,7 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acquire_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -794,6 +799,7 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         ret
 
 asm_test::compare_exchange::u32::relaxed_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -806,6 +812,7 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         ret
 
 asm_test::compare_exchange::u32::release_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -818,6 +825,7 @@ asm_test::compare_exchange::u32::release_seqcst:
         ret
 
 asm_test::compare_exchange::u32::seqcst_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -830,6 +838,7 @@ asm_test::compare_exchange::u32::seqcst_acquire:
         ret
 
 asm_test::compare_exchange::u32::seqcst_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -842,6 +851,7 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acquire_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -854,6 +864,7 @@ asm_test::compare_exchange::u32::acquire_acquire:
         ret
 
 asm_test::compare_exchange::u32::acquire_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -866,6 +877,7 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         ret
 
 asm_test::compare_exchange::u32::relaxed_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -878,6 +890,7 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         ret
 
 asm_test::compare_exchange::u32::relaxed_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w              a3, (a0)
@@ -890,6 +903,7 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         ret
 
 asm_test::compare_exchange::u32::release_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -902,6 +916,7 @@ asm_test::compare_exchange::u32::release_acquire:
         ret
 
 asm_test::compare_exchange::u32::release_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w              a3, (a0)
@@ -1109,8 +1124,8 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1133,8 +1148,8 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1157,8 +1172,8 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1181,8 +1196,8 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1205,8 +1220,8 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1229,8 +1244,8 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1253,8 +1268,8 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1277,8 +1292,8 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1301,8 +1316,8 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1325,8 +1340,8 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1349,8 +1364,8 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1373,8 +1388,8 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1397,8 +1412,8 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1421,8 +1436,8 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1445,8 +1460,8 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1470,8 +1485,8 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1495,8 +1510,8 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1520,8 +1535,8 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1545,8 +1560,8 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1570,8 +1585,8 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1595,8 +1610,8 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1620,8 +1635,8 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1645,8 +1660,8 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1670,8 +1685,8 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1695,8 +1710,8 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1720,8 +1735,8 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1745,8 +1760,8 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1770,8 +1785,8 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         xor               a3, a3, a0
         sc.w              a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1795,8 +1810,8 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1820,8 +1835,8 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         xor               a3, a3, a0
         sc.w.rl           a3, a3, (a6)
         bnez              a3, 0b
-1:
         and               a3, a0, a5
+1:
         xor               a3, a3, a1
         seqz              a3, a3
         srlw              a0, a0, a4
@@ -1829,6 +1844,7 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -1841,6 +1857,7 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -1853,6 +1870,7 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -1865,6 +1883,7 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -1877,6 +1896,7 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -1889,6 +1909,7 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -1901,6 +1922,7 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::release_seqcst:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -1913,6 +1935,7 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -1925,6 +1948,7 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aqrl         a3, (a0)
@@ -1937,6 +1961,7 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -1949,6 +1974,7 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -1961,6 +1987,7 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -1973,6 +2000,7 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w              a3, (a0)
@@ -1985,6 +2013,7 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::release_acquire:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w.aq           a3, (a0)
@@ -1997,6 +2026,7 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
+        sext.w            a1, a1
         li                a4, 0x1
 0:
         lr.w              a3, (a0)

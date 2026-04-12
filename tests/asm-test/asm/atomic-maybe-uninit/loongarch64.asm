@@ -764,6 +764,7 @@ asm_test::compare_exchange::u16::release_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -780,6 +781,7 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
         ret
 
 asm_test::compare_exchange::u32::seqcst_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -796,6 +798,7 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         ret
 
 asm_test::compare_exchange::u32::acqrel_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -812,6 +815,7 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         ret
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -828,6 +832,7 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acquire_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -844,6 +849,7 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         ret
 
 asm_test::compare_exchange::u32::relaxed_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -860,6 +866,7 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         ret
 
 asm_test::compare_exchange::u32::release_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -876,6 +883,7 @@ asm_test::compare_exchange::u32::release_seqcst:
         ret
 
 asm_test::compare_exchange::u32::seqcst_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -892,6 +900,7 @@ asm_test::compare_exchange::u32::seqcst_acquire:
         ret
 
 asm_test::compare_exchange::u32::seqcst_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -908,6 +917,7 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acquire_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -924,6 +934,7 @@ asm_test::compare_exchange::u32::acquire_acquire:
         ret
 
 asm_test::compare_exchange::u32::acquire_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -940,6 +951,7 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         ret
 
 asm_test::compare_exchange::u32::relaxed_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -956,6 +968,7 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         ret
 
 asm_test::compare_exchange::u32::relaxed_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -972,6 +985,7 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         ret
 
 asm_test::compare_exchange::u32::release_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -988,6 +1002,7 @@ asm_test::compare_exchange::u32::release_acquire:
         ret
 
 asm_test::compare_exchange::u32::release_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2009,6 +2024,7 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2025,6 +2041,7 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2041,6 +2058,7 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2057,6 +2075,7 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2073,6 +2092,7 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2089,6 +2109,7 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2105,6 +2126,7 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::release_seqcst:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2121,6 +2143,7 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2137,6 +2160,7 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2153,6 +2177,7 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2169,6 +2194,7 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2185,6 +2211,7 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2201,6 +2228,7 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2217,6 +2245,7 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::release_acquire:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f
@@ -2233,6 +2262,7 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
+        slli.w            $a1, $a1, 0
 0:
         ll.w              $a3, $a0, 0
         bne               $a3, $a1, 1f

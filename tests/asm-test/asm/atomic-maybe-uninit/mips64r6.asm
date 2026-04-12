@@ -891,14 +891,15 @@ asm_test::compare_exchange::u16::release_relaxed:
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -907,14 +908,15 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::seqcst_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -923,14 +925,15 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::acqrel_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -939,14 +942,15 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -955,14 +959,15 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::acquire_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -971,14 +976,15 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::relaxed_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -987,14 +993,15 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::release_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -1003,14 +1010,15 @@ asm_test::compare_exchange::u32::release_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::seqcst_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -1019,14 +1027,15 @@ asm_test::compare_exchange::u32::seqcst_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::seqcst_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -1035,13 +1044,14 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::acquire_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -1050,13 +1060,14 @@ asm_test::compare_exchange::u32::acquire_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::acquire_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -1065,13 +1076,14 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::relaxed_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -1080,13 +1092,14 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::relaxed_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -1095,14 +1108,15 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::release_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -1111,14 +1125,15 @@ asm_test::compare_exchange::u32::release_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange::u32::release_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2225,14 +2240,15 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2241,14 +2257,15 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2257,14 +2274,15 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2273,14 +2291,15 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2289,14 +2308,15 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2305,14 +2325,15 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2321,14 +2342,15 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::release_seqcst:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2337,14 +2359,15 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2353,14 +2376,15 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2369,13 +2393,14 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::acquire_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2384,13 +2409,14 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2399,13 +2425,14 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2414,13 +2441,14 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2429,14 +2457,15 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::release_acquire:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:
@@ -2445,14 +2474,15 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         sltu              $3,$0,$5
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
-        sll               $3,$6,0x0
-        sll               $1,$5,0x0
+        sll               $2,$5,0x0
+        sll               $3,$2,0x0
+        sll               $1,$6,0x0
         sync
 0:
         ll                $2,0($4)
-        bne               $2,$1,1f
+        bne               $2,$3,1f
         li                $5,0
-        move              $5,$3
+        move              $5,$1
         sc                $5,0($4)
         beqzc             $5,0b
 1:

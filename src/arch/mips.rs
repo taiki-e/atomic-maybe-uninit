@@ -54,6 +54,25 @@ cfg_sel!({
                 }
                 val
             }};
+            ($val:expr => $out:ty, $shift:expr) => {{
+                let out: $out;
+                let shift: RegSize = $shift;
+                #[allow(unused_unsafe)]
+                // SAFETY: calling SLLV is safe
+                unsafe {
+                    asm!(
+                        ".set push",
+                        ".set noat",
+                        "sllv {out}, {val}, {shift}", // out = sign_extend(val << (shift & 31))
+                        ".set pop",
+                        out = lateout(reg) out,
+                        val = in(reg) $val,
+                        shift = in(reg) shift,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
+                out
+            }};
         }
         #[inline(always)]
         fn srlv(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
@@ -70,6 +89,35 @@ cfg_sel!({
                 );
             }
             val
+        }
+        #[cfg(any(target_arch = "mips", target_arch = "mips32r6"))]
+        macro_rules! sign_extend {
+            ($val:expr, u32) => {
+                $val
+            };
+        }
+        #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
+        macro_rules! sign_extend {
+            ($val:expr, u64) => {
+                $val
+            };
+            ($val:expr, u32) => {{
+                let out: MaybeUninit<u64>;
+                #[allow(unused_unsafe)]
+                // SAFETY: calling SLL is safe
+                unsafe {
+                    asm!(
+                        ".set push",
+                        ".set noat",
+                        "sll {out}, {val}, 0", // out = sign_extend(val << 0)
+                        ".set pop",
+                        out = lateout(reg) out,
+                        val = in(reg) $val,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
+                out
+            }};
         }
 
         cfg_sel!({
@@ -300,7 +348,7 @@ macro_rules! atomic {
                                 $r6_nop,
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
-                                old = in(reg) old,
+                                old = in(reg) sign_extend!(old, $ty),
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 tmp = out(reg) r,
@@ -416,7 +464,7 @@ macro_rules! atomic_sub_word {
                                 $r6_nop,
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
-                                old = in(reg) sllv!(crate::utils::extend32::$ty::zero(old), shift),
+                                old = in(reg) sllv!(crate::utils::extend32::$ty::zero(old) => MaybeUninit<RegSize>, shift),
                                 new = in(reg) sllv!(crate::utils::extend32::$ty::zero(new), shift),
                                 out = out(reg) out,
                                 mask = in(reg) sllv!(mask, shift),

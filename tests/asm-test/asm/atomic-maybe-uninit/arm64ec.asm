@@ -2732,6 +2732,7 @@
         ret
 
 .wowthk$aa:
+0:
         sub               sp, sp, #0xc0
         stp               q6, q7, [sp, #0x10]
         stp               q8, q9, [sp, #0x30]
@@ -2742,7 +2743,7 @@
         add               x29, sp, #0xb0
         blr               x9
         and               w8, w1, #0x1
-        adrp              x9, 0x0 <.wowthk$aa>
+        adrp              x9, 0b
         strb              w0, [sp, #0xe]
         strb              w8, [sp, #0xf]
         ldrh              w8, [sp, #0xe]
@@ -2757,6 +2758,7 @@
         br                x0
 
 .wowthk$aa:
+0:
         sub               sp, sp, #0xc0
         stp               q6, q7, [sp, #0x10]
         stp               q8, q9, [sp, #0x30]
@@ -2767,7 +2769,7 @@
         add               x29, sp, #0xb0
         blr               x9
         and               w8, w1, #0x1
-        adrp              x9, 0x0 <.wowthk$aa>
+        adrp              x9, 0b
         strh              w0, [sp, #0xc]
         strb              w8, [sp, #0xe]
         ldr               w8, [sp, #0xc]
@@ -2782,6 +2784,7 @@
         br                x0
 
 .wowthk$aa:
+0:
         sub               sp, sp, #0xc0
         stp               q6, q7, [sp, #0x10]
         stp               q8, q9, [sp, #0x30]
@@ -2792,7 +2795,7 @@
         add               x29, sp, #0xb0
         blr               x9
         and               w8, w1, #0x1
-        adrp              x9, 0x0 <.wowthk$aa>
+        adrp              x9, 0b
         str               w0, [sp, #0x8]
         strb              w8, [sp, #0xc]
         ldr               x8, [sp, #0x8]
@@ -2807,6 +2810,7 @@
         br                x0
 
 .wowthk$aa:
+0:
         stp               q6, q7, [sp, #-0xc0]!
         stp               q8, q9, [sp, #0x20]
         stp               q10, q11, [sp, #0x40]
@@ -2821,7 +2825,7 @@
         mov               x2, x3
         blr               x9
         and               w9, w1, #0x1
-        adrp              x8, 0x0 <.wowthk$aa>
+        adrp              x8, 0b
         str               x0, [x19]
         strb              w9, [x19, #0x8]
         ldr               x0, [x8]
@@ -2836,6 +2840,7 @@
         br                x0
 
 .wowthk$aa:
+0:
         stp               q6, q7, [sp, #-0xc0]!
         stp               q8, q9, [sp, #0x20]
         stp               q10, q11, [sp, #0x40]
@@ -2851,7 +2856,7 @@
         mov               x0, x1
         mov               x3, x10
         blr               x9
-        adrp              x8, 0x0 <.wowthk$aa>
+        adrp              x8, 0b
         ldr               x0, [x8]
         mov               x8, x19
         ldp               x29, x30, [sp, #0xa8]
@@ -2864,6 +2869,7 @@
         br                x0
 
 .wowthk$aa:
+0:
         stp               q6, q7, [sp, #-0xb0]!
         stp               q8, q9, [sp, #0x20]
         stp               q10, q11, [sp, #0x40]
@@ -2872,7 +2878,7 @@
         stp               x29, x30, [sp, #0xa0]
         add               x29, sp, #0xa0
         blr               x9
-        adrp              x8, 0x0 <.wowthk$aa>
+        adrp              x8, 0b
         ldr               x1, [x8]
         mov               x8, x0
         ldp               x29, x30, [sp, #0xa0]
@@ -2884,6 +2890,7 @@
         br                x1
 
 .wowthk$aa:
+0:
         stp               q6, q7, [sp, #-0xc0]!
         stp               q8, q9, [sp, #0x20]
         stp               q10, q11, [sp, #0x40]
@@ -2895,7 +2902,7 @@
         mov               x19, x0
         mov               x0, x1
         blr               x9
-        adrp              x8, 0x0 <.wowthk$aa>
+        adrp              x8, 0b
         stp               x0, x1, [x19]
         ldr               x0, [x8]
         mov               x8, x19
@@ -2909,6 +2916,7 @@
         br                x0
 
 .wowthk$aa:
+0:
         stp               q6, q7, [sp, #-0xb0]!
         stp               q8, q9, [sp, #0x20]
         stp               q10, q11, [sp, #0x40]
@@ -2917,7 +2925,7 @@
         stp               x29, x30, [sp, #0xa0]
         add               x29, sp, #0xa0
         blr               x9
-        adrp              x8, 0x0 <.wowthk$aa>
+        adrp              x8, 0b
         ldr               x1, [x8]
         mov               x8, x0
         ldp               x29, x30, [sp, #0xa0]
@@ -2929,6 +2937,7 @@
         br                x1
 
 .wowthk$aa:
+0:
         stp               q6, q7, [sp, #-0xc0]!
         stp               q8, q9, [sp, #0x20]
         stp               q10, q11, [sp, #0x40]
@@ -2941,7 +2950,7 @@
         mov               x19, x0
         mov               x0, x1
         blr               x9
-        adrp              x8, 0x0 <.wowthk$aa>
+        adrp              x8, 0b
         stp               x0, x1, [x19]
         ldr               x0, [x8]
         mov               x8, x19
@@ -2955,6 +2964,7 @@
         br                x0
 
 .wowthk$aa:
+0:
         stp               q6, q7, [sp, #-0xb0]!
         stp               q8, q9, [sp, #0x20]
         stp               q10, q11, [sp, #0x40]
@@ -2963,7 +2973,7 @@
         stp               x29, x30, [sp, #0xa0]
         add               x29, sp, #0xa0
         blr               x9
-        adrp              x8, 0x0 <.wowthk$aa>
+        adrp              x8, 0b
         ldr               x0, [x8]
         ldp               x29, x30, [sp, #0xa0]
         ldp               q14, q15, [sp, #0x80]
@@ -2974,6 +2984,7 @@
         br                x0
 
 .wowthk$aa:
+0:
         stp               q6, q7, [sp, #-0xb0]!
         stp               q8, q9, [sp, #0x20]
         stp               q10, q11, [sp, #0x40]
@@ -2983,7 +2994,7 @@
         add               x29, sp, #0xa0
         ldp               x2, x3, [x1]
         blr               x9
-        adrp              x8, 0x0 <.wowthk$aa>
+        adrp              x8, 0b
         ldr               x0, [x8]
         ldp               x29, x30, [sp, #0xa0]
         ldp               q14, q15, [sp, #0x80]

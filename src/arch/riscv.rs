@@ -122,6 +122,22 @@ cfg_sel!({
                 }
                 val
             }};
+            ($val:expr => $out:ty, $shift:expr) => {{
+                let out: $out;
+                let shift: RegSize = $shift;
+                #[allow(unused_unsafe)]
+                // SAFETY: calling SLL{,W} is safe
+                unsafe {
+                    asm!(
+                        concat!("sll", w!(), " {out}, {val}, {shift}"), // out = sign_extend(val << (shift & 31))
+                        out = lateout(reg) out,
+                        val = in(reg) $val,
+                        shift = in(reg) shift,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
+                out
+            }};
         }
         #[inline(always)]
         fn srlw(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
@@ -138,6 +154,49 @@ cfg_sel!({
         }
     }
 });
+
+#[cfg(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zalrsc",
+    atomic_maybe_uninit_target_feature = "zalrsc",
+    target_feature = "zacas",
+    atomic_maybe_uninit_target_feature = "zacas",
+))]
+#[cfg(target_arch = "riscv32")]
+macro_rules! sign_extend {
+    ($val:expr, u32) => {
+        $val
+    };
+}
+#[cfg(any(
+    target_feature = "a",
+    atomic_maybe_uninit_target_feature = "a",
+    target_feature = "zalrsc",
+    atomic_maybe_uninit_target_feature = "zalrsc",
+    target_feature = "zacas",
+    atomic_maybe_uninit_target_feature = "zacas",
+))]
+#[cfg(target_arch = "riscv64")]
+macro_rules! sign_extend {
+    ($val:expr, u64) => {
+        $val
+    };
+    ($val:expr, u32) => {{
+        let out: MaybeUninit<u64>;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling SEXT.W is safe
+        unsafe {
+            asm!(
+                "sext.w {out}, {val}", // out = sign_extend(val)
+                out = lateout(reg) out,
+                val = in(reg) $val,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        out
+    }};
+}
 
 #[cfg(all(
     any(target_feature = "zabha", atomic_maybe_uninit_target_feature = "zabha"),
@@ -475,7 +534,7 @@ macro_rules! atomic {
                                         "xor {r}, {out}, {old}",                                        // r = out ^ old
                                         "seqz {r}, {r}",                                                // if r == 0 { r = 1 } else { r = 0 }
                                         dst = in(reg) ptr_reg!(dst),
-                                        old = in(reg) old,
+                                        old = in(reg) sign_extend!(old, $ty),
                                         new = in(reg) new,
                                         out = out(reg) out,
                                         r = lateout(reg) r,
@@ -526,7 +585,7 @@ macro_rules! atomic {
                                             "bnez {r}, 2b",                                             // if r != 0 { jump 'retry }
                                         "3:", // 'cmp-fail:
                                         dst = in(reg) ptr_reg!(dst),
-                                        old = in(reg) old,
+                                        old = in(reg) sign_extend!(old, $ty),
                                         new = in(reg) new,
                                         out = out(reg) out,
                                         r = inout(reg) r,
@@ -761,12 +820,12 @@ macro_rules! atomic_sub_word {
                                             "xor {tmp}, {tmp}, {out}",                            // tmp ^= out
                                             concat!("sc.w", $release, " {tmp}, {tmp}, 0({dst})"), // atomic { if RS == dst { *dst = tmp; tmp = 0 } else { tmp = nonzero }; RS = None }
                                             "bnez {tmp}, 2b",                                     // if tmp != 0 { jump 'retry }
+                                            "and {tmp}, {out}, {mask}",                           // tmp = out & mask
                                         "3:", // 'cmp-fail:
-                                        "and {tmp}, {out}, {mask}",                               // tmp = out & mask
                                         "xor {tmp}, {tmp}, {old}",                                // tmp ^= old
                                         "seqz {tmp}, {tmp}",                                      // if tmp == 0 { tmp = 1 } else { tmp = 0 }
                                         dst = in(reg) ptr_reg!(dst),
-                                        old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old), shift),
+                                        old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old) => MaybeUninit<RegSize>, shift),
                                         new = in(reg) sllw!(crate::utils::extend32::$ty::zero(new), shift),
                                         out = out(reg) out,
                                         mask = in(reg) sllw!(mask, shift),
@@ -820,12 +879,12 @@ macro_rules! atomic_sub_word {
                                             "xor {tmp}, {tmp}, {out}",                              // tmp ^= out
                                             concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = sign_extend(*dst) } }
                                             "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
+                                            "and {tmp}, {out}, {mask}",                             // tmp = out & mask
                                         "3:", // 'cmp-fail:
-                                        "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
-                                        "xor {tmp}, {old}, {tmp}",                                  // tmp ^= old
+                                        "xor {tmp}, {tmp}, {old}",                                  // tmp ^= old
                                         "seqz {tmp}, {tmp}",                                        // if tmp == 0 { tmp = 1 } else { tmp = 0 }
                                         dst = in(reg) ptr_reg!(dst),
-                                        old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old), shift),
+                                        old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old) => MaybeUninit<RegSize>, shift),
                                         new = in(reg) sllw!(crate::utils::extend32::$ty::zero(new), shift),
                                         out = out(reg) out,
                                         mask = in(reg) sllw!(mask, shift),
@@ -850,15 +909,15 @@ macro_rules! atomic_sub_word {
                                             "xor {tmp}, {tmp}, {out}",                              // tmp ^= out
                                             concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = sign_extend(*dst) } }
                                             "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
+                                            "and {tmp}, {out}, {mask}",                             // tmp = out & mask
                                             "j 4f",                                                 // jump 'success
                                         "3:", // 'cmp-fail:
                                             "fence r, rw",                                          // fence
                                         "4:", // 'success:
-                                        "and {tmp}, {out}, {mask}",                                 // tmp = out & mask
                                         "xor {tmp}, {old}, {tmp}",                                  // tmp ^= old
                                         "seqz {tmp}, {tmp}",                                        // if tmp == 0 { tmp = 1 } else { tmp = 0 }
                                         dst = in(reg) ptr_reg!(dst),
-                                        old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old), shift),
+                                        old = in(reg) sllw!(crate::utils::extend32::$ty::zero(old) => MaybeUninit<RegSize>, shift),
                                         new = in(reg) sllw!(crate::utils::extend32::$ty::zero(new), shift),
                                         out = out(reg) out,
                                         mask = in(reg) sllw!(mask, shift),

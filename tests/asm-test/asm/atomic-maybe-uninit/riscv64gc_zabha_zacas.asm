@@ -339,6 +339,7 @@ asm_test::compare_exchange::u16::release_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -349,6 +350,7 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
         ret
 
 asm_test::compare_exchange::u32::seqcst_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -359,6 +361,7 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         ret
 
 asm_test::compare_exchange::u32::acqrel_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -368,6 +371,7 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         ret
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -377,6 +381,7 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acquire_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -387,6 +392,7 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         ret
 
 asm_test::compare_exchange::u32::relaxed_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -397,6 +403,7 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         ret
 
 asm_test::compare_exchange::u32::release_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -407,6 +414,7 @@ asm_test::compare_exchange::u32::release_seqcst:
         ret
 
 asm_test::compare_exchange::u32::seqcst_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -416,6 +424,7 @@ asm_test::compare_exchange::u32::seqcst_acquire:
         ret
 
 asm_test::compare_exchange::u32::seqcst_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -425,6 +434,7 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
         ret
 
 asm_test::compare_exchange::u32::acquire_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aq       a3, a2, (a0)
         xor               a0, a3, a1
@@ -434,6 +444,7 @@ asm_test::compare_exchange::u32::acquire_acquire:
         ret
 
 asm_test::compare_exchange::u32::acquire_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aq       a3, a2, (a0)
         xor               a0, a3, a1
@@ -443,6 +454,7 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         ret
 
 asm_test::compare_exchange::u32::relaxed_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aq       a3, a2, (a0)
         xor               a0, a3, a1
@@ -452,6 +464,7 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         ret
 
 asm_test::compare_exchange::u32::relaxed_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w          a3, a2, (a0)
         xor               a0, a3, a1
@@ -461,6 +474,7 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         ret
 
 asm_test::compare_exchange::u32::release_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -470,6 +484,7 @@ asm_test::compare_exchange::u32::release_acquire:
         ret
 
 asm_test::compare_exchange::u32::release_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.rl       a3, a2, (a0)
         xor               a0, a3, a1
@@ -1249,6 +1264,7 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -1259,6 +1275,7 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -1269,6 +1286,7 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -1278,6 +1296,7 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -1287,6 +1306,7 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -1297,6 +1317,7 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -1307,6 +1328,7 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::release_seqcst:
+        sext.w            a1, a1
         fence             rw, rw
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
@@ -1317,6 +1339,7 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -1326,6 +1349,7 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -1335,6 +1359,7 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aq       a3, a2, (a0)
         xor               a0, a3, a1
@@ -1344,6 +1369,7 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aq       a3, a2, (a0)
         xor               a0, a3, a1
@@ -1353,6 +1379,7 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aq       a3, a2, (a0)
         xor               a0, a3, a1
@@ -1362,6 +1389,7 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w          a3, a2, (a0)
         xor               a0, a3, a1
@@ -1371,6 +1399,7 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u32::release_acquire:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.aqrl     a3, a2, (a0)
         xor               a0, a3, a1
@@ -1380,6 +1409,7 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         ret
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
+        sext.w            a1, a1
         mv                a3, a1
         amocas.w.rl       a3, a2, (a0)
         xor               a0, a3, a1
