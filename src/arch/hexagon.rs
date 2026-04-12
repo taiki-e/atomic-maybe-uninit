@@ -153,7 +153,7 @@ macro_rules! atomic {
                         "2:", // 'retry:
                             "{out} = memw_locked({dst})",    // atomic { out = *dst; RESERVE = dst }
                             "{{ p0 = cmp.eq({out},{old})",   // parallel { p0 = out == old
-                               "if (!p0.new) jump:t 3f }}",  //   if !p0.new { likely(); jump 'cmp-fail } }
+                               "if (!p0.new) jump:nt 3f }}", //   if !p0.new { unlikely(); jump 'cmp-fail } }
                             "memw_locked({dst},p0) = {new}", // atomic { if RESERVE == dst { *dst = new; p0 = true } else { p0 = false }; RESERVE = None }
                             "if (!p0) jump:nt 2b",           // if !p0 { unlikely(); jump 'retry }
                         "3:", // 'cmp-fail:
@@ -233,14 +233,14 @@ macro_rules! atomic_sub_word {
                     // See also create_sub_word_mask_values.
                     asm!(
                         "2:", // 'retry:
-                            "{out} = memw_locked({dst})",    // atomic { out = *dst; RESERVE = dst }
-                            "{tmp} = and({out},{mask})",     // tmp = out & mask
-                            "{{ p0 = cmp.eq({tmp},{old})",   // parallel { p0 = tmp == old
-                                "if (!p0.new) jump:t 3f }}", //   if !p0.new { likely(); jump 'cmp-fail } }
-                            "{tmp} = and({out},~{mask})",    // tmp = out & !mask
-                            "{tmp} |= asl({new},{shift})",   // tmp |= new << shift
-                            "memw_locked({dst},p0) = {tmp}", // atomic { if RESERVE == dst { *dst = tmp; p0 = true } else { p0 = false }; RESERVE = None }
-                            "if (!p0) jump:nt 2b",           // if !p0 { unlikely(); jump 'retry }
+                            "{out} = memw_locked({dst})",     // atomic { out = *dst; RESERVE = dst }
+                            "{tmp} = and({out},{mask})",      // tmp = out & mask
+                            "{{ p0 = cmp.eq({tmp},{old})",    // parallel { p0 = tmp == old
+                                "if (!p0.new) jump:nt 3f }}", //   if !p0.new { unlikely(); jump 'cmp-fail } }
+                            "{tmp} = and({out},~{mask})",     // tmp = out & !mask
+                            "{tmp} |= asl({new},{shift})",    // tmp |= new << shift
+                            "memw_locked({dst},p0) = {tmp}",  // atomic { if RESERVE == dst { *dst = tmp; p0 = true } else { p0 = false }; RESERVE = None }
+                            "if (!p0) jump:nt 2b",            // if !p0 { unlikely(); jump 'retry }
                         "3:", // 'cmp-fail:
                         "{tmp} = mux(p0,#1,#0)",
                         dst = in(reg) dst,
@@ -362,9 +362,9 @@ impl AtomicCompareExchange for u64 {
                     "{{ r7:6 = memd_locked({dst}) }}", // atomic { r6:r7 = *dst; RESERVE = dst }
                     // TODO: merge two cmp?
                     "{{ p0 = cmp.eq(r6,r2)",          // parallel { p0 = r6 == r2
-                        "if (!p0.new) jump:t 3f }}",  //   if !p0.new { likely(); jump 'cmp-fail } }
+                        "if (!p0.new) jump:nt 3f }}", //   if !p0.new { unlikely(); jump 'cmp-fail } }
                     "{{ p0 = cmp.eq(r7,r3)",          // parallel { p0 = r7 == r3
-                        "if (!p0.new) jump:t 3f }}",  //   if !p0.new { likely(); jump 'cmp-fail } }
+                        "if (!p0.new) jump:nt 3f }}", //   if !p0.new { unlikely(); jump 'cmp-fail } }
                     "memd_locked({dst},p0) = r5:4",   // atomic { if RESERVE == dst { *dst = r4:r5; p0 = true } else { p0 = false }; RESERVE = None }
                     "if (!p0) jump:nt 2b",            // if !p0 { unlikely(); jump 'retry }
                 "3:", // 'cmp-fail:
