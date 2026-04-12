@@ -214,7 +214,7 @@ macro_rules! atomic {
                                 // cas writes the current value to the first register,
                                 // so copy the `old`'s value for later comparison.
                                 concat!("mov {out", $val_modifier, "}, {old", $val_modifier, "}"),                                           // out = old
-                                concat!("cas", $acquire, $release, $suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"), // atomic { if *dst == out { *dst = new } else { out = zero_extend(*dst) } }
+                                concat!("cas", $acquire, $release, $suffix, " {out", $val_modifier, "}, {new", $val_modifier, "}, [{dst}]"), // atomic { _x = *dst; if _x == out { *dst = new }; out = zero_extend(_x) }
                                 concat!("cmp {out", $val_modifier, "}, {old", $val_modifier, "}", $cmp_ext),                                 // if zero_extend(out) == zero_extend(old) { Z = 1 } else { Z = 0 }
                                 "cset {r:w}, eq",                                                                                            // r = Z
                                 dst = in(reg) ptr_reg!(dst),
@@ -431,7 +431,7 @@ impl AtomicLoad for u128 {
                 ($acquire:tt, $release:tt) => {
                     asm!(
                         // Refs: https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/CASP--CASPA--CASPAL--CASPL--Compare-and-swap-pair-of-words-or-doublewords-in-memory-
-                        concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"), // atomic { if *src == x2:x3 { *dst = x2:x3 } else { x2:x3 = *dst } }
+                        concat!("casp", $acquire, $release, " x2, x3, x2, x3, [{src}]"), // atomic { _x = *src; if _x == x2:x3 { *src = x2:x3 }; x2:x3 = _x }
                         src = in(reg) ptr_reg!(src),
                         // must be allocated to even/odd register pair
                         inout("x2") 0_u64 => out_lo,
@@ -676,7 +676,7 @@ impl AtomicCompareExchange for u128 {
                         // so copy the `old`'s value for later comparison.
                         "mov x8, {old_lo}",                                              // x8 = old_lo
                         "mov x9, {old_hi}",                                              // x9 = old_hi
-                        concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"), // atomic { if *src == x8:x9 { *dst = x4:x5 } else { x8:x9 = *dst } }
+                        concat!("casp", $acquire, $release, " x8, x9, x4, x5, [{dst}]"), // atomic { _x = *dst; if _x == x8:x9 { *dst = x4:x5 }; x8:x9 = _x }
                         "cmp x8, {old_lo}",                                              // if x8 == old_lo { Z = 1 } else { Z = 0 }
                         "ccmp x9, {old_hi}, #0, eq",                                     // if Z == 1 { if x9 == old_hi { Z = 1 } else { Z = 0 } } else { Z = 0 }
                         "cset {r:w}, eq",                                                // r = Z
