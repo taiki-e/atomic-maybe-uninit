@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.18] - 2026-04-13
+
 - Remove reliance on unguaranteed behavior of the compiler in CAS on riscv64, MIPS64, and LoongArch64. ([ad48602](https://github.com/taiki-e/atomic-maybe-uninit/commit/ad48602ec2f57132baed41d6d86b5b912bd2e59a))
 
 - Implement workaround for SPARC errata GRLIB-TN-0010 & GRLIB-TN-0011 in 32-bit swap. Previously it was implemented only for other operations. ([b97bc5d](https://github.com/taiki-e/atomic-maybe-uninit/commit/b97bc5d8c926ed5be5882f1bd9da3916b905a911))
@@ -455,7 +457,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.17...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...HEAD
+[0.3.18]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.17...v0.3.18
 [0.3.17]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.16...v0.3.17
 [0.3.16]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.15...v0.3.16
 [0.3.15]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.14...v0.3.15
