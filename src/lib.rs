@@ -127,6 +127,7 @@ This crate uses inline assembly to implement atomic operations (this is currentl
     ),
     feature(asm_experimental_arch)
 )]
+#![allow(missing_docs)] // TODO
 
 // There are currently no 128-bit or higher builtin targets.
 // (Although some of our generic code is written with the future
