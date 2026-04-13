@@ -97,6 +97,8 @@ macro_rules! atomic_load_store {
                     }
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
+                        // Acquire and SeqCst loads are equivalent.
+                        // This matches with LLVM.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("memw"),
                         _ => crate::utils::unreachable_unchecked(),
                     }

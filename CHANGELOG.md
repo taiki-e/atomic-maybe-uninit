@@ -12,7 +12,9 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Remove reliance on unguaranteed behavior of the compiler. ([ad48602](https://github.com/taiki-e/atomic-maybe-uninit/commit/ad48602ec2f57132baed41d6d86b5b912bd2e59a))
+- Remove reliance on unguaranteed behavior of the compiler in CAS on riscv64, MIPS64, and LoongArch64. ([ad48602](https://github.com/taiki-e/atomic-maybe-uninit/commit/ad48602ec2f57132baed41d6d86b5b912bd2e59a))
+
+- Implement workaround for SPARC errata GRLIB-TN-0010 & GRLIB-TN-0011 in 32-bit swap. Previously it was implemented only for other operations. ([b97bc5d](https://github.com/taiki-e/atomic-maybe-uninit/commit/b97bc5d8c926ed5be5882f1bd9da3916b905a911))
 
 - Optimize swap/CAS on Hexagon. ([996e7ee](https://github.com/taiki-e/atomic-maybe-uninit/commit/996e7ee6275b8c04eb121918fd76678275932498))
 

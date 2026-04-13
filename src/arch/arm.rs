@@ -507,6 +507,7 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => atomic_load!(asm, ""),
                         // Acquire and SeqCst loads are equivalent.
+                        // This matches with LLVM, but GCC emits `dmb; ldr*; dmb` for SeqCst load.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
                         _ => crate::utils::unreachable_unchecked(),
                     }
@@ -1054,7 +1055,7 @@ atomic!(u32, "");
 // > The way to atomically load two 32-bit quantities is to perform an LDREXD/STREXD sequence, reading and writing
 // > the same value, for which the STREXD succeeds, and use the read values.
 // However, both GCC and LLVM use LDREXD without corresponding STREXD for load.
-// https://godbolt.org/z/aa9GYd45a
+// https://godbolt.org/z/cf8dhvjn3
 
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 delegate_signed!(delegate_all, u64);
@@ -1103,6 +1104,7 @@ impl AtomicLoad for u64 {
             match order {
                 Ordering::Relaxed => atomic_load!(asm, ""),
                 // Acquire and SeqCst loads are equivalent.
+                // This matches with LLVM, but GCC emits `dmb; ldrexd; dmb` for SeqCst load.
                 Ordering::Acquire | Ordering::SeqCst => atomic_load!(asm_use_dmb, dmb!()),
                 _ => crate::utils::unreachable_unchecked(),
             }

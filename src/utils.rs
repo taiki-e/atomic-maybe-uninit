@@ -264,6 +264,8 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
     }
 }
 
+// Note: avr.rs, csky.rs, m68k.rs, msp430.rs, and xtensa.rs currently don't use this due to size issue.
+// Since this is just a debug assertion, the user must not depend on presence of this.
 #[allow(unused_macros)]
 macro_rules! debug_assert_atomic_unsafe_precondition {
     ($ptr:ident, $ty:ident) => {{

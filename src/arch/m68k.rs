@@ -234,7 +234,7 @@ impl AtomicSwap for u64 {
                     ".2byte 0x8081",
                     ".2byte 0x90c0",
                     // "cas2.l %d1:%d0, %d2:%d3, (%a0):(%a1)", // atomic { _out1 = *dst1; _out2 = *dst2; if _out1 == out1 && _out2 == out2 { cc.Z = 1; *dst1 = val1; *dst2 = val2 } else { cc.Z = 0 }; out1 = _out1; out2 = _out2 }
-                    "bne 2b",                                  // if cc.Z == 0 { jump 'dst }
+                    "bne 2b",                                  // if cc.Z == 0 { jump 'retry }
                 in("a0") ptr_reg!(dst1),
                 in("a1") ptr_reg!(dst2),
                 in("d2") val.pair.hi, // val1

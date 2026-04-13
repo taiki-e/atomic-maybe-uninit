@@ -214,6 +214,7 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
+                        // This matches with LLVM, but GCC emits `sync; l*; sync` for SeqCst load.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("sync"),
                         _ => crate::utils::unreachable_unchecked(),
                     }
