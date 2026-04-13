@@ -53,6 +53,12 @@ cfg_sel!({
                 concat!("cas", $suffix, " ", $rs1, ", ", $rs2, ", ", $rd)
             };
         }
+        #[allow(unused_macros)]
+        macro_rules! leon_align {
+            () => {
+                ""
+            };
+        }
         macro_rules! atomic_rmw {
             ($op:ident, $order:ident) => {
                 // op(acquire, release, leon_nop)
@@ -365,9 +371,11 @@ macro_rules! atomic_swap {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:expr, $release:expr, $_leon_nop:expr) => {
+                        ($acquire:expr, $release:expr, $leon_nop:expr) => {
                             asm!(
+                                $leon_nop, // Workaround for errata (GRLIB-TN-0010).
                                 $release,              // fence
+                                leon_align!(), // Workaround for errata (GRLIB-TN-0011).
                                 "swap [{dst}], {out}", // atomic { _x = *dst; *dst = out; out = zero_extend(_x) }
                                 $acquire,              // fence
                                 dst = in(reg) ptr_reg!(dst),

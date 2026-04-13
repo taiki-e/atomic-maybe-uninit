@@ -3497,6 +3497,9 @@ asm_test::swap::u32::acqrel:
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
+        nop
+        nop
+        nop
         swap              [ %i0 ], %i1
         ret
         restore           %g0, %i1, %o0
@@ -3507,18 +3510,27 @@ asm_test::swap::u32::seqcst:
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
+        nop
+        nop
+        nop
         swap              [ %i0 ], %i1
         ret
         restore           %g0, %i1, %o0
 
 asm_test::swap::u32::acquire:
         save              %sp, -96, %sp
+        nop
+        nop
+        nop
         swap              [ %i0 ], %i1
         ret
         restore           %g0, %i1, %o0
 
 asm_test::swap::u32::relaxed:
         save              %sp, -96, %sp
+        nop
+        nop
+        nop
         swap              [ %i0 ], %i1
         ret
         restore           %g0, %i1, %o0
@@ -3529,6 +3541,9 @@ asm_test::swap::u32::release:
         nop
         nop
         ldstub            [ %sp + -1 ], %g0
+        nop
+        nop
+        nop
         swap              [ %i0 ], %i1
         ret
         restore           %g0, %i1, %o0
