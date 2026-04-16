@@ -32,17 +32,16 @@ cfg_sel!({
     ))]
     {
         // Bicc instructions are deprecated in V9.
-        macro_rules! bne {
+        macro_rules! bne_pn {
             ($cc:tt, $label:tt) => {
-                concat!("bne ", $cc, ", ", $label)
+                concat!("bne,pn ", $cc, ", ", $label)
             };
         }
-        macro_rules! bne_a {
+        macro_rules! bne_a_pn {
             ($cc:tt, $label:tt) => {
-                concat!("bne,a ", $cc, ", ", $label)
+                concat!("bne,a,pn ", $cc, ", ", $label)
             };
         }
-        // MOVcc instructions are unavailable in V8.
         macro_rules! move_ {
             ($cc:tt, $val:tt, $rd:tt) => {
                 concat!("move ", $cc, ", ", $val, ", ", $rd)
@@ -82,12 +81,20 @@ cfg_sel!({
                 concat!("bne ", $label)
             };
         }
+        // ,pn is unavailable in V8.
         #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
-        macro_rules! bne_a {
+        macro_rules! bne_pn {
+            ("%icc", $label:tt) => {
+                concat!("bne ", $label)
+            };
+        }
+        #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
+        macro_rules! bne_a_pn {
             ("%icc", $label:tt) => {
                 concat!("bne,a ", $label)
             };
         }
+        // MOVcc instructions are unavailable in V8.
         #[cfg(any(target_feature = "leoncasa", atomic_maybe_uninit_target_feature = "leoncasa"))]
         #[rustfmt::skip]
         macro_rules! move_ {
@@ -426,7 +433,7 @@ macro_rules! atomic_swap_v9 {
                                     "mov {val}, {out}",                         // out = val
                                     cas!($suffix, "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
                                     "cmp {out}, {tmp}",                         // icc.Z = out[:31] == tmp[:31]; xcc.Z = out == tmp
-                                    bne_a!($cc, "2b"),                          // if !$cc.Z {
+                                    bne_a_pn!($cc, "2b"),                       // if !$cc.Z { unlikely();
                                       "mov {out}, {tmp}",                       //   tmp = out; jump 'retry }
                                 $acquire,                                       // fence
                                 dst = in(reg) ptr_reg!(dst),
@@ -538,7 +545,7 @@ macro_rules! atomic_sub_word {
                                     "or {out}, {val}, {out}",              // out |= val
                                     cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
                                     "cmp {out}, {tmp}",                    // icc.Z = out[:31] == tmp[:31]; xcc.Z = out == tmp
-                                    bne_a!("%icc", "2b"),                  // if !icc.Z {
+                                    bne_a_pn!("%icc", "2b"),               // if !icc.Z { unlikely();
                                       "mov {out}, {tmp}",                  //   tmp = out; jump 'retry }
                                 $acquire,                                  // fence
                                 dst = in(reg) ptr_reg!(dst),
@@ -590,14 +597,14 @@ macro_rules! atomic_sub_word {
                                 "2:", // 'retry:
                                     "and {out}, {mask}, {tmp}",            // tmp = out & mask
                                     "cmp {old}, {tmp}",                    // icc.Z = old[:31] == tmp[:31]; xcc.Z = old == tmp
-                                    bne_a!("%icc", "3f"),                  // if !icc.Z {
+                                    bne_a_pn!("%icc", "3f"),               // if !icc.Z { unlikely();
                                       "mov %g0, {tmp}",                    //   tmp = 0; jump 'cmp-fail }
                                     "mov {out}, {tmp}",                    // tmp = out
                                     "andn {out}, {mask}, {out}",           // out &= !mask
                                     "or {out}, {new}, {out}",              // out |= new
                                     cas!("", "[{dst}]", "{tmp}", "{out}"), // atomic { _x = *dst; if _x == tmp { *dst = out }; out = zero_extend(_x) }
                                     "cmp {out}, {tmp}",                    // icc.Z = out[:31] == tmp[:31]; xcc.Z = out == tmp
-                                    bne!("%icc", "2b"),                    // if !icc.Z {
+                                    bne_pn!("%icc", "2b"),                 // if !icc.Z { unlikely();
                                       "mov 1, {tmp}",                      //   tmp = 1; jump 'retry } else { tmp = 1 }
                                 "3:", // 'cmp-fail:
                                 $acquire,                                  // fence
@@ -774,7 +781,7 @@ impl AtomicSwap for u64 {
                             // move_!("%xcc", "1", "%i3"),       // if xcc.Z { i3 = 1 }
                             ".4byte 0xb7647001",
                             "cmp %i3, 1",                     // icc.Z = i3 == 1
-                            bne_a!("%icc", "2b"),             // if !icc.Z {
+                            bne_a_pn!("%icc", "2b"),          // if !icc.Z { unlikely();
                               "mov %o1, %o2",                 //   o2 = o1; jump 'retry }
                         $acquire,                             // fence
                         // "stx %o1, [%i2]",                     // *i2 = o1
@@ -797,7 +804,7 @@ impl AtomicSwap for u64 {
                     //         "mov %o0, %o1",                     // o1 = o0
                     //         cas!("x", "[{dst}]", "%o2", "%o1"), // atomic { _x = *dst; if _x == o2 { *dst = o1 }; o1 = _x }
                     //         "cmp %o1, %o2",                     // icc.Z = o1[:31] == o2[:31]; xcc.Z = o1 == o2
-                    //         bne_a!("%xcc", "2b"),               // if !xcc.Z {
+                    //         bne_a_pn!("%xcc", "2b"),            // if !xcc.Z { unlikely();
                     //           "mov %o1, %o2",                   //   o2 = o1; jump 'retry }
                     //     $acquire,                               // fence
                     //     "stx %o1, [{out}]",                     // *out = o1

@@ -14,14 +14,14 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -47,14 +47,14 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -80,14 +80,14 @@ asm_test::compare_exchange::u8::acqrel_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -113,14 +113,14 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -146,14 +146,14 @@ asm_test::compare_exchange::u8::acquire_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -179,14 +179,14 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -212,14 +212,14 @@ asm_test::compare_exchange::u8::release_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -245,14 +245,14 @@ asm_test::compare_exchange::u8::seqcst_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -278,14 +278,14 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -310,14 +310,14 @@ asm_test::compare_exchange::u8::acquire_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -342,14 +342,14 @@ asm_test::compare_exchange::u8::acquire_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -374,14 +374,14 @@ asm_test::compare_exchange::u8::relaxed_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -406,14 +406,14 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         mov               %g0, %i1
@@ -438,14 +438,14 @@ asm_test::compare_exchange::u8::release_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -471,14 +471,14 @@ asm_test::compare_exchange::u8::release_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         mov               %g0, %i1
@@ -504,14 +504,14 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -538,14 +538,14 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -572,14 +572,14 @@ asm_test::compare_exchange::u16::acqrel_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -606,14 +606,14 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -640,14 +640,14 @@ asm_test::compare_exchange::u16::acquire_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -674,14 +674,14 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -708,14 +708,14 @@ asm_test::compare_exchange::u16::release_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -742,14 +742,14 @@ asm_test::compare_exchange::u16::seqcst_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -776,14 +776,14 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -809,14 +809,14 @@ asm_test::compare_exchange::u16::acquire_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -842,14 +842,14 @@ asm_test::compare_exchange::u16::acquire_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -875,14 +875,14 @@ asm_test::compare_exchange::u16::relaxed_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -908,14 +908,14 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         mov               %g0, %i1
@@ -941,14 +941,14 @@ asm_test::compare_exchange::u16::release_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -975,14 +975,14 @@ asm_test::compare_exchange::u16::release_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         mov               %g0, %i1
@@ -1385,14 +1385,14 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1418,14 +1418,14 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1451,14 +1451,14 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1484,14 +1484,14 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1517,14 +1517,14 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1550,14 +1550,14 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1583,14 +1583,14 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1616,14 +1616,14 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1649,14 +1649,14 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1681,14 +1681,14 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1713,14 +1713,14 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1745,14 +1745,14 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1777,14 +1777,14 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         mov               %g0, %i1
@@ -1809,14 +1809,14 @@ asm_test::compare_exchange_weak::u8::release_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1842,14 +1842,14 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         mov               %g0, %i1
@@ -1875,14 +1875,14 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1909,14 +1909,14 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1943,14 +1943,14 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -1977,14 +1977,14 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2011,14 +2011,14 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2045,14 +2045,14 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2079,14 +2079,14 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2113,14 +2113,14 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2147,14 +2147,14 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2180,14 +2180,14 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2213,14 +2213,14 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2246,14 +2246,14 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2279,14 +2279,14 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         mov               %g0, %i1
@@ -2312,14 +2312,14 @@ asm_test::compare_exchange_weak::u16::release_acquire:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         membar            #LoadStore|#LoadLoad
@@ -2346,14 +2346,14 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
 0:
         and               %i0, %i5, %g2
         cmp               %i1, %g2
-        bne,a             %icc, 1f
+        bne,a,pn          %icc, 1f
         mov               %g0, %g2
         mov               %i0, %g2
         andn              %i0, %i5, %i0
         or                %i0, %i2, %i0
         cas               [ %i3 ], %g2, %i0
         cmp               %i0, %g2
-        bne               %icc, 0b
+        bne,pn            %icc, 0b
         mov               1, %g2
 1:
         mov               %g0, %i1
@@ -2836,7 +2836,7 @@ asm_test::swap::u8::acqrel:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         membar            #LoadStore|#LoadLoad
         srl               %i0, %i3, %i0
@@ -2859,7 +2859,7 @@ asm_test::swap::u8::seqcst:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         membar            #LoadStore|#LoadLoad
         srl               %i0, %i3, %i0
@@ -2881,7 +2881,7 @@ asm_test::swap::u8::acquire:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         membar            #LoadStore|#LoadLoad
         srl               %i0, %i3, %i0
@@ -2903,7 +2903,7 @@ asm_test::swap::u8::relaxed:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         srl               %i0, %i3, %i0
         ret
@@ -2925,7 +2925,7 @@ asm_test::swap::u8::release:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         srl               %i0, %i3, %i0
         ret
@@ -2948,7 +2948,7 @@ asm_test::swap::u16::acqrel:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         membar            #LoadStore|#LoadLoad
         srl               %i0, %i3, %i0
@@ -2972,7 +2972,7 @@ asm_test::swap::u16::seqcst:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         membar            #LoadStore|#LoadLoad
         srl               %i0, %i3, %i0
@@ -2995,7 +2995,7 @@ asm_test::swap::u16::acquire:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         membar            #LoadStore|#LoadLoad
         srl               %i0, %i3, %i0
@@ -3018,7 +3018,7 @@ asm_test::swap::u16::relaxed:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         srl               %i0, %i3, %i0
         ret
@@ -3041,7 +3041,7 @@ asm_test::swap::u16::release:
         or                %i0, %i1, %i0
         cas               [ %i2 ], %i5, %i0
         cmp               %i0, %i5
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i0, %i5
         srl               %i0, %i3, %i0
         ret
@@ -3055,7 +3055,7 @@ asm_test::swap::u32::acqrel:
         mov               %i1, %i2
         cas               [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i2, %i3
         membar            #LoadStore|#LoadLoad
         ret
@@ -3069,7 +3069,7 @@ asm_test::swap::u32::seqcst:
         mov               %i1, %i2
         cas               [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i2, %i3
         membar            #LoadStore|#LoadLoad
         ret
@@ -3082,7 +3082,7 @@ asm_test::swap::u32::acquire:
         mov               %i1, %i2
         cas               [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i2, %i3
         membar            #LoadStore|#LoadLoad
         ret
@@ -3095,7 +3095,7 @@ asm_test::swap::u32::relaxed:
         mov               %i1, %i2
         cas               [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i2, %i3
         ret
         restore           %g0, %i2, %o0
@@ -3108,7 +3108,7 @@ asm_test::swap::u32::release:
         mov               %i1, %i2
         cas               [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %icc, 0b
+        bne,a,pn          %icc, 0b
         mov               %i2, %i3
         ret
         restore           %g0, %i2, %o0
@@ -3121,7 +3121,7 @@ asm_test::swap::u64::acqrel:
         mov               %i1, %i2
         casx              [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %xcc, 0b
+        bne,a,pn          %xcc, 0b
         mov               %i2, %i3
         membar            #LoadStore|#LoadLoad
         ret
@@ -3135,7 +3135,7 @@ asm_test::swap::u64::seqcst:
         mov               %i1, %i2
         casx              [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %xcc, 0b
+        bne,a,pn          %xcc, 0b
         mov               %i2, %i3
         membar            #LoadStore|#LoadLoad
         ret
@@ -3148,7 +3148,7 @@ asm_test::swap::u64::acquire:
         mov               %i1, %i2
         casx              [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %xcc, 0b
+        bne,a,pn          %xcc, 0b
         mov               %i2, %i3
         membar            #LoadStore|#LoadLoad
         ret
@@ -3161,7 +3161,7 @@ asm_test::swap::u64::relaxed:
         mov               %i1, %i2
         casx              [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %xcc, 0b
+        bne,a,pn          %xcc, 0b
         mov               %i2, %i3
         ret
         restore           %g0, %i2, %o0
@@ -3174,7 +3174,7 @@ asm_test::swap::u64::release:
         mov               %i1, %i2
         casx              [ %i0 ], %i3, %i2
         cmp               %i2, %i3
-        bne,a             %xcc, 0b
+        bne,a,pn          %xcc, 0b
         mov               %i2, %i3
         ret
         restore           %g0, %i2, %o0
