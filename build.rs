@@ -740,8 +740,8 @@ mod version {
         // the rustc version, we assume this is the current version.
         // It is no problem if this is older than the actual latest stable.
         // LLVM version is assumed to be the minimum external LLVM version:
-        // https://github.com/rust-lang/rust/blob/1.94.0/src/bootstrap/src/core/build_steps/llvm.rs#L637
-        pub(crate) const LATEST: Self = Self::stable(94, 20);
+        // https://github.com/rust-lang/rust/blob/1.95.0/src/bootstrap/src/core/build_steps/llvm.rs#L638
+        pub(crate) const LATEST: Self = Self::stable(95, 20);
 
         pub(crate) const fn stable(rustc_minor: u32, llvm_major: u32) -> Self {
             Self {
