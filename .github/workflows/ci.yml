@@ -779,8 +779,7 @@ jobs:
             sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
             rm -rf -- ./qemu-user
           elif [[ "${RUST}" == "stable" ]]; then
-            # TODO: Use the latest toolchain once upstream bug fixed.
-            retry espup install --targets esp32,esp32s2,esp32s3 --toolchain-version 1.90.0
+            retry espup install --targets esp32,esp32s2,esp32s3
           fi
           retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/patched-11.0.0-rc0/qemu-ubuntu-24.04.tar.xz \
             | tar xJf -
