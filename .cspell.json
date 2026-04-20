@@ -51,6 +51,7 @@
   "ignorePaths": [
     "target-specs/**",
     "tools/valgrind/**",
-    "tests/asm-test/asm/**"
+    "tests/asm-test/asm/**",
+    "tests/bpf/LICENSE-*"
   ]
 }

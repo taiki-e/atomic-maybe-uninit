@@ -19,7 +19,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, Arm64EC, RISC-V, LoongArch, s390x, PowerPC, MIPS, SPARC, AVR, MSP430, Hexagon, M68k, C-SKY, and Xtensa) are supported.
+Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, Arm64EC, RISC-V, LoongArch, s390x, PowerPC, MIPS, SPARC, AVR, MSP430, Hexagon, M68k, C-SKY, and Xtensa) and BPF are supported.
 (You can use `cfg_{has,no}_*` macros to write code based on which primitive sizes are available for the current target and Rust version.)
 
 | target_arch                                 | primitives                                          | load/store | swap/CAS |
@@ -53,6 +53,8 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 | m68k (+isa-68020) \[9] \[13] (experimental) | i64,u64                                             | ✓          | ✓        |
 | csky \[13] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | xtensa \[13] (experimental)                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| bpf \[13] (experimental)                    | isize,usize,i64,u64                                 | ✓          | ✓        |
+| bpf (+alu32) \[13] \[14] (experimental)     | i32,u32                                             | ✓          | ✓        |
 
 \[1] Arm's RMW operations are not available on Armv6-M (thumbv6m). RISC-V's RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. 32-bit SPARC's RMW operations requires `v9` or `leoncasa` target feature (enabled by default on Linux). M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* or c860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
@@ -65,6 +67,7 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 \[11] Requires Rust 1.91+.<br>
 \[12] Requires Rust 1.95+.<br>
 \[13] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
+\[14] Requires `alu32` target feature.<br>
 <!-- loongarch64: \[5] Requires `scq` target feature.<br> -->
 <!-- mips32r6/mips64r6: \[7] Requires Release 6 Paired LL/SC family of instructions.<br> -->
 
