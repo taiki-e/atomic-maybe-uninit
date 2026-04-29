@@ -1051,7 +1051,8 @@ jobs:
             done
             "$@"
           }
-          # TODO: Use the latest toolchain once upstream bug fixed.
-          retry espup install --targets esp32 --toolchain-version 1.90.0
+          retry espup install --targets esp32
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: cargo test --manifest-path tests/asm-test/Cargo.toml
       - run: cargo +esp test --manifest-path tests/asm-test/Cargo.toml
