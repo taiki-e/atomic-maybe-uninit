@@ -187,12 +187,19 @@ jobs:
         if: (startsWith(matrix.target, 'mips-') || startsWith(matrix.target, 'mipsel-')) && (startsWith(matrix.rust, 'nightly-2023') || startsWith(matrix.rust, 'nightly-2024') || startsWith(matrix.rust, 'nightly-2025-01') || startsWith(matrix.rust, 'nightly-2025-02'))
       - name: Workaround for rustc/LLVM bug about SPARC-V8+
         run: |
-          # Workaround for "unknown architecture of input file `*/symbols.o' is incompatible with sparc:v8plus output"
-          flags=' -C target-feature=-v8plus -C link-arg=-mv8plus'
-          printf 'RUSTFLAGS=%s\n' "${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
-          printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
+          case "${RUST}" in
+            nightly-202[0-5]-* | nightly-2026-0[1-3]-*)
+              # Workaround for "unknown architecture of input file `*/symbols.o' is incompatible with sparc:v8plus output",
+              # fixed in https://github.com/rust-lang/rust/pull/153537.
+              flags=' -C target-feature=-v8plus -C link-arg=-mv8plus'
+              printf 'RUSTFLAGS=%s\n' "${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
+              printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
+              ;;
+          esac
           # Workaround for "rustc-LLVM ERROR: Unsupported instruction : <MCInst 11 <MCOperand Reg:174>>" with LLVM 20-22
           printf 'CARGO_PROFILE_RELEASE_OPT_LEVEL=0\n' >>"${GITHUB_ENV}"
+        env:
+          RUST: ${{ matrix.rust }}
         if: startsWith(matrix.target, 'sparc-')
 
       - run: tools/test.sh -vv ${TARGET:-} ${DOCTEST_XCOMPILE:-} ${BUILD_STD:-}
