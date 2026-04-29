@@ -117,7 +117,7 @@ cleanup() {
 trap -- 'printf >&2 "%s\n" "${0##*/}: trapped SIGINT"; cleanup' SIGINT
 
 rm -f -- ./"${stdout}"
-touch -- ./"${stdout}"
+printf '' >./"${stdout}"
 tail -s0 -f "${stdout}" &
 tail_pid=$!
 

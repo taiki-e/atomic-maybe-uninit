@@ -102,8 +102,8 @@ jobs:
           fi
           host="$(rustc -vV | grep -E '^host:' | cut -d' ' -f2)"
           if [[ "${host}" != "${TARGET}" ]]; then
-            printf '%s\n' "TARGET=--target=${TARGET}" >>"${GITHUB_ENV}"
-            printf '%s\n' "target-not-host=true" >>"${GITHUB_OUTPUT}"
+            printf 'TARGET=--target=%s\n' "${TARGET}" >>"${GITHUB_ENV}"
+            printf 'target-not-host=true\n' >>"${GITHUB_OUTPUT}"
           fi
         env:
           TARGET: ${{ matrix.target }}
@@ -146,8 +146,8 @@ jobs:
               flags=' -C target-feature=+crt-static -C target-cpu=ck860'
               ;;
           esac
-          printf '%s\n' "RUSTFLAGS=${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
-          printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
+          printf 'RUSTFLAGS=%s\n' "${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
+          printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
           printf '%s\n' "CARGO_TARGET_${target_upper}_RUNNER=qemu-cskyv2 -cpu ${qemu_cpu}" >>"${GITHUB_ENV}"
           printf 'BUILD_STD=-Z''build-std\n' >>"${GITHUB_ENV}"
         env:
@@ -174,8 +174,8 @@ jobs:
             esac
           fi
           if [[ -n "${flags}" ]]; then
-            printf '%s\n' "RUSTFLAGS=${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
-            printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
+            printf 'RUSTFLAGS=%s\n' "${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
+            printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
           fi
         env:
           TARGET: ${{ matrix.target }}
@@ -189,8 +189,8 @@ jobs:
         run: |
           # Workaround for "unknown architecture of input file `*/symbols.o' is incompatible with sparc:v8plus output"
           flags=' -C target-feature=-v8plus -C link-arg=-mv8plus'
-          printf '%s\n' "RUSTFLAGS=${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
-          printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
+          printf 'RUSTFLAGS=%s\n' "${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
+          printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
           # Workaround for "rustc-LLVM ERROR: Unsupported instruction : <MCInst 11 <MCOperand Reg:174>>" with LLVM 20-22
           printf 'CARGO_PROFILE_RELEASE_OPT_LEVEL=0\n' >>"${GITHUB_ENV}"
         if: startsWith(matrix.target, 'sparc-')
@@ -578,8 +578,8 @@ jobs:
           fi
           host="$(rustc -vV | grep -E '^host:' | cut -d' ' -f2)"
           if [[ "${host}" != "${TARGET}" ]]; then
-            printf '%s\n' "TARGET=--target=${TARGET}" >>"${GITHUB_ENV}"
-            printf '%s\n' "target-not-host=true" >>"${GITHUB_OUTPUT}"
+            printf 'TARGET=--target=%s\n' "${TARGET}" >>"${GITHUB_ENV}"
+            printf 'target-not-host=true\n' >>"${GITHUB_OUTPUT}"
           fi
         env:
           TARGET: ${{ matrix.target }}
@@ -603,8 +603,8 @@ jobs:
             flags+=" -D linker_messages"
           fi
           if [[ -n "${flags}" ]]; then
-            printf '%s\n' "RUSTFLAGS=${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
-            printf '%s\n' "RUSTDOCFLAGS=${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
+            printf 'RUSTFLAGS=%s\n' "${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
+            printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
           fi
         env:
           TARGET: ${{ matrix.target }}
@@ -769,7 +769,7 @@ jobs:
               retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/loongarch-semi-10.1.5/qemu-ubuntu-24.04.tar.xz \
                 | tar xJf -
               sudo mv -- qemu /usr/local/qemu-loongarch-semi
-              printf '%s\n' "LOONGARCH_QEMU_BIN_DIR=/usr/local/qemu-loongarch-semi/bin" >>"${GITHUB_ENV}"
+              printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/qemu-loongarch-semi/bin\n' >>"${GITHUB_ENV}"
             fi
             # https://github.com/taiki-e/dockerfiles/pkgs/container/qemu-user
             retry docker create --name qemu-user ghcr.io/taiki-e/qemu-user
@@ -834,7 +834,7 @@ jobs:
           fi
           host="$(rustc -vV | grep -E '^host:' | cut -d' ' -f2)"
           if [[ "${host}" != "${TARGET}" ]]; then
-            printf '%s\n' "TARGET=--target=${TARGET}" >>"${GITHUB_ENV}"
+            printf 'TARGET=--target=%s\n' "${TARGET}" >>"${GITHUB_ENV}"
           fi
         env:
           TARGET: ${{ matrix.target }}
