@@ -9,7 +9,7 @@ publish = false
 atomic-maybe-uninit = { path = "../.." }
 
 esp-hal = "0.23"
-esp-println = { version = "0.16", default-features = false, features = ["uart"] }
+esp-println = { version = "0.17", default-features = false, features = ["uart"] }
 paste = "1"
 
 [lints]
