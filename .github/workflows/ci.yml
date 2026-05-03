@@ -705,6 +705,10 @@ jobs:
           tool: cargo-hack,espup
           fallback: none
         if: matrix.rust == 'stable'
+      - uses: taiki-e/cache-cargo-install-action@a8b9ecf8e0c0ea09d7481cfc583a5203ecd585b5 # v3.0.5
+        with:
+          tool: bpf-linker
+        if: matrix.rust == 'nightly'
       - run: |
           retry() {
             for i in {1..10}; do

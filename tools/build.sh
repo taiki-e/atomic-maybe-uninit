@@ -75,6 +75,11 @@ default_targets=(
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "avr" then .key else empty end'
   avr-none
 
+  # bpf
+  # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "bpf" then .key else empty end'
+  bpfeb-unknown-none
+  bpfel-unknown-none
+
   # csky
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "csky" then .key else empty end'
   csky-unknown-linux-gnuabiv2
@@ -533,6 +538,11 @@ build() {
         x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/rmw" \
         RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+        x_cargo "${args[@]}" "$@"
+      ;;
+    bpf*)
+      CARGO_TARGET_DIR="${target_dir}/alu32" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+alu32" \
         x_cargo "${args[@]}" "$@"
       ;;
     csky-unknown-linux-gnuabiv2)
