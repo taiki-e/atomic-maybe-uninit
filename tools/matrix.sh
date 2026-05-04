@@ -358,7 +358,7 @@ for target in "${targets[@]}"; do
   case "${target}" in
     # TODO(gcc): m68k-unknown-linux-gnu
     x86_64-unknown-linux-gnu)
-      toolchain=nightly
+      toolchain=nightly-2026-04-30
       flags="-Z codegen-backend=gcc"
       add_matrix
       ;;
