@@ -1000,7 +1000,7 @@ jobs:
 
           # NB: Sync with arguments in tools/test.sh.
           workspace_dir=$(pwd)
-          args='-v --error-exitcode=1 --error-limit=no --leak-check=full --track-origins=yes --fair-sched=yes --gen-suppressions=all'
+          args='-v --error-exitcode=1 --error-limit=no --leak-check=full --track-origins=yes --fair-sched=try --gen-suppressions=all'
           supp="${workspace_dir}/tools/valgrind/${TARGET%%-*}.supp"
           if [[ -f "${supp}" ]]; then
             args+=" --suppressions=\"${supp}\""
