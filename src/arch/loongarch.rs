@@ -18,7 +18,86 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::{
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+    utils::RegSize,
+};
+
+macro_rules! sll_w {
+    ($val:expr, $shift:expr) => {{
+        let mut val = $val;
+        let shift: RegSize = $shift;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling SLL.W is safe
+        unsafe {
+            asm!(
+                "sll.w {val}, {val}, {shift}", // val = sign_extend(val << (shift & 31))
+                val = inout(reg) val,
+                shift = in(reg) shift,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        val
+    }};
+    ($val:expr => $out:ty, $shift:expr) => {{
+        let out: $out;
+        let shift: RegSize = $shift;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling SLL.W is safe
+        unsafe {
+            asm!(
+                "sll.w {out}, {val}, {shift}", // out = sign_extend(val << (shift & 31))
+                out = lateout(reg) out,
+                val = in(reg) $val,
+                shift = in(reg) shift,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        out
+    }};
+}
+#[inline(always)]
+fn srl_w(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
+    // SAFETY: calling SRL.W is safe
+    unsafe {
+        asm!(
+            "srl.w {val}, {val}, {shift}", // val = sign_extend(val >> (shift & 31))
+            val = inout(reg) val,
+            shift = in(reg) shift,
+            options(pure, nomem, nostack, preserves_flags),
+        );
+    }
+    val
+}
+#[cfg(target_arch = "loongarch32")]
+macro_rules! sign_extend {
+    ($val:expr, u32) => {
+        $val
+    };
+}
+#[cfg(target_arch = "loongarch64")]
+macro_rules! sign_extend {
+    ($val:expr, u64) => {
+        $val
+    };
+    ($val:expr, u32) => {{
+        let out: MaybeUninit<u64>;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling SLLI.W is safe
+        unsafe {
+            asm!(
+                "slli.w {out}, {val}, 0", // out = sign_extend(val << 0)
+                out = lateout(reg) out,
+                val = in(reg) $val,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        out
+    }};
+}
+
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
 
 #[rustfmt::skip]
 macro_rules! atomic_load {
@@ -38,7 +117,7 @@ macro_rules! atomic_load {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                concat!("ld.", $suffix, " {out}, {src}, 0"), // atomic { out = *src }
+                                concat!("ld.", $suffix, " {out}, {src}, 0"), // atomic { out = sign_extend(*src) }
                                 $acquire,                                    // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
@@ -50,7 +129,7 @@ macro_rules! atomic_load {
                         Ordering::Relaxed => atomic_load!(""),
                         Ordering::Acquire => atomic_load!("dbar 20"),
                         Ordering::SeqCst => atomic_load!("dbar 16"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -89,7 +168,7 @@ macro_rules! atomic_store {
                         Ordering::Relaxed => atomic_store!("", ""),
                         Ordering::Release => atomic_store!("", "dbar 18"),
                         Ordering::SeqCst => atomic_store!("dbar 16", "dbar 16"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -131,13 +210,13 @@ macro_rules! atomic {
                         }
                         Ordering::Release | Ordering::SeqCst => {
                             asm!(
-                                concat!("amswap_db.", $suffix, " $zero, {val}, {dst}"), // atomic { _x = *dst; *dst = val; _ = _x }
+                                concat!("amswap_db.", $suffix, " $zero, {val}, {dst}"), // atomic { _x = *dst; *dst = val; _ = sign_extend(_x) }
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 options(nostack, preserves_flags),
                             )
                         }
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
             }
@@ -154,13 +233,14 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    // successful LL/SC has SeqCst semantics.
                     #[cfg(any(
                         target_arch = "loongarch32",
                         atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
                     ))]
                     asm!(
                         "2:", // 'retry:
-                            concat!("ll.", $suffix, " {out}, {dst}, 0"),  // atomic { out = *dst; LL = dst }
+                            concat!("ll.", $suffix, " {out}, {dst}, 0"),  // atomic { out = sign_extend(*dst); LL = dst }
                             "move {tmp}, {val}",                          // tmp = val
                             concat!("sc.", $suffix, " {tmp}, {dst}, 0"),  // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
                             "beqz {tmp}, 2b",                             // if tmp == 0 { jump 'retry }
@@ -170,13 +250,13 @@ macro_rules! atomic {
                         tmp = out(reg) _,
                         options(nostack, preserves_flags),
                     );
-                    // AMO is always SeqCst.
+                    // AMO has SeqCst semantics.
                     #[cfg(not(any(
                         target_arch = "loongarch32",
                         atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
                     )))]
                     asm!(
-                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = _x }
+                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = sign_extend(_x) }
                         dst = in(reg) ptr_reg!(dst),
                         val = in(reg) val,
                         out = out(reg) out,
@@ -187,6 +267,7 @@ macro_rules! atomic {
             }
         }
         impl AtomicCompareExchange for $ty {
+            // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -197,15 +278,15 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let mut out: MaybeUninit<Self>;
+                let mut r: RegSize;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: crate::utils::RegSize;
                     macro_rules! cmpxchg {
                         ($failure_fence:tt) => {
                             asm!(
                                 "2:", // 'retry:
-                                    concat!("ll.", $suffix, " {out}, {dst}, 0"), // atomic { out = *dst; LL = dst }
+                                    concat!("ll.", $suffix, " {out}, {dst}, 0"), // atomic { out = sign_extend(*dst); LL = dst }
                                     "bne {out}, {old}, 3f",                      // if out != old { jump 'cmp-fail }
                                     "move {tmp}, {new}",                         // tmp = new
                                     concat!("sc.", $suffix, " {tmp}, {dst}, 0"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
@@ -216,7 +297,7 @@ macro_rules! atomic {
                                     "move {tmp}, $zero",                         // tmp = 0
                                 "4:", // 'success:
                                 dst = in(reg) ptr_reg!(dst),
-                                old = in(reg) old,
+                                old = in(reg) sign_extend!(old, $ty),
                                 new = in(reg) new,
                                 out = out(reg) out,
                                 tmp = out(reg) r,
@@ -224,22 +305,23 @@ macro_rules! atomic {
                             )
                         };
                     }
-                    // LL/SC is always SeqCst, and fence is needed for branch that doesn't call sc.
+                    // successful LL/SC has SeqCst semantics, and fence is needed for branch that doesn't call sc.
                     match failure {
                         Ordering::Relaxed => cmpxchg!("dbar 1792"),
                         Ordering::Acquire => cmpxchg!("dbar 20"),
                         // TODO: LLVM uses dbar 20 (Acquire) here, but should it not be dbar 16 (SeqCst)?
                         Ordering::SeqCst => cmpxchg!("dbar 16"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (out, r != 0)
             }
         }
     };
 }
 
+#[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
         atomic_load!($ty, $suffix);
@@ -253,35 +335,33 @@ macro_rules! atomic_sub_word {
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
+                // successful LL/SC has SeqCst semantics.
                 unsafe {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     asm!(
-                        "sll.w {mask}, {mask}, {shift}", // mask <<= shift & 31
-                        "sll.w {val}, {val}, {shift}",   // val <<= shift & 31
                         "2:", // 'retry:
-                            "ll.w {out}, {dst}, 0",      // atomic { out = *dst; LL = dst }
+                            "ll.w {out}, {dst}, 0",      // atomic { out = sign_extend(*dst); LL = dst }
                             "andn {tmp}, {out}, {mask}", // tmp = out & !mask
                             "or {tmp}, {tmp}, {val}",    // tmp |= val
                             "sc.w {tmp}, {dst}, 0",      // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
                             "beqz {tmp}, 2b",            // if tmp == 0 { jump 'retry }
-                        "srl.w {out}, {out}, {shift}",   // out >>= shift & 31
                         dst = in(reg) ptr_reg!(dst),
-                        val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                        val = in(reg) sll_w!(crate::utils::extend32::$ty::zero(val), shift),
                         out = out(reg) out,
-                        shift = in(reg) shift,
-                        mask = inout(reg) mask => _,
+                        mask = in(reg) sll_w!(mask, shift),
                         tmp = out(reg) _,
                         options(nostack, preserves_flags),
                     );
                 }
-                out
+                crate::utils::extend32::$ty::extract(srl_w(out, shift))
             }
         }
         impl AtomicCompareExchange for $ty {
+            // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -292,21 +372,18 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
+                let mut r: RegSize;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: crate::utils::RegSize;
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg {
                         ($failure_fence:tt) => {
                             asm!(
-                                "sll.w {mask}, {mask}, {shift}", // mask <<= shift & 31
-                                "sll.w {old}, {old}, {shift}",   // old <<= shift & 31
-                                "sll.w {new}, {new}, {shift}",   // new <<= shift & 31
                                 "2:", // 'retry:
-                                    "ll.w {out}, {dst}, 0",      // atomic { tmp = *dst; LL = dst }
+                                    "ll.w {out}, {dst}, 0",      // atomic { out = sign_extend(*dst); LL = dst }
                                     "and {tmp}, {out}, {mask}",  // tmp = out & mask
                                     "bne {tmp}, {old}, 3f",      // if tmp != old { jump 'cmp-fail }
                                     "andn {tmp}, {out}, {mask}", // tmp = out & !mask
@@ -318,29 +395,27 @@ macro_rules! atomic_sub_word {
                                     $failure_fence,              // fence
                                     "move {tmp}, $zero",         // tmp = 0
                                 "4:", // 'success:
-                                "srl.w {out}, {out}, {shift}",   // out >>= shift & 31
                                 dst = in(reg) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                old = in(reg) sll_w!(crate::utils::extend32::$ty::zero(old) => MaybeUninit<RegSize>, shift),
+                                new = in(reg) sll_w!(crate::utils::extend32::$ty::zero(new), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
-                                mask = inout(reg) mask => _,
+                                mask = in(reg) sll_w!(mask, shift),
                                 tmp = out(reg) r,
                                 options(nostack, preserves_flags),
                             )
                         };
                     }
-                    // LL/SC is always SeqCst, and fence is needed for branch that doesn't call sc.
+                    // successful LL/SC has SeqCst semantics, and fence is needed for branch that doesn't call sc.
                     match failure {
                         Ordering::Relaxed => cmpxchg!("dbar 1792"),
                         Ordering::Acquire => cmpxchg!("dbar 20"),
                         // TODO: LLVM uses dbar 20 (Acquire) here, but should it not be dbar 16 (SeqCst)?
                         Ordering::SeqCst => cmpxchg!("dbar 16"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (crate::utils::extend32::$ty::extract(srl_w(out, shift)), r != 0)
             }
         }
     };

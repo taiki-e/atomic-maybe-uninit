@@ -1,20 +1,19 @@
 asm_test::compare_exchange::u8::acqrel_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -22,28 +21,27 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -51,28 +49,27 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::acqrel_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -80,28 +77,27 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -109,28 +105,27 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::acquire_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -138,28 +133,27 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -167,28 +161,27 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::release_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -196,28 +189,27 @@ asm_test::compare_exchange::u8::release_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::seqcst_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -225,28 +217,27 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -254,27 +245,26 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::acquire_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -282,27 +272,26 @@ asm_test::compare_exchange::u8::acquire_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::acquire_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -310,27 +299,26 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::relaxed_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -338,27 +326,26 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::relaxed_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -366,27 +353,26 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::release_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -394,28 +380,27 @@ asm_test::compare_exchange::u8::release_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u8::release_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -423,27 +408,26 @@ asm_test::compare_exchange::u8::release_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::acqrel_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -451,28 +435,27 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::seqcst_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -480,28 +463,27 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::acqrel_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -509,28 +491,27 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::acqrel_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -538,28 +519,27 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::acquire_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -567,28 +547,27 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::relaxed_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -596,28 +575,27 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::release_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -625,28 +603,27 @@ asm_test::compare_exchange::u16::release_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::seqcst_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -654,28 +631,27 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::seqcst_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -683,27 +659,26 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::acquire_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -711,27 +686,26 @@ asm_test::compare_exchange::u16::acquire_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::acquire_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -739,27 +713,26 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::relaxed_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -767,27 +740,26 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::relaxed_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -795,27 +767,26 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::release_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -823,28 +794,27 @@ asm_test::compare_exchange::u16::release_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u16::release_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -852,17 +822,16 @@ asm_test::compare_exchange::u16::release_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -873,12 +842,11 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::seqcst_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -889,12 +857,11 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::acqrel_acquire:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -905,12 +872,11 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -921,12 +887,11 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::acquire_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -937,12 +902,11 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::relaxed_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -953,12 +917,11 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::release_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -969,12 +932,11 @@ asm_test::compare_exchange::u32::release_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::seqcst_acquire:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -985,12 +947,11 @@ asm_test::compare_exchange::u32::seqcst_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::seqcst_relaxed:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1001,11 +962,10 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::acquire_acquire:
-        li                $1,0
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1016,11 +976,10 @@ asm_test::compare_exchange::u32::acquire_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::acquire_relaxed:
-        li                $1,0
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1031,11 +990,10 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::relaxed_acquire:
-        li                $1,0
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1046,11 +1004,10 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::relaxed_relaxed:
-        li                $1,0
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1060,12 +1017,11 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::release_acquire:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1076,12 +1032,11 @@ asm_test::compare_exchange::u32::release_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange::u32::release_relaxed:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1092,21 +1047,20 @@ asm_test::compare_exchange::u32::release_relaxed:
 
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1114,28 +1068,27 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1143,28 +1096,27 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1172,28 +1124,27 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1201,28 +1152,27 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1230,28 +1180,27 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1259,28 +1208,27 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1288,28 +1236,27 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1317,28 +1264,27 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1346,27 +1292,26 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::acquire_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1374,27 +1319,26 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::acquire_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1402,27 +1346,26 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::relaxed_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1430,27 +1373,26 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1458,27 +1400,26 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::release_acquire:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1486,28 +1427,27 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
         li                $1,-4
-        andi              $3,$5,0xff
+        andi              $2,$5,0xff
         andi              $5,$6,0xff
         li                $6,255
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1515,27 +1455,26 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1543,28 +1482,27 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1572,28 +1510,27 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1601,28 +1538,27 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1630,28 +1566,27 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1659,28 +1594,27 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1688,28 +1622,27 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::release_seqcst:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1717,28 +1650,27 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1746,28 +1678,27 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1775,27 +1706,26 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::acquire_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1803,27 +1733,26 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::acquire_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1831,27 +1760,26 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::relaxed_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1859,27 +1787,26 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1887,27 +1814,26 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::release_acquire:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1915,28 +1841,27 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u16::release_relaxed:
         li                $1,-4
-        andi              $3,$5,0xffff
+        andi              $2,$5,0xffff
         andi              $5,$6,0xffff
         li                $6,0xffff
-        li                $7,0
+        sll               $3,$4,0x3
         and               $1,$4,$1
-        sll               $4,$4,0x3
-        sllv              $6,$6,$4
-        sllv              $3,$3,$4
-        sllv              $5,$5,$4
+        sllv              $4,$2,$3
+        sllv              $5,$5,$3
+        sllv              $6,$6,$3
         sync
 0:
         ll                $2,0($1)
-        and               $8,$2,$6
-        bne               $8,$3,1f
-        nop
+        and               $7,$2,$6
+        bne               $7,$4,1f
+        li                $7,0
         xor               $7,$2,$5
         and               $7,$7,$6
         xor               $7,$7,$2
@@ -1944,17 +1869,16 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         beqz              $7,0b
         nop
 1:
-        srlv              $2,$2,$4
+        srlv              $2,$2,$3
         jr                $31
         sltu              $3,$0,$7
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1965,12 +1889,11 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1981,12 +1904,11 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -1997,12 +1919,11 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2013,12 +1934,11 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2029,12 +1949,11 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2045,12 +1964,11 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::release_seqcst:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2061,12 +1979,11 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2077,12 +1994,11 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2093,11 +2009,10 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::acquire_acquire:
-        li                $1,0
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2108,11 +2023,10 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
-        li                $1,0
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2123,11 +2037,10 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
-        li                $1,0
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2138,11 +2051,10 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
-        li                $1,0
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2152,12 +2064,11 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::release_acquire:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2168,12 +2079,11 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         sltu              $3,$0,$1
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
-        li                $1,0
         sync
 0:
         ll                $2,0($4)
         bne               $2,$5,1f
-        nop
+        li                $1,0
         move              $1,$6
         sc                $1,0($4)
         beqz              $1,0b
@@ -2235,13 +2145,13 @@ asm_test::load::u32::relaxed:
 
 asm_test::swap::u8::acqrel:
         li                $1,-4
+        li                $2,255
         andi              $3,$5,0xff
-        li                $5,255
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
         sync
 0:
         ll                $2,0($1)
@@ -2250,20 +2160,20 @@ asm_test::swap::u8::acqrel:
         sc                $6,0($1)
         beqz              $6,0b
         nop
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$4
         jr                $31
         nop
 
 asm_test::swap::u8::seqcst:
         li                $1,-4
+        li                $2,255
         andi              $3,$5,0xff
-        li                $5,255
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
         sync
 0:
         ll                $2,0($1)
@@ -2272,20 +2182,20 @@ asm_test::swap::u8::seqcst:
         sc                $6,0($1)
         beqz              $6,0b
         nop
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$4
         jr                $31
         nop
 
 asm_test::swap::u8::acquire:
         li                $1,-4
+        li                $2,255
         andi              $3,$5,0xff
-        li                $5,255
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
 0:
         ll                $2,0($1)
         and               $6,$2,$5
@@ -2293,20 +2203,20 @@ asm_test::swap::u8::acquire:
         sc                $6,0($1)
         beqz              $6,0b
         nop
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$4
         jr                $31
         nop
 
 asm_test::swap::u8::relaxed:
         li                $1,-4
+        li                $2,255
         andi              $3,$5,0xff
-        li                $5,255
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
 0:
         ll                $2,0($1)
         and               $6,$2,$5
@@ -2320,13 +2230,13 @@ asm_test::swap::u8::relaxed:
 
 asm_test::swap::u8::release:
         li                $1,-4
+        li                $2,255
         andi              $3,$5,0xff
-        li                $5,255
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
         sync
 0:
         ll                $2,0($1)
@@ -2341,13 +2251,13 @@ asm_test::swap::u8::release:
 
 asm_test::swap::u16::acqrel:
         li                $1,-4
+        li                $2,0xffff
         andi              $3,$5,0xffff
-        li                $5,0xffff
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
         sync
 0:
         ll                $2,0($1)
@@ -2356,20 +2266,20 @@ asm_test::swap::u16::acqrel:
         sc                $6,0($1)
         beqz              $6,0b
         nop
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$4
         jr                $31
         nop
 
 asm_test::swap::u16::seqcst:
         li                $1,-4
+        li                $2,0xffff
         andi              $3,$5,0xffff
-        li                $5,0xffff
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
         sync
 0:
         ll                $2,0($1)
@@ -2378,20 +2288,20 @@ asm_test::swap::u16::seqcst:
         sc                $6,0($1)
         beqz              $6,0b
         nop
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$4
         jr                $31
         nop
 
 asm_test::swap::u16::acquire:
         li                $1,-4
+        li                $2,0xffff
         andi              $3,$5,0xffff
-        li                $5,0xffff
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
 0:
         ll                $2,0($1)
         and               $6,$2,$5
@@ -2399,20 +2309,20 @@ asm_test::swap::u16::acquire:
         sc                $6,0($1)
         beqz              $6,0b
         nop
-        srlv              $2,$2,$4
         sync
+        srlv              $2,$2,$4
         jr                $31
         nop
 
 asm_test::swap::u16::relaxed:
         li                $1,-4
+        li                $2,0xffff
         andi              $3,$5,0xffff
-        li                $5,0xffff
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
 0:
         ll                $2,0($1)
         and               $6,$2,$5
@@ -2426,13 +2336,13 @@ asm_test::swap::u16::relaxed:
 
 asm_test::swap::u16::release:
         li                $1,-4
+        li                $2,0xffff
         andi              $3,$5,0xffff
-        li                $5,0xffff
         and               $1,$4,$1
         sll               $4,$4,0x3
-        sllv              $5,$5,$4
+        sllv              $2,$2,$4
         sllv              $3,$3,$4
-        nor               $5,$5,$0
+        nor               $5,$2,$0
         sync
 0:
         ll                $2,0($1)
@@ -2447,57 +2357,57 @@ asm_test::swap::u16::release:
 
 asm_test::swap::u32::acqrel:
         sync
+        move              $1,$5
 0:
         ll                $2,0($4)
-        move              $1,$5
         sc                $1,0($4)
         beqz              $1,0b
-        nop
+        move              $1,$5
         sync
         jr                $31
         nop
 
 asm_test::swap::u32::seqcst:
         sync
+        move              $1,$5
 0:
         ll                $2,0($4)
-        move              $1,$5
         sc                $1,0($4)
         beqz              $1,0b
-        nop
+        move              $1,$5
         sync
         jr                $31
         nop
 
 asm_test::swap::u32::acquire:
+        move              $1,$5
 0:
         ll                $2,0($4)
-        move              $1,$5
         sc                $1,0($4)
         beqz              $1,0b
-        nop
+        move              $1,$5
         sync
         jr                $31
         nop
 
 asm_test::swap::u32::relaxed:
+        move              $1,$5
 0:
         ll                $2,0($4)
-        move              $1,$5
         sc                $1,0($4)
         beqz              $1,0b
-        nop
+        move              $1,$5
         jr                $31
         nop
 
 asm_test::swap::u32::release:
         sync
+        move              $1,$5
 0:
         ll                $2,0($4)
-        move              $1,$5
         sc                $1,0($4)
         beqz              $1,0b
-        nop
+        move              $1,$5
         jr                $31
         nop
 
@@ -2560,4 +2470,3 @@ asm_test::store::u32::release:
         sw                $5,0($4)
         jr                $31
         nop
-

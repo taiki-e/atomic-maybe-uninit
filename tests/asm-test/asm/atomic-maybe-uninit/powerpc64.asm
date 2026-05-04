@@ -1,813 +1,863 @@
 asm_test::compare_exchange::u8::acqrel_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::acqrel_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-0:
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
+        lwsync
+0:
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bt+               2, 1f
+        lwarx             3, 0, 8
+        and               9, 3, 6
+        cmpw              9, 4
+        bt+               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-0:
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 2f
+        lwsync
+0:
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
-        isync
+        stwcx.            9, 0, 8
+        bt+               2, 1f
+        lwarx             3, 0, 8
+        and               9, 3, 6
+        cmpw              9, 4
+        bt+               2, 0b
+        b                 2f
 1:
-        srw               3, 3, 8
+        isync
+2:
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::acquire_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
+        b                 2f
 1:
         isync
-        srw               3, 3, 8
+2:
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::release_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
+        b                 2f
 1:
         isync
-        srw               3, 3, 8
+2:
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::seqcst_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
         isync
 1:
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::acquire_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::acquire_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
         isync
 1:
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::relaxed_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
+        b                 2f
 1:
         isync
-        srw               3, 3, 8
+2:
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::relaxed_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::release_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-0:
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
+        lwsync
+0:
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bt+               2, 2f
+        lwarx             3, 0, 8
+        and               9, 3, 6
+        cmpw              9, 4
+        bt+               2, 0b
 1:
         isync
-        srw               3, 3, 8
+2:
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u8::release_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-0:
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
+        lwsync
+0:
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bt+               2, 1f
+        lwarx             3, 0, 8
+        and               9, 3, 6
+        cmpw              9, 4
+        bt+               2, 0b
 1:
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange::u16::acqrel_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::seqcst_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::acqrel_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-0:
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
+        lwsync
+0:
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bt+               2, 1f
+        lwarx             3, 0, 8
+        and               9, 3, 6
+        cmpw              9, 4
+        bt+               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::acqrel_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-0:
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 2f
+        lwsync
+0:
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
-        isync
+        stwcx.            9, 0, 8
+        bt+               2, 1f
+        lwarx             3, 0, 8
+        and               9, 3, 6
+        cmpw              9, 4
+        bt+               2, 0b
+        b                 2f
 1:
-        srw               3, 3, 8
+        isync
+2:
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::acquire_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::relaxed_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
+        b                 2f
 1:
         isync
-        srw               3, 3, 8
+2:
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::release_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
+        b                 2f
 1:
         isync
-        srw               3, 3, 8
+2:
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::seqcst_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::seqcst_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
         isync
 1:
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::acquire_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::acquire_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
         isync
 1:
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::relaxed_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
+        b                 2f
 1:
         isync
-        srw               3, 3, 8
+2:
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::relaxed_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
 0:
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bf-               2, 0b
 1:
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::release_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-0:
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
+        lwsync
+0:
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bt+               2, 2f
+        lwarx             3, 0, 8
+        and               9, 3, 6
+        cmpw              9, 4
+        bt+               2, 0b
 1:
         isync
-        srw               3, 3, 8
+2:
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange::u16::release_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-0:
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 1f
+        bf-               2, 1f
+        lwsync
+0:
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
-        bf                2, 0b
+        stwcx.            9, 0, 8
+        bt+               2, 1f
+        lwarx             3, 0, 8
+        and               9, 3, 6
+        cmpw              9, 4
+        bt+               2, 0b
 1:
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
@@ -816,9 +866,9 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
 1:
         isync
         mfcr              3
@@ -831,9 +881,9 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
 1:
         isync
         mfcr              3
@@ -842,13 +892,16 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         blr
 
 asm_test::compare_exchange::u32::acqrel_acquire:
-        lwsync
-0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
+        lwsync
+0:
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bt+               2, 1f
+        lwarx             6, 0, 3
+        cmpw              4, 6
+        bt+               2, 0b
 1:
         isync
         mfcr              3
@@ -857,15 +910,20 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         blr
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
-        lwsync
-0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 2f
+        lwsync
+0:
         stwcx.            5, 0, 3
-        bf                2, 0b
-        isync
+        bt+               2, 1f
+        lwarx             6, 0, 3
+        cmpw              4, 6
+        bt+               2, 0b
+        b                 2f
 1:
+        isync
+2:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
         mr                3, 6
@@ -876,9 +934,9 @@ asm_test::compare_exchange::u32::acquire_seqcst:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
 1:
         isync
         mfcr              3
@@ -891,11 +949,13 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
+        b                 2f
 1:
         isync
+2:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
         mr                3, 6
@@ -906,11 +966,13 @@ asm_test::compare_exchange::u32::release_seqcst:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
+        b                 2f
 1:
         isync
+2:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
         mr                3, 6
@@ -921,9 +983,9 @@ asm_test::compare_exchange::u32::seqcst_acquire:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
 1:
         isync
         mfcr              3
@@ -936,9 +998,9 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
         isync
 1:
         mfcr              3
@@ -950,9 +1012,9 @@ asm_test::compare_exchange::u32::acquire_acquire:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
 1:
         isync
         mfcr              3
@@ -964,9 +1026,9 @@ asm_test::compare_exchange::u32::acquire_relaxed:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
         isync
 1:
         mfcr              3
@@ -978,11 +1040,13 @@ asm_test::compare_exchange::u32::relaxed_acquire:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
+        b                 2f
 1:
         isync
+2:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
         mr                3, 6
@@ -992,9 +1056,9 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
 0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
 1:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
@@ -1002,13 +1066,49 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         blr
 
 asm_test::compare_exchange::u32::release_acquire:
-        lwsync
-0:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 1f
+        bf-               2, 1f
+        lwsync
+0:
         stwcx.            5, 0, 3
-        bf                2, 0b
+        bt+               2, 2f
+        lwarx             6, 0, 3
+        cmpw              4, 6
+        bt+               2, 0b
+1:
+        isync
+2:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u32::release_relaxed:
+        lwarx             6, 0, 3
+        cmpw              4, 6
+        bf-               2, 1f
+        lwsync
+0:
+        stwcx.            5, 0, 3
+        bt+               2, 1f
+        lwarx             6, 0, 3
+        cmpw              4, 6
+        bt+               2, 0b
+1:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::acqrel_seqcst:
+        sync
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
 1:
         isync
         mfcr              3
@@ -1016,14 +1116,225 @@ asm_test::compare_exchange::u32::release_acquire:
         mr                3, 6
         blr
 
-asm_test::compare_exchange::u32::release_relaxed:
+asm_test::compare_exchange::u64::seqcst_seqcst:
+        sync
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+1:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::acqrel_acquire:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
         lwsync
 0:
-        lwarx             6, 0, 3
-        cmpw              4, 6
-        bf                2, 1f
-        stwcx.            5, 0, 3
-        bf                2, 0b
+        stdcx.            5, 0, 3
+        bt+               2, 1f
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bt+               2, 0b
+1:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::acqrel_relaxed:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 2f
+        lwsync
+0:
+        stdcx.            5, 0, 3
+        bt+               2, 1f
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bt+               2, 0b
+        b                 2f
+1:
+        isync
+2:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::acquire_seqcst:
+        sync
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+1:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::relaxed_seqcst:
+        sync
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+        b                 2f
+1:
+        isync
+2:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::release_seqcst:
+        sync
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+        b                 2f
+1:
+        isync
+2:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::seqcst_acquire:
+        sync
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+1:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::seqcst_relaxed:
+        sync
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+        isync
+1:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::acquire_acquire:
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+1:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::acquire_relaxed:
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+        isync
+1:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::relaxed_acquire:
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+        b                 2f
+1:
+        isync
+2:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::relaxed_relaxed:
+0:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        stdcx.            5, 0, 3
+        bf-               2, 0b
+1:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::release_acquire:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        lwsync
+0:
+        stdcx.            5, 0, 3
+        bt+               2, 2f
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bt+               2, 0b
+1:
+        isync
+2:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange::u64::release_relaxed:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 1f
+        lwsync
+0:
+        stdcx.            5, 0, 3
+        bt+               2, 1f
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bt+               2, 0b
 1:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
@@ -1031,755 +1342,777 @@ asm_test::compare_exchange::u32::release_relaxed:
         blr
 
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bf-               2, 0f
         isync
 0:
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bt+               2, 1f
 0:
         isync
-        srw               3, 3, 8
+1:
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bt+               2, 1f
 0:
         isync
-        srw               3, 3, 8
+1:
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bf-               2, 0f
         isync
 0:
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::acquire_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::acquire_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bf-               2, 0f
         isync
 0:
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::relaxed_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bt+               2, 1f
 0:
         isync
-        srw               3, 3, 8
+1:
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::relaxed_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::release_acquire:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bt+               2, 1f
 0:
         isync
-        srw               3, 3, 8
+1:
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
-        rlwinm            7, 3, 0, 0, 29
-        not               3, 3
-        li                6, 255
+        not               7, 3
         clrlwi            4, 4, 24
-        rlwinm            8, 3, 3, 27, 28
+        li                6, 255
         clrlwi            5, 5, 24
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-        lwarx             3, 0, 7
+        rlwinm            7, 7, 3, 27, 28
+        slw               4, 4, 7
+        rldicr            8, 3, 0, 61
+        slw               5, 5, 7
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
-        srw               3, 3, 8
         mfcr              9
         rlwinm            4, 9, 3, 31, 31
+        srw               3, 3, 7
         blr
 
 asm_test::compare_exchange_weak::u16::acqrel_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bf-               2, 0f
         isync
 0:
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bt+               2, 1f
 0:
         isync
-        srw               3, 3, 8
+1:
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::release_seqcst:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bt+               2, 1f
 0:
         isync
-        srw               3, 3, 8
+1:
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
         sync
-        lwarx             3, 0, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bf-               2, 0f
         isync
 0:
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::acquire_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
         isync
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::acquire_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bf-               2, 0f
         isync
 0:
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::relaxed_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bt+               2, 1f
 0:
         isync
-        srw               3, 3, 8
+1:
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::relaxed_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::release_acquire:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
+        bt+               2, 1f
 0:
         isync
-        srw               3, 3, 8
+1:
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
 asm_test::compare_exchange_weak::u16::release_relaxed:
-        lis               6, 0
-        rlwinm            7, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
-        ori               6, 6, 65535
+        li                6, 0
+        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 16
-        xori              8, 3, 16
+        ori               6, 6, 65535
         clrlwi            5, 5, 16
-        slw               6, 6, 8
-        slw               4, 4, 8
-        slw               5, 5, 8
-        lwsync
-        lwarx             3, 0, 7
+        xori              7, 7, 16
+        slw               4, 4, 7
+        slw               5, 5, 7
+        rldicr            8, 3, 0, 61
+        sld               6, 6, 7
+        lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         andc              9, 3, 6
         or                9, 9, 5
-        stwcx.            9, 0, 7
+        stwcx.            9, 0, 8
 0:
-        srw               3, 3, 8
         mfcr              9
+        srw               3, 3, 7
         rlwinm            4, 9, 3, 31, 31
         blr
 
@@ -1787,7 +2120,7 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         sync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
 0:
         isync
@@ -1800,7 +2133,7 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         sync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
 0:
         isync
@@ -1810,10 +2143,10 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         blr
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
-        lwsync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         stwcx.            5, 0, 3
 0:
         isync
@@ -1823,11 +2156,12 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         blr
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
-        lwsync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         stwcx.            5, 0, 3
+        bf-               2, 0f
         isync
 0:
         mfcr              3
@@ -1839,7 +2173,7 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         sync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
 0:
         isync
@@ -1852,10 +2186,12 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         sync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
+        bt+               2, 1f
 0:
         isync
+1:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
         mr                3, 6
@@ -1865,10 +2201,12 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         sync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
+        bt+               2, 1f
 0:
         isync
+1:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
         mr                3, 6
@@ -1878,7 +2216,7 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         sync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
 0:
         isync
@@ -1891,8 +2229,9 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         sync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
+        bf-               2, 0f
         isync
 0:
         mfcr              3
@@ -1903,7 +2242,7 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
 asm_test::compare_exchange_weak::u32::acquire_acquire:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
 0:
         isync
@@ -1915,8 +2254,9 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
+        bf-               2, 0f
         isync
 0:
         mfcr              3
@@ -1927,10 +2267,12 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
+        bt+               2, 1f
 0:
         isync
+1:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
         mr                3, 6
@@ -1939,7 +2281,7 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
         stwcx.            5, 0, 3
 0:
         mfcr              3
@@ -1948,11 +2290,38 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         blr
 
 asm_test::compare_exchange_weak::u32::release_acquire:
-        lwsync
         lwarx             6, 0, 3
         cmpw              4, 6
-        bf                2, 0f
+        bf-               2, 0f
+        lwsync
         stwcx.            5, 0, 3
+        bt+               2, 1f
+0:
+        isync
+1:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u32::release_relaxed:
+        lwarx             6, 0, 3
+        cmpw              4, 6
+        bf-               2, 0f
+        lwsync
+        stwcx.            5, 0, 3
+0:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::acqrel_seqcst:
+        sync
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
 0:
         isync
         mfcr              3
@@ -1960,12 +2329,187 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         mr                3, 6
         blr
 
-asm_test::compare_exchange_weak::u32::release_relaxed:
+asm_test::compare_exchange_weak::u64::seqcst_seqcst:
+        sync
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+0:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::acqrel_acquire:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
         lwsync
-        lwarx             6, 0, 3
-        cmpw              4, 6
-        bf                2, 0f
-        stwcx.            5, 0, 3
+        stdcx.            5, 0, 3
+0:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::acqrel_relaxed:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        lwsync
+        stdcx.            5, 0, 3
+        bf-               2, 0f
+        isync
+0:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::acquire_seqcst:
+        sync
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+0:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::relaxed_seqcst:
+        sync
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+        bt+               2, 1f
+0:
+        isync
+1:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::release_seqcst:
+        sync
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+        bt+               2, 1f
+0:
+        isync
+1:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::seqcst_acquire:
+        sync
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+0:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::seqcst_relaxed:
+        sync
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+        bf-               2, 0f
+        isync
+0:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::acquire_acquire:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+0:
+        isync
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::acquire_relaxed:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+        bf-               2, 0f
+        isync
+0:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::relaxed_acquire:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+        bt+               2, 1f
+0:
+        isync
+1:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::relaxed_relaxed:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        stdcx.            5, 0, 3
+0:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::release_acquire:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        lwsync
+        stdcx.            5, 0, 3
+        bt+               2, 1f
+0:
+        isync
+1:
+        mfcr              3
+        rlwinm            4, 3, 3, 31, 31
+        mr                3, 6
+        blr
+
+asm_test::compare_exchange_weak::u64::release_relaxed:
+        ldarx             6, 0, 3
+        cmpd              4, 6
+        bf-               2, 0f
+        lwsync
+        stdcx.            5, 0, 3
 0:
         mfcr              3
         rlwinm            4, 3, 3, 31, 31
@@ -2035,191 +2579,212 @@ asm_test::load::u32::relaxed:
         lwz               3, 0(3)
         blr
 
+asm_test::load::u64::seqcst:
+        sync
+        ld                3, 0(3)
+        cmpw              3, 3
+        bf-               2, 0f
+0:
+        isync
+        blr
+
+asm_test::load::u64::acquire:
+        ld                3, 0(3)
+        cmpw              3, 3
+        bf-               2, 0f
+0:
+        isync
+        blr
+
+asm_test::load::u64::relaxed:
+        ld                3, 0(3)
+        blr
+
 asm_test::swap::u8::acqrel:
-        rlwinm            6, 3, 0, 0, 29
-        not               3, 3
+        not               6, 3
         li                5, 255
-        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 24
-        slw               5, 5, 7
-        slw               4, 4, 7
+        rlwinm            6, 6, 3, 27, 28
+        slw               4, 4, 6
+        rldicr            7, 3, 0, 61
+        sld               5, 5, 6
         lwsync
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
+        stwcx.            8, 0, 7
+        bf-               2, 0b
         isync
-        srw               3, 3, 7
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u8::seqcst:
-        rlwinm            6, 3, 0, 0, 29
-        not               3, 3
+        not               6, 3
         li                5, 255
-        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 24
-        slw               5, 5, 7
-        slw               4, 4, 7
+        rlwinm            6, 6, 3, 27, 28
+        slw               4, 4, 6
+        rldicr            7, 3, 0, 61
+        sld               5, 5, 6
         sync
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
+        stwcx.            8, 0, 7
+        bf-               2, 0b
         isync
-        srw               3, 3, 7
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u8::acquire:
-        rlwinm            6, 3, 0, 0, 29
-        not               3, 3
+        not               6, 3
         li                5, 255
-        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 24
-        slw               5, 5, 7
-        slw               4, 4, 7
+        rlwinm            6, 6, 3, 27, 28
+        slw               4, 4, 6
+        rldicr            7, 3, 0, 61
+        sld               5, 5, 6
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
+        stwcx.            8, 0, 7
+        bf-               2, 0b
         isync
-        srw               3, 3, 7
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u8::relaxed:
-        rlwinm            6, 3, 0, 0, 29
-        not               3, 3
+        not               6, 3
         li                5, 255
-        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 24
-        slw               5, 5, 7
-        slw               4, 4, 7
+        rlwinm            6, 6, 3, 27, 28
+        slw               4, 4, 6
+        rldicr            7, 3, 0, 61
+        sld               5, 5, 6
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
-        srw               3, 3, 7
+        stwcx.            8, 0, 7
+        bf-               2, 0b
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u8::release:
-        rlwinm            6, 3, 0, 0, 29
-        not               3, 3
+        not               6, 3
         li                5, 255
-        rlwinm            7, 3, 3, 27, 28
         clrlwi            4, 4, 24
-        slw               5, 5, 7
-        slw               4, 4, 7
+        rlwinm            6, 6, 3, 27, 28
+        slw               4, 4, 6
+        rldicr            7, 3, 0, 61
+        sld               5, 5, 6
         lwsync
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
-        srw               3, 3, 7
+        stwcx.            8, 0, 7
+        bf-               2, 0b
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u16::acqrel:
-        lis               5, 0
-        rlwinm            6, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
+        li                5, 0
+        rlwinm            6, 3, 3, 27, 28
         ori               5, 5, 65535
-        xori              7, 3, 16
         clrlwi            4, 4, 16
-        slw               5, 5, 7
-        slw               4, 4, 7
+        xori              6, 6, 16
+        rldicr            7, 3, 0, 61
+        slw               4, 4, 6
+        sld               5, 5, 6
         lwsync
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
+        stwcx.            8, 0, 7
+        bf-               2, 0b
         isync
-        srw               3, 3, 7
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u16::seqcst:
-        lis               5, 0
-        rlwinm            6, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
+        li                5, 0
+        rlwinm            6, 3, 3, 27, 28
         ori               5, 5, 65535
-        xori              7, 3, 16
         clrlwi            4, 4, 16
-        slw               5, 5, 7
-        slw               4, 4, 7
+        xori              6, 6, 16
+        rldicr            7, 3, 0, 61
+        slw               4, 4, 6
+        sld               5, 5, 6
         sync
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
+        stwcx.            8, 0, 7
+        bf-               2, 0b
         isync
-        srw               3, 3, 7
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u16::acquire:
-        lis               5, 0
-        rlwinm            6, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
+        li                5, 0
+        rlwinm            6, 3, 3, 27, 28
         ori               5, 5, 65535
-        xori              7, 3, 16
         clrlwi            4, 4, 16
-        slw               5, 5, 7
-        slw               4, 4, 7
+        xori              6, 6, 16
+        rldicr            7, 3, 0, 61
+        slw               4, 4, 6
+        sld               5, 5, 6
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
+        stwcx.            8, 0, 7
+        bf-               2, 0b
         isync
-        srw               3, 3, 7
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u16::relaxed:
-        lis               5, 0
-        rlwinm            6, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
+        li                5, 0
+        rlwinm            6, 3, 3, 27, 28
         ori               5, 5, 65535
-        xori              7, 3, 16
         clrlwi            4, 4, 16
-        slw               5, 5, 7
-        slw               4, 4, 7
+        xori              6, 6, 16
+        rldicr            7, 3, 0, 61
+        slw               4, 4, 6
+        sld               5, 5, 6
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
-        srw               3, 3, 7
+        stwcx.            8, 0, 7
+        bf-               2, 0b
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u16::release:
-        lis               5, 0
-        rlwinm            6, 3, 0, 0, 29
-        rlwinm            3, 3, 3, 27, 28
+        li                5, 0
+        rlwinm            6, 3, 3, 27, 28
         ori               5, 5, 65535
-        xori              7, 3, 16
         clrlwi            4, 4, 16
-        slw               5, 5, 7
-        slw               4, 4, 7
+        xori              6, 6, 16
+        rldicr            7, 3, 0, 61
+        slw               4, 4, 6
+        sld               5, 5, 6
         lwsync
 0:
-        lwarx             3, 0, 6
+        lwarx             3, 0, 7
         andc              8, 3, 5
         or                8, 4, 8
-        stwcx.            8, 0, 6
-        bf                2, 0b
-        srw               3, 3, 7
+        stwcx.            8, 0, 7
+        bf-               2, 0b
+        srw               3, 3, 6
         blr
 
 asm_test::swap::u32::acqrel:
@@ -2227,7 +2792,7 @@ asm_test::swap::u32::acqrel:
 0:
         lwarx             5, 0, 3
         stwcx.            4, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
         isync
         mr                3, 5
         blr
@@ -2237,7 +2802,7 @@ asm_test::swap::u32::seqcst:
 0:
         lwarx             5, 0, 3
         stwcx.            4, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
         isync
         mr                3, 5
         blr
@@ -2246,7 +2811,7 @@ asm_test::swap::u32::acquire:
 0:
         lwarx             5, 0, 3
         stwcx.            4, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
         isync
         mr                3, 5
         blr
@@ -2255,7 +2820,7 @@ asm_test::swap::u32::relaxed:
 0:
         lwarx             5, 0, 3
         stwcx.            4, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
         mr                3, 5
         blr
 
@@ -2264,7 +2829,53 @@ asm_test::swap::u32::release:
 0:
         lwarx             5, 0, 3
         stwcx.            4, 0, 3
-        bf                2, 0b
+        bf-               2, 0b
+        mr                3, 5
+        blr
+
+asm_test::swap::u64::acqrel:
+        lwsync
+0:
+        ldarx             5, 0, 3
+        stdcx.            4, 0, 3
+        bf-               2, 0b
+        isync
+        mr                3, 5
+        blr
+
+asm_test::swap::u64::seqcst:
+        sync
+0:
+        ldarx             5, 0, 3
+        stdcx.            4, 0, 3
+        bf-               2, 0b
+        isync
+        mr                3, 5
+        blr
+
+asm_test::swap::u64::acquire:
+0:
+        ldarx             5, 0, 3
+        stdcx.            4, 0, 3
+        bf-               2, 0b
+        isync
+        mr                3, 5
+        blr
+
+asm_test::swap::u64::relaxed:
+0:
+        ldarx             5, 0, 3
+        stdcx.            4, 0, 3
+        bf-               2, 0b
+        mr                3, 5
+        blr
+
+asm_test::swap::u64::release:
+        lwsync
+0:
+        ldarx             5, 0, 3
+        stdcx.            4, 0, 3
+        bf-               2, 0b
         mr                3, 5
         blr
 
@@ -2310,3 +2921,16 @@ asm_test::store::u32::release:
         stw               4, 0(3)
         blr
 
+asm_test::store::u64::seqcst:
+        sync
+        std               4, 0(3)
+        blr
+
+asm_test::store::u64::relaxed:
+        std               4, 0(3)
+        blr
+
+asm_test::store::u64::release:
+        lwsync
+        std               4, 0(3)
+        blr

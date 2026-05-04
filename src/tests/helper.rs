@@ -2,8 +2,13 @@
 
 #![allow(dead_code, unused_macros)]
 
-use std::boxed::Box;
 pub(crate) use std::sync::atomic::Ordering;
+use std::{
+    boxed::Box,
+    eprintln,
+    sync::atomic::{AtomicIsize, AtomicUsize},
+    thread,
+};
 
 #[cfg(valgrind)]
 use crabgrind::memcheck;
@@ -122,10 +127,16 @@ macro_rules! test_atomic {
             )]
             mod [<test_atomic_ $ty>] {
                 __test_atomic!(load_store, $ty);
-                #[cfg(not(all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex)))]
+                #[cfg(not(any(
+                    all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex),
+                    all(target_arch = "mips64", atomic_maybe_uninit_no_ll_sc),
+                )))]
                 __test_atomic!(swap, $ty);
-                #[cfg(not(all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex)))]
-                #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
+                #[cfg(not(any(
+                    all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex),
+                    all(target_arch = "mips64", atomic_maybe_uninit_no_ll_sc),
+                    all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg),
+                )))]
                 __test_atomic!(cas, $ty);
             }
         }
@@ -136,6 +147,7 @@ macro_rules! __test_atomic {
     (load_store, $ty:ident) => {
         use std::{
             collections::BTreeSet,
+            eprintln,
             mem::{self, MaybeUninit},
             thread,
             time::Instant,
@@ -192,8 +204,8 @@ macro_rules! __test_atomic {
                     );
                 }
             }
-            test_load_ordering(|order| VAR.load(order));
-            test_store_ordering(|order| VAR.store(MaybeUninit::new(10), order));
+            test_load_ordering(&|order| { VAR.load(order); });
+            test_store_ordering(&|order| VAR.store(MaybeUninit::new(10), order));
             for (load_order, store_order) in LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS) {
                 unsafe {
                     assert_eq!(VAR.load(load_order).assume_init(), 10);
@@ -230,28 +242,29 @@ macro_rules! __test_atomic {
         }
         ::quickcheck::quickcheck! {
             fn quickcheck_load_store(x: $ty, y: $ty) -> bool {
-                let mut rng = fastrand::Rng::new();
                 for base in [0, !0] {
-                    let mut arr = Array::new(base, &mut rng);
-                    for (load_order, store_order) in
-                        LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS)
-                    {
-                        unsafe {
-                            arr.set(x);
-                            let a = arr.get();
-                            assert_eq!(a.load(load_order).assume_init(), x);
-                            a.store(MaybeUninit::new(y), store_order);
-                            assert_eq!(a.load(load_order).assume_init(), y);
-                            a.store(MaybeUninit::new(x), store_order);
-                            assert_eq!(a.load(load_order).assume_init(), x);
-                            let v = MaybeUninit::uninit();
-                            #[cfg(valgrind)]
-                            if IMP_ARM_LINUX && mem::size_of::<$ty>() == 8 {
-                                mark_defined(&v);
+                    for idx in Array::<$ty>::indices() {
+                        let mut arr = Array::new(base, idx);
+                        for (load_order, store_order) in
+                            LOAD_ORDERINGS.into_iter().zip(STORE_ORDERINGS)
+                        {
+                            unsafe {
+                                arr.set(x);
+                                let a = arr.get();
+                                assert_eq!(a.load(load_order).assume_init(), x);
+                                a.store(MaybeUninit::new(y), store_order);
+                                assert_eq!(a.load(load_order).assume_init(), y);
+                                a.store(MaybeUninit::new(x), store_order);
+                                assert_eq!(a.load(load_order).assume_init(), x);
+                                let v = MaybeUninit::uninit();
+                                #[cfg(valgrind)]
+                                if IMP_ARM_LINUX && mem::size_of::<$ty>() == 8 {
+                                    mark_defined(&v);
+                                }
+                                a.store(v, store_order);
+                                let _v = a.load(load_order);
+                                arr.assert();
                             }
-                            a.store(v, store_order);
-                            let _v = a.load(load_order);
-                            arr.assert();
                         }
                     }
                 }
@@ -276,7 +289,7 @@ macro_rules! __test_atomic {
                         for i in 0..iterations {
                             a.store(MaybeUninit::new(data1[i]), rand_store_ordering(&mut rng));
                         }
-                        std::eprintln!("store end={:?}", now.elapsed());
+                        eprintln!("store end={:?}", now.elapsed());
                     });
                     s.spawn(|| {
                         let mut rng = fastrand::Rng::new();
@@ -287,9 +300,9 @@ macro_rules! __test_atomic {
                                 v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                             }
                         }
-                        std::eprintln!("load end={:?}", now.elapsed());
+                        eprintln!("load end={:?}", now.elapsed());
                         for v in v {
-                            assert!(set.contains(&v), "v={}", v);
+                            assert!(set.contains(&v), "load unexpected={}", v);
                         }
                     });
                 }
@@ -311,7 +324,7 @@ macro_rules! __test_atomic {
             if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
                 mark_aligned_defined(&a);
             }
-            test_swap_ordering(|order| a.swap(MaybeUninit::new(5), order));
+            test_swap_ordering(&|order| { a.swap(MaybeUninit::new(5), order); });
             for order in SWAP_ORDERINGS {
                 unsafe {
                     let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(5));
@@ -369,27 +382,28 @@ macro_rules! __test_atomic {
                 {
                     return true;
                 }
-                let mut rng = fastrand::Rng::new();
                 for base in [0, !0] {
-                    let mut arr = Array::new(base, &mut rng);
-                    for order in SWAP_ORDERINGS {
-                        unsafe {
-                            arr.set(x);
-                            let a = arr.get();
-                            assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
-                            assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
-                            let v = MaybeUninit::uninit();
-                            #[cfg(valgrind)]
-                            if cfg!(target_arch = "aarch64")
-                                && (cfg!(not(target_feature = "lse"))
-                                    || cfg!(not(target_feature = "lse128")) && mem::size_of::<$ty>() == 16)
-                                || cfg!(target_arch = "arm")
-                                || cfg!(target_arch = "s390x") && mem::size_of::<$ty>() == 16
-                            {
-                                mark_defined(&v);
+                    for idx in Array::<$ty>::indices() {
+                        let mut arr = Array::new(base, idx);
+                        for order in SWAP_ORDERINGS {
+                            unsafe {
+                                arr.set(x);
+                                let a = arr.get();
+                                assert_eq!(a.swap(MaybeUninit::new(y), order).assume_init(), x);
+                                assert_eq!(a.swap(MaybeUninit::new(x), order).assume_init(), y);
+                                let v = MaybeUninit::uninit();
+                                #[cfg(valgrind)]
+                                if cfg!(target_arch = "aarch64")
+                                    && (cfg!(not(target_feature = "lse"))
+                                        || cfg!(not(target_feature = "lse128")) && mem::size_of::<$ty>() == 16)
+                                    || cfg!(target_arch = "arm")
+                                    || cfg!(target_arch = "s390x") && mem::size_of::<$ty>() == 16
+                                {
+                                    mark_defined(&v);
+                                }
+                                assert_eq!(a.swap(v, order).assume_init(), x);
+                                arr.assert();
                             }
-                            assert_eq!(a.swap(v, order).assume_init(), x);
-                            arr.assert();
                         }
                     }
                 }
@@ -436,7 +450,7 @@ macro_rules! __test_atomic {
                                     rand_store_ordering(&mut rng),
                                 );
                             }
-                            std::eprintln!("store end={:?}", now.elapsed());
+                            eprintln!("store end={:?}", now.elapsed());
                         });
                     } else {
                         s.spawn(|| {
@@ -448,9 +462,9 @@ macro_rules! __test_atomic {
                                     v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                             }
-                            std::eprintln!("load end={:?}", now.elapsed());
+                            eprintln!("load end={:?}", now.elapsed());
                             for v in v {
-                                assert!(set.contains(&v), "v={}", v);
+                                assert!(set.contains(&v), "load unexpected={}", v);
                             }
                         });
                     }
@@ -468,9 +482,9 @@ macro_rules! __test_atomic {
                                     .assume_init();
                             }
                         }
-                        std::eprintln!("swap end={:?}", now.elapsed());
+                        eprintln!("swap end={:?}", now.elapsed());
                         for v in v {
-                            assert!(set.contains(&v), "v={}", v);
+                            assert!(set.contains(&v), "swap unexpected={}", v);
                         }
                     });
                 }
@@ -490,8 +504,13 @@ macro_rules! __test_atomic {
             if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
                 mark_aligned_defined(&a);
             }
-            test_compare_exchange_ordering(|success, failure| {
-                a.compare_exchange(MaybeUninit::new(5), MaybeUninit::new(5), success, failure)
+            test_compare_exchange_ordering(&|success, failure| {
+                let _ = a.compare_exchange(
+                    MaybeUninit::new(5),
+                    MaybeUninit::new(5),
+                    success,
+                    failure,
+                );
             });
             for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                 unsafe {
@@ -525,6 +544,46 @@ macro_rules! __test_atomic {
                             y
                         );
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                    }
+
+                    for base in [0, !0] {
+                        for bit in 0..$ty::BITS {
+                            let flipped = base ^ (1 << bit);
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
+                            #[cfg(valgrind)]
+                            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                                mark_aligned_defined(&a);
+                            }
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(flipped),
+                                    MaybeUninit::new(flipped),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                base,
+                                "flipped bit: {bit}"
+                            );
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(flipped));
+                            #[cfg(valgrind)]
+                            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                                mark_aligned_defined(&a);
+                            }
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(base),
+                                    MaybeUninit::new(base),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                flipped,
+                                "flipped bit: {bit}"
+                            );
+                        }
                     }
 
                     let mut u = MaybeUninit::uninit();
@@ -569,13 +628,13 @@ macro_rules! __test_atomic {
             if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
                 mark_aligned_defined(&a);
             }
-            test_compare_exchange_ordering(|success, failure| {
-                a.compare_exchange_weak(
+            test_compare_exchange_ordering(&|success, failure| {
+                let _ = a.compare_exchange_weak(
                     MaybeUninit::new(5),
                     MaybeUninit::new(5),
                     success,
                     failure,
-                )
+                );
             });
             for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                 unsafe {
@@ -606,6 +665,46 @@ macro_rules! __test_atomic {
                         }
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), x.wrapping_add(2));
                     }
+
+                    for base in [0, !0] {
+                        for bit in 0..$ty::BITS {
+                            let flipped = base ^ (1 << bit);
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
+                            #[cfg(valgrind)]
+                            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                                mark_aligned_defined(&a);
+                            }
+                            assert_eq!(
+                                a.compare_exchange_weak(
+                                    MaybeUninit::new(flipped),
+                                    MaybeUninit::new(flipped),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                base,
+                                "flipped bit: {bit}"
+                            );
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(flipped));
+                            #[cfg(valgrind)]
+                            if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
+                                mark_aligned_defined(&a);
+                            }
+                            assert_eq!(
+                                a.compare_exchange_weak(
+                                    MaybeUninit::new(base),
+                                    MaybeUninit::new(base),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                flipped,
+                                "flipped bit: {bit}"
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -621,8 +720,8 @@ macro_rules! __test_atomic {
             if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 {
                 mark_aligned_defined(&a);
             }
-            test_compare_exchange_ordering(|set, fetch| {
-                a.fetch_update(set, fetch, |x| Some(x))
+            test_compare_exchange_ordering(&|set, fetch| {
+                let _ = a.fetch_update(set, fetch, |x| Some(x));
             });
             for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                 unsafe {
@@ -670,55 +769,57 @@ macro_rules! __test_atomic {
                     }
                 };
                 for base in [0, !0] {
-                    let mut arr = Array::new(base, &mut rng);
-                    for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                        unsafe {
-                            arr.set(x);
-                            let a = arr.get();
-                            assert_eq!(
-                                a.compare_exchange(
-                                    MaybeUninit::new(x),
-                                    MaybeUninit::new(y),
-                                    success,
-                                    failure
-                                )
-                                .unwrap()
-                                .assume_init(),
-                                x
-                            );
-                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
-                            assert_eq!(
-                                a.compare_exchange(
-                                    MaybeUninit::new(z),
-                                    MaybeUninit::new(z),
-                                    success,
-                                    failure
-                                )
-                                .unwrap_err()
-                                .assume_init(),
-                                y
-                            );
-                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
-                            let v = MaybeUninit::uninit();
-                            #[cfg(valgrind)]
-                            if cfg!(target_arch = "arm") && mem::size_of::<$ty>() == 8
-                                || cfg!(target_arch = "aarch64") && cfg!(not(target_feature = "lse"))
-                            {
-                                mark_defined(&v);
+                    for idx in Array::<$ty>::indices() {
+                        let mut arr = Array::new(base, idx);
+                        for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+                            unsafe {
+                                arr.set(x);
+                                let a = arr.get();
+                                assert_eq!(
+                                    a.compare_exchange(
+                                        MaybeUninit::new(x),
+                                        MaybeUninit::new(y),
+                                        success,
+                                        failure
+                                    )
+                                    .unwrap()
+                                    .assume_init(),
+                                    x
+                                );
+                                assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                                assert_eq!(
+                                    a.compare_exchange(
+                                        MaybeUninit::new(z),
+                                        MaybeUninit::new(z),
+                                        success,
+                                        failure
+                                    )
+                                    .unwrap_err()
+                                    .assume_init(),
+                                    y
+                                );
+                                assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
+                                let v = MaybeUninit::uninit();
+                                #[cfg(valgrind)]
+                                if cfg!(target_arch = "arm") && mem::size_of::<$ty>() == 8
+                                    || cfg!(target_arch = "aarch64") && cfg!(not(target_feature = "lse"))
+                                {
+                                    mark_defined(&v);
+                                }
+                                assert_eq!(
+                                    a.compare_exchange(
+                                        MaybeUninit::new(y),
+                                        v,
+                                        success,
+                                        failure
+                                    )
+                                    .unwrap()
+                                    .assume_init(),
+                                    y
+                                );
+                                let _v = a.load(Ordering::Relaxed);
+                                arr.assert();
                             }
-                            assert_eq!(
-                                a.compare_exchange(
-                                    MaybeUninit::new(y),
-                                    v,
-                                    success,
-                                    failure
-                                )
-                                .unwrap()
-                                .assume_init(),
-                                y
-                            );
-                            let _v = a.load(Ordering::Relaxed);
-                            arr.assert();
                         }
                     }
                 }
@@ -738,36 +839,38 @@ macro_rules! __test_atomic {
                     }
                 };
                 for base in [0, !0] {
-                    let mut arr = Array::new(base, &mut rng);
-                    for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
-                        unsafe {
-                            arr.set(x);
-                            let a = arr.get();
-                            assert_eq!(
-                                a.fetch_update(success, failure, |_| Some(MaybeUninit::new(y)))
-                                .unwrap()
-                                .assume_init(),
-                                x
-                            );
-                            assert_eq!(
-                                a.fetch_update(success, failure, |_| Some(MaybeUninit::new(z)))
-                                .unwrap()
-                                .assume_init(),
-                                y
-                            );
-                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
-                            assert_eq!(
-                                a.fetch_update(success, failure, |z| if z.assume_init() == y {
-                                    Some(z)
-                                } else {
-                                    None
-                                })
-                                .unwrap_err()
-                                .assume_init(),
-                                z
-                            );
-                            assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
-                            arr.assert();
+                    for idx in Array::<$ty>::indices() {
+                        let mut arr = Array::new(base, idx);
+                        for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
+                            unsafe {
+                                arr.set(x);
+                                let a = arr.get();
+                                assert_eq!(
+                                    a.fetch_update(success, failure, |_| Some(MaybeUninit::new(y)))
+                                    .unwrap()
+                                    .assume_init(),
+                                    x
+                                );
+                                assert_eq!(
+                                    a.fetch_update(success, failure, |_| Some(MaybeUninit::new(z)))
+                                    .unwrap()
+                                    .assume_init(),
+                                    y
+                                );
+                                assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
+                                assert_eq!(
+                                    a.fetch_update(success, failure, |z| if z.assume_init() == y {
+                                        Some(z)
+                                    } else {
+                                        None
+                                    })
+                                    .unwrap_err()
+                                    .assume_init(),
+                                    z
+                                );
+                                assert_eq!(a.load(Ordering::Relaxed).assume_init(), z);
+                                arr.assert();
+                            }
                         }
                     }
                 }
@@ -814,7 +917,7 @@ macro_rules! __test_atomic {
                                     rand_store_ordering(&mut rng),
                                 );
                             }
-                            std::eprintln!("store end={:?}", now.elapsed());
+                            eprintln!("store end={:?}", now.elapsed());
                         });
                     } else {
                         s.spawn(|| {
@@ -826,9 +929,9 @@ macro_rules! __test_atomic {
                                     v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                             }
-                            std::eprintln!("load end={:?}", now.elapsed());
+                            eprintln!("load end={:?}", now.elapsed());
                             for v in v {
-                                assert!(set.contains(&v), "v={}", v);
+                                assert!(set.contains(&v), "load unexpected={}", v);
                             }
                         });
                     }
@@ -851,9 +954,9 @@ macro_rules! __test_atomic {
                                 }
                             }
                         }
-                        std::eprintln!("compare_exchange end={:?}", now.elapsed());
+                        eprintln!("compare_exchange end={:?}", now.elapsed());
                         for v in v {
-                            assert!(set.contains(&v), "v={}", v);
+                            assert!(set.contains(&v), "cas unexpected={}", v);
                         }
                     });
                 }
@@ -899,7 +1002,7 @@ macro_rules! __test_atomic {
                                     rand_store_ordering(&mut rng),
                                 );
                             }
-                            std::eprintln!("store end={:?}", now.elapsed());
+                            eprintln!("store end={:?}", now.elapsed());
                         });
                     } else {
                         s.spawn(|| {
@@ -911,9 +1014,9 @@ macro_rules! __test_atomic {
                                     v[i] = a.load(rand_load_ordering(&mut rng)).assume_init();
                                 }
                             }
-                            std::eprintln!("load end={:?}", now.elapsed());
+                            eprintln!("load end={:?}", now.elapsed());
                             for v in v {
-                                assert!(set.contains(&v), "v={}", v);
+                                assert!(set.contains(&v), "load unexpected={}", v);
                             }
                         });
                     }
@@ -933,9 +1036,9 @@ macro_rules! __test_atomic {
                                     .assume_init();
                             }
                         }
-                        std::eprintln!("swap end={:?}", now.elapsed());
+                        eprintln!("fetch_update end={:?}", now.elapsed());
                         for v in v {
-                            assert!(set.contains(&v), "v={}", v);
+                            assert!(set.contains(&v), "fetch_update unexpected={}", v);
                         }
                     });
                 }
@@ -945,8 +1048,7 @@ macro_rules! __test_atomic {
 }
 
 #[allow(unused_unsafe)] // for old rustc
-#[track_caller]
-fn assert_panic<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> std::string::String {
+fn assert_panic(f: &dyn Fn()) -> std::string::String {
     let backtrace = std::env::var_os("RUST_BACKTRACE");
     let hook = std::panic::take_hook();
     // set_var/remove_var is fine as we run tests with RUST_TEST_THREADS=1
@@ -969,19 +1071,17 @@ pub(crate) const LOAD_ORDERINGS: [Ordering; 3] =
 pub(crate) fn rand_load_ordering(rng: &mut fastrand::Rng) -> Ordering {
     LOAD_ORDERINGS[rng.usize(0..LOAD_ORDERINGS.len())]
 }
-#[track_caller]
-pub(crate) fn test_load_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
+pub(crate) fn test_load_ordering(f: &dyn Fn(Ordering)) {
     for order in LOAD_ORDERINGS {
         f(order);
     }
-
     if !skip_should_panic_test() {
         assert_eq!(
-            assert_panic(|| f(Ordering::Release)),
+            assert_panic(&|| f(Ordering::Release)),
             "there is no such thing as a release load"
         );
         assert_eq!(
-            assert_panic(|| f(Ordering::AcqRel)),
+            assert_panic(&|| f(Ordering::AcqRel)),
             "there is no such thing as an acquire-release load"
         );
     }
@@ -991,19 +1091,17 @@ pub(crate) const STORE_ORDERINGS: [Ordering; 3] =
 pub(crate) fn rand_store_ordering(rng: &mut fastrand::Rng) -> Ordering {
     STORE_ORDERINGS[rng.usize(0..STORE_ORDERINGS.len())]
 }
-#[track_caller]
-pub(crate) fn test_store_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
+pub(crate) fn test_store_ordering(f: &dyn Fn(Ordering)) {
     for order in STORE_ORDERINGS {
         f(order);
     }
-
     if !skip_should_panic_test() {
         assert_eq!(
-            assert_panic(|| f(Ordering::Acquire)),
+            assert_panic(&|| f(Ordering::Acquire)),
             "there is no such thing as an acquire store"
         );
         assert_eq!(
-            assert_panic(|| f(Ordering::AcqRel)),
+            assert_panic(&|| f(Ordering::AcqRel)),
             "there is no such thing as an acquire-release store"
         );
     }
@@ -1013,7 +1111,7 @@ pub(crate) const SWAP_ORDERINGS: [Ordering; 5] =
 pub(crate) fn rand_swap_ordering(rng: &mut fastrand::Rng) -> Ordering {
     SWAP_ORDERINGS[rng.usize(0..SWAP_ORDERINGS.len())]
 }
-pub(crate) fn test_swap_ordering<T: std::fmt::Debug>(f: impl Fn(Ordering) -> T) {
+pub(crate) fn test_swap_ordering(f: &dyn Fn(Ordering)) {
     for order in SWAP_ORDERINGS {
         f(order);
     }
@@ -1038,23 +1136,20 @@ pub(crate) const COMPARE_EXCHANGE_ORDERINGS: [(Ordering, Ordering); 15] = [
 pub(crate) fn rand_compare_exchange_ordering(rng: &mut fastrand::Rng) -> (Ordering, Ordering) {
     COMPARE_EXCHANGE_ORDERINGS[rng.usize(0..COMPARE_EXCHANGE_ORDERINGS.len())]
 }
-pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
-    f: impl Fn(Ordering, Ordering) -> T,
-) {
+pub(crate) fn test_compare_exchange_ordering(f: &dyn Fn(Ordering, Ordering)) {
     for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
         f(success, failure);
     }
-
     if !skip_should_panic_test() {
         for order in SWAP_ORDERINGS {
-            let msg = assert_panic(|| f(order, Ordering::AcqRel));
+            let msg = assert_panic(&|| f(order, Ordering::AcqRel));
             assert!(
                 msg == "there is no such thing as an acquire-release failure ordering"
                     || msg == "there is no such thing as an acquire-release load",
                 "{}",
                 msg
             );
-            let msg = assert_panic(|| f(order, Ordering::Release));
+            let msg = assert_panic(&|| f(order, Ordering::Release));
             assert!(
                 msg == "there is no such thing as a release failure ordering"
                     || msg == "there is no such thing as a release load",
@@ -1064,11 +1159,12 @@ pub(crate) fn test_compare_exchange_ordering<T: std::fmt::Debug>(
         }
     }
 }
-// for stress test generated by __test_atomic macro
+
+// Used in stress tests to find atomicity bug generated by __test_atomic macro.
 pub(crate) fn stress_test_config(rng: &mut fastrand::Rng) -> (usize, usize) {
-    let iterations = if cfg!(debug_assertions) { 5_000 } else { 25_000 };
+    let iterations = if cfg!(any(debug_assertions, qemu, valgrind)) { 5_000 } else { 25_000 };
     let threads = if cfg!(debug_assertions) { 2 } else { rng.usize(2..=8) };
-    std::eprintln!("threads={threads}");
+    eprintln!("threads={threads}");
     (iterations, threads)
 }
 
@@ -1094,7 +1190,7 @@ pub(crate) const IMP_EMU_SUB_WORD_CAS: bool = cfg!(target_arch = "s390x") || IMP
 #[cfg(valgrind)]
 #[inline(always)]
 pub(crate) fn mark_no_access<T: ?Sized>(a: &T) {
-    memcheck::mark_mem(
+    memcheck::mark_memory(
         a as *const T as *mut core::ffi::c_void,
         size_of_val(a),
         memcheck::MemState::NoAccess,
@@ -1104,7 +1200,7 @@ pub(crate) fn mark_no_access<T: ?Sized>(a: &T) {
 #[cfg(valgrind)]
 #[inline(always)]
 pub(crate) fn mark_defined<T: ?Sized>(a: &T) {
-    memcheck::mark_mem(
+    memcheck::mark_memory(
         a as *const T as *mut core::ffi::c_void,
         size_of_val(a),
         memcheck::MemState::Defined,
@@ -1115,7 +1211,7 @@ pub(crate) fn mark_defined<T: ?Sized>(a: &T) {
 #[inline(always)]
 pub(crate) fn mark_aligned_defined<T: ?Sized>(a: &T) {
     assert!(size_of_val(a) <= 2);
-    memcheck::mark_mem(
+    memcheck::mark_memory(
         (a as *const T as *mut core::ffi::c_void).map_addr(|a| a & !3),
         4,
         memcheck::MemState::Defined,
@@ -1126,7 +1222,7 @@ pub(crate) fn mark_aligned_defined<T: ?Sized>(a: &T) {
 #[inline(always)]
 pub(crate) fn mark_aligned_undefined<T: ?Sized>(a: &T) {
     assert!(size_of_val(a) <= 2);
-    memcheck::mark_mem(
+    memcheck::mark_memory(
         (a as *const T as *mut core::ffi::c_void).map_addr(|a| a & !3),
         4,
         memcheck::MemState::Undefined,
@@ -1135,7 +1231,8 @@ pub(crate) fn mark_aligned_undefined<T: ?Sized>(a: &T) {
 }
 
 fn skip_should_panic_test() -> bool {
-    is_panic_abort()
+    // Valgrind false positive on s390x
+    is_panic_abort() || cfg!(all(valgrind, target_arch = "s390x"))
 }
 
 // For -C panic=abort -Z panic_abort_tests: https://github.com/rust-lang/rust/issues/67650
@@ -1152,7 +1249,18 @@ pub(crate) struct Array<T: Primitive> {
     idx: usize,
 }
 impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
-    pub(crate) fn new(base: T, rng: &mut fastrand::Rng) -> Self {
+    pub(crate) fn indices() -> core::ops::Range<usize> {
+        match mem::size_of::<T>() {
+            // 0 1 2 3 4 5 6 7 8 9
+            //       ^ ^ ^ ^
+            1 => 3..7,
+            // 0 1 2 3 4 5 6 7 8 9
+            //       ^ ^
+            _ => 3..5,
+        }
+    }
+
+    pub(crate) fn new(base: T, idx: usize) -> Self {
         Self {
             arr: Box::new(Align16([
                 AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
@@ -1167,9 +1275,7 @@ impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
                 AtomicMaybeUninit::<T>::new(MaybeUninit::new(base)),
             ])),
             base,
-            // 0 1 2 3 4 5 6 7 8 9
-            //       ^ ^ ^ ^
-            idx: rng.usize(3..=6),
+            idx,
         }
     }
     pub(crate) fn get(&self) -> &AtomicMaybeUninit<T> {
@@ -1200,197 +1306,252 @@ impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
     pub(crate) unsafe fn assert(&self) {
         #[cfg(valgrind)]
         mark_defined(&self.arr.0);
-        for i in (0..self.idx).chain(self.idx + 1..self.arr.0.len()) {
-            assert_eq!(
-                unsafe { self.arr.0[i].load(Ordering::Relaxed).assume_init() },
-                self.base,
-                "value at index {i} has changed, but must not change other than value at index {}",
-                self.idx,
-            );
+        let base = self.base;
+        let idx = self.idx;
+        for i in 0..self.arr.0.len() {
+            if i != idx {
+                assert_eq!(
+                    unsafe { (*self.arr.0[i].as_ptr()).assume_init() },
+                    base,
+                    "value at index {i} has changed, but must not change other than value at index {idx}"
+                );
+            }
         }
     }
 }
 
-// Test the cases that should not fail if the memory ordering is implemented correctly.
-// This is still not exhaustive and only tests a few cases.
-macro_rules! __stress_test_acquire_release {
-    (prepare) => {
-        #[cfg(valgrind)]
-        use std::mem;
-        use std::{
-            mem::MaybeUninit,
-            sync::atomic::{AtomicUsize, Ordering},
-            thread,
-        };
-
-        #[cfg(valgrind)]
-        use crate::tests::helper::*;
-        use crate::{
-            AtomicMaybeUninit, tests::helper::catch_unwind_on_weak_memory_arch as can_panic,
-        };
-    };
-    (should_pass, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+// Stress tests to find memory ordering bug.
+// Note that this is not exhaustive and only tests a few cases.
+macro_rules! __stress_acquire_release {
+    (should_pass, $ty:ident, $read:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             #[test]
             #[cfg_attr(debug_assertions, ignore = "slow in some environments")] // debug mode is slow.
-            #[allow(clippy::cast_possible_truncation)]
-            fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
-                __stress_test_acquire_release!(
-                    $ty, $write, $load_order, $store_order);
+            #[allow(
+                clippy::cast_possible_wrap,
+                clippy::cast_sign_loss,
+                clippy::cast_possible_truncation,
+            )]
+            fn [<acquire_release1 _ $read _ $load_order:lower _ $write _ $store_order:lower>]() {
+                __call_stress_test_fn!(
+                    acquire_release1, $ty, $read, $write, $load_order, $store_order);
             }
         }
     };
-    (can_panic, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
-        paste::paste! {
-            #[test]
-            // Currently, to make this test work well enough outside of Miri, tens of thousands
-            // of iterations are needed, but this test is slow in some environments.
-            // So, ignore by default. See also catch_unwind_on_weak_memory_arch.
-            #[ignore = "slow in some environments"]
-            #[allow(clippy::cast_possible_truncation)]
-            fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
-                can_panic("a=", || __stress_test_acquire_release!(
-                    $ty, $write, $load_order, $store_order));
-            }
-        }
+    (can_panic, $ty:ident, $read:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+        // Currently, to make this test work well enough outside of Miri, tens of thousands
+        // of iterations are needed, but this test is slow in some environments.
+        // So, ignore by default. See also catch_unwind_on_weak_memory_arch.
+        // paste::paste! {
+        //     #[test]
+        //     #[ignore = "slow in some environments"]
+        //     #[allow(
+        //         clippy::cast_possible_wrap,
+        //         clippy::cast_sign_loss,
+        //         clippy::cast_possible_truncation,
+        //     )]
+        //     fn [<acquire_release1 _ $read _ $load_order:lower _ $write _ $store_order:lower>]() {
+        //         use crate::tests::helper::catch_unwind_on_weak_memory_arch as can_panic;
+        //         can_panic("a=", test_helper::function_name!(), || __call_stress_test_fn!(
+        //             acquire_release1, $ty, $read, $write, $load_order, $store_order));
+        //     }
+        // }
     };
-    ($ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
-        // TODO(riscv): wrong result (as of Valgrind 3.26)
-        #[cfg(valgrind)]
-        if cfg!(target_arch = "riscv64")
-            && mem::size_of::<$ty>() <= 2
-            && stringify!($write) == "swap"
-        {
-            return;
-        }
-        let mut n: usize = 50_000;
-        // This test is relatively fast because it spawns only one thread, but
-        // the iterations are limited to a maximum value of integers.
-        if $ty::try_from(n).is_err() {
-            n = ($ty::MAX as usize).checked_add(1).unwrap();
-        }
-        let a = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
-        #[cfg(valgrind)]
-        if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 && stringify!($write) == "swap" {
-            mark_aligned_defined(a);
-        }
-        let b = &AtomicUsize::new(0);
-        thread::scope(|s| {
-            s.spawn(|| {
-                for i in 0..n {
-                    b.store(i, Ordering::Relaxed);
-                    a.$write(MaybeUninit::new(i as $ty), Ordering::$store_order);
-                }
-            });
-            loop {
-                let a = unsafe { a.load(Ordering::$load_order).assume_init() };
-                let b = b.load(Ordering::Relaxed);
-                assert!(a as usize <= b, "a={},b={}", a, b);
-                if a as usize == n - 1 {
-                    break;
-                }
-            }
-        });
-    }};
 }
-macro_rules! __stress_test_seqcst {
-    (prepare) => {
-        #[cfg(valgrind)]
-        use std::mem;
-        use std::{
-            mem::MaybeUninit,
-            sync::atomic::{AtomicUsize, Ordering},
-            thread,
-        };
-
-        #[cfg(valgrind)]
-        use crate::tests::helper::*;
-        use crate::{
-            AtomicMaybeUninit, tests::helper::catch_unwind_on_non_seqcst_arch as can_panic,
-        };
-    };
-    (should_pass, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+macro_rules! __stress_seqcst {
+    (should_pass, $ty:ident, $read:ident, $write:ident, $load_order:ident, $store_order:ident) => {
         paste::paste! {
             #[test]
-            // Currently, to make this test work well enough outside of Miri, tens of thousands
-            // of iterations are needed, but this test is very slow in some environments because
-            // it creates two threads for each iteration.
-            // So, ignore on QEMU by default.
-            #[cfg_attr(any(debug_assertions, qemu), ignore = "slow in some environments")] // debug mode is slow.
-            fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
-                __stress_test_seqcst!(
-                    $ty, $write, $load_order, $store_order);
+            #[cfg_attr(debug_assertions, ignore = "slow in some environments")] // debug mode is slow.
+            #[allow(
+                clippy::cast_possible_wrap,
+                clippy::cast_sign_loss,
+                clippy::cast_possible_truncation,
+            )]
+            fn [<seqcst1 _ $read _ $load_order:lower _ $write _ $store_order:lower>]() {
+                if cfg!(all(
+                    qemu,
+                    any(target_arch = "aarch64", target_arch = "arm", target_arch = "arm64ec"),
+                )) {
+                    return; // TODO(arm,aarch64): QEMU bug as of QEMU 10.2
+                }
+                __call_stress_test_fn!(
+                    seqcst1, $ty, $read, $write, $load_order, $store_order);
             }
         }
     };
-    (can_panic, $ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {
-        paste::paste! {
-            #[test]
-            // Currently, to make this test work well enough outside of Miri, tens of thousands
-            // of iterations are needed, but this test is very slow in some environments because
-            // it creates two threads for each iteration.
-            // So, ignore by default. See also catch_unwind_on_non_seqcst_arch.
-            #[ignore = "slow in some environments"]
-            fn [<load_ $load_order:lower _ $write _ $store_order:lower>]() {
-                can_panic("c=2", || __stress_test_seqcst!(
-                    $ty, $write, $load_order, $store_order));
-            }
-        }
+    (can_panic, $ty:ident, $read:ident, $write:ident, $load_order:ident, $store_order:ident) => {
+        // Currently, to make this test work well enough outside of Miri, tens of thousands
+        // of iterations are needed, but this test is slow in some environments.
+        // So, ignore by default. See also catch_unwind_on_non_seqcst_arch.
+        // paste::paste! {
+        //     #[test]
+        //     #[ignore = "slow in some environments"]
+        //     #[allow(
+        //         clippy::cast_possible_wrap,
+        //         clippy::cast_sign_loss,
+        //         clippy::cast_possible_truncation,
+        //     )]
+        //     fn [<seqcst1 _ $read _ $load_order:lower _ $write _ $store_order:lower>]() {
+        //         if cfg!(all(
+        //             qemu,
+        //             any(target_arch = "aarch64", target_arch = "arm", target_arch = "arm64ec"),
+        //         )) {
+        //             return; // TODO(arm,aarch64): QEMU bug as of QEMU 10.2
+        //         }
+        //         use crate::tests::helper::catch_unwind_on_non_seqcst_arch as can_panic;
+        //         can_panic("c=2", test_helper::function_name!(), || __call_stress_test_fn!(
+        //             seqcst1, $ty, $read, $write, $load_order, $store_order));
+        //     }
+        // }
     };
-    ($ty:ident, $write:ident, $load_order:ident, $store_order:ident) => {{
-        const N: usize = if cfg!(valgrind) { 50 } else { 50_000 };
+}
+// To test this working correctly:
+// - Uncomment can_panic case in __stress_seqcst,
+//   and run test with `--release -- acquire_release1 --ignored`.
+//   At least on AArch64 machine, some "panicked as expected" will be shown.
+pub(crate) fn acquire_release1<T: Send + Sync>(
+    min: isize,
+    max: isize,
+    new: impl Fn(isize) -> T,
+    load: impl Fn(&T) -> isize + Send + Sync,
+    store: impl Fn(&T, isize) + Send + Sync,
+    #[allow(unused_variables)] do_rmw: bool,
+) {
+    let n: usize = if cfg!(any(qemu, valgrind)) { 5_000 } else { 50_000 };
 
-        // TODO(riscv): wrong result (as of Valgrind 3.26)
-        #[cfg(valgrind)]
-        if cfg!(target_arch = "riscv64")
-            && mem::size_of::<$ty>() <= 2
-            && stringify!($write) == "swap"
-        {
-            return;
-        }
-        let a = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
-        #[cfg(valgrind)]
-        if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 && stringify!($write) == "swap" {
-            mark_aligned_defined(a);
-        }
-        let b = &AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(0));
-        #[cfg(valgrind)]
-        if IMP_EMU_SUB_WORD_CAS && mem::size_of::<$ty>() <= 2 && stringify!($write) == "swap" {
-            mark_aligned_defined(b);
-        }
-        let c = &AtomicUsize::new(0);
-        let ready = &AtomicUsize::new(0);
-        thread::scope(|s| {
-            for n in 0..N {
-                a.store(MaybeUninit::new(0), Ordering::Relaxed);
-                b.store(MaybeUninit::new(0), Ordering::Relaxed);
-                c.store(0, Ordering::Relaxed);
-                let h_a = s.spawn(|| {
-                    while ready.load(Ordering::Relaxed) == 0 {}
-                    a.$write(MaybeUninit::new(1), Ordering::$store_order);
-                    if unsafe { b.load(Ordering::$load_order).assume_init() == 0 } {
-                        c.fetch_add(1, Ordering::Relaxed);
-                    }
-                });
-                let h_b = s.spawn(|| {
-                    while ready.load(Ordering::Relaxed) == 0 {}
-                    b.$write(MaybeUninit::new(1), Ordering::$store_order);
-                    if unsafe { a.load(Ordering::$load_order).assume_init() == 0 } {
-                        c.fetch_add(1, Ordering::Relaxed);
-                    }
-                });
-                ready.store(1, Ordering::Relaxed);
-                h_a.join().unwrap();
-                h_b.join().unwrap();
-                let c = c.load(Ordering::Relaxed);
-                assert!(c == 0 || c == 1, "c={},n={}", c, n);
+    // TODO(riscv): wrong result (as of Valgrind 3.26)
+    #[cfg(valgrind)]
+    if cfg!(target_arch = "riscv64") && max <= u16::MAX as isize && do_rmw {
+        return;
+    }
+    let mut start: isize = 0;
+    #[allow(clippy::cast_possible_wrap)]
+    let mut end: isize = n as isize;
+    // This test is relatively fast because it spawns only one thread, but
+    // the iterations are limited to a maximum value of integers.
+    if max < end {
+        start = min;
+        end = max;
+    }
+    assert!((start..end).len() <= n, "{}", (start..end).len());
+    let a = &new(start);
+    #[cfg(valgrind)]
+    if IMP_EMU_SUB_WORD_CAS && max <= u16::MAX as isize && do_rmw {
+        mark_aligned_defined(a);
+    }
+    let b = &AtomicIsize::new(start);
+    let a_ready = &AtomicUsize::new(0);
+    let b_ready = &AtomicUsize::new(0);
+    thread::scope(|s| {
+        s.spawn(|| {
+            while a_ready.load(Ordering::Relaxed) == 0 {}
+            b_ready.store(1, Ordering::Relaxed);
+            for i in start..end {
+                b.store(i, Ordering::Relaxed);
+                store(a, i);
             }
         });
-    }};
+        let end = end - 1;
+        a_ready.store(1, Ordering::Relaxed);
+        while b_ready.load(Ordering::Relaxed) == 0 {}
+        loop {
+            let a = load(a);
+            let b = b.load(Ordering::Relaxed);
+            assert!(a <= b, "a={a},b={b}");
+            if a == end && b == end {
+                break;
+            }
+        }
+    });
+}
+// To test this working correctly:
+// - Uncomment can_panic case in __stress_seqcst,
+//   and run test with `--release -- seqcst1 --ignored`.
+//   At least on AArch64 machine, some "panicked as expected" will be shown.
+// - Change aarch64.rs's 128-bit seqcst load from `ldar; ldp; dmb ishld` to `ldp; dmb ish`
+//   and run test with `--release -- seqcst1` on AArch64 macOS or other AArch64 which supports FEAT_LSE2
+//   with `RUSTFLAGS=-C target-feature=+lse2`.
+//   tests::stress_swap_u128::seqcst1_load_seqcst_swap_seqcst should fail within a few repetitions.
+pub(crate) fn seqcst1<T: Send + Sync>(
+    _min: isize,
+    #[allow(unused_variables)] max: isize,
+    new: impl Fn(isize) -> T,
+    load: impl Fn(&T) -> isize + Send + Sync,
+    store: impl Fn(&T, isize) + Send + Sync,
+    #[allow(unused_variables)] do_rmw: bool,
+) {
+    let n: usize = if cfg!(valgrind) {
+        50
+    } else if cfg!(qemu) {
+        5_000
+    } else {
+        50_000
+    };
+
+    // TODO(riscv): wrong result (as of Valgrind 3.26)
+    #[cfg(valgrind)]
+    if cfg!(target_arch = "riscv64") && max <= u16::MAX as isize && do_rmw {
+        return;
+    }
+    let a = &new(0);
+    #[cfg(valgrind)]
+    if IMP_EMU_SUB_WORD_CAS && max <= u16::MAX as isize && do_rmw {
+        mark_aligned_defined(a);
+    }
+    let b = &new(0);
+    #[cfg(valgrind)]
+    if IMP_EMU_SUB_WORD_CAS && max <= u16::MAX as isize && do_rmw {
+        mark_aligned_defined(b);
+    }
+    let c = &AtomicUsize::new(0);
+    let a_done = &AtomicUsize::new(0);
+    let a_ready = &AtomicUsize::new(0);
+    let b_ready = &AtomicUsize::new(0);
+    let panicked = &AtomicUsize::new(0);
+    thread::scope(|s| {
+        s.spawn(|| {
+            for n in 1..n {
+                // Acquire to make initialization of a/b/c visible.
+                while a_ready.load(Ordering::Acquire) != n {
+                    if panicked.load(Ordering::Relaxed) != 0 {
+                        return;
+                    }
+                }
+                b_ready.store(n, Ordering::Relaxed);
+                store(a, 1);
+                if load(b) == 0 {
+                    c.fetch_add(1, Ordering::Relaxed);
+                }
+                // Release to make update of c visible.
+                a_done.store(n, Ordering::Release);
+            }
+        });
+        for n in 1..n {
+            store(a, 0);
+            store(b, 0);
+            c.store(0, Ordering::Relaxed);
+            // Release to make initialization of a/b/c visible.
+            a_ready.store(n, Ordering::Release);
+            while b_ready.load(Ordering::Relaxed) != n {}
+            store(b, 1);
+            if load(a) == 0 {
+                c.fetch_add(1, Ordering::Relaxed);
+            }
+            // Acquire to make update of c visible.
+            while a_done.load(Ordering::Acquire) != n {}
+            let c = c.load(Ordering::Relaxed);
+            let ok = matches!(c, 0 | 1);
+            if !ok {
+                panicked.store(1, Ordering::Relaxed);
+                panic!("c={c},n={n}");
+            }
+        }
+    });
 }
 // Catches unwinding panic on architectures with weak memory models.
-pub(crate) fn catch_unwind_on_weak_memory_arch(pat: &str, f: impl Fn()) {
-    // With x86 TSO, RISC-V TSO (optional, not default), SPARC TSO (optional, default),
+pub(crate) fn catch_unwind_on_weak_memory_arch(pat: &str, function_name: &str, f: impl Fn()) {
+    // With x86 TSO, RISC-V TSO (optional), SPARC TSO (optional, default?),
     // and IBM-370 memory models should never be a panic here.
     if cfg!(any(
         target_arch = "x86",
@@ -1398,10 +1559,11 @@ pub(crate) fn catch_unwind_on_weak_memory_arch(pat: &str, f: impl Fn()) {
         target_arch = "s390x",
         target_arch = "sparc",
         target_arch = "sparc64",
+        all(any(target_arch = "riscv32", target_arch = "riscv64"), target_feature = "ztso"),
     )) {
         f();
     } else if !is_panic_abort() {
-        // This could be is_err on architectures with weak memory models.
+        // This could be Err on architectures with weak memory models.
         // However, this does not necessarily mean that it will always be panic,
         // and implementing it with stronger orderings is also okay.
         match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
@@ -1414,12 +1576,13 @@ pub(crate) fn catch_unwind_on_weak_memory_arch(pat: &str, f: impl Fn()) {
                     .cloned()
                     .unwrap_or_else(|| msg.downcast_ref::<&'static str>().copied().unwrap().into());
                 assert!(msg.contains(pat), "{}", msg);
+                test_helper::eprintln_nocapture!("  {function_name} panicked as expected");
             }
         }
     }
 }
 // Catches unwinding panic on architectures with non-sequentially consistent memory models.
-pub(crate) fn catch_unwind_on_non_seqcst_arch(pat: &str, f: impl Fn()) {
+pub(crate) fn catch_unwind_on_non_seqcst_arch(pat: &str, function_name: &str, f: impl Fn()) {
     if !is_panic_abort() {
         // This could be Err on architectures with non-sequentially consistent memory models.
         // However, this does not necessarily mean that it will always be panic,
@@ -1434,58 +1597,93 @@ pub(crate) fn catch_unwind_on_non_seqcst_arch(pat: &str, f: impl Fn()) {
                     .cloned()
                     .unwrap_or_else(|| msg.downcast_ref::<&'static str>().copied().unwrap().into());
                 assert!(msg.contains(pat), "{}", msg);
+                test_helper::eprintln_nocapture!("  {function_name} panicked as expected");
             }
         }
     }
 }
-macro_rules! stress_test_load_store {
-    ($ty:ident) => {
-        #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
-        paste::paste! {
-            #[allow(
-                clippy::alloc_instead_of_core,
-                clippy::arithmetic_side_effects,
-                clippy::std_instead_of_alloc,
-                clippy::std_instead_of_core,
-                clippy::undocumented_unsafe_blocks
-            )]
-            mod [<stress_acquire_release_load_store_ $ty>] {
-                __stress_test_acquire_release!(prepare);
-                __stress_test_acquire_release!(can_panic, $ty, store, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, store, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $ty, store, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, store, Acquire, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, store, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $ty, store, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, store, SeqCst, Relaxed);
-                __stress_test_acquire_release!(should_pass, $ty, store, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $ty, store, SeqCst, SeqCst);
-            }
-            #[allow(
-                clippy::alloc_instead_of_core,
-                clippy::arithmetic_side_effects,
-                clippy::std_instead_of_alloc,
-                clippy::std_instead_of_core,
-                clippy::undocumented_unsafe_blocks
-            )]
-            mod [<stress_seqcst_load_store_ $ty>] {
-                __stress_test_seqcst!(prepare);
-                __stress_test_seqcst!(can_panic, $ty, store, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, store, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $ty, store, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, store, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, store, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $ty, store, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, store, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, store, SeqCst, Release);
-                __stress_test_seqcst!(should_pass, $ty, store, SeqCst, SeqCst);
-            }
-        }
+macro_rules! __call_stress_test_fn {
+    ($name:ident, $ty:ident, load, cas, $load_order:ident, $store_order:ident) => {
+        $name(
+            $ty::MIN.try_into().unwrap_or(isize::MIN),
+            $ty::MAX.try_into().unwrap_or(isize::MAX),
+            |v| AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(v as $ty)),
+            |a| unsafe { a.load(Ordering::$load_order).assume_init() as isize },
+            |a, v| {
+                a.fetch_update(Ordering::$store_order, Ordering::Relaxed, |_| {
+                    Some(MaybeUninit::new(v as $ty))
+                })
+                .unwrap();
+            },
+            true, // do_rmw
+        )
+    };
+    ($name:ident, $ty:ident, load, $write:ident, $load_order:ident, $store_order:ident) => {
+        $name(
+            $ty::MIN.try_into().unwrap_or(isize::MIN),
+            $ty::MAX.try_into().unwrap_or(isize::MAX),
+            |v| AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(v as $ty)),
+            |a| unsafe { a.load(Ordering::$load_order).assume_init() as isize },
+            |a, v| {
+                a.$write(MaybeUninit::new(v as $ty), Ordering::$store_order);
+            },
+            stringify!($write) == "swap", // do_rmw
+        )
+    };
+    ($name:ident, $ty:ident, cas, $write:ident, $load_order:ident, $store_order:ident) => {
+        $name(
+            $ty::MIN.try_into().unwrap_or(isize::MIN),
+            $ty::MAX.try_into().unwrap_or(isize::MAX),
+            |v| AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(v as $ty)),
+            |a| unsafe {
+                a.compare_exchange(
+                    MaybeUninit::new(0),
+                    MaybeUninit::new(0),
+                    Ordering::$load_order,
+                    match Ordering::$load_order {
+                        Ordering::Release => Ordering::Relaxed,
+                        Ordering::AcqRel => Ordering::Acquire,
+                        _ => Ordering::$load_order,
+                    },
+                )
+                .unwrap_or_else(|x| x)
+                .assume_init() as isize
+            },
+            |a, v| {
+                a.$write(MaybeUninit::new(v as $ty), Ordering::$store_order);
+            },
+            true, // do_rmw
+        )
+    };
+    ($name:ident, $ty:ident, cas_weak, $write:ident, $load_order:ident, $store_order:ident) => {
+        $name(
+            $ty::MIN.try_into().unwrap_or(isize::MIN),
+            $ty::MAX.try_into().unwrap_or(isize::MAX),
+            |v| AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(v as $ty)),
+            |a| unsafe {
+                a.compare_exchange_weak(
+                    MaybeUninit::new(0),
+                    MaybeUninit::new(0),
+                    Ordering::$load_order,
+                    match Ordering::$load_order {
+                        Ordering::Release => Ordering::Relaxed,
+                        Ordering::AcqRel => Ordering::Acquire,
+                        _ => Ordering::$load_order,
+                    },
+                )
+                .unwrap_or_else(|x| x)
+                .assume_init() as isize
+            },
+            |a, v| {
+                a.$write(MaybeUninit::new(v as $ty), Ordering::$store_order);
+            },
+            true, // do_rmw
+        )
     };
 }
+#[rustfmt::skip]
 macro_rules! stress_test {
     ($ty:ident) => {
-        stress_test_load_store!($ty);
         #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
         paste::paste! {
             #[allow(
@@ -1495,24 +1693,38 @@ macro_rules! stress_test {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks
             )]
-            mod [<stress_acquire_release_load_swap_ $ty>] {
-                __stress_test_acquire_release!(prepare);
-                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, Acquire);
-                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, Release);
-                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, AcqRel);
-                __stress_test_acquire_release!(can_panic, $ty, swap, Relaxed, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, swap, Acquire, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, swap, Acquire, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, swap, Acquire, Release);
-                __stress_test_acquire_release!(should_pass, $ty, swap, Acquire, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, swap, Acquire, SeqCst);
-                __stress_test_acquire_release!(can_panic, $ty, swap, SeqCst, Relaxed);
-                __stress_test_acquire_release!(can_panic, $ty, swap, SeqCst, Acquire);
-                __stress_test_acquire_release!(should_pass, $ty, swap, SeqCst, Release);
-                __stress_test_acquire_release!(should_pass, $ty, swap, SeqCst, AcqRel);
-                __stress_test_acquire_release!(should_pass, $ty, swap, SeqCst, SeqCst);
+            mod [<stress_load_store_ $ty>] {
+                use std::{mem::MaybeUninit, sync::atomic::Ordering};
+
+                use crate::{AtomicMaybeUninit, tests::helper::*};
+
+                __stress_acquire_release!(can_panic, $ty, load, store, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, store, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, load, store, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, store, Acquire, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, load, store, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, load, store, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, store, SeqCst, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, load, store, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, load, store, SeqCst, SeqCst);
+
+                __stress_seqcst!(can_panic, $ty, load, store, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, store, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, load, store, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, store, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, store, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, load, store, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, store, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, store, SeqCst, Release);
+                __stress_seqcst!(should_pass, $ty, load, store, SeqCst, SeqCst);
             }
+        }
+        #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
+        #[cfg(not(any(
+            all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex),
+            all(target_arch = "mips64", atomic_maybe_uninit_no_ll_sc),
+        )))]
+        paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
                 clippy::arithmetic_side_effects,
@@ -1520,23 +1732,262 @@ macro_rules! stress_test {
                 clippy::std_instead_of_core,
                 clippy::undocumented_unsafe_blocks
             )]
-            mod [<stress_seqcst_load_swap_ $ty>] {
-                __stress_test_seqcst!(prepare);
-                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, Release);
-                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, swap, Relaxed, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, Release);
-                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, AcqRel);
-                __stress_test_seqcst!(can_panic, $ty, swap, Acquire, SeqCst);
-                __stress_test_seqcst!(can_panic, $ty, swap, SeqCst, Relaxed);
-                __stress_test_seqcst!(can_panic, $ty, swap, SeqCst, Acquire);
-                __stress_test_seqcst!(can_panic, $ty, swap, SeqCst, Release);
-                __stress_test_seqcst!(can_panic, $ty, swap, SeqCst, AcqRel);
-                __stress_test_seqcst!(should_pass, $ty, swap, SeqCst, SeqCst);
+            mod [<stress_swap_ $ty>] {
+                use std::{mem::MaybeUninit, sync::atomic::Ordering};
+
+                use crate::{AtomicMaybeUninit, tests::helper::*};
+
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, Acquire);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Acquire, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, swap, Acquire, Acquire);
+                __stress_acquire_release!(should_pass, $ty, load, swap, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, load, swap, Acquire, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, load, swap, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, swap, SeqCst, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, swap, SeqCst, Acquire);
+                __stress_acquire_release!(should_pass, $ty, load, swap, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, load, swap, SeqCst, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, load, swap, SeqCst, SeqCst);
+
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, AcqRel);
+                __stress_seqcst!(can_panic, $ty, load, swap, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, AcqRel);
+                __stress_seqcst!(can_panic, $ty, load, swap, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, swap, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, swap, SeqCst, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, swap, SeqCst, Release);
+                __stress_seqcst!(can_panic, $ty, load, swap, SeqCst, AcqRel);
+                __stress_seqcst!(should_pass, $ty, load, swap, SeqCst, SeqCst);
+            }
+        }
+        #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
+        #[cfg(not(any(
+            all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex),
+            all(target_arch = "mips64", atomic_maybe_uninit_no_ll_sc),
+            all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg),
+        )))]
+        paste::paste! {
+            #[allow(
+                clippy::alloc_instead_of_core,
+                clippy::arithmetic_side_effects,
+                clippy::std_instead_of_alloc,
+                clippy::std_instead_of_core,
+                clippy::undocumented_unsafe_blocks
+            )]
+            mod [<stress_ $ty>] {
+                use std::{mem::MaybeUninit, sync::atomic::Ordering};
+
+                use crate::{AtomicMaybeUninit, tests::helper::*};
+
+                __stress_acquire_release!(can_panic, $ty, cas, store, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Acquire, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas, store, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, store, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Release, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Release, Release);
+                __stress_acquire_release!(can_panic, $ty, cas, store, Release, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, store, AcqRel, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas, store, AcqRel, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, store, AcqRel, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, store, SeqCst, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas, store, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, store, SeqCst, SeqCst);
+
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Acquire, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Release, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Release, Release);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, Release, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, AcqRel, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, AcqRel, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, AcqRel, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, store, SeqCst, Relaxed);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, store, SeqCst, SeqCst);
+
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, Acquire);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Acquire, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Acquire, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, Acquire, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, Acquire);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, Release);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, Release, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, AcqRel, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, AcqRel, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, AcqRel, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, AcqRel, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, AcqRel, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, SeqCst, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas, swap, SeqCst, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, SeqCst, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas, swap, SeqCst, SeqCst);
+
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, Acquire);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Acquire, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Acquire, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, Acquire, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, Acquire);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, Release);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, Release, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, AcqRel, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, AcqRel, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, AcqRel, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, AcqRel, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, AcqRel, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, SeqCst, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, cas_weak, swap, SeqCst, Acquire);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, SeqCst, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, cas_weak, swap, SeqCst, SeqCst);
+
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, Acquire);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, Release);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, AcqRel);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Relaxed, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Acquire, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, cas, Acquire, Acquire);
+                __stress_acquire_release!(should_pass, $ty, load, cas, Acquire, Release);
+                __stress_acquire_release!(should_pass, $ty, load, cas, Acquire, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, load, cas, Acquire, SeqCst);
+                __stress_acquire_release!(can_panic, $ty, load, cas, SeqCst, Relaxed);
+                __stress_acquire_release!(can_panic, $ty, load, cas, SeqCst, Acquire);
+                __stress_acquire_release!(should_pass, $ty, load, cas, SeqCst, Release);
+                __stress_acquire_release!(should_pass, $ty, load, cas, SeqCst, AcqRel);
+                __stress_acquire_release!(should_pass, $ty, load, cas, SeqCst, SeqCst);
+
+                __stress_seqcst!(can_panic, $ty, cas, store, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, cas, store, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, store, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, cas, store, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, store, Release, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, Release, Release);
+                __stress_seqcst!(can_panic, $ty, cas, store, Release, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, store, AcqRel, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, AcqRel, Release);
+                __stress_seqcst!(can_panic, $ty, cas, store, AcqRel, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, store, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, store, SeqCst, Release);
+                __stress_seqcst!(should_pass, $ty, cas, store, SeqCst, SeqCst);
+
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Release, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Release, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, Release, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, AcqRel, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, AcqRel, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, AcqRel, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, store, SeqCst, Release);
+                __stress_seqcst!(should_pass, $ty, cas_weak, store, SeqCst, SeqCst);
+
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas, swap, Release, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas, swap, AcqRel, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas, swap, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas, swap, SeqCst, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas, swap, SeqCst, Release);
+                __stress_seqcst!(can_panic, $ty, cas, swap, SeqCst, AcqRel);
+                __stress_seqcst!(should_pass, $ty, cas, swap, SeqCst, SeqCst);
+
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, Release, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, AcqRel);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, AcqRel, SeqCst);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, Acquire);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, Release);
+                __stress_seqcst!(can_panic, $ty, cas_weak, swap, SeqCst, AcqRel);
+                __stress_seqcst!(should_pass, $ty, cas_weak, swap, SeqCst, SeqCst);
+
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, Release);
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, AcqRel);
+                __stress_seqcst!(can_panic, $ty, load, cas, Relaxed, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, Release);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, AcqRel);
+                __stress_seqcst!(can_panic, $ty, load, cas, Acquire, SeqCst);
+                __stress_seqcst!(can_panic, $ty, load, cas, SeqCst, Relaxed);
+                __stress_seqcst!(can_panic, $ty, load, cas, SeqCst, Acquire);
+                __stress_seqcst!(can_panic, $ty, load, cas, SeqCst, Release);
+                __stress_seqcst!(can_panic, $ty, load, cas, SeqCst, AcqRel);
+                __stress_seqcst!(should_pass, $ty, load, cas, SeqCst, SeqCst);
             }
         }
     };

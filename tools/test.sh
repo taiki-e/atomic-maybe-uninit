@@ -122,6 +122,7 @@ rustc_target_list=$(rustc ${pre_args[@]+"${pre_args[@]}"} --print target-list)
 rustc_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^release:' | cut -d' ' -f2)
 rustc_minor_version="${rustc_version#*.}"
 rustc_minor_version="${rustc_minor_version%%.*}"
+commit_date=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^commit-date:' | cut -d' ' -f2)
 host=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^host:' | cut -d' ' -f2)
 workspace_dir=$(pwd)
 target_dir="${workspace_dir}/target"
@@ -151,7 +152,17 @@ if [[ -n "${target}" ]]; then
     if [[ ! -f "target-specs/${target}.json" ]]; then
       bail "target '${target}' not available on ${rustc_version}"
     fi
-    target_flags=(--target "${workspace_dir}/target-specs/${target}.json")
+    if { cargo ${pre_args[@]+"${pre_args[@]}"} -Z help || true; } | grep -Fq json-target-spec; then
+      target_flags+=(-Z json-target-spec)
+    fi
+    if [[ "${rustc_minor_version}" -lt 91 ]] || [[ "${commit_date}" == '2025-08-05' ]]; then
+      # Handle target-pointer-width change.
+      mkdir -p -- tmp/target-specs
+      sed -E 's/"target-(c-int|pointer)-width": ([0-9]+)/"target-\1-width": "\2"/g' "target-specs/${target}.json" >|"tmp/target-specs/${target}.json"
+      target_flags+=(--target "${workspace_dir}/tmp/target-specs/${target}.json")
+    else
+      target_flags+=(--target "${workspace_dir}/target-specs/${target}.json")
+    fi
   else
     target_flags=(--target "${target}")
   fi
@@ -188,15 +199,19 @@ case "${target}" in
     ;;
 esac
 cranelift=''
+gcc=''
 if [[ "${RUSTFLAGS:-}" =~ -Z\ *codegen-backend=cranelift ]]; then
   cranelift=1
   retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rustc-codegen-cranelift-preview
+elif [[ "${RUSTFLAGS:-}" =~ -Z\ *codegen-backend=gcc ]]; then
+  gcc=1
+  retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rustc-codegen-gcc-preview "gcc-${target}-preview" &>/dev/null
 else
   case "$(basename -- "${cargo%.exe}")" in
     cargo-clif) cranelift=1 ;;
   esac
 fi
-if [[ -n "${cranelift}" ]]; then
+if [[ -n "${cranelift}" ]] || [[ -n "${gcc}" ]]; then
   # panic=unwind is not supported yet.
   # https://github.com/rust-lang/rustc_codegen_cranelift#not-yet-supported
   flags=' -C panic=abort -Z panic_abort_tests'
@@ -228,7 +243,7 @@ case "${cmd}" in
     # Refs: https://valgrind.org/docs/manual/mc-manual.html
     # See also https://wiki.wxwidgets.org/Valgrind_Suppression_File_Howto for suppression file.
     # NB: Sync with arguments in valgrind-other job in .github/workflows/ci.yml.
-    valgrind="valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --track-origins=yes --fair-sched=yes --gen-suppressions=all"
+    valgrind="valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --track-origins=yes --fair-sched=try --gen-suppressions=all"
     supp="${workspace_dir}/tools/valgrind/${target%%-*}.supp"
     if [[ -f "${supp}" ]]; then
       valgrind+=" --suppressions=${supp}"
@@ -251,7 +266,7 @@ run() {
   # release mode + doctests is slow on some platforms (probably related to the fact that they compile binaries for each example)
   x_cargo test ${build_std[@]+"${build_std[@]}"} --release --tests "$@"
 
-  if [[ -n "${cranelift}" ]]; then
+  if [[ -n "${cranelift}" ]] || [[ -n "${gcc}" ]]; then
     return # LTO is not supported
   fi
 
@@ -278,26 +293,33 @@ run() {
     case "${target}" in
       *-linux-musl*) flags+=" -C target-feature=-crt-static" ;;
     esac
+    skip=''
     case "${target}" in
-      # cannot find crt2.o/rsbegin.o/rsend.o when building std
-      i686-pc-windows-gnu) ;;
+      # TODO(i686-pc-windows-gnu): cannot find crt2.o/rsbegin.o/rsend.o when building std
+      i686-pc-windows-gnu) skip=1 ;;
       # TODO(hexagon): haw to pass build-std-features to cargo-careful?
-      hexagon-unknown-linux-musl) ;;
-      *)
-        if [[ ${#build_std[@]} -gt 0 ]]; then
-          CARGO_TARGET_DIR="${target_dir}/careful" \
-            RUSTFLAGS="${RUSTFLAGS:-}${flags}" \
-            RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${flags}" \
-            x_cargo careful test -Z doctest-xcompile ${release[@]+"${release[@]}"} ${tests[@]+"${tests[@]}"} "$@"
-        else
-          # -Z doctest-xcompile is already passed
-          CARGO_TARGET_DIR="${target_dir}/careful" \
-            RUSTFLAGS="${RUSTFLAGS:-}${flags}" \
-            RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${flags}" \
-            x_cargo careful test ${release[@]+"${release[@]}"} ${tests[@]+"${tests[@]}"} "$@"
+      hexagon-unknown-linux-musl) skip=1 ;;
+      arm64ec-pc-windows-msvc)
+        if [[ "${rustc_minor_version}" -lt 84 ]]; then
+          # LINK : fatal error LNK1000: unknown error at 00007FF6ABEA2DE8; consult documentation for technical support options␍
+          skip=1
         fi
         ;;
     esac
+    if [[ -z "${skip}" ]]; then
+      if [[ ${#build_std[@]} -gt 0 ]]; then
+        CARGO_TARGET_DIR="${target_dir}/careful" \
+          RUSTFLAGS="${RUSTFLAGS:-}${flags}" \
+          RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${flags}" \
+          x_cargo careful test -Z doctest-xcompile ${release[@]+"${release[@]}"} ${tests[@]+"${tests[@]}"} "$@"
+      else
+        # -Z doctest-xcompile is already passed
+        CARGO_TARGET_DIR="${target_dir}/careful" \
+          RUSTFLAGS="${RUSTFLAGS:-}${flags}" \
+          RUSTDOCFLAGS="${RUSTDOCFLAGS:-}${flags}" \
+          x_cargo careful test ${release[@]+"${release[@]}"} ${tests[@]+"${tests[@]}"} "$@"
+      fi
+    fi
   fi
 }
 

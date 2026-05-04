@@ -1652,4 +1652,3 @@ asm_test::store::u64::release:
         movlps            xmm0, qword ptr [esp + 0x8] # xmm0 = mem[0,1],xmm0[2,3]
         movlps            qword ptr [eax], xmm0
         ret
-

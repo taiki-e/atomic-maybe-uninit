@@ -7,16 +7,11 @@ Refs:
 - CSKY Architecture user_guide
   https://github.com/c-sky/csky-doc/blob/9f7121f7d40970ba5cc0f15716da033db2bb9d07/CSKY%20Architecture%20user_guide.pdf
 - Linux kernel's C-SKY atomic implementation
-  https://github.com/torvalds/linux/blob/v6.16/arch/csky/include/asm/atomic.h
-  https://github.com/torvalds/linux/blob/v6.16/arch/csky/include/asm/cmpxchg.h
+  https://github.com/torvalds/linux/blob/v6.19/arch/csky/include/asm/atomic.h
+  https://github.com/torvalds/linux/blob/v6.19/arch/csky/include/asm/cmpxchg.h
 
 See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
-
-#[cfg(atomic_maybe_uninit_no_ldex_stex)]
-delegate_size!(delegate_load_store);
-#[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
-delegate_size!(delegate_all);
 
 use core::{
     arch::asm,
@@ -24,24 +19,66 @@ use core::{
     sync::atomic::Ordering,
 };
 
-#[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
-use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
-// According to Linux kernel, there is a more efficient BAR instruction for this purpose, but that
-// instruction is not mentioned in CSKY Architecture user_guide, so we always use SYNC for now.
-// https://github.com/torvalds/linux/blob/v6.16/arch/csky/include/asm/barrier.h
-macro_rules! atomic_rmw {
-    ($op:ident, $order:ident) => {
-        match $order {
-            Ordering::Relaxed => $op!("", ""),
-            Ordering::Acquire => $op!("sync32", ""),
-            Ordering::Release => $op!("", "sync32"),
-            Ordering::AcqRel | Ordering::SeqCst => $op!("sync32", "sync32"),
-            _ => unreachable!(),
+cfg_sel!({
+    #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
+    {
+        use crate::raw::{AtomicCompareExchange, AtomicSwap};
+
+        delegate_size!(delegate_all);
+
+        #[inline(always)]
+        fn lsl32(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+            // SAFETY: calling LSL32 is safe
+            unsafe {
+                asm!(
+                    "lsl32 {val}, {val}, {shift}", // val <<= shift
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    options(pure, nomem, nostack, preserves_flags),
+                );
+            }
+            val
         }
-    };
-}
+        #[inline(always)]
+        fn lsr32(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+            // SAFETY: calling LSR32 is safe
+            unsafe {
+                asm!(
+                    "lsr32 {val}, {val}, {shift}", // val >>= shift
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    options(pure, nomem, nostack, preserves_flags),
+                );
+            }
+            val
+        }
+
+        // According to Linux kernel, there is a more efficient BAR instruction for this purpose, but that
+        // instruction is not mentioned in CSKY Architecture user_guide, so we always use SYNC for now.
+        // https://github.com/torvalds/linux/blob/v6.19/arch/csky/include/asm/barrier.h
+        macro_rules! atomic_rmw {
+            ($op:ident, $order:ident) => {
+                // op(acquire, release)
+                match $order {
+                    Ordering::Relaxed => $op!("", ""),
+                    Ordering::Acquire => $op!("sync32", ""),
+                    Ordering::Release => $op!("", "sync32"),
+                    Ordering::AcqRel | Ordering::SeqCst => $op!("sync32", "sync32"),
+                    _ => unreachable!(),
+                }
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        delegate_size!(delegate_load_store);
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
@@ -64,7 +101,7 @@ macro_rules! atomic_load_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 $release,                                        // fence
-                                concat!("ld32.", $suffix, " {out}, ({src}, 0)"), // atomic { out = *src }
+                                concat!("ld32.", $suffix, " {out}, ({src}, 0)"), // atomic { out = zero_extend(*src) }
                                 $acquire,                                        // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
@@ -76,7 +113,7 @@ macro_rules! atomic_load_store {
                         Ordering::Relaxed => atomic_load!("", ""),
                         Ordering::Acquire => atomic_load!("sync32", ""),
                         Ordering::SeqCst => atomic_load!("sync32", "sync32"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -91,7 +128,7 @@ macro_rules! atomic_load_store {
             ) {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! store {
+                    macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 $release,                                        // fence
@@ -103,7 +140,12 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
-                    atomic_rmw!(store, order);
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("", "sync32"),
+                        Ordering::SeqCst => atomic_store!("sync32", "sync32"),
+                        _ => crate::utils::unreachable_unchecked(),
+                    }
                 }
             }
         }
@@ -161,10 +203,10 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self>;
+                let mut r: u32 = 0;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: u32 = 0;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -190,8 +232,8 @@ macro_rules! atomic {
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (out, r != 0)
             }
         }
     };
@@ -210,7 +252,7 @@ macro_rules! atomic_sub_word {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -219,7 +261,6 @@ macro_rules! atomic_sub_word {
                             // Implement sub-word atomic operations using word-sized LL/SC loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "lsl32 {val}, {val}, {shift}",     // val <<= shift
                                 $release,                          // fence
                                 "2:", // 'retry:
                                     "ldex32.w {out}, ({dst}, 0)",  // atomic { out = *dst; EXCLUSIVE = dst }
@@ -228,11 +269,9 @@ macro_rules! atomic_sub_word {
                                     "stex32.w {tmp}, ({dst}, 0)",  // atomic { if EXCLUSIVE == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; EXCLUSIVE = None }
                                     "bez32 {tmp}, 2b",             // if tmp == 0 { jump 'retry }
                                 $acquire,                          // fence
-                                "lsr32 {out}, {out}, {shift}",     // out >>= shift
                                 dst = in(reg) ptr_reg!(dst),
-                                val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                                val = in(reg) lsl32(crate::utils::extend32::$ty::zero(val), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
                                 mask = in(reg) mask,
                                 tmp = out(reg) _,
                                 options(nostack, preserves_flags),
@@ -241,7 +280,7 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(swap, order);
                 }
-                out
+                crate::utils::extend32::$ty::extract(lsr32(out, shift))
             }
         }
         #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
@@ -256,18 +295,16 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
+                let mut r: u32;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: u32;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             // Implement sub-word atomic operations using word-sized LL/SC loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "lsl32 {old}, {old}, {shift}",     // old <<= shift
-                                "lsl32 {new}, {new}, {shift}",     // new <<= shift
                                 $release,                          // fence
                                 "2:", // 'retry:
                                     "ldex32.w {tmp}, ({dst}, 0)",  // atomic { tmp = *dst; EXCLUSIVE = dst }
@@ -283,12 +320,10 @@ macro_rules! atomic_sub_word {
                                     "movi32 {tmp}, 0",             // tmp = 0
                                 "4:", // 'success:
                                 $acquire,                          // fence
-                                "lsr32 {out}, {out}, {shift}",     // out >>= shift
                                 dst = in(reg) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                old = in(reg) lsl32(crate::utils::extend32::$ty::zero(old), shift),
+                                new = in(reg) lsl32(crate::utils::extend32::$ty::zero(new), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
                                 mask = in(reg) mask,
                                 tmp = out(reg) r,
                                 // Do not use `preserves_flags` because CMPNE modifies condition bit C.
@@ -298,8 +333,8 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (crate::utils::extend32::$ty::extract(lsr32(out, shift)), r != 0)
             }
         }
     };

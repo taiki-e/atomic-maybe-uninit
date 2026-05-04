@@ -23,8 +23,8 @@ default_targets=(
   thumbv8m.main-none-eabi
   thumbv8m.main-none-eabihf
   # v6
-  # armv6-none-eabi # TODO(arm): Hang on 64-bit atomics
-  # thumbv6-none-eabi # TODO: "rustc-LLVM ERROR: Cannot select: intrinsic %llvm.arm.hint" will be fixed in https://github.com/rust-lang/rust/pull/150138
+  # armv6-none-eabi # TODO(arm): Hang on 64-bit atomics test in release mode
+  thumbv6-none-eabi
 
   # riscv32
   riscv32i-unknown-none-elf
@@ -41,12 +41,16 @@ default_targets=(
   riscv64im-unknown-none-elf
   riscv64imac-unknown-none-elf
   riscv64gc-unknown-none-elf
+  riscv64gc-unknown-linux-musl
+
+  # loongarch32
+  loongarch32-unknown-none
 
   # sparc
   sparc-unknown-none-elf
 
   # avr
-  avr-unknown-gnu-atmega2560 # custom target
+  avr-none
 
   # msp430
   msp430-none-elf
@@ -81,6 +85,9 @@ retry() {
 bail() {
   printf >&2 'error: %s\n' "$*"
   exit 1
+}
+info() {
+  printf >&2 'info: %s\n' "$*"
 }
 
 pre_args=()
@@ -123,48 +130,78 @@ fi
 export QEMU_AUDIO_DRV=none
 export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
 
+setup_wokwi() {
+  local target="$1"
+  local test_dir="$2"
+  local cpu="$3"
+  export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh wokwi-cli ${target}"
+  export WOKWI_TMPDIR="${workspace_dir}/tmp/wokwi"
+  export WOKWI_WORKSPACE_DIR="${workspace_dir}"
+  rm -rf -- "${WOKWI_TMPDIR}"
+  mkdir -p -- "${WOKWI_TMPDIR}"
+  cp -- "${workspace_dir}/${test_dir}/diagram-${cpu}.json" "${WOKWI_TMPDIR}/diagram.json"
+}
+
 run() {
   local target="$1"
   shift
-  target_lower="${target//-/_}"
-  target_lower="${target_lower//./_}"
-  target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
   local target_rustflags="${RUSTFLAGS:-}"
+  if [[ "${target}" == "avr-none" ]] && [[ "${rustc_minor_version}" -lt 88 ]]; then
+    target=avr-unknown-gnu-atmega2560 # custom target
+  fi
+  local target_flags=()
   if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
     if [[ "${target}" == "riscv64im-unknown-none-elf" ]]; then
       target=riscv64i-unknown-none-elf # custom target
     fi
     if [[ ! -f "target-specs/${target}.json" ]]; then
-      printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped)"
+      if [[ -n "${ALL_TARGETS_MUST_BE_AVAILABLE:-}" ]]; then
+        bail "target '${target}' not available on ${rustc_version}"
+      fi
+      info "target '${target}' not available on ${rustc_version} (skipped)"
       return 0
     fi
-    if [[ "${rustc_minor_version}" -lt 91 ]] && [[ "${target}" != "avr"* ]]; then
-      # Skip pre-1.91 because target-pointer-width change
-      printf '%s\n' "target '${target}' requires 1.91-nightly or later (skipped)"
-      return 0
+    if { cargo ${pre_args[@]+"${pre_args[@]}"} -Z help || true; } | grep -Fq json-target-spec; then
+      target_flags+=(-Z json-target-spec)
     fi
-    local target_flags=(--target "${workspace_dir}/target-specs/${target}.json")
+    if [[ "${rustc_minor_version}" -lt 91 ]] || [[ "${commit_date}" == '2025-08-05' ]]; then
+      # Handle target-pointer-width change.
+      mkdir -p -- tmp/target-specs
+      sed -E 's/"target-(c-int|pointer)-width": ([0-9]+)/"target-\1-width": "\2"/g' "target-specs/${target}.json" >|"tmp/target-specs/${target}.json"
+      target_flags+=(--target "${workspace_dir}/tmp/target-specs/${target}.json")
+    else
+      target_flags+=(--target "${workspace_dir}/target-specs/${target}.json")
+    fi
   else
-    local target_flags=(--target "${target}")
+    target_flags+=(--target "${target}")
   fi
+  target_lower="${target//-/_}"
+  target_lower="${target_lower//./_}"
+  target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
   subcmd=run
   if [[ -z "${CI:-}" ]]; then
     case "${target}" in
+      riscv*-linux-*)
+        if ! type -P "${SPIKE:-spike}" >/dev/null; then
+          info "no-std test for ${target} requires spike (switched to build-only)"
+          subcmd=build
+        fi
+        ;;
       sparc*)
-        if ! type -P tsim-leon3 >/dev/null; then
-          printf '%s\n' "no-std test for ${target} requires tsim-leon3 (switched to build-only)"
+        if ! type -P "${TSIM_LEON3:-tsim-leon3}" >/dev/null; then
+          info "no-std test for ${target} requires tsim-leon3 (switched to build-only)"
           subcmd=build
         fi
         ;;
       avr*)
-        if ! type -P simavr >/dev/null; then
-          printf '%s\n' "no-std test for ${target} requires simavr (switched to build-only)"
+        if ! type -P "${SIMAVR:-simavr}" >/dev/null; then
+          info "no-std test for ${target} requires simavr (switched to build-only)"
           subcmd=build
         fi
         ;;
       msp430*)
-        if ! type -P mspdebug >/dev/null; then
-          printf '%s\n' "no-std test for ${target} requires mspdebug (switched to build-only)"
+        if ! type -P "${MSPDEBUG:-mspdebug}" >/dev/null; then
+          info "no-std test for ${target} requires mspdebug (switched to build-only)"
           subcmd=build
         fi
         ;;
@@ -173,8 +210,8 @@ run() {
   case "${target}" in
     xtensa*)
       # TODO(xtensa): run test with simulator on CI
-      if ! type -P wokwi-server >/dev/null; then
-        printf '%s\n' "no-std test for ${target} requires wokwi-server (switched to build-only)"
+      if ! type -P "${WOKWI_CLI:-wokwi-cli}" >/dev/null; then
+        info "no-std test for ${target} requires wokwi-cli (switched to build-only)"
         subcmd=build
       fi
       ;;
@@ -185,13 +222,43 @@ run() {
   elif [[ -n "${nightly}" ]]; then
     args+=(-Z build-std="core")
   else
-    printf '%s\n' "target '${target}' requires nightly compiler (skipped)"
+    info "target '${target}' requires nightly compiler (skipped)"
     return 0
   fi
 
   local test_dir
   case "${target}" in
-    arm* | thumb* | riscv*)
+    riscv*-linux-*)
+      test_dir=tests/no-std-linux
+      local xlen=''
+      case "${target}" in
+        riscv32*) xlen=32 ;;
+        riscv64*) xlen=64 ;;
+      esac
+      local isa_sim_dir
+      isa_sim_dir="$(dirname -- "$(dirname -- "$(type -P "${SPIKE:-spike}")")")"
+      export "CARGO_TARGET_${target_upper}_RUNNER"="${SPIKE:-spike} --isa=rv${xlen}gcv_zabha_zacas ${isa_sim_dir}/riscv${xlen}-linux-gnu/bin/pk"
+      target_rustflags+=" -C target-feature=+crt-static -C link-self-contained=no"
+      ;;
+    arm* | thumb* | riscv* | loongarch*)
+      case "${target}" in
+        loongarch*)
+          # TODO: The patched QEMU needed (see semihosting crate's README.md for details).
+          if [[ -z "${LOONGARCH_QEMU_BIN_DIR:-}" ]]; then
+            if [[ -z "${CI:-}" ]]; then
+              info "LoongArch semihosting support doesn't yet merged in upstream (skipped)"
+              return 0
+            else
+              bail "LoongArch semihosting support doesn't yet merged in upstream"
+            fi
+          fi
+          local cpu=''
+          case "${target}" in
+            loongarch32*) cpu=' -cpu la132' ;;
+          esac
+          export "CARGO_TARGET_${target_upper}_RUNNER"="${LOONGARCH_QEMU_BIN_DIR}/qemu-system-loongarch64 -M virt${cpu} -display none -semihosting -kernel"
+          ;;
+      esac
       test_dir=tests/no-std-qemu
       linker=link.x
       target_rustflags+=" -C link-arg=-T${linker}"
@@ -200,7 +267,7 @@ run() {
       case "${commit_date}" in
         2023-08-23)
           # no asm support
-          printf '%s\n' "target '${target}' is not supported on this version (skipped)"
+          info "target '${target}' is not supported on this version (skipped)"
           return 0
           ;;
       esac
@@ -212,12 +279,21 @@ run() {
     avr*)
       test_dir=tests/avr
       export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh simavr ${target}"
+      if [[ "${target}" == "avr-none" ]]; then
+        # "error: target requires explicitly specifying a cpu with `-C target-cpu`"
+        target_rustflags+=" -C target-cpu=atmega2560"
+      fi
       ;;
     msp430*)
       case "${commit_date}" in
         2023-08-23)
           # multiple definition of `__muldi3'
-          printf '%s\n' "target '${target}' in broken on this version (skipped)"
+          info "target '${target}' in broken on this version (skipped)"
+          return 0
+          ;;
+        2025-08-05)
+          # "invalid signature for `extern "msp430-interrupt"` function" due to https://github.com/rust-lang/rust/issues/143072
+          info "target '${target}' in broken on this version (skipped)"
           return 0
           ;;
       esac
@@ -233,17 +309,19 @@ run() {
       ;;
     xtensa*)
       test_dir=tests/xtensa
-      export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh wokwi-server ${target}"
       linker=linkall.x
       target_rustflags+=" -C link-arg=-Wl,-T${linker} -C link-arg=-nostartfiles"
       local cpu
       cpu=$(cut -d- -f2 <<<"${target}")
       args+=(--features "esp-println/${cpu},esp-hal/${cpu}")
+      if [[ "${subcmd}" != "build" ]]; then
+        setup_wokwi "${target}" "${test_dir}" "${cpu}"
+      fi
       ;;
     m68k*)
       if [[ "${llvm_version}" -lt 20 ]]; then
         # pre-20 LLVM bug https://github.com/llvm/llvm-project/issues/107939
-        printf '%s\n' "target '${target}' is not supported on this version (skipped)"
+        info "target '${target}' is not supported on this version (skipped)"
         return 0
       fi
       test_dir=tests/no-std-linux
@@ -276,41 +354,62 @@ run() {
               x_cargo "${args[@]}" --release "$@"
             ;;
         esac
-        local arch
+        # Support for Zabha extension requires LLVM 19+.
+        if [[ "${llvm_version}" -ge 19 ]]; then
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zacas" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zacas" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zacas" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zacas" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha-zacas" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha-zacas" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
+            x_cargo "${args[@]}" --release "$@"
+        fi
         case "${target}" in
-          riscv32*) arch=riscv32 ;;
-          riscv64*) arch=riscv64 ;;
-          *) bail "${target}" ;;
+          riscv*-linux-*) ;;
+          *)
+            # Support for Zalasr extension requires LLVM 22+.
+            if [[ "${llvm_version}" -ge 22 ]]; then
+              CARGO_TARGET_DIR="${target_dir}/no-std-test-zalasr" \
+                RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
+                x_cargo "${args[@]}" "$@"
+              CARGO_TARGET_DIR="${target_dir}/no-std-test-zalasr" \
+                RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
+                x_cargo "${args[@]}" --release "$@"
+            fi
+            ;;
         esac
-        # Support for Zabha extension requires LLVM 19+ and QEMU 9.1+.
-        # https://github.com/qemu/qemu/commit/be4a8db7f304347395b081ae5848bad2f507d0c4
-        qemu_version=$(qemu-system-"${arch}" --version | sed -En '1 s/QEMU emulator version [^ ]+ \(v([^ )]+)\)/\1/p')
-        if [[ -z "${qemu_version}" ]]; then
-          qemu_version=$(qemu-system-"${arch}" --version | sed -En '1 s/QEMU emulator version ([^ )]+)/\1/p')
-        fi
-        if [[ "${llvm_version}" -ge 19 ]] && [[ "${qemu_version}" =~ ^(9\.[^0]|[1-9][0-9]+\.) ]]; then
-          export "CARGO_TARGET_${target_upper}_RUNNER"="qemu-system-${arch} -M virt -cpu max -display none -semihosting -kernel"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha" \
-            x_cargo "${args[@]}" "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha" \
-            x_cargo "${args[@]}" --release "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-zacas" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zacas" \
-            x_cargo "${args[@]}" "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-zacas" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zacas" \
-            x_cargo "${args[@]}" --release "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha-zacas" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
-            x_cargo "${args[@]}" "$@"
-          CARGO_TARGET_DIR="${target_dir}/no-std-test-zabha-zacas" \
-            RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
-            x_cargo "${args[@]}" --release "$@"
-        fi
         ;;
       avr*)
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+          x_cargo "${args[@]}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+          x_cargo "${args[@]}" --release "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+          x_cargo "${args[@]}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+          x_cargo "${args[@]}" --release "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+          x_cargo "${args[@]}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+          x_cargo "${args[@]}" --release "$@"
+
         # Run with qemu-system-avr.
         subcmd=run
         export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tools/runner.sh qemu-system ${target}"
@@ -320,6 +419,63 @@ run() {
         CARGO_TARGET_DIR="${target_dir}/no-std-test" \
           RUSTFLAGS="${target_rustflags}" \
           x_cargo "${args[@]}" --release "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+          x_cargo "${args[@]}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+          x_cargo "${args[@]}" --release "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+          x_cargo "${args[@]}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+          x_cargo "${args[@]}" --release "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+          x_cargo "${args[@]}" "$@"
+        CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+          RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+          x_cargo "${args[@]}" --release "$@"
+
+        # Run with wokwi-cli.
+        # TODO(avr): run test with wokwi on CI
+        if type -P "${WOKWI_CLI:-wokwi-cli}" >/dev/null; then
+          subcmd=run
+          setup_wokwi "${target}" "${test_dir}" "mega"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+            RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-tiny-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-lowbytefirst" \
+            RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" --release "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-rmw" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-rmw" \
+            RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+            x_cargo "${args[@]}" --release "$@"
+        else
+          info "no-std test for ${target} requires wokwi-cli (switched to build-only)"
+        fi
         ;;
       sparc*)
         # Run with qemu-system-sparc.

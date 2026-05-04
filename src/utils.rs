@@ -95,6 +95,71 @@ macro_rules! cfg_sel {
     };
 }
 
+// Adapted from https://github.com/BurntSushi/memchr/blob/2.4.1/src/memchr/x86/mod.rs#L9-L71.
+/// # Safety
+///
+/// - the caller must uphold the safety contract for the function returned by $detect_body.
+/// - the memory pointed by the function pointer returned by $detect_body must be visible from any threads.
+///
+/// The second requirement is always met if the function pointer is to the function definition.
+/// (Currently, all uses of this macro in our code are in this case.)
+#[allow(unused_macros)]
+#[cfg(not(atomic_maybe_uninit_no_outline_atomics))]
+#[cfg(all(target_arch = "x86_64", not(target_env = "sgx")))]
+macro_rules! ifunc {
+    (unsafe fn($($arg_pat:ident: $arg_ty:ty),* $(,)?) $(-> $ret_ty:ty)? { $($init_body:tt)* }) => {{
+        type FnTy = unsafe fn($($arg_ty),*) $(-> $ret_ty)?;
+        static FUNC: core::sync::atomic::AtomicPtr<()>
+            = core::sync::atomic::AtomicPtr::new(init as *mut ());
+        #[cold]
+        unsafe fn init($($arg_pat: $arg_ty),*) $(-> $ret_ty)? {
+            let func: FnTy = { $($init_body)* };
+            FUNC.store(func as *mut (), core::sync::atomic::Ordering::Relaxed);
+            // SAFETY: the caller must uphold the safety contract for the function returned by $init_body.
+            unsafe { func($($arg_pat),*) }
+        }
+        // SAFETY: `FnTy` is a function pointer, which is always safe to transmute with a `*mut ()`.
+        // (To force the caller to use unsafe block for this macro, do not use
+        // unsafe block here.)
+        let func = {
+            core::mem::transmute::<*mut (), FnTy>(FUNC.load(core::sync::atomic::Ordering::Relaxed))
+        };
+        // SAFETY: the caller must uphold the safety contract for the function returned by $init_body.
+        // (To force the caller to use unsafe block for this macro, do not use
+        // unsafe block here.)
+        func($($arg_pat),*)
+    }};
+}
+
+#[allow(unused_macros)]
+#[cfg(not(atomic_maybe_uninit_no_outline_atomics))]
+#[cfg(all(target_arch = "x86_64", not(target_env = "sgx")))]
+macro_rules! fn_alias {
+    (
+        $(#[$($fn_attr:tt)*])*
+        $vis:vis unsafe fn($($arg_pat:ident: $arg_ty:ty),*) $(-> $ret_ty:ty)?;
+        $(#[$($alias_attr:tt)*])*
+        $new:ident = $from:ident($($last_args:tt)*);
+        $($rest:tt)*
+    ) => {
+        $(#[$($fn_attr)*])*
+        $(#[$($alias_attr)*])*
+        $vis unsafe fn $new($($arg_pat: $arg_ty),*) $(-> $ret_ty)? {
+            // SAFETY: the caller must uphold the safety contract.
+            unsafe { $from($($arg_pat,)* $($last_args)*) }
+        }
+        fn_alias! {
+            $(#[$($fn_attr)*])*
+            $vis unsafe fn($($arg_pat: $arg_ty),*) $(-> $ret_ty)?;
+            $($rest)*
+        }
+    };
+    (
+        $(#[$($attr:tt)*])*
+        $vis:vis unsafe fn($($arg_pat:ident: $arg_ty:ty),*) $(-> $ret_ty:ty)?;
+    ) => {}
+}
+
 // HACK: This is equivalent to transmute_copy by value, but available in const
 // context even on older rustc (const transmute_copy requires Rust 1.74), and
 // can work around "cannot borrow here, since the borrowed element may contain
@@ -128,13 +193,19 @@ pub(crate) const unsafe fn transmute_copy_by_val<Src, Dst>(src: Src) -> Dst {
 #[cfg_attr(debug_assertions, track_caller)]
 pub(crate) const unsafe fn assert_unchecked(cond: bool) {
     if !cond {
-        #[cfg(debug_assertions)]
-        unreachable!();
-        #[cfg(not(debug_assertions))]
         // SAFETY: the caller promised `cond` is true.
-        unsafe {
-            core::hint::unreachable_unchecked()
-        }
+        unsafe { unreachable_unchecked() }
+    }
+}
+#[inline]
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) const unsafe fn unreachable_unchecked() -> ! {
+    #[cfg(debug_assertions)]
+    unreachable!();
+    #[cfg(not(debug_assertions))]
+    // SAFETY: the caller must ensure that this is unreachable.
+    unsafe {
+        core::hint::unreachable_unchecked()
     }
 }
 
@@ -193,6 +264,8 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
     }
 }
 
+// Note: avr.rs, csky.rs, m68k.rs, msp430.rs, and xtensa.rs currently don't use this due to size issue.
+// Since this is just a debug assertion, the user must not depend on presence of this.
 #[allow(unused_macros)]
 macro_rules! debug_assert_atomic_unsafe_precondition {
     ($ptr:ident, $ty:ident) => {{
@@ -205,6 +278,14 @@ macro_rules! debug_assert_atomic_unsafe_precondition {
             debug_assert!($ptr.addr() & const_eval!(=> usize { mem::size_of::<$ty>() - 1 }) == 0);
         }
     }};
+}
+
+#[allow(unused_macros)]
+macro_rules! if_any {
+    ("", $($tt:tt)*) => { "" };
+    ($cond:tt, $($tt:tt)*) => {
+        $($tt)*
+    };
 }
 
 #[allow(unused_macros)]
@@ -425,7 +506,6 @@ pub(crate) mod extend32 {
                     unsafe { mem::transmute(Extended::<$ty, LEN> { v, pad: PAD }) }
                 }
                 /// Inverse of extend.
-                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
                 #[inline(always)]
                 pub(crate) const fn extract(v: MaybeUninit<$out>) -> MaybeUninit<$ty> {
                     // SAFETY: Extended is repr(C) and all fields are MaybeUninit<$ty> or its array,
@@ -461,7 +541,10 @@ pub(crate) mod extend32 {
 #[cfg(target_pointer_width = "32")]
 #[allow(dead_code)]
 pub(crate) mod zero_extend64 {
-    use core::mem::{self, MaybeUninit};
+    use core::{
+        mem::{self, MaybeUninit},
+        ptr,
+    };
 
     use super::Extended;
 
@@ -474,34 +557,12 @@ pub(crate) mod zero_extend64 {
     /// See ptr_reg! macro in src/gen/utils.rs for details.
     #[inline]
     pub(crate) const fn ptr(v: *mut ()) -> MaybeUninit<u64> {
-        const PAD: [MaybeUninit<*mut ()>; 1] = [MaybeUninit::new(core::ptr::null_mut()); 1];
+        const PAD: [MaybeUninit<*mut ()>; 1] = [MaybeUninit::new(ptr::null_mut()); 1];
         // SAFETY: we can safely transmute any 64-bit value to MaybeUninit<u64>.
         unsafe { mem::transmute(Extended::<*mut (), 1> { v: MaybeUninit::new(v), pad: PAD }) }
     }
 }
 
-/// A 128-bit value represented as a pair of 64-bit values.
-///
-/// This type is `#[repr(C)]`, both fields have the same in-memory representation
-/// and are plain old data types, so access to the fields is always safe.
-#[allow(dead_code)]
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub(crate) union MaybeUninit128 {
-    pub(crate) whole: MaybeUninit<u128>,
-    pub(crate) pair: Pair<u64>,
-}
-/// A 64-bit value represented as a pair of 32-bit values.
-///
-/// This type is `#[repr(C)]`, both fields have the same in-memory representation
-/// and are plain old data types, so access to the fields is always safe.
-#[allow(dead_code)]
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub(crate) union MaybeUninit64 {
-    pub(crate) whole: MaybeUninit<u64>,
-    pub(crate) pair: Pair<u32>,
-}
 #[allow(dead_code)]
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -524,6 +585,28 @@ pub(crate) struct Pair<T: Copy> {
     )))]
     pub(crate) lo: MaybeUninit<T>,
 }
+macro_rules! pair {
+    ($name:ident, $whole:ident, $half:ident) => {
+        const _: () = assert!(mem::size_of::<$whole>() == mem::size_of::<$half>() * 2);
+        /// An potentially uninitialized
+        #[doc = stringify!($whole)]
+        /// value that can be represented as a pair of 64-bit values.
+        ///
+        /// This type is `#[repr(C)]`, both fields have the same in-memory representation
+        /// and all fields are `MaybeUninit`, so access to the fields is always safe.
+        #[allow(dead_code)]
+        #[derive(Clone, Copy)]
+        #[repr(C)]
+        pub(crate) union $name {
+            pub(crate) whole: MaybeUninit<$whole>,
+            pub(crate) pair: Pair<$half>,
+        }
+    };
+}
+pair!(MaybeUninit128, u128, u64);
+pair!(MaybeUninit64, u64, u32);
+#[cfg(target_arch = "avr")]
+pair!(MaybeUninit16, u16, u8);
 
 #[cfg(not(target_pointer_width = "16"))]
 type MinWord = u32;
@@ -535,7 +618,7 @@ type RetInt = u32;
 type RetInt = RegSize;
 // Helper for implementing sub-word atomic operations using word-sized LL/SC loop or CAS loop.
 //
-// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/llvm/lib/CodeGen/AtomicExpandPass.cpp#L812
+// Refs: https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/CodeGen/AtomicExpandPass.cpp#L811
 // (aligned_ptr, shift, mask)
 #[cfg(not(target_pointer_width = "16"))]
 #[allow(dead_code)]
@@ -597,83 +680,105 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
 // This module provides core::ptr strict_provenance/exposed_provenance polyfill for pre-1.84 rustc.
 #[allow(dead_code)]
 pub(crate) mod ptr {
-    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    use core::mem;
-    #[cfg(not(atomic_maybe_uninit_no_strict_provenance))]
-    #[allow(unused_imports)]
-    pub(crate) use core::ptr::{with_exposed_provenance, without_provenance_mut};
-
-    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    #[inline(always)]
-    #[must_use]
-    pub(crate) const fn without_provenance_mut<T>(addr: usize) -> *mut T {
-        // An int-to-pointer transmute currently has exactly the intended semantics: it creates a
-        // pointer without provenance. Note that this is *not* a stable guarantee about transmute
-        // semantics, it relies on sysroot crates having special status.
-        // SAFETY: every valid integer is also a valid pointer (as long as you don't dereference that
-        // pointer).
-        unsafe { mem::transmute(addr) }
-    }
-    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    #[inline(always)]
-    #[must_use]
-    #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
-    pub(crate) fn with_exposed_provenance<T>(addr: usize) -> *const T {
-        addr as *const T
-    }
-
-    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    pub(crate) trait ConstPtrExt<T: ?Sized>: Copy {
-        #[must_use]
-        fn addr(self) -> usize;
-    }
-    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    pub(crate) trait MutPtrExt<T: ?Sized>: Copy {
-        #[must_use]
-        fn addr(self) -> usize;
-        #[must_use]
-        fn with_addr(self, addr: usize) -> Self
-        where
-            T: Sized;
-    }
-    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    impl<T: ?Sized> ConstPtrExt<T> for *const T {
-        #[inline(always)]
-        #[must_use]
-        fn addr(self) -> usize {
-            // A pointer-to-integer transmute currently has exactly the right semantics: it returns the
-            // address without exposing the provenance. Note that this is *not* a stable guarantee about
-            // transmute semantics, it relies on sysroot crates having special status.
-            // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
-            // provenance).
-            unsafe { mem::transmute(self.cast::<()>()) }
-        }
-    }
-    #[cfg(atomic_maybe_uninit_no_strict_provenance)]
-    impl<T: ?Sized> MutPtrExt<T> for *mut T {
-        #[inline(always)]
-        #[must_use]
-        fn addr(self) -> usize {
-            // A pointer-to-integer transmute currently has exactly the right semantics: it returns the
-            // address without exposing the provenance. Note that this is *not* a stable guarantee about
-            // transmute semantics, it relies on sysroot crates having special status.
-            // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
-            // provenance).
-            unsafe { mem::transmute(self.cast::<()>()) }
-        }
-        #[inline]
-        #[must_use]
-        fn with_addr(self, addr: usize) -> Self
-        where
-            T: Sized,
+    cfg_sel!({
+        #[cfg(not(atomic_maybe_uninit_no_strict_provenance))]
         {
-            // This should probably be an intrinsic to avoid doing any sort of arithmetic, but
-            // meanwhile, we can implement it with `wrapping_offset`, which preserves the pointer's
-            // provenance.
-            let self_addr = self.addr() as isize;
-            let dest_addr = addr as isize;
-            let offset = dest_addr.wrapping_sub(self_addr);
-            self.cast::<u8>().wrapping_offset(offset).cast::<T>()
+            #[allow(unused_imports)]
+            pub(crate) use core::ptr::{with_exposed_provenance, without_provenance_mut};
         }
-    }
+        #[cfg(else)]
+        {
+            #[inline(always)]
+            #[must_use]
+            pub(crate) const fn without_provenance_mut<T>(addr: usize) -> *mut T {
+                // An int-to-pointer transmute currently has exactly the intended semantics: it creates a
+                // pointer without provenance. Note that this is *not* a stable guarantee about transmute
+                // semantics, it relies on sysroot crates having special status.
+                // SAFETY: every valid integer is also a valid pointer (as long as you don't dereference that
+                // pointer).
+                #[cfg(miri)]
+                unsafe {
+                    core::mem::transmute(addr)
+                }
+                // Using transmute doesn't work with CHERI: https://github.com/kent-weak-memory/rust/blob/0c0ca909de877f889629057e1ddf139527446d75/library/core/src/ptr/mod.rs#L607
+                #[cfg(not(miri))]
+                {
+                    addr as *mut T
+                }
+            }
+            #[inline(always)]
+            #[must_use]
+            #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
+            pub(crate) fn with_exposed_provenance<T>(addr: usize) -> *const T {
+                addr as *const T
+            }
+
+            pub(crate) trait ConstPtrExt<T: ?Sized>: Copy {
+                #[must_use]
+                fn addr(self) -> usize;
+            }
+            pub(crate) trait MutPtrExt<T: ?Sized>: Copy {
+                #[must_use]
+                fn addr(self) -> usize;
+                #[must_use]
+                fn with_addr(self, addr: usize) -> Self
+                where
+                    T: Sized;
+            }
+            impl<T: ?Sized> ConstPtrExt<T> for *const T {
+                #[inline(always)]
+                #[must_use]
+                fn addr(self) -> usize {
+                    // A pointer-to-integer transmute currently has exactly the right semantics: it returns the
+                    // address without exposing the provenance. Note that this is *not* a stable guarantee about
+                    // transmute semantics, it relies on sysroot crates having special status.
+                    // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
+                    // provenance).
+                    #[cfg(miri)]
+                    unsafe {
+                        core::mem::transmute(self.cast::<()>())
+                    }
+                    // Using transmute doesn't work with CHERI: https://github.com/kent-weak-memory/rust/blob/0c0ca909de877f889629057e1ddf139527446d75/library/core/src/ptr/mut_ptr.rs#L210
+                    #[cfg(not(miri))]
+                    {
+                        self.cast::<()>() as usize
+                    }
+                }
+            }
+            impl<T: ?Sized> MutPtrExt<T> for *mut T {
+                #[inline(always)]
+                #[must_use]
+                fn addr(self) -> usize {
+                    // A pointer-to-integer transmute currently has exactly the right semantics: it returns the
+                    // address without exposing the provenance. Note that this is *not* a stable guarantee about
+                    // transmute semantics, it relies on sysroot crates having special status.
+                    // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
+                    // provenance).
+                    #[cfg(miri)]
+                    unsafe {
+                        core::mem::transmute(self.cast::<()>())
+                    }
+                    // Using transmute doesn't work with CHERI: https://github.com/kent-weak-memory/rust/blob/0c0ca909de877f889629057e1ddf139527446d75/library/core/src/ptr/mut_ptr.rs#L210
+                    #[cfg(not(miri))]
+                    {
+                        self.cast::<()>() as usize
+                    }
+                }
+                #[inline]
+                #[must_use]
+                fn with_addr(self, addr: usize) -> Self
+                where
+                    T: Sized,
+                {
+                    // This should probably be an intrinsic to avoid doing any sort of arithmetic, but
+                    // meanwhile, we can implement it with `wrapping_offset`, which preserves the pointer's
+                    // provenance.
+                    let self_addr = self.addr() as isize;
+                    let dest_addr = addr as isize;
+                    let offset = dest_addr.wrapping_sub(self_addr);
+                    self.cast::<u8>().wrapping_offset(offset).cast::<T>()
+                }
+            }
+        }
+    });
 }

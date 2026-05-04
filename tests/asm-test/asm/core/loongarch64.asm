@@ -2822,4 +2822,3 @@ asm_test::store::u64::relaxed:
 asm_test::store::u64::release:
         amswap_db.d       $zero, $a1, $a0
         ret
-

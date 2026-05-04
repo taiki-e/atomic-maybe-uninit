@@ -17,32 +17,174 @@ Refs:
 See tests/asm-test/asm/atomic-maybe-uninit for generated assembly.
 */
 
-delegate_size!(delegate_all);
-
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
+use crate::raw::{AtomicLoad, AtomicStore};
 
-macro_rules! atomic_rmw {
-    ($op:ident, $order:ident) => {
-        match $order {
-            Ordering::Relaxed => $op!("", ""),
-            Ordering::Acquire => $op!("sync", ""),
-            Ordering::Release => $op!("", "sync"),
-            // AcqRel and SeqCst RMWs are equivalent.
-            Ordering::AcqRel | Ordering::SeqCst => $op!("sync", "sync"),
-            _ => unreachable!(),
+cfg_sel!({
+    #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
+    {
+        use crate::{
+            raw::{AtomicCompareExchange, AtomicSwap},
+            utils::RegSize,
+        };
+
+        delegate_size!(delegate_all);
+
+        macro_rules! sllv {
+            ($val:expr, $shift:expr) => {{
+                let mut val = $val;
+                let shift: RegSize = $shift;
+                #[allow(unused_unsafe)]
+                // SAFETY: calling SLLV is safe
+                unsafe {
+                    asm!(
+                        ".set push",
+                        ".set noat",
+                        "sllv {val}, {val}, {shift}", // val = sign_extend(val << (shift & 31))
+                        ".set pop",
+                        val = inout(reg) val,
+                        shift = in(reg) shift,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
+                val
+            }};
+            ($val:expr => $out:ty, $shift:expr) => {{
+                let out: $out;
+                let shift: RegSize = $shift;
+                #[allow(unused_unsafe)]
+                // SAFETY: calling SLLV is safe
+                unsafe {
+                    asm!(
+                        ".set push",
+                        ".set noat",
+                        "sllv {out}, {val}, {shift}", // out = sign_extend(val << (shift & 31))
+                        ".set pop",
+                        out = lateout(reg) out,
+                        val = in(reg) $val,
+                        shift = in(reg) shift,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
+                out
+            }};
         }
-    };
-}
+        #[inline(always)]
+        fn srlv(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
+            // SAFETY: calling SRLV is safe
+            unsafe {
+                asm!(
+                    ".set push",
+                    ".set noat",
+                    "srlv {val}, {val}, {shift}", // val = sign_extend(val >> (shift & 31))
+                    ".set pop",
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    options(pure, nomem, nostack, preserves_flags),
+                );
+            }
+            val
+        }
+        #[cfg(any(target_arch = "mips", target_arch = "mips32r6"))]
+        macro_rules! sign_extend {
+            ($val:expr, u32) => {
+                $val
+            };
+        }
+        #[cfg(any(target_arch = "mips64", target_arch = "mips64r6"))]
+        macro_rules! sign_extend {
+            ($val:expr, u64) => {
+                $val
+            };
+            ($val:expr, u32) => {{
+                let out: MaybeUninit<u64>;
+                #[allow(unused_unsafe)]
+                // SAFETY: calling SLL is safe
+                unsafe {
+                    asm!(
+                        ".set push",
+                        ".set noat",
+                        "sll {out}, {val}, 0", // out = sign_extend(val << 0)
+                        ".set pop",
+                        out = lateout(reg) out,
+                        val = in(reg) $val,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
+                out
+            }};
+        }
+
+        cfg_sel!({
+            #[cfg(any(target_arch = "mips32r6", target_arch = "mips64r6"))]
+            {
+                macro_rules! if_r6 {
+                    ($($tt:tt)*) => {
+                        $($tt)*
+                    };
+                }
+                macro_rules! if_not_r6 {
+                    ($($tt:tt)*) => {
+                        ""
+                    };
+                }
+            }
+            #[cfg(else)]
+            {
+                macro_rules! if_r6 {
+                    ($($tt:tt)*) => {
+                        ""
+                    };
+                }
+                macro_rules! if_not_r6 {
+                    ($($tt:tt)*) => {
+                        $($tt)*
+                    };
+                }
+            }
+        });
+
+        macro_rules! atomic_rmw {
+            ($op:ident, $order:ident) => {
+                // op(acquire, release, r6_nop)
+                match $order {
+                    // In r6, if a delay slot cannot be filled with anything other than a nop, we use a
+                    // compact branch instruction which has no delay slot instead.
+                    //
+                    // Compact branch instructions have no delay slot, but the rule that prevents placing
+                    // Control Transfer Instructions (CTIs) such as branch instructions immediately after
+                    // a branch (forbidden slot) still exists. If a subsequent fence exists for acquire
+                    // semantics, this is already met; otherwise, the slot must be filled with nop or others.
+                    Ordering::Relaxed => $op!("", "", if_r6!("nop")),
+                    Ordering::Acquire => $op!("sync", "", ""),
+                    Ordering::Release => $op!("", "sync", if_r6!("nop")),
+                    // AcqRel and SeqCst RMWs are equivalent.
+                    Ordering::AcqRel | Ordering::SeqCst => $op!("sync", "sync", ""),
+                    _ => unreachable!(),
+                }
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        delegate_size!(delegate_load_store);
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
-    ($ty:ident, $suffix:tt, $l_u_suffix:tt) => {
+    ($ty:ident, $suffix:tt) => {
+        #[cfg(atomic_maybe_uninit_no_ll_sc)]
+        delegate_signed!(delegate_load_store, $ty);
+        #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         delegate_signed!(delegate_all, $ty);
         impl AtomicLoad for $ty {
             #[inline]
@@ -60,7 +202,7 @@ macro_rules! atomic_load_store {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = *src }
+                                concat!("l", $suffix, " {out}, 0({src})"), // atomic { out = sign_extend(*src) }
                                 $acquire,                                  // fence
                                 ".set pop",
                                 src = in(reg) ptr_reg!(src),
@@ -72,8 +214,9 @@ macro_rules! atomic_load_store {
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
                         // Acquire and SeqCst loads are equivalent.
+                        // This matches with LLVM, but GCC emits `sync; l*; sync` for SeqCst load.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("sync"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -90,7 +233,7 @@ macro_rules! atomic_load_store {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! store {
+                    macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 ".set push",
@@ -105,7 +248,12 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
-                    atomic_rmw!(store, order);
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("", "sync"),
+                        Ordering::SeqCst => atomic_store!("sync", "sync"),
+                        _ => crate::utils::unreachable_unchecked(),
+                    }
                 }
             }
         }
@@ -115,7 +263,8 @@ macro_rules! atomic_load_store {
 #[rustfmt::skip]
 macro_rules! atomic {
     ($ty:ident, $suffix:tt, $ll_sc_suffix:tt) => {
-        atomic_load_store!($ty, $suffix, "");
+        atomic_load_store!($ty, $suffix);
+        #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -129,22 +278,27 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:tt, $release:tt, $_r6_nop:expr) => {
                             asm!(
                                 ".set push",
                                 ".set noat",
                                 $release,                                             // fence
+                                "move {tmp}, {val}",                                  // tmp = val
                                 "2:", // 'retry:
-                                    concat!("ll", $ll_sc_suffix, " {out}, 0({dst})"), // atomic { out = *dst; LL = dst }
-                                    "move {r}, {val}",                                // r = val
-                                    concat!("sc", $ll_sc_suffix, " {r}, 0({dst})"),   // atomic { if LL == dst { *dst = r; r = 1 } else { r = 0 }; LL = None }
-                                    "beqz {r}, 2b",                                   // if r == 0 { jump 'retry }
+                                    concat!("ll", $ll_sc_suffix, " {out}, 0({dst})"), // atomic { out = sign_extend(*dst); LL = dst }
+                                    concat!("sc", $ll_sc_suffix, " {tmp}, 0({dst})"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                                    ".set push",
+                                    ".set noreorder",
+                                    ".set nomacro",
+                                    "beqz {tmp}, 2b",                                 // if tmp == 0 {
+                                      "move {tmp}, {val}",                            //   tmp = val; jump 'retry } else { tmp = val }
+                                    ".set pop",
                                 $acquire,                                             // fence
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = out(reg) out,
-                                r = out(reg) _,
+                                tmp = out(reg) _,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -154,7 +308,9 @@ macro_rules! atomic {
                 out
             }
         }
+        #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicCompareExchange for $ty {
+            // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/zj3194Pc9
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -166,38 +322,45 @@ macro_rules! atomic {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let mut out: MaybeUninit<Self>;
+                let mut r: RegSize;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: crate::utils::RegSize = 0;
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:tt, $release:tt, $r6_nop:expr) => {
                             asm!(
                                 ".set push",
                                 ".set noat",
                                 $release,                                             // fence
                                 "2:", // 'retry:
-                                    concat!("ll", $ll_sc_suffix, " {out}, 0({dst})"), // atomic { out = *dst; LL = dst }
-                                    "bne {out}, {old}, 3f",                           // if out != old { jump 'cmp-fail }
-                                    "move {r}, {new}",                                // r = new
-                                    concat!("sc", $ll_sc_suffix, " {r}, 0({dst})"),   // atomic { if LL == dst { *dst = r; r = 1 } else { r = 0 }; LL = None }
-                                    "beqz {r}, 2b",                                   // if r == 0 { jump 'retry }
+                                    concat!("ll", $ll_sc_suffix, " {out}, 0({dst})"), // atomic { out = sign_extend(*dst); LL = dst }
+                                    ".set push",
+                                    ".set noreorder",
+                                    ".set nomacro",
+                                    "bne {out}, {old}, 3f",                           // if out != old {
+                                      "li {tmp}, 0",                                  //   tmp = 0; jump 'cmp-fail } else { tmp = 0 }
+                                    ".set pop",
+                                    "move {tmp}, {new}",                              // tmp = new
+                                    concat!("sc", $ll_sc_suffix, " {tmp}, 0({dst})"), // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                                    if_not_r6!("beqz {tmp}, 2b"),                     // if tmp == 0 { jump 'retry }
+                                    if_r6!("beqzc {tmp}, 2b"),                        // if tmp == 0 { jump 'retry }
                                 "3:", // 'cmp-fail:
                                 $acquire,                                             // fence
+                                $r6_nop,
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
-                                old = in(reg) old,
+                                old = in(reg) sign_extend!(old, $ty),
                                 new = in(reg) new,
                                 out = out(reg) out,
-                                r = inout(reg) r,
+                                tmp = out(reg) r,
                                 options(nostack, preserves_flags),
                             )
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (out, r != 0)
             }
         }
     };
@@ -206,7 +369,8 @@ macro_rules! atomic {
 #[rustfmt::skip]
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
-        atomic_load_store!($ty, $suffix, "u");
+        atomic_load_store!($ty, $suffix);
+        #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(
@@ -216,46 +380,47 @@ macro_rules! atomic_sub_word {
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                #[allow(clippy::cast_possible_truncation)]
+                let mask = mask as u32;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     macro_rules! swap {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:tt, $release:tt, $r6_nop:expr) => {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                "sllv {mask}, {mask}, {shift}", // mask <<= shift & 31
-                                "sllv {val}, {val}, {shift}",   // val <<= shift & 31
-                                "nor {mask}, {mask}, $zero",    // mask = !mask
-                                $release,                       // fence
+                                $release,                          // fence
                                 "2:", // 'retry:
-                                    "ll {out}, 0({dst})",       // atomic { out = *dst; LL = dst }
-                                    "and {r}, {out}, {mask}",   // r = out & mask
-                                    "or {r}, {r}, {val}",       // r |= val
-                                    "sc {r}, 0({dst})",         // atomic { if LL == dst { *dst = r; r = 1 } else { r = 0 }; LL = None }
-                                    "beqz {r}, 2b",             // if r == 0 { jump 'retry }
-                                "srlv {out}, {out}, {shift}",   // out >>= shift & 31
-                                $acquire,                       // fence
+                                    "ll {out}, 0({dst})",          // atomic { out = sign_extend(*dst); LL = dst }
+                                    "and {tmp}, {out}, {mask}",    // tmp = out & mask
+                                    "or {tmp}, {tmp}, {val}",      // tmp |= val
+                                    "sc {tmp}, 0({dst})",          // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                                    if_not_r6!("beqz {tmp}, 2b"),  // if tmp == 0 { jump 'retry }
+                                    if_r6!("beqzc {tmp}, 2b"),     // if tmp == 0 { jump 'retry }
+                                $acquire,                          // fence
+                                $r6_nop,
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
-                                val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                                val = in(reg) sllv!(crate::utils::extend32::$ty::zero(val), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
-                                mask = inout(reg) mask => _,
-                                r = out(reg) _,
+                                mask = in(reg) !sllv!(mask, shift),
+                                tmp = out(reg) _,
                                 options(nostack, preserves_flags),
                             )
                         };
                     }
                     atomic_rmw!(swap, order);
                 }
-                out
+                crate::utils::extend32::$ty::extract(srlv(out, shift))
             }
         }
+        #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicCompareExchange for $ty {
+            // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/zj3194Pc9
             #[inline]
             unsafe fn atomic_compare_exchange(
                 dst: *mut MaybeUninit<Self>,
@@ -267,51 +432,52 @@ macro_rules! atomic_sub_word {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
+                let mut r: RegSize;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: crate::utils::RegSize = 0;
                     // Implement sub-word atomic operations using word-sized LL/SC loop.
                     // See also create_sub_word_mask_values.
                     macro_rules! cmpxchg {
-                        ($acquire:tt, $release:tt) => {
+                        ($acquire:tt, $release:tt, $r6_nop:expr) => {
                             asm!(
                                 ".set push",
                                 ".set noat",
-                                "sllv {mask}, {mask}, {shift}", // mask <<= shift & 31
-                                "sllv {old}, {old}, {shift}",   // old <<= shift & 31
-                                "sllv {new}, {new}, {shift}",   // new <<= shift & 31
-                                $release,                       // fence
+                                $release,                          // fence
                                 "2:", // 'retry:
-                                    "ll {out}, 0({dst})",       // atomic { out = *dst; LL = dst }
-                                    "and {tmp}, {out}, {mask}", // tmp = out & mask
-                                    "bne {tmp}, {old}, 3f",     // if tmp != old { jump 'cmp-fail }
-                                    "xor {r}, {out}, {new}",    // r = out ^ new
-                                    "and {r}, {r}, {mask}",     // r &= mask
-                                    "xor {r}, {r}, {out}",      // r ^= out
-                                    "sc {r}, 0({dst})",         // atomic { if LL == dst { *dst = r; r = 1 } else { r = 0 }; LL = None }
-                                    "beqz {r}, 2b",             // if r == 0 { jump 'retry }
+                                    "ll {out}, 0({dst})",          // atomic { out = sign_extend(*dst); LL = dst }
+                                    "and {tmp}, {out}, {mask}",    // tmp = out & mask
+                                    ".set push",
+                                    ".set noreorder",
+                                    ".set nomacro",
+                                    "bne {tmp}, {old}, 3f",        // if tmp != old {
+                                      "li {tmp}, 0",               //   tmp = 0; jump 'cmp-fail } else { tmp = 0 }
+                                    ".set pop",
+                                    "xor {tmp}, {out}, {new}",     // tmp = out ^ new
+                                    "and {tmp}, {tmp}, {mask}",    // tmp &= mask
+                                    "xor {tmp}, {tmp}, {out}",     // tmp ^= out
+                                    "sc {tmp}, 0({dst})",          // atomic { if LL == dst { *dst = tmp; tmp = 1 } else { tmp = 0 }; LL = None }
+                                    if_not_r6!("beqz {tmp}, 2b"),  // if tmp == 0 { jump 'retry }
+                                    if_r6!("beqzc {tmp}, 2b"),     // if tmp == 0 { jump 'retry }
                                 "3:", // 'cmp-fail:
-                                "srlv {out}, {out}, {shift}",   // out >>= shift & 31
-                                $acquire,                       // fence
+                                $acquire,                          // fence
+                                $r6_nop,
                                 ".set pop",
                                 dst = in(reg) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                old = in(reg) sllv!(crate::utils::extend32::$ty::zero(old) => MaybeUninit<RegSize>, shift),
+                                new = in(reg) sllv!(crate::utils::extend32::$ty::zero(new), shift),
                                 out = out(reg) out,
-                                shift = in(reg) shift,
-                                mask = inout(reg) mask => _,
-                                tmp = out(reg) _,
-                                r = inout(reg) r,
+                                mask = in(reg) sllv!(mask, shift),
+                                tmp = out(reg) r,
                                 options(nostack, preserves_flags),
                             )
                         };
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (crate::utils::extend32::$ty::extract(srlv(out, shift)), r != 0)
             }
         }
     };
@@ -378,11 +544,23 @@ macro_rules! cfg_has_atomic_128 {
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(not(atomic_maybe_uninit_no_ll_sc))]
 #[macro_export]
 macro_rules! cfg_has_atomic_cas {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(not(atomic_maybe_uninit_no_ll_sc))]
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
     ($($tt:tt)*) => {};
+}
+#[cfg(atomic_maybe_uninit_no_ll_sc)]
+#[macro_export]
+macro_rules! cfg_has_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[cfg(atomic_maybe_uninit_no_ll_sc)]
+#[macro_export]
+macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => { $($tt)* };
 }

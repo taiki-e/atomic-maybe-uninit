@@ -5,8 +5,8 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -35,8 +35,8 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -65,8 +65,8 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -95,8 +95,8 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -125,8 +125,8 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -155,8 +155,8 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -185,8 +185,8 @@ asm_test::compare_exchange::u8::release_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -215,8 +215,8 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -245,8 +245,8 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -275,8 +275,8 @@ asm_test::compare_exchange::u8::acquire_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -304,8 +304,8 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -333,8 +333,8 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -362,8 +362,8 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -390,8 +390,8 @@ asm_test::compare_exchange::u8::release_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -420,8 +420,8 @@ asm_test::compare_exchange::u8::release_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -449,8 +449,8 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -479,8 +479,8 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -509,8 +509,8 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -539,8 +539,8 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -569,8 +569,8 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -599,8 +599,8 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -629,8 +629,8 @@ asm_test::compare_exchange::u16::release_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -659,8 +659,8 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -689,8 +689,8 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -719,8 +719,8 @@ asm_test::compare_exchange::u16::acquire_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -748,8 +748,8 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -777,8 +777,8 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -806,8 +806,8 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -834,8 +834,8 @@ asm_test::compare_exchange::u16::release_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -864,8 +864,8 @@ asm_test::compare_exchange::u16::release_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1142,8 +1142,8 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1172,8 +1172,8 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1202,8 +1202,8 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1232,8 +1232,8 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1262,8 +1262,8 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1292,8 +1292,8 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1322,8 +1322,8 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1352,8 +1352,8 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1382,8 +1382,8 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1412,8 +1412,8 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -1441,8 +1441,8 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -1470,8 +1470,8 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -1499,8 +1499,8 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -1527,8 +1527,8 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1557,8 +1557,8 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         movi              r0, 255
         lsl               r13, r0, r12
         zextb             r1, r1
-        zextb             r2, r2
         lsl               r1, r1, r12
+        zextb             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1586,8 +1586,8 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1616,8 +1616,8 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1646,8 +1646,8 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1676,8 +1676,8 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1706,8 +1706,8 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1736,8 +1736,8 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1766,8 +1766,8 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1796,8 +1796,8 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1826,8 +1826,8 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -1856,8 +1856,8 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -1885,8 +1885,8 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -1914,8 +1914,8 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -1943,8 +1943,8 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
 0:
         ldex.w            r18, (r3, 0x0)
@@ -1971,8 +1971,8 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -2001,8 +2001,8 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         movi              r0, 65535
         lsl               r13, r0, r12
         zexth             r1, r1
-        zexth             r2, r2
         lsl               r1, r1, r12
+        zexth             r2, r2
         lsl               r2, r2, r12
         sync
 0:
@@ -2594,4 +2594,3 @@ asm_test::store::u32::release:
         sync
         st.w              r1, (r0, 0x0)
         rts
-

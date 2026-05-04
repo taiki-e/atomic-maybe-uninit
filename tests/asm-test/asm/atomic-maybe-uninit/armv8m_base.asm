@@ -3,20 +3,19 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
@@ -24,20 +23,19 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::acqrel_acquire:
@@ -45,20 +43,19 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
@@ -66,20 +63,19 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::acquire_seqcst:
@@ -87,20 +83,19 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
@@ -108,20 +103,19 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::release_seqcst:
@@ -129,20 +123,19 @@ asm_test::compare_exchange::u8::release_seqcst:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::seqcst_acquire:
@@ -150,20 +143,19 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
@@ -171,20 +163,19 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::acquire_acquire:
@@ -192,20 +183,19 @@ asm_test::compare_exchange::u8::acquire_acquire:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::acquire_relaxed:
@@ -213,20 +203,19 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::relaxed_acquire:
@@ -234,20 +223,19 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::relaxed_relaxed:
@@ -255,20 +243,19 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldrexb            r3, [r0]
-        cmp               r3, r1
+        ldrexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::release_acquire:
@@ -276,20 +263,19 @@ asm_test::compare_exchange::u8::release_acquire:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldaexb            r3, [r0]
-        cmp               r3, r1
+        ldaexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u8::release_relaxed:
@@ -297,20 +283,19 @@ asm_test::compare_exchange::u8::release_relaxed:
         add               r7, sp, #0x8
         uxtb              r1, r1
 0:
-        ldrexb            r3, [r0]
-        cmp               r3, r1
+        ldrexb            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexb            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexb            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::acqrel_seqcst:
@@ -318,20 +303,19 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::seqcst_seqcst:
@@ -339,20 +323,19 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::acqrel_acquire:
@@ -360,20 +343,19 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::acqrel_relaxed:
@@ -381,20 +363,19 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::acquire_seqcst:
@@ -402,20 +383,19 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::relaxed_seqcst:
@@ -423,20 +403,19 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::release_seqcst:
@@ -444,20 +423,19 @@ asm_test::compare_exchange::u16::release_seqcst:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::seqcst_acquire:
@@ -465,20 +443,19 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::seqcst_relaxed:
@@ -486,20 +463,19 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::acquire_acquire:
@@ -507,20 +483,19 @@ asm_test::compare_exchange::u16::acquire_acquire:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::acquire_relaxed:
@@ -528,20 +503,19 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::relaxed_acquire:
@@ -549,20 +523,19 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::relaxed_relaxed:
@@ -570,20 +543,19 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldrexh            r3, [r0]
-        cmp               r3, r1
+        ldrexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::release_acquire:
@@ -591,20 +563,19 @@ asm_test::compare_exchange::u16::release_acquire:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldaexh            r3, [r0]
-        cmp               r3, r1
+        ldaexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u16::release_relaxed:
@@ -612,320 +583,304 @@ asm_test::compare_exchange::u16::release_relaxed:
         add               r7, sp, #0x8
         uxth              r1, r1
 0:
-        ldrexh            r3, [r0]
-        cmp               r3, r1
+        ldrexh            r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlexh            r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlexh            r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::seqcst_seqcst:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::acqrel_acquire:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::acquire_seqcst:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::relaxed_seqcst:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::release_seqcst:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::seqcst_acquire:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::seqcst_relaxed:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::acquire_acquire:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::acquire_relaxed:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::relaxed_acquire:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::relaxed_relaxed:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldrex             r3, [r0]
-        cmp               r3, r1
+        ldrex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        strex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        strex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::release_acquire:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldaex             r3, [r0]
-        cmp               r3, r1
+        ldaex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange::u32::release_relaxed:
         push              {r4, r6, r7, lr}
         add               r7, sp, #0x8
 0:
-        ldrex             r3, [r0]
-        cmp               r3, r1
+        ldrex             r4, [r0]
+        cmp               r4, r1
         bne               1f
-        stlex             r4, r2, [r0]
-        cmp               r4, #0x0
-        bne               0b
-        b                 2f
+        stlex             r3, r2, [r0]
+        cbz               r3, 2f
+        b                 0b
 1:
         clrex
-        movs              r4, #0x1
+        movs              r3, #0x1
 2:
-        rsbs              r1, r4, #0
-        adcs              r1, r4
-        mov               r0, r3
+        rsbs              r1, r3, #0
+        adcs              r1, r3
+        mov               r0, r4
         pop               {r4, r6, r7, pc}
 
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
@@ -1995,4 +1950,3 @@ asm_test::store::u32::release:
         add               r7, sp, #0x0
         stl               r1, [r0]
         pop               {r7, pc}
-

@@ -20,6 +20,19 @@ target="$2"
 bin="$3"
 stdout=".test-${target}.stdout"
 
+setup_wokwi() {
+  local bin="../../${bin#"${WOKWI_WORKSPACE_DIR}/"}"
+  cat >|"${WOKWI_TMPDIR}/wokwi.toml" <<EOF
+[wokwi]
+version = 1
+elf = "${bin}"
+firmware = "${bin}"
+EOF
+  start_simulator() {
+    "${WOKWI_CLI:-wokwi-cli}" "${WOKWI_TMPDIR}" &>>"${stdout}" &
+  }
+}
+
 no_exit=1
 case "${target}" in
   avr*)
@@ -27,7 +40,8 @@ case "${target}" in
       simavr)
         no_exit=''
         case "${target}" in
-          avr-unknown-gnu-atmega2560) mcu="atmega2560" ;;
+          avr-none) mcu=atmega2560 ;; # TODO: parse -C target-cpu
+          avr-*) mcu="${target##*-}" ;;
           *) bail "unrecognized target '${target}'" ;;
         esac
         start_simulator() {
@@ -36,13 +50,15 @@ case "${target}" in
         ;;
       qemu-system)
         case "${target}" in
-          avr-unknown-gnu-atmega2560) machine=mega2560 ;;
+          avr-none) machine=mega2560 ;; # TODO: parse -C target-cpu
+          avr-*) machine="${target##*-at}" ;;
           *) bail "unrecognized target '${target}'" ;;
         esac
         start_simulator() {
           "${QEMU_SYSTEM_AVR:-qemu-system-avr}" -M "${machine}" -display none -serial stdio -bios "${bin}" &>>"${stdout}" &
         }
         ;;
+      wokwi-cli) setup_wokwi ;;
       *) bail "unrecognized runner '${runner}'" ;;
     esac
     ;;
@@ -82,18 +98,7 @@ EOF
     ;;
   xtensa*)
     case "${runner}" in
-      wokwi-server)
-        case "${target}" in
-          xtensa-esp32-none-elf) chip=esp32 ;;
-          xtensa-esp32s2-none-elf) chip=esp32s2 ;;
-          # Note: https://github.com/MabezDev/wokwi-server/pull/16 is not yet released
-          xtensa-esp32s3-none-elf) chip=esp32s3 ;;
-          *) bail "unrecognized target '${target}'" ;;
-        esac
-        start_simulator() {
-          "${WOKWI_SERVER:-wokwi-server}" --chip "${chip}" "${bin}" &>>"${stdout}" &
-        }
-        ;;
+      wokwi-cli) setup_wokwi ;;
       *) bail "unrecognized runner '${runner}'" ;;
     esac
     ;;
@@ -112,12 +117,12 @@ cleanup() {
 trap -- 'printf >&2 "%s\n" "${0##*/}: trapped SIGINT"; cleanup' SIGINT
 
 rm -f -- ./"${stdout}"
-touch -- ./"${stdout}"
+printf '' >./"${stdout}"
 tail -s0 -f "${stdout}" &
 tail_pid=$!
 
 start_simulator
-simulator_pid=$!
+[[ -n "${simulator_pid}" ]] || simulator_pid=$!
 
 if [[ -n "${no_exit}" ]]; then
   # Inspired by mgba-test-runner.

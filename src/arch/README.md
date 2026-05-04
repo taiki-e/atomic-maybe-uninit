@@ -14,10 +14,12 @@ This document describes the operations that are considered atomic by architectur
 - [M68k](#m68k)
 - [MIPS](#mips)
 - [MSP430](#msp430)
+- [NVPTX](#nvptx)
 - [PowerPC](#powerpc)
 - [RISC-V](#risc-v)
 - [s390x](#s390x)
 - [SPARC](#sparc)
+- [SPIR-V](#spir-v)
 - [x86](#x86)
 - [Xtensa](#xtensa)
 
@@ -27,17 +29,17 @@ target_arch: aarch64, arm64ec<br>
 Implementation: [aarch64.rs](aarch64.rs)<br>
 Refs: [Arm® Architecture Reference Manual for A-profile architecture](https://developer.arm.com/documentation/ddi0487/latest)
 
-TODO: overview
+TODO: document overview
 
-(Refs: Section B2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture)
+(Refs: Section [B2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture](https://developer.arm.com/documentation/ddi0487/maa/-Part-B-The-AArch64-Application-Level-Architecture/-Chapter-B2-The-AArch64-Application-Level-Memory-Model/-B2-2-Atomicity-in-the-Arm-architecture))
 
 ## Arm
 
 target_arch: arm<br>
-Implementation: [arm.rs](arm.rs), [armv8.rs](armv8.rs), [arm_linux.rs](arm_linux.rs)<br>
+Implementation: [arm.rs](arm.rs), [armv8.rs](armv8.rs)<br>
 Refs: [Arm® Architecture Reference Manual for A-profile architecture](https://developer.arm.com/documentation/ddi0487/latest), [Arm® v8-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0553/latest), [ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition](https://developer.arm.com/documentation/ddi0406/latest), [Arm® v7-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0403/latest), [ARM® v6-M Architecture Reference Manual](https://developer.arm.com/documentation/ddi0419/latest)
 
-TODO: overview
+TODO: document overview
 
 (Refs: Section E2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture, Section B7.2 "Atomicity" of Arm® v8-M Architecture Reference Manual, Section A3.5.3 "Atomicity in the ARM architecture" of ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition, Section A3.5.3 "Atomicity in the Arm architecture" of Arm® v7-M Architecture Reference Manual, Section A3.5.1 "Atomicity in the ARM architecture" of ARM® v6-M Architecture Reference Manual)
 
@@ -67,21 +69,24 @@ This architecture is always single-core and the following operations are atomic:
 target_arch: csky<br>
 Implementation: [csky.rs](csky.rs)<br>
 
-TODO: reference and overview
+TODO: add reference link and document overview
 
 ## Hexagon
 
 target_arch: hexagon<br>
 Implementation: [hexagon.rs](hexagon.rs)<br>
+Refs: [Qualcomm Hexagon V79 Programmer Reference Manual](https://docs.qualcomm.com/doc/80-N2040-60/topic)
 
-TODO: reference and overview
+TODO: document overview
+
+(Refs: [Section 5.12 "Atomic operations"](https://docs.qualcomm.com/doc/80-N2040-60/topic/memory.html#atomic-operations) and [section 5.11 "Memory ordering"](https://docs.qualcomm.com/doc/80-N2040-60/topic/memory.html#memory-ordering) of Qualcomm Hexagon V79 Programmer Reference Manual)
 
 ## LoongArch
 
 target_arch: loongarch32, loongarch64<br>
 Implementation: [loongarch.rs](loongarch.rs)<br>
 
-TODO: reference and overview
+TODO: add reference link and document overview
 
 ## M68k
 
@@ -146,6 +151,16 @@ This architecture is always single-core and the following operations are atomic:
   However, pure operations that are not affected by compiler fences (Note: the correct interrupt
   disabling and restoring implementation must imply compiler fences, e.g., asm without nomem/readonly)
   may be moved out of the critical section by compiler optimizations.
+
+## NVPTX
+
+target_arch: nvptx64<br>
+Implementation: TODO<br>
+Refs: [Parallel Thread Execution ISA](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html)
+
+TODO: add implementation and document overview
+
+(Refs: [Section 8 "Memory Consistency Model" of Parallel Thread Execution ISA Version 9.1](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#memory-consistency-model), [libcu++ Memory model](https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_model.html))
 
 ## PowerPC
 
@@ -237,8 +252,8 @@ The following instructions are atomic if the address is properly aligned and the
     (Refs: [Section "Memory Model Primitives" of RVWMO Memory Consistency Model, Version 2.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/rvwmo.adoc#memory-model-primitives))
 
 - Load-Acquire and Store-Release Instructions
-  - (experimental) Zalasr extension: {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) acquire/seqcst load, release/seqcst store<br>
-    (Refs: [RISC-V Zalasr Specification](https://github.com/riscv/riscv-zalasr))
+  - Zalasr extension: {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) acquire/seqcst load, release/seqcst store<br>
+    (Refs: ["Zalasr" Atomic Load-Acquire and Store-Release Instructions](https://github.com/riscv/riscv-isa-manual/blob/91210aeb65f7e2cdf164797c4b28d4d6b0661681/src/zalasr.adoc))
 
 - Load-Reserved/Store-Conditional (LR/SC) Instructions (aka LL/SC)
   - Zalrsc extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64)<br>
@@ -345,18 +360,31 @@ Which memory barrier the above instructions imply depends on the memory model us
 V8+ and V9 have three memory models: Total Store Order (TSO), Partial Store Order (PSO), and Relaxed
 Memory Order (RMO). V8 has only TSO and PSO. Implementation of TSO (or a more strongly ordered model
 which implies TSO) is mandatory, and PSO and RMO are optional.<br>
-(Refs: Section 8.4.4 "Memory Models" of the SPARC Architecture Manual, Version 9)
+(Refs: Section 8.4.4 "Memory Models" of the SPARC Architecture Manual, Version 9, Section 2.3 "Memory Model" of the SPARC Architecture Manual, Version 8)
+
+## SPIR-V
+
+target_arch: nvptx64<br>
+Implementation: TODO<br>
+Refs: [SPIR-V Specification](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html)
+
+TODO: add implementation and document overview
+
+(Refs: [Section 3.3.18. "Atomic Instructions" of SPIR-V Specification version 1.6, Revision 6](https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#_atomic_instructions))
 
 ## x86
 
 target_arch: x86, x86_64<br>
 Implementation: [x86.rs](x86.rs)<br>
+Refs: [Intel® 64 and IA-32 Architectures Software Developer Manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
 
-TODO: reference and overview
+TODO: document overview
+
+(Refs: Section 10.1.1 "Guaranteed Atomic Operations" of Intel® 64 and IA-32 Architectures Software Developers Manual)
 
 ## Xtensa
 
 target_arch: xtensa<br>
 Implementation: [xtensa.rs](xtensa.rs)<br>
 
-TODO: reference and overview
+TODO: add reference link and document overview

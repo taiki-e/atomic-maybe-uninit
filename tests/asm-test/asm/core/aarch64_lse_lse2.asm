@@ -1562,4 +1562,3 @@ asm_test::store::u128::release:
         dmb               ish
         stp               x2, x3, [x0]
         ret
-

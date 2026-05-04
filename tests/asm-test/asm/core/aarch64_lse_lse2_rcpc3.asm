@@ -1560,4 +1560,3 @@ asm_test::store::u128::relaxed:
 asm_test::store::u128::release:
         stilp             x2, x3, [x0]
         ret
-

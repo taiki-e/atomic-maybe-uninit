@@ -1,5 +1,94 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+macro_rules! test_atomic_all {
+    () => {
+        #[cfg(not(any(
+            target_arch = "avr",
+            target_arch = "msp430",
+            target_arch = "sparc",
+            target_os = "linux",
+        )))]
+        {
+            cfg_has_atomic_cas! {
+                println!("target_has_cas: true");
+            }
+            cfg_no_atomic_cas! {
+                println!("target_has_cas: false");
+            }
+        }
+        // Skip AVR/MSP430 because they always provides RMW operations.
+        #[cfg(any(target_arch = "sparc", target_os = "linux"))]
+        {
+            cfg_has_atomic_cas! {
+                print_str!("target_has_cas: true\n");
+            }
+            cfg_no_atomic_cas! {
+                print_str!("target_has_cas: false\n");
+            }
+        }
+        #[cfg_attr(target_arch = "m68k", cfg(feature = "isize"))]
+        test_atomic!(isize);
+        #[cfg_attr(target_arch = "m68k", cfg(feature = "usize"))]
+        test_atomic!(usize);
+        #[cfg_attr(target_arch = "m68k", cfg(feature = "i8"))]
+        test_atomic!(i8);
+        #[cfg_attr(target_arch = "m68k", cfg(feature = "u8"))]
+        test_atomic!(u8);
+        #[cfg_attr(target_arch = "m68k", cfg(feature = "i16"))]
+        test_atomic!(i16);
+        #[cfg_attr(target_arch = "m68k", cfg(feature = "u16"))]
+        test_atomic!(u16);
+        cfg_has_atomic_32! {
+            #[cfg_attr(target_arch = "m68k", cfg(feature = "i32"))]
+            test_atomic!(i32);
+            #[cfg_attr(target_arch = "m68k", cfg(feature = "u32"))]
+            test_atomic!(u32);
+        }
+        cfg_has_atomic_64! {
+            #[cfg_attr(target_arch = "m68k", cfg(feature = "i64"))]
+            test_atomic!(i64);
+            #[cfg_attr(target_arch = "m68k", cfg(feature = "u64"))]
+            test_atomic!(u64);
+        }
+        cfg_has_atomic_128! {
+            test_atomic!(i128);
+            test_atomic!(u128);
+        }
+    };
+}
+
+macro_rules! test_atomic {
+    ($ty:ident) => {
+        paste::paste! {
+            fn [<test_atomic_ $ty>]() {
+                __test_atomic!($ty);
+            }
+            #[cfg(not(any(
+                target_arch = "avr",
+                target_arch = "msp430",
+                target_arch = "sparc",
+                target_os = "linux",
+            )))]
+            {
+                print!("{}", concat!("test test_atomic_", stringify!($ty), " ... "));
+                [<test_atomic_ $ty>]();
+                println!("ok");
+            }
+            #[cfg(any(
+                target_arch = "avr",
+                target_arch = "msp430",
+                target_arch = "sparc",
+                target_os = "linux",
+            ))]
+            {
+                print_str!(concat!("test test_atomic_", stringify!($ty), " ... "));
+                [<test_atomic_ $ty>]();
+                print_str!("ok\n");
+            }
+        }
+    };
+}
+
 macro_rules! __test_atomic {
     ($ty:ident) => {
         load_store();
@@ -78,6 +167,38 @@ macro_rules! __test_atomic {
                         );
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), y);
                     }
+
+                    for base in [0, !0] {
+                        for bit in 0..$ty::BITS {
+                            let flipped = base ^ (1 << bit);
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(flipped),
+                                    MaybeUninit::new(flipped),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                base,
+                                "flipped bit: {bit}"
+                            );
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(flipped));
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(base),
+                                    MaybeUninit::new(base),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                flipped,
+                                "flipped bit: {bit}"
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -107,6 +228,38 @@ macro_rules! __test_atomic {
                             }
                         }
                         assert_eq!(a.load(Ordering::Relaxed).assume_init(), x.wrapping_add(2));
+                    }
+
+                    for base in [0, !0] {
+                        for bit in 0..$ty::BITS {
+                            let flipped = base ^ (1 << bit);
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(flipped),
+                                    MaybeUninit::new(flipped),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                base,
+                                "flipped bit: {bit}"
+                            );
+                            let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(flipped));
+                            assert_eq!(
+                                a.compare_exchange(
+                                    MaybeUninit::new(base),
+                                    MaybeUninit::new(base),
+                                    success,
+                                    failure
+                                )
+                                .unwrap_err()
+                                .assume_init(),
+                                flipped,
+                                "flipped bit: {bit}"
+                            );
+                        }
                     }
                 }
             }

@@ -1,3 +1,6 @@
 [target.m68k-unknown-linux-gnu]
 linker = "m68k-linux-gnu-gcc"
 runner = "qemu-m68k -L /usr/m68k-linux-gnu"
+
+[target.riscv64gc-unknown-linux-musl]
+linker = "riscv64-linux-musl-gcc"

@@ -25,6 +25,25 @@ use core::{
 
 use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 
+// See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
+#[rustfmt::skip]
+macro_rules! disable {
+    () => {
+        concat!(
+            "mov r2, {sr}", "\n", // sr = SR
+            "dint {{ nop",        // atomic { SR.GIE = 0
+        )
+    };
+}
+macro_rules! restore {
+    () => {
+        "nop {{ mov {sr}, r2 {{ nop" //   SR = sr }
+    };
+}
+
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
+
 macro_rules! atomic {
     ($ty:ident, $suffix:tt) => {
         delegate_signed!(delegate_all, $ty);
@@ -77,14 +96,12 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
                 // On single-core systems, disabling interrupts is enough to prevent data race.
-                // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
                 unsafe {
                     asm!(
-                        "mov r2, {sr}",                               // sr = SR
-                        "dint {{ nop",                                // atomic { SR.GIE = 0
+                        disable!(),                                   // atomic {
                         concat!("mov.", $suffix, " @{dst}, {out}"),   //   out = *dst
                         concat!("mov.", $suffix, " {val}, 0({dst})"), //   *dst = val
-                        "nop {{ mov {sr}, r2 {{ nop",                 //   SR = sr }
+                        restore!(),                                   // }
                         dst = in(reg) dst,
                         val = in(reg) val,
                         out = out(reg) out,
@@ -109,27 +126,25 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
                 // On single-core systems, disabling interrupts is enough to prevent data race.
-                // See "NOTE: Enable and Disable Interrupt" of User's Guide for NOP: https://www.ti.com/lit/ug/slau208q/slau208q.pdf#page=60
                 unsafe {
                     asm!(
-                        "mov r2, {sr}",                               // sr = SR
-                        "dint {{ nop",                                // atomic { SR.GIE = 0
+                        disable!(),                                   // atomic {
                         concat!("mov.", $suffix, " @{dst}, {out}"),   //   out = *dst
                         concat!("xor.", $suffix, " {out}, {old}"),    //   old ^= out; if old == 0 { SR.Z = 1 } else { SR.Z = 0 }
                         "jne 2f",                                     //   if SR.Z == 0 { jump 'cmp-fail }
                         concat!("mov.", $suffix, " {new}, 0({dst})"), //   *dst = new
                         "2:", // 'cmp-fail:
-                        "nop {{ mov {sr}, r2 {{ nop",                 //   SR = sr }
+                        restore!(),                                   // }
                         dst = in(reg) dst,
                         old = inout(reg) old => r,
                         new = in(reg) new,
                         out = out(reg) out,
                         sr = out(reg) _,
-                        // XOR modifies the status register, but `preserves_flags` is okay since SREG is restored at the end.
+                        // XOR modifies the status register, but `preserves_flags` is okay since SR is restored at the end.
                         options(nostack, preserves_flags),
                     );
-                    (out, r == 0)
                 }
+                (out, r == 0)
             }
         }
     };

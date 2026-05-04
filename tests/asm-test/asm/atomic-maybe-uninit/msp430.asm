@@ -1305,4 +1305,3 @@ asm_test::store::u16::relaxed:
 asm_test::store::u16::release:
         mov               r13,	0(r12)	;
         ret
-

@@ -12,6 +12,72 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.18] - 2026-04-13
+
+- Remove reliance on unguaranteed behavior of the compiler in CAS on riscv64, MIPS64, and LoongArch64. ([ad48602](https://github.com/taiki-e/atomic-maybe-uninit/commit/ad48602ec2f57132baed41d6d86b5b912bd2e59a))
+
+- Implement workaround for SPARC errata GRLIB-TN-0010 & GRLIB-TN-0011 in 32-bit swap. Previously it was implemented only for other operations. ([b97bc5d](https://github.com/taiki-e/atomic-maybe-uninit/commit/b97bc5d8c926ed5be5882f1bd9da3916b905a911))
+
+- Optimize swap/CAS on Hexagon. ([996e7ee](https://github.com/taiki-e/atomic-maybe-uninit/commit/996e7ee6275b8c04eb121918fd76678275932498))
+
+- Optimize 128-bit swap on s390x. ([78e6f18](https://github.com/taiki-e/atomic-maybe-uninit/commit/78e6f18c483d61f87a0223f5722e33ef048b92c8))
+
+## [0.3.17] - 2026-03-11
+
+- Improve support for thumbv8m.main. ([b083741](https://github.com/taiki-e/atomic-maybe-uninit/commit/b083741c25bcee1194c7d095cad5c074ab0b49b5))
+
+- Optimize 16-bit swap on AVR. ([23634cd](https://github.com/taiki-e/atomic-maybe-uninit/commit/23634cd6c8d569cedae0c41ccc73cda158ef58a4))
+
+- Optimize 64-bit store when not inlined on pre-v6 Arm Linux/Android and M68k. ([94c325c](https://github.com/taiki-e/atomic-maybe-uninit/commit/94c325c3023e27babab48f01a29530c85d750a78))
+
+## [0.3.16] - 2026-03-09
+
+- Support 64-bit atomics on SPARC-V8+ (e.g., sparc-unknown-linux-gnu). ([#57](https://github.com/taiki-e/atomic-maybe-uninit/pull/57))
+
+- Support pre-v6 Arm Linux/Android in Thumb mode. ([b1bbcac](https://github.com/taiki-e/atomic-maybe-uninit/commit/b1bbcac11e7c8693cdad66d8308616e2ebcaaafc))
+
+- Support load/store on all SPARC-V8 CPUs. Previously `v9` or `leoncasa` target feature was required. ([e9db1ac](https://github.com/taiki-e/atomic-maybe-uninit/commit/e9db1ac356571ff0404f04e6defdefea33350aec))
+
+- Support 32-bit swap on all SPARC-V8 CPUs. Previously `v9` or `leoncasa` target feature was required. ([4871adb](https://github.com/taiki-e/atomic-maybe-uninit/commit/4871adb0c4fc1999161455286a5c2915936981e3))
+
+- Support MIPS R5900. ([1c406f4](https://github.com/taiki-e/atomic-maybe-uninit/commit/1c406f4b3a117d3debeb18ef2c533ba46cc6592d))
+
+- Implement workaround for Arm Cortex-A15 erratum 830321. ([11c6161](https://github.com/taiki-e/atomic-maybe-uninit/commit/11c6161b49af2673f912acfa6dcc3715763df83d))
+
+- Implement workaround for SPARC errata GRLIB-TN-0009 & GRLIB-TN-0010. Previously it was partially implemented. ([291228f](https://github.com/taiki-e/atomic-maybe-uninit/commit/291228fa19d8dee92b53a07949009086714362c6))
+
+- Partially implement workaround for SPARC errata GRLIB-TN-0004. There is no known workaround for the remaining part. ([291228f](https://github.com/taiki-e/atomic-maybe-uninit/commit/291228fa19d8dee92b53a07949009086714362c6))
+
+- Various optimizations:
+  - Support run-time detection of AVX (optimized 128-bit load/store) on x86_64. ([0f5e4f8](https://github.com/taiki-e/atomic-maybe-uninit/commit/0f5e4f8676f8551f154bbf4f9a488eeed8494a10))
+  - Optimize SeqCst atomics on AArch64 Windows MSVC. ([f8b02bb](https://github.com/taiki-e/atomic-maybe-uninit/commit/f8b02bb5225cac1bdc33d94a437c1f7b2cea504a))
+  - Optimize CAS on Armv6+. ([11c6161](https://github.com/taiki-e/atomic-maybe-uninit/commit/11c6161b49af2673f912acfa6dcc3715763df83d))
+  - Optimize {32,64}-bit CAS on RISC-V. ([317f8cf](https://github.com/taiki-e/atomic-maybe-uninit/commit/317f8cfbef2f1caa2054a2c3ab2270f03f45da38))
+  - Optimize Acquire load and Release store on RISC-V when Zalasr extension is available. ([1a90421](https://github.com/taiki-e/atomic-maybe-uninit/commit/1a90421b2b9ca056ea96aaf96eec9e3aa216487c))
+  - Optimize swap/CAS on PowerPC/PowerPC64. ([3e5e173](https://github.com/taiki-e/atomic-maybe-uninit/commit/3e5e1736de10aa93a136005b7cd87a38d4f154cf))
+  - Optimize swap/CAS on MIPS/MIPS64. ([1c406f4](https://github.com/taiki-e/atomic-maybe-uninit/commit/1c406f4b3a117d3debeb18ef2c533ba46cc6592d))
+  - Optimize non-relaxed atomics on SPARC/SPARC64. ([291228f](https://github.com/taiki-e/atomic-maybe-uninit/commit/291228fa19d8dee92b53a07949009086714362c6))
+  - Optimize swap/CAS on Hexagon. ([0016af6](https://github.com/taiki-e/atomic-maybe-uninit/commit/0016af62e398a3c240444922327c6ccbc8593726))
+  - Optimize 16-bit atomics on AVR. ([5c85b66](https://github.com/taiki-e/atomic-maybe-uninit/commit/5c85b6605b8281fc0b7e292d4437e8ca064a0c22), [317f8cf](https://github.com/taiki-e/atomic-maybe-uninit/commit/317f8cfbef2f1caa2054a2c3ab2270f03f45da38))
+  - Optimize {8,16}-bit swap/CAS when return value is not used on pre-v7 Arm Linux/Android, C-SKY, Hexagon, LoongArch, MIPS, PowerPC, RISC-V, SPARC, and Xtensa. ([9346849](https://github.com/taiki-e/atomic-maybe-uninit/commit/9346849ba24b68a7b706fb0c436ba83af14c9a0f), [b1bbcac](https://github.com/taiki-e/atomic-maybe-uninit/commit/b1bbcac11e7c8693cdad66d8308616e2ebcaaafc))
+  - Optimize load/store/CAS when not inlined. ([a9db0ec](https://github.com/taiki-e/atomic-maybe-uninit/commit/a9db0ece9e3d7618871aa6f28f36802f2739449a), [e0818e1](https://github.com/taiki-e/atomic-maybe-uninit/commit/e0818e1b6a0c894ef66c1a0e0fbbc67c9ab0b49b))
+
+- Improve compile-time detection of AVR target features. ([e3832c3](https://github.com/taiki-e/atomic-maybe-uninit/commit/e3832c32c5ebfbd44b96ceabde408445744fe365))
+
+## [0.3.15] - 2026-01-28
+
+- Update to stabilized [PowerPC](https://github.com/rust-lang/rust/pull/147996) inline assembly. ([c4cb5b1](https://github.com/taiki-e/atomic-maybe-uninit/commit/c4cb5b1f10857004852307c4a78ceec7ddeccd4f))
+
+- Work around [rustc_codegen_gcc bugs on x86_64](https://github.com/rust-lang/rustc_codegen_gcc/issues/821#issuecomment-3793567607). ([97a9190](https://github.com/taiki-e/atomic-maybe-uninit/commit/97a9190a2d877371bfb4c8f1b3f8624d030eaf12))
+
+- Optimize x86_64 128-bit atomics. ([d20f462](https://github.com/taiki-e/atomic-maybe-uninit/commit/d20f46213995b153dc2b71be52829ab893bc793a), [ca271a3](https://github.com/taiki-e/atomic-maybe-uninit/commit/ca271a38250f4f1ca7546ba1be758cb77866cb3f))
+
+- Optimize swap and {8,16}-bit CAS on SPARC/SPARC64. ([fc697c3](https://github.com/taiki-e/atomic-maybe-uninit/commit/fc697c3f29c0d288740d54c24a9bd7ab25490bf2))
+
+- Improve compile-time detection of RISC-V target features. ([de420f6](https://github.com/taiki-e/atomic-maybe-uninit/commit/de420f6a374a5916c22898d8ca7c005f8766bcab))
+
+- Enable [release immutability](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/immutable-releases).
+
 ## [0.3.14] - 2025-12-28
 
 - Support thumbv6k. ([c5e93f5](https://github.com/taiki-e/atomic-maybe-uninit/commit/c5e93f58e511bc34cdcd398470a14d7afc4712f6))
@@ -145,7 +211,7 @@ This release includes improvements to platform support, various optimizations, [
 
 - Make `into_inner` `const fn` on Rust 1.61+. (align to the [std atomic change in Rust 1.79](https://github.com/rust-lang/rust/pull/123522)) ([9c253dc](https://github.com/taiki-e/atomic-maybe-uninit/commit/9c253dcc6590f27f7d896400d07ac862fae5e712))
 
-- Improve loongarch64 support. ([358360c](https://github.com/taiki-e/atomic-maybe-uninit/commit/358360c2d6b89cdd3315eae6ec6a3b0c6d3abff4))
+- Improve LoongArch64 support. ([358360c](https://github.com/taiki-e/atomic-maybe-uninit/commit/358360c2d6b89cdd3315eae6ec6a3b0c6d3abff4))
 
 - Make rustc version detection robust for custom toolchains. ([c034611](https://github.com/taiki-e/atomic-maybe-uninit/commit/c0346119bf7e9e07cf9887c1acf10413c529f266))
 
@@ -391,7 +457,11 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.14...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...HEAD
+[0.3.18]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.17...v0.3.18
+[0.3.17]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.16...v0.3.17
+[0.3.16]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.15...v0.3.16
+[0.3.15]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.14...v0.3.15
 [0.3.14]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.13...v0.3.14
 [0.3.13]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.12...v0.3.13
 [0.3.12]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.11...v0.3.12

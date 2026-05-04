@@ -16,8 +16,8 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, PowerPC, MSP430, AVR, SPARC, Hexagon, M68k, C-SKY, and Xtensa are supported.
-(You can use `cfg_{has,no}_*` macros to write code based on whether or not which size of primitives is available.)
+Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, Arm64EC, RISC-V, LoongArch, s390x, PowerPC, MIPS, SPARC, AVR, MSP430, Hexagon, M68k, C-SKY, and Xtensa) are supported.
+(You can use `cfg_{has,no}_*` macros to write code based on which primitive sizes are available for the current target and Rust version.)
 
 | target_arch                                 | primitives                                          | load/store | swap/CAS |
 | ------------------------------------------- | --------------------------------------------------- |:----------:|:--------:|
@@ -27,39 +27,43 @@ Currently, x86, x86_64, Arm, AArch64, RISC-V, LoongArch, Arm64EC, s390x, MIPS, P
 | arm (v6+ or Linux/Android)                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | arm (except for M-profile) \[3]             | i64,u64                                             | ✓          | ✓        |
 | aarch64                                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| arm64ec \[10]                               | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | riscv32                                     | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | riscv32 (+zacas) \[4]                       | i64,u64                                             | ✓          | ✓        |
 | riscv64                                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
 | riscv64 (+zacas) \[4]                       | i128,u128                                           | ✓          | ✓        |
 | loongarch64                                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| loongarch32 \[8] (experimental)             | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| arm64ec \[7]                                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| s390x \[7]                                  | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
-| mips / mips32r6 \[9]                        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| mips64 / mips64r6 \[9]                      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| powerpc \[9]                                | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| powerpc64 \[9]                              | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| powerpc64 (+quadword-atomics) \[5] \[9]     | i128,u128                                           | ✓          | ✓        |
-| msp430 \[9] (experimental)                  | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| avr \[9] (experimental)                     | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| sparc \[6] \[9] (experimental)              | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| sparc64 \[9] (experimental)                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| hexagon \[9] (experimental)                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| m68k \[9] (experimental)                    | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| m68k (+isa-68020) \[9] \[10] (experimental) | i64,u64                                             | ✓          | ✓        |
-| csky \[9] (experimental)                    | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| xtensa \[9] (experimental)                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| loongarch32 \[11]                           | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| s390x \[10]                                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
+| powerpc \[12]                               | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| powerpc64 \[12]                             | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| powerpc64 (+quadword-atomics) \[6] \[12]    | i128,u128                                           | ✓          | ✓        |
+| mips / mips32r6 \[13]                       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| mips64 / mips64r6 \[13]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| sparc \[13] (experimental)                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| sparc (+v8plus) \[8] \[13] (experimental)   | i64,u64                                             | ✓          | ✓        |
+| sparc64 \[13] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| avr \[13] (experimental)                    | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| msp430 \[13] (experimental)                 | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| hexagon \[13] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| m68k \[13] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| m68k (+isa-68020) \[9] \[13] (experimental) | i64,u64                                             | ✓          | ✓        |
+| csky \[13] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| xtensa \[13] (experimental)                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 
-\[1] Arm's atomic RMW operations are not available on Armv6-M (thumbv6m). RISC-V's atomic RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* or c860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
+\[1] Arm's RMW operations are not available on Armv6-M (thumbv6m). RISC-V's RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. 32-bit SPARC's RMW operations requires `v9` or `leoncasa` target feature (enabled by default on Linux). M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* or c860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[4] Requires `zacas` target feature.<br>
-\[5] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
-\[6] Requires `v9` or `leoncasa` target feature (enabled by default on Linux).<br>
-\[7] Requires Rust 1.84+.<br>
-\[8] Requires Rust 1.91+.<br>
-\[9] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
-\[10] Requires target-cpu M68020+ (enabled by default on Linux).<br>
+\[6] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
+\[8] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
+\[9] Requires target-cpu M68020+ (enabled by default on Linux).<br>
+\[10] Requires Rust 1.84+.<br>
+\[11] Requires Rust 1.91+.<br>
+\[12] Requires Rust 1.95+.<br>
+\[13] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
+<!-- loongarch64: \[5] Requires `scq` target feature.<br> -->
+<!-- mips32r6/mips64r6: \[7] Requires Release 6 Paired LL/SC family of instructions.<br> -->
 
 See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md)
 for more information about atomic operations in these architectures.
@@ -68,7 +72,7 @@ Feel free to submit an issue if your target is not supported yet.
 
 ## Limitations
 
-This crate uses inline assembly to implement atomic operations (this is currently the only sound way to perform atomic operations on uninitialized values), so it is not compatible with Miri and Sanitizers.
+This crate uses inline assembly to implement atomic operations (this is currently the only sound way to perform atomic operations on uninitialized values), so it is not compatible with [Miri](https://github.com/rust-lang/miri/issues/11) and [most kinds of Sanitizers](https://github.com/google/sanitizers/issues/192).
 
 ## Related Projects
 
@@ -87,10 +91,12 @@ This crate uses inline assembly to implement atomic operations (this is currentl
 #![no_std]
 #![doc(test(
     no_crate_inject,
-    attr(
-        deny(warnings, rust_2018_idioms, single_use_lifetimes),
-        allow(dead_code, unused_variables)
-    )
+    attr(allow(
+        dead_code,
+        unused_variables,
+        clippy::undocumented_unsafe_blocks,
+        clippy::unused_trait_names,
+    ))
 ))]
 #![warn(
     // Lints that may help when writing public library.
@@ -100,17 +106,27 @@ This crate uses inline assembly to implement atomic operations (this is currentl
     clippy::exhaustive_enums,
     clippy::exhaustive_structs,
     clippy::impl_trait_in_params,
-    clippy::missing_inline_in_public_items,
     clippy::std_instead_of_alloc,
     clippy::std_instead_of_core,
+    clippy::missing_inline_in_public_items,
     // Code outside of cfg(test) shouldn't use float.
     clippy::float_arithmetic,
     // Code outside of cfg(test) shouldn't use code that can panic except for assertions. (overflow also cause panic if overflow check is enabled)
     clippy::arithmetic_side_effects,
 )]
 #![cfg_attr(atomic_maybe_uninit_no_strict_provenance, allow(unstable_name_collisions))]
-#![allow(clippy::inline_always)]
-#![cfg_attr(atomic_maybe_uninit_unstable_asm_experimental_arch, feature(asm_experimental_arch))]
+#![allow(clippy::inline_always, clippy::unreadable_literal, clippy::used_underscore_items)]
+#![cfg_attr(
+    all(
+        atomic_maybe_uninit_unstable_asm_experimental_arch,
+        not(any(
+            // These cases currently don't use asm!
+            all(target_arch = "sparc", atomic_maybe_uninit_no_stbar),
+            all(target_arch = "mips", atomic_maybe_uninit_no_sync),
+        )),
+    ),
+    feature(asm_experimental_arch)
+)]
 
 // There are currently no 128-bit or higher builtin targets.
 // (Although some of our generic code is written with the future
@@ -468,7 +484,6 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// To work around this problem, you need to use a helper like the following.
     ///
     /// ```
-    /// # if cfg!(valgrind) { return; }
     /// # use std::{
     /// #     mem::{self, MaybeUninit},
     /// #     sync::atomic::Ordering,
@@ -483,8 +498,8 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///     mut current: Test,
     ///     new: Test,
     /// ) -> Result<Test, Test> {
-    ///     let mut current_raw = mem::transmute::<Test, MaybeUninit<u32>>(current);
-    ///     let new_raw = mem::transmute::<Test, MaybeUninit<u32>>(new);
+    ///     let mut current_raw = unsafe { mem::transmute::<Test, MaybeUninit<u32>>(current) };
+    ///     let new_raw = unsafe { mem::transmute::<Test, MaybeUninit<u32>>(new) };
     ///     loop {
     ///         match v.compare_exchange_weak(current_raw, new_raw, Ordering::AcqRel, Ordering::Acquire)
     ///         {
@@ -493,7 +508,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///                 break Ok(current);
     ///             }
     ///             Err(previous_raw) => {
-    ///                 let previous = mem::transmute::<MaybeUninit<u32>, Test>(previous_raw);
+    ///                 let previous = unsafe { mem::transmute::<MaybeUninit<u32>, Test>(previous_raw) };
     ///
     ///                 if !Test::eq(&previous, &current) {
     ///                     break Err(previous);
@@ -509,6 +524,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///         }
     ///     }
     /// }
+    /// # if cfg!(valgrind) { return; }
     ///
     /// unsafe {
     ///     let x = mem::transmute::<Test, MaybeUninit<u32>>(Test(0, 0));
@@ -765,11 +781,11 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
 }
 
 macro_rules! int {
-    ($ty:ident, $align:ident) => {
+    ($($ty:ident),* => $align:ident) => {$(
         impl raw::Primitive for $ty {}
         const _: () = {
             assert!(mem::size_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
-            assert!(mem::align_of::<AtomicMaybeUninit<$ty>>() == mem::size_of::<$ty>());
+            assert!(mem::align_of::<AtomicMaybeUninit<$ty>>() >= mem::size_of::<$ty>());
         };
         // SAFETY: the static assertion above ensures safety requirement.
         unsafe impl private::PrimitivePriv for $ty {
@@ -779,7 +795,7 @@ macro_rules! int {
             /// Creates a new atomic value from a potentially uninitialized value.
             #[inline]
             #[must_use]
-            // TODO: remove in the next breaking release.
+            // TODO(semver): remove in the next breaking release.
             #[deprecated(
                 since = "0.3.10",
                 note = "use `new` instead because it is now always `const fn`"
@@ -788,20 +804,14 @@ macro_rules! int {
                 Self { v: UnsafeCell::new(v), _align: [] }
             }
         }
-    };
+    )*};
 }
-int!(i8, Align1);
-int!(u8, Align1);
-int!(i16, Align2);
-int!(u16, Align2);
-int!(i32, Align4);
-int!(u32, Align4);
-int!(i64, Align8);
-int!(u64, Align8);
-int!(i128, Align16);
-int!(u128, Align16);
-int!(isize, AlignPtr);
-int!(usize, AlignPtr);
+int!(i8, u8 => Align1);
+int!(i16, u16 => Align2);
+int!(i32, u32 => Align4);
+int!(i64, u64 => Align8);
+int!(i128, u128 => Align16);
+int!(isize, usize => AlignPtr);
 
 #[cfg(target_pointer_width = "16")]
 pub use {cfg_has_atomic_16 as cfg_has_atomic_ptr, cfg_no_atomic_16 as cfg_no_atomic_ptr};
@@ -822,13 +832,20 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(
         target_arch = "arm",
-        any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+        // Pre-v6 Arm has no Data Memory Barrier (DMB) operation, so we cannot implement non-relaxed atomics.
+        // However, Linux kernel provides helpers for it, so we can provide it on Linux/Android.
+        any(
+            target_feature = "v6",
+            atomic_maybe_uninit_target_feature = "v6",
+            target_os = "linux",
+            target_os = "android",
+        ),
+        // Use armv8.rs for Armv8+.
         not(any(
             target_feature = "v8",
             atomic_maybe_uninit_target_feature = "v8",
             target_feature = "v8m",
             atomic_maybe_uninit_target_feature = "v8m",
-            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
         )),
     ),
     path = "arch/arm.rs"
@@ -836,23 +853,7 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(
         target_arch = "arm",
-        any(target_os = "linux", target_os = "android"),
-        any(
-            not(any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6")),
-            atomic_maybe_uninit_test_prefer_kuser_cmpxchg,
-        ),
-        not(any(
-            target_feature = "v8",
-            atomic_maybe_uninit_target_feature = "v8",
-            target_feature = "v8m",
-            atomic_maybe_uninit_target_feature = "v8m",
-        )),
-    ),
-    path = "arch/arm_linux.rs"
-)]
-#[cfg_attr(
-    all(
-        target_arch = "arm",
+        // Use arm.rs for pre-v8 Arm.
         any(
             target_feature = "v8",
             atomic_maybe_uninit_target_feature = "v8",
@@ -888,6 +889,7 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(
         any(
+            // MIPS-I has no SYNC, so we cannot implement non-relaxed atomics.
             all(target_arch = "mips", not(atomic_maybe_uninit_no_sync)),
             target_arch = "mips32r6",
             target_arch = "mips64",
@@ -902,10 +904,7 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
     path = "arch/msp430.rs"
 )]
 #[cfg_attr(
-    all(
-        any(target_arch = "powerpc", target_arch = "powerpc64"),
-        atomic_maybe_uninit_unstable_asm_experimental_arch,
-    ),
+    all(any(target_arch = "powerpc", target_arch = "powerpc64"), not(atomic_maybe_uninit_no_asm)),
     path = "arch/powerpc.rs"
 )]
 #[cfg_attr(any(target_arch = "riscv32", target_arch = "riscv64"), path = "arch/riscv.rs")]
@@ -913,15 +912,8 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(
         any(
-            all(
-                target_arch = "sparc",
-                any(
-                    target_feature = "leoncasa",
-                    atomic_maybe_uninit_target_feature = "leoncasa",
-                    target_feature = "v9",
-                    atomic_maybe_uninit_target_feature = "v9",
-                ),
-            ),
+            // SPARC-V7 has no STBAR, so we cannot implement non-relaxed atomics.
+            all(target_arch = "sparc", not(atomic_maybe_uninit_no_stbar)),
             target_arch = "sparc64",
         ),
         atomic_maybe_uninit_unstable_asm_experimental_arch,
@@ -980,7 +972,6 @@ mod private {
     pub(crate) type AlignPtr = Align16;
 
     // Check that all cfg_ macros work.
-    #[allow(unused_imports)]
     use crate::{
         AtomicMaybeUninit, cfg_has_atomic_8, cfg_has_atomic_16, cfg_has_atomic_32,
         cfg_has_atomic_64, cfg_has_atomic_128, cfg_has_atomic_cas, cfg_has_atomic_ptr,

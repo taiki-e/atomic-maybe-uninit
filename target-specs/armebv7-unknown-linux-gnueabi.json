@@ -8,6 +8,10 @@
   "features": "+v7,+thumb2,+soft-float,-neon",
   "has-rpath": true,
   "has-thread-local": true,
+  "late-link-args": {
+    "gnu-cc": ["-Wl,--be8"],
+    "gnu-lld-cc": ["-Wl,--be8"]
+  },
   "llvm-floatabi": "soft",
   "llvm-target": "armebv7-unknown-linux-gnueabi",
   "max-atomic-width": 64,

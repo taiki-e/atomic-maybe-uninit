@@ -1332,4 +1332,3 @@ asm_test::store::u32::release:
         bl                0f
         pop               {r11, lr}
         bx                lr
-

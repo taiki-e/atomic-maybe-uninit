@@ -15,10 +15,10 @@ pub mod load {
     macro_rules! t {
         ($t:ident) => {
             pub mod $t {
-                use core::{mem::MaybeUninit, sync::atomic::Ordering};
+                use core::sync::atomic::Ordering;
                 type T = $t;
-                type M = MaybeUninit<T>;
-                type A = *const M;
+                type M = core::mem::MaybeUninit<T>;
+                type A = *mut M;
                 #[inline(never)]
                 pub unsafe fn relaxed(src: A) -> M {
                     <T as crate::AtomicLoad>::atomic_load(src, Ordering::Relaxed)
@@ -59,9 +59,9 @@ pub mod store {
     macro_rules! t {
         ($t:ident) => {
             pub mod $t {
-                use core::{mem::MaybeUninit, sync::atomic::Ordering};
+                use core::sync::atomic::Ordering;
                 type T = $t;
-                type M = MaybeUninit<T>;
+                type M = core::mem::MaybeUninit<T>;
                 type A = *mut M;
                 #[inline(never)]
                 pub unsafe fn relaxed(dst: A, val: M) {
@@ -110,9 +110,9 @@ pub mod swap {
     macro_rules! t {
         ($t:ident) => {
             pub mod $t {
-                use core::{mem::MaybeUninit, sync::atomic::Ordering};
+                use core::sync::atomic::Ordering;
                 type T = $t;
-                type M = MaybeUninit<T>;
+                type M = core::mem::MaybeUninit<T>;
                 type A = *mut M;
                 #[inline(never)]
                 pub unsafe fn relaxed(dst: A, val: M) -> M {
@@ -137,24 +137,32 @@ pub mod swap {
             }
         };
     }
-    atomic_maybe_uninit::cfg_has_atomic_8! {
-        t!(u8);
+    atomic_maybe_uninit::cfg_has_atomic_cas! {
+        atomic_maybe_uninit::cfg_has_atomic_8! {
+            t!(u8);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_16! {
+            t!(u16);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_32! {
+            t!(u32);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_64! {
+            t!(u64);
+        }
+        #[cfg(all(target_arch = "arm", target_os = "linux"))]
+        atomic_maybe_uninit::cfg_no_atomic_64! {
+            t!(u64);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_128! {
+            t!(u128);
+        }
     }
-    atomic_maybe_uninit::cfg_has_atomic_16! {
-        t!(u16);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_32! {
-        t!(u32);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_64! {
-        t!(u64);
-    }
-    #[cfg(all(target_arch = "arm", target_os = "linux"))]
-    atomic_maybe_uninit::cfg_no_atomic_64! {
-        t!(u64);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_128! {
-        t!(u128);
+    #[cfg(target_arch = "sparc")]
+    atomic_maybe_uninit::cfg_no_atomic_cas! {
+        atomic_maybe_uninit::cfg_has_atomic_32! {
+            t!(u32);
+        }
     }
 }
 #[cfg(feature = "atomic-maybe-uninit")]
@@ -169,9 +177,9 @@ pub mod compare_exchange {
     macro_rules! t {
         ($t:ident) => {
             pub mod $t {
-                use core::{mem::MaybeUninit, sync::atomic::Ordering};
+                use core::sync::atomic::Ordering;
                 type T = $t;
-                type M = MaybeUninit<T>;
+                type M = core::mem::MaybeUninit<T>;
                 type A = *mut M;
                 #[inline(never)]
                 pub unsafe fn relaxed_relaxed(dst: A, old: M, new: M) -> (M, bool) {
@@ -326,24 +334,26 @@ pub mod compare_exchange {
             }
         };
     }
-    atomic_maybe_uninit::cfg_has_atomic_8! {
-        t!(u8);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_16! {
-        t!(u16);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_32! {
-        t!(u32);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_64! {
-        t!(u64);
-    }
-    #[cfg(all(target_arch = "arm", target_os = "linux"))]
-    atomic_maybe_uninit::cfg_no_atomic_64! {
-        t!(u64);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_128! {
-        t!(u128);
+    atomic_maybe_uninit::cfg_has_atomic_cas! {
+        atomic_maybe_uninit::cfg_has_atomic_8! {
+            t!(u8);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_16! {
+            t!(u16);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_32! {
+            t!(u32);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_64! {
+            t!(u64);
+        }
+        #[cfg(all(target_arch = "arm", target_os = "linux"))]
+        atomic_maybe_uninit::cfg_no_atomic_64! {
+            t!(u64);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_128! {
+            t!(u128);
+        }
     }
 }
 #[cfg(feature = "atomic-maybe-uninit")]
@@ -358,9 +368,9 @@ pub mod compare_exchange_weak {
     macro_rules! t {
         ($t:ident) => {
             pub mod $t {
-                use core::{mem::MaybeUninit, sync::atomic::Ordering};
+                use core::sync::atomic::Ordering;
                 type T = $t;
-                type M = MaybeUninit<T>;
+                type M = core::mem::MaybeUninit<T>;
                 type A = *mut M;
                 #[inline(never)]
                 pub unsafe fn relaxed_relaxed(dst: A, old: M, new: M) -> (M, bool) {
@@ -515,24 +525,26 @@ pub mod compare_exchange_weak {
             }
         };
     }
-    atomic_maybe_uninit::cfg_has_atomic_8! {
-        t!(u8);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_16! {
-        t!(u16);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_32! {
-        t!(u32);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_64! {
-        t!(u64);
-    }
-    #[cfg(all(target_arch = "arm", target_os = "linux"))]
-    atomic_maybe_uninit::cfg_no_atomic_64! {
-        t!(u64);
-    }
-    atomic_maybe_uninit::cfg_has_atomic_128! {
-        t!(u128);
+    atomic_maybe_uninit::cfg_has_atomic_cas! {
+        atomic_maybe_uninit::cfg_has_atomic_8! {
+            t!(u8);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_16! {
+            t!(u16);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_32! {
+            t!(u32);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_64! {
+            t!(u64);
+        }
+        #[cfg(all(target_arch = "arm", target_os = "linux"))]
+        atomic_maybe_uninit::cfg_no_atomic_64! {
+            t!(u64);
+        }
+        atomic_maybe_uninit::cfg_has_atomic_128! {
+            t!(u128);
+        }
     }
 }
 
@@ -607,6 +619,7 @@ atomic_update!(u64);
 #[cfg(feature = "core")]
 #[cfg(any(
     target_arch = "aarch64",
+    target_arch = "arm64ec",
     all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
     target_arch = "s390x",
     all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -645,6 +658,7 @@ pub mod load {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -684,6 +698,7 @@ pub mod store {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -731,6 +746,7 @@ pub mod swap {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -878,6 +894,7 @@ pub mod compare_exchange {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1025,6 +1042,7 @@ pub mod compare_exchange_weak {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1073,6 +1091,7 @@ pub mod fetch_add {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1120,6 +1139,7 @@ pub mod fetch_sub {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1167,6 +1187,7 @@ pub mod fetch_and {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1214,6 +1235,7 @@ pub mod fetch_nand {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1261,6 +1283,7 @@ pub mod fetch_or {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1308,6 +1331,7 @@ pub mod fetch_xor {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1355,6 +1379,7 @@ pub mod fetch_not {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1402,6 +1427,7 @@ pub mod fetch_neg {
     u!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1489,6 +1515,7 @@ pub mod fetch_max {
     t!(i64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         // all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1567,6 +1594,7 @@ pub mod fetch_umax {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         // all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1656,6 +1684,7 @@ pub mod fetch_min {
     t!(i64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         // all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1734,6 +1763,7 @@ pub mod fetch_umin {
     t!(u64);
     #[cfg(any(
         target_arch = "aarch64",
+        target_arch = "arm64ec",
         // all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),

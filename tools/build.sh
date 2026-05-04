@@ -30,12 +30,18 @@ default_targets=(
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end'
   # v4T
   armv4t-unknown-linux-gnueabi
+  # v4T big endian
+  armebv4t-unknown-linux-gnueabi # custom target
   # v5TE
   armv5te-unknown-linux-gnueabi
   armv5te-none-eabi # no atomic
+  # v5TE big endian
+  armebv5te-unknown-linux-gnueabi # custom target
   # v6
   arm-unknown-linux-gnueabi
   arm-unknown-linux-gnueabihf
+  # v6 big endian
+  armebv6-unknown-linux-gnueabi # custom target
   # v7-A
   armv7-unknown-linux-gnueabi
   armv7-unknown-linux-gnueabihf
@@ -76,8 +82,7 @@ default_targets=(
 
   # hexagon
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
-  # TODO(hexagon): error: symbol 'fma' is already defined
-  # hexagon-unknown-linux-musl
+  hexagon-unknown-linux-musl
 
   # loongarch
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "loongarch32" or .value.arch == "loongarch64" then .key else empty end'
@@ -95,15 +100,17 @@ default_targets=(
   # mips32r2
   mips-unknown-linux-gnu
   mipsel-unknown-linux-gnu
-  # mips32r6
-  mipsisa32r6-unknown-linux-gnu
-  mipsisa32r6el-unknown-linux-gnu
+  # TODO(mips): compiler SIGILL with LLVM 22
+  # # mips32r6
+  # mipsisa32r6-unknown-linux-gnu
+  # mipsisa32r6el-unknown-linux-gnu
   # mips64r2
   mips64-unknown-linux-gnuabi64
   mips64el-unknown-linux-gnuabi64
-  # mips64r6
-  mipsisa64r6-unknown-linux-gnuabi64
-  mipsisa64r6el-unknown-linux-gnuabi64
+  # TODO(mips): compiler SIGILL with LLVM 22
+  # # mips64r6
+  # mipsisa64r6-unknown-linux-gnuabi64
+  # mipsisa64r6el-unknown-linux-gnuabi64
 
   # msp430
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "msp430" then .key else empty end'
@@ -181,6 +188,9 @@ bail() {
   printf >&2 'error: %s\n' "$*"
   exit 1
 }
+info() {
+  printf >&2 'info: %s\n' "$*"
+}
 is_no_std() {
   case "$1" in
     *-linux-none*) ;;
@@ -216,6 +226,7 @@ rustc_minor_version="${rustc_version#*.}"
 rustc_minor_version="${rustc_minor_version%%.*}"
 llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | { grep -E '^LLVM version:' || true; } | cut -d' ' -f3)
 llvm_version="${llvm_version%%.*}"
+commit_date=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^commit-date:' | cut -d' ' -f2)
 host=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^host:' | cut -d' ' -f2)
 workspace_dir=$(pwd)
 target_dir="${workspace_dir}/target"
@@ -251,6 +262,7 @@ build() {
   shift
   local args=("${base_args[@]}")
   local target_rustflags="${base_rustflags}"
+  local rustc_target_flags=()
   if ! grep -Eq "^${target}$" <<<"${rustc_target_list}" || [[ -f "target-specs/${target}.json" ]]; then
     if [[ "${target}" == "avr-none" ]]; then
       target=avr-unknown-gnu-atmega2560 # custom target
@@ -259,28 +271,39 @@ build() {
       target=riscv64i-unknown-none-elf # custom target
     fi
     if [[ ! -f "target-specs/${target}.json" ]]; then
-      printf '%s\n' "target '${target}' not available on ${rustc_version} (skipped all checks)"
+      if [[ -n "${ALL_TARGETS_MUST_BE_AVAILABLE:-}" ]]; then
+        bail "target '${target}' not available on ${rustc_version}"
+      fi
+      info "target '${target}' not available on ${rustc_version} (skipped all checks)"
       return 0
     fi
-    if [[ "${rustc_minor_version}" -lt 91 ]] && [[ "${target}" != "avr"* ]]; then
-      # Skip pre-1.91 because target-pointer-width change
-      printf '%s\n' "target '${target}' requires 1.91-nightly or later (skipped)"
-      return 0
+    if { cargo ${pre_args[@]+"${pre_args[@]}"} -Z help || true; } | grep -Fq json-target-spec; then
+      args+=(-Z json-target-spec)
+      rustc_target_flags+=(-Z unstable-options)
     fi
-    local target_flags=(--target "${workspace_dir}/target-specs/${target}.json")
+    if [[ "${rustc_minor_version}" -lt 91 ]] || [[ "${commit_date}" == '2025-08-05' ]]; then
+      # Handle target-pointer-width change.
+      mkdir -p -- tmp/target-specs
+      sed -E 's/"target-(c-int|pointer)-width": ([0-9]+)/"target-\1-width": "\2"/g' "target-specs/${target}.json" >|"tmp/target-specs/${target}.json"
+      args+=(--target "${workspace_dir}/tmp/target-specs/${target}.json")
+      rustc_target_flags+=(--target "${workspace_dir}/tmp/target-specs/${target}.json")
+    else
+      args+=(--target "${workspace_dir}/target-specs/${target}.json")
+      rustc_target_flags+=(--target "${workspace_dir}/target-specs/${target}.json")
+    fi
   elif [[ "${target}" != "${host}" ]]; then
-    local target_flags=(--target "${target}")
+    args+=(--target "${target}")
+    rustc_target_flags+=(--target "${target}")
   fi
-  args+=(${target_flags[@]+"${target_flags[@]}"})
   local cfgs
   if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
-    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${target_flags[@]+"${target_flags[@]}"})
+    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${rustc_target_flags[@]+"${rustc_target_flags[@]}"})
     retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
     # core/alloc/std sets feature(strict_provenance_lints), so we cannot use
     # -Z crate-attr=feature(strict_provenance_lints) when -Z build-std is needed.
     target_rustflags+="${strict_provenance_lints}"
   elif [[ -n "${nightly}" ]]; then
-    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${target_flags[@]+"${target_flags[@]}"})
+    cfgs=$(RUSTC_BOOTSTRAP=1 rustc ${pre_args[@]+"${pre_args[@]}"} --print cfg ${rustc_target_flags[@]+"${rustc_target_flags[@]}"})
     if [[ -n "${TESTS:-}" ]]; then
       if is_no_std "${target}"; then
         args+=(-Z build-std="core,alloc")
@@ -294,7 +317,7 @@ build() {
       args+=(-Z build-std="core")
     fi
   else
-    printf '%s\n' "target '${target}' requires nightly compiler (skipped all checks)"
+    info "target '${target}' requires nightly compiler (skipped all checks)"
     return 0
   fi
   case "${target}" in
@@ -308,10 +331,10 @@ build() {
       ;;
     m68k*)
       if [[ "${llvm_version}" -lt 20 ]]; then
-        printf '%s\n' "target '${target}' requires LLVM 20+ (skipped all checks)"
+        info "target '${target}' requires LLVM 20+ (skipped all checks)"
         return 0
       fi
-      # Workaround for compiler SIGSEGV.
+      # Workaround for compiler hang/SIGSEGV with LLVM 20-22.
       target_rustflags+=" -C opt-level=s"
       ;;
   esac
@@ -332,7 +355,10 @@ build() {
         # NB: sync with tools/no-std.sh
         case "${target}" in
           armv[45]* | thumbv[45]*) ;; # no atomic
-          arm* | thumb* | riscv*) test_dir=tests/no-std-qemu ;;
+          arm* | thumb* | riscv* | loongarch32*)
+            test_dir=tests/no-std-qemu
+            args+=(--features semihosting-no-std-test-rt/disable-link-check)
+            ;;
           avr*) test_dir=tests/avr ;;
           msp430*) test_dir=tests/msp430 ;;
           sparc-*) test_dir=tests/sparc ;;
@@ -371,6 +397,9 @@ build() {
           RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b" \
           x_cargo "${args[@]}" "$@"
       fi
+      CARGO_TARGET_DIR="${target_dir}/cmpxchg16b-no-outline-atomics" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics" \
+        x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/cmpxchg16b-avx" \
         RUSTFLAGS="${target_rustflags} -C target-feature=+cmpxchg16b,+avx" \
         x_cargo "${args[@]}" "$@"
@@ -467,6 +496,12 @@ build() {
           RUSTFLAGS="${target_rustflags} -C target-feature=+zaamo,+zabha,+zacas" \
           x_cargo "${args[@]}" "$@"
       fi
+      # Support for Zalasr extension requires LLVM 22+.
+      if [[ "${llvm_version}" -ge 22 ]]; then
+        CARGO_TARGET_DIR="${target_dir}/zalasr" \
+          RUSTFLAGS="${target_rustflags} -C target-feature=+zalasr" \
+          x_cargo "${args[@]}" "$@"
+      fi
       ;;
     s390x*)
       CARGO_TARGET_DIR="${target_dir}/z196" \
@@ -477,10 +512,27 @@ build() {
       CARGO_TARGET_DIR="${target_dir}/leon4" \
         RUSTFLAGS="${target_rustflags} -C target-cpu=leon4" \
         x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/v7" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=v7" \
+        x_cargo "${args[@]}" "$@"
+      ;;
+    mips64-unknown-linux-gnuabi64)
+      CARGO_TARGET_DIR="${target_dir}/r5900" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=r5900" \
+        x_cargo "${args[@]}" "$@"
       ;;
     avr*)
+      CARGO_TARGET_DIR="${target_dir}/tiny" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\"" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/tiny-lowbytefirst" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"tinyencoding\" --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/lowbytefirst" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
+        x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/rmw" \
-        RUSTFLAGS="${target_rustflags} -C target-feature=+rmw" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
         x_cargo "${args[@]}" "$@"
       ;;
     csky-unknown-linux-gnuabiv2)

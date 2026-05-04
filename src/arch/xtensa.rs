@@ -14,32 +14,58 @@ Note that l32ai (acquire load), s32ri (release store), and l32ex/s32ex/getex (LL
 https://github.com/espressif/llvm-project/blob/xtensa_release_19.1.2/llvm/lib/Target/Xtensa/XtensaInstrInfo.td
 */
 
-#[cfg(not(target_feature = "s32c1i"))]
-delegate_size!(delegate_load_store);
-#[cfg(target_feature = "s32c1i")]
-delegate_size!(delegate_all);
-
 use core::{
     arch::asm,
     mem::{self, MaybeUninit},
     sync::atomic::Ordering,
 };
 
-#[cfg(target_feature = "s32c1i")]
-use crate::raw::{AtomicCompareExchange, AtomicSwap};
 use crate::raw::{AtomicLoad, AtomicStore};
 
-macro_rules! atomic_rmw {
-    ($op:ident, $order:ident) => {
-        match $order {
-            Ordering::Relaxed => $op!("", ""),
-            Ordering::Acquire => $op!("memw", ""),
-            Ordering::Release => $op!("", "memw"),
-            Ordering::AcqRel | Ordering::SeqCst => $op!("memw", "memw"),
-            _ => unreachable!(),
+cfg_sel!({
+    #[cfg(target_feature = "s32c1i")]
+    {
+        use crate::raw::{AtomicCompareExchange, AtomicSwap};
+
+        delegate_size!(delegate_all);
+
+        #[inline(always)]
+        fn srl(mut val: MaybeUninit<u32>, shift: u32) -> MaybeUninit<u32> {
+            // SAFETY: calling SRL is safe
+            unsafe {
+                asm!(
+                    "ssr {shift}",      // sar = for_srl(shift & 31)
+                    "srl {val}, {val}", // val >>= sar
+                    val = inout(reg) val,
+                    shift = in(reg) shift,
+                    out("sar") _,
+                    options(pure, nomem, nostack, preserves_flags),
+                );
+            }
+            val
         }
-    };
-}
+
+        macro_rules! atomic_rmw {
+            ($op:ident, $order:ident) => {
+                // op(acquire, release)
+                match $order {
+                    Ordering::Relaxed => $op!("", ""),
+                    Ordering::Acquire => $op!("memw", ""),
+                    Ordering::Release => $op!("", "memw"),
+                    Ordering::AcqRel | Ordering::SeqCst => $op!("memw", "memw"),
+                    _ => unreachable!(),
+                }
+            };
+        }
+    }
+    #[cfg(else)]
+    {
+        delegate_size!(delegate_load_store);
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Register-width or smaller atomics
 
 #[rustfmt::skip]
 macro_rules! atomic_load_store {
@@ -61,7 +87,7 @@ macro_rules! atomic_load_store {
                     macro_rules! atomic_load {
                         ($acquire:tt) => {
                             asm!(
-                                concat!("l", $bits, $unsigned, "i", $narrow, " {out}, {src}, 0"), // atomic { out = *src }
+                                concat!("l", $bits, $unsigned, "i", $narrow, " {out}, {src}, 0"), // atomic { out = zero_extend(*src) }
                                 $acquire,                                                         // fence
                                 src = in(reg) ptr_reg!(src),
                                 out = lateout(reg) out,
@@ -71,8 +97,10 @@ macro_rules! atomic_load_store {
                     }
                     match order {
                         Ordering::Relaxed => atomic_load!(""),
+                        // Acquire and SeqCst loads are equivalent.
+                        // This matches with LLVM.
                         Ordering::Acquire | Ordering::SeqCst => atomic_load!("memw"),
-                        _ => unreachable!(),
+                        _ => crate::utils::unreachable_unchecked(),
                     }
                 }
                 out
@@ -87,7 +115,7 @@ macro_rules! atomic_load_store {
             ) {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    macro_rules! store {
+                    macro_rules! atomic_store {
                         ($acquire:tt, $release:tt) => {
                             asm!(
                                 $release,                                              // fence
@@ -99,7 +127,12 @@ macro_rules! atomic_load_store {
                             )
                         };
                     }
-                    atomic_rmw!(store, order);
+                    match order {
+                        Ordering::Relaxed => atomic_store!("", ""),
+                        Ordering::Release => atomic_store!("", "memw"),
+                        Ordering::SeqCst => atomic_store!("memw", "memw"),
+                        _ => crate::utils::unreachable_unchecked(),
+                    }
                 }
             }
         }
@@ -160,10 +193,10 @@ macro_rules! atomic {
             ) -> (MaybeUninit<Self>, bool) {
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let out: MaybeUninit<Self>;
+                let mut r: u32 = 1;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: u32 = 1;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             asm!(
@@ -185,8 +218,8 @@ macro_rules! atomic {
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (out, r != 0)
             }
         }
     };
@@ -205,7 +238,7 @@ macro_rules! atomic_sub_word {
                 order: Ordering,
             ) -> MaybeUninit<Self> {
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
@@ -224,11 +257,9 @@ macro_rules! atomic_sub_word {
                                     "wsr {tmp}, scompare1",     // scompare1 = tmp
                                     "xor {out}, {tmp}, {val}",  // out = tmp ^ val
                                     "and {out}, {out}, {mask}", // out &= mask
-                                    "xor {out}, {out}, {tmp}",  // out ^= out
+                                    "xor {out}, {out}, {tmp}",  // out ^= tmp
                                     "s32c1i {out}, {dst}, 0",   // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
                                     "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
-                                "ssr {shift}",                  // sar = for_srl(shift & 31)
-                                "srl {out}, {out}",             // out >>= sar
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
@@ -244,7 +275,7 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(swap, order);
                 }
-                out
+                crate::utils::extend32::$ty::extract(srl(out, shift))
             }
         }
         #[cfg(target_feature = "s32c1i")]
@@ -259,11 +290,11 @@ macro_rules! atomic_sub_word {
             ) -> (MaybeUninit<Self>, bool) {
                 let order = crate::utils::upgrade_success_ordering(success, failure);
                 let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
-                let mut out: MaybeUninit<Self>;
+                let mut out: MaybeUninit<u32>;
+                let mut r: u32 = 0;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    let mut r: u32 = 0;
                     macro_rules! cmpxchg {
                         ($acquire:tt, $release:tt) => {
                             // Implement sub-word atomic operations using word-sized CAS loop.
@@ -287,8 +318,6 @@ macro_rules! atomic_sub_word {
                                     "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
                                     "movi {r}, 1",              // r = 1
                                 "3:", // 'cmp-fail:
-                                "ssr {shift}",                  // sar = for_srl(shift & 31)
-                                "srl {out}, {out}",             // out >>= sar
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
@@ -306,8 +335,8 @@ macro_rules! atomic_sub_word {
                     }
                     atomic_rmw!(cmpxchg, order);
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
-                    (out, r != 0)
                 }
+                (crate::utils::extend32::$ty::extract(srl(out, shift)), r != 0)
             }
         }
     };

@@ -1183,4 +1183,3 @@ asm_test::store::u64::relaxed:
 asm_test::store::u64::release:
         mov               qword ptr [rdi], rsi
         ret
-

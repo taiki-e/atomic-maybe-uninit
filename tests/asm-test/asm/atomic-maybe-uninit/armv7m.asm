@@ -1,728 +1,665 @@
 asm_test::compare_exchange::u8::acqrel_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::acqrel_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
-        bne               1f
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
+        bne               2f
         dmb               sy
 0:
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         beq               0b
+        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-        b                 3f
-2:
         dmb               sy
-3:
-        clz               r0, r3
+2:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::acquire_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
-        dmb               sy
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
         b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::release_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
         beq               2f
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::seqcst_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
-        bne               1f
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
+        bne               2f
         dmb               sy
 0:
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         beq               0b
+        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-        b                 3f
-2:
         dmb               sy
-3:
-        clz               r0, r3
+2:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::acquire_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
-        dmb               sy
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::acquire_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
         dmb               sy
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::relaxed_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
         b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::relaxed_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::release_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
         beq               2f
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u8::release_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::acqrel_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::seqcst_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::acqrel_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::acqrel_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
-        bne               1f
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
+        bne               2f
         dmb               sy
 0:
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         beq               0b
+        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-        b                 3f
-2:
         dmb               sy
-3:
-        clz               r0, r3
+2:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::acquire_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
-        dmb               sy
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::relaxed_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
         b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::release_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
         beq               2f
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::seqcst_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::seqcst_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
-        bne               1f
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
+        bne               2f
         dmb               sy
 0:
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         beq               0b
+        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-        b                 3f
-2:
         dmb               sy
-3:
-        clz               r0, r3
+2:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::acquire_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
-        dmb               sy
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::acquire_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
         dmb               sy
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::relaxed_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
         b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::relaxed_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
 0:
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
         bne               0b
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::release_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
         beq               2f
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u16::release_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               1f
         dmb               sy
 0:
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               1f
@@ -730,14 +667,11 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
 0:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
+        beq               1f
         ldrex             r12, [r0]
         cmp               r12, r1
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -747,6 +681,7 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
 asm_test::compare_exchange::u32::seqcst_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               1f
@@ -754,14 +689,11 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
 0:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
+        beq               1f
         ldrex             r12, [r0]
         cmp               r12, r1
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -771,6 +703,7 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
 asm_test::compare_exchange::u32::acqrel_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               1f
@@ -778,14 +711,11 @@ asm_test::compare_exchange::u32::acqrel_acquire:
 0:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
+        beq               1f
         ldrex             r12, [r0]
         cmp               r12, r1
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -795,24 +725,22 @@ asm_test::compare_exchange::u32::acqrel_acquire:
 asm_test::compare_exchange::u32::acqrel_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
-        bne               1f
+        bne               2f
         dmb               sy
 0:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
+        beq               1f
         ldrex             r12, [r0]
         cmp               r12, r1
         beq               0b
+        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-        b                 3f
-2:
         dmb               sy
-3:
+2:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -821,6 +749,7 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
 asm_test::compare_exchange::u32::acquire_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
 0:
         ldrex             r12, [r0]
         cmp               r12, r1
@@ -828,13 +757,8 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
         bne               0b
-        dmb               sy
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
-2:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -843,6 +767,7 @@ asm_test::compare_exchange::u32::acquire_seqcst:
 asm_test::compare_exchange::u32::relaxed_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
 0:
         ldrex             r12, [r0]
         cmp               r12, r1
@@ -852,8 +777,6 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         bne               0b
         b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
         clz               r0, r3
@@ -864,6 +787,7 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
 asm_test::compare_exchange::u32::release_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               1f
@@ -876,8 +800,6 @@ asm_test::compare_exchange::u32::release_seqcst:
         cmp               r12, r1
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
         clz               r0, r3
@@ -888,6 +810,7 @@ asm_test::compare_exchange::u32::release_seqcst:
 asm_test::compare_exchange::u32::seqcst_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               1f
@@ -895,14 +818,11 @@ asm_test::compare_exchange::u32::seqcst_acquire:
 0:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
+        beq               1f
         ldrex             r12, [r0]
         cmp               r12, r1
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -912,24 +832,22 @@ asm_test::compare_exchange::u32::seqcst_acquire:
 asm_test::compare_exchange::u32::seqcst_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
-        bne               1f
+        bne               2f
         dmb               sy
 0:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
+        beq               1f
         ldrex             r12, [r0]
         cmp               r12, r1
         beq               0b
+        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-        b                 3f
-2:
         dmb               sy
-3:
+2:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -938,6 +856,7 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
 asm_test::compare_exchange::u32::acquire_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
 0:
         ldrex             r12, [r0]
         cmp               r12, r1
@@ -945,13 +864,8 @@ asm_test::compare_exchange::u32::acquire_acquire:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
         bne               0b
-        dmb               sy
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
-2:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -960,6 +874,7 @@ asm_test::compare_exchange::u32::acquire_acquire:
 asm_test::compare_exchange::u32::acquire_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
 0:
         ldrex             r12, [r0]
         cmp               r12, r1
@@ -968,11 +883,7 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         cmp               r3, #0x0
         bne               0b
         dmb               sy
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -981,6 +892,7 @@ asm_test::compare_exchange::u32::acquire_relaxed:
 asm_test::compare_exchange::u32::relaxed_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
 0:
         ldrex             r12, [r0]
         cmp               r12, r1
@@ -990,8 +902,6 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         bne               0b
         b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
         clz               r0, r3
@@ -1002,6 +912,7 @@ asm_test::compare_exchange::u32::relaxed_acquire:
 asm_test::compare_exchange::u32::relaxed_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
 0:
         ldrex             r12, [r0]
         cmp               r12, r1
@@ -1009,11 +920,7 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
         bne               0b
-        b                 2f
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1022,6 +929,7 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
 asm_test::compare_exchange::u32::release_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               1f
@@ -1034,8 +942,6 @@ asm_test::compare_exchange::u32::release_acquire:
         cmp               r12, r1
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
         dmb               sy
 2:
         clz               r0, r3
@@ -1046,6 +952,7 @@ asm_test::compare_exchange::u32::release_acquire:
 asm_test::compare_exchange::u32::release_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               1f
@@ -1053,14 +960,11 @@ asm_test::compare_exchange::u32::release_relaxed:
 0:
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
+        beq               1f
         ldrex             r12, [r0]
         cmp               r12, r1
         beq               0b
 1:
-        mov.w             r3, #0x1
-        clrex
-2:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1069,648 +973,543 @@ asm_test::compare_exchange::u32::release_relaxed:
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexb            r3, r2, [r0]
-        b                 1f
+        strexb            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexb            r3, r2, [r0]
-        b                 1f
+        strexb            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexb            r3, r2, [r0]
-        b                 1f
+        strexb            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               1f
-        b                 2f
-0:
-        mov.w             r3, #0x1
-        clrex
-        b                 2f
-1:
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        bne               0f
         dmb               sy
-2:
-        clz               r0, r3
+0:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexb            r3, r2, [r0]
-        b                 1f
+        strexb            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
-        clz               r0, r3
+1:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
-        clz               r0, r3
+1:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexb            r3, r2, [r0]
-        b                 1f
+        strexb            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               1f
-        b                 2f
-0:
-        mov.w             r3, #0x1
-        clrex
-        b                 2f
-1:
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        bne               0f
         dmb               sy
-2:
-        clz               r0, r3
+0:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acquire_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexb            r3, r2, [r0]
-        b                 1f
+        strexb            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::acquire_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               1f
-        b                 2f
-0:
-        mov.w             r3, #0x1
-        clrex
-        b                 2f
-1:
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        bne               0f
         dmb               sy
-2:
-        clz               r0, r3
+0:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::relaxed_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
-        clz               r0, r3
+1:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexb            r3, r2, [r0]
-        b                 1f
+        strexb            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::release_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexb            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        strexb            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
-        clz               r0, r3
+1:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxtb              r1, r1
-        ldrexb            r12, [r0]
-        cmp               r12, r1
+        uxtb.w            r12, r1
+        movs              r1, #0x1
+        ldrexb            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexb            r3, r2, [r0]
-        b                 1f
+        strexb            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexh            r3, r2, [r0]
-        b                 1f
+        strexh            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexh            r3, r2, [r0]
-        b                 1f
+        strexh            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexh            r3, r2, [r0]
-        b                 1f
+        strexh            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               1f
-        b                 2f
-0:
-        mov.w             r3, #0x1
-        clrex
-        b                 2f
-1:
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        bne               0f
         dmb               sy
-2:
-        clz               r0, r3
+0:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexh            r3, r2, [r0]
-        b                 1f
+        strexh            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
-        clz               r0, r3
+1:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::release_seqcst:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
-        clz               r0, r3
+1:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexh            r3, r2, [r0]
-        b                 1f
+        strexh            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               1f
-        b                 2f
-0:
-        mov.w             r3, #0x1
-        clrex
-        b                 2f
-1:
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        bne               0f
         dmb               sy
-2:
-        clz               r0, r3
+0:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acquire_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexh            r3, r2, [r0]
-        b                 1f
+        strexh            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::acquire_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               1f
-        b                 2f
-0:
-        mov.w             r3, #0x1
-        clrex
-        b                 2f
-1:
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        bne               0f
         dmb               sy
-2:
-        clz               r0, r3
+0:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::relaxed_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
-        clz               r0, r3
+1:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
-        strexh            r3, r2, [r0]
-        b                 1f
+        strexh            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::release_acquire:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexh            r3, r2, [r0]
-        cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        strexh            r1, r2, [r0]
+        cmp               r1, #0x0
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
-        clz               r0, r3
+1:
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u16::release_relaxed:
         push              {r7, lr}
         mov               r7, sp
-        uxth              r1, r1
-        ldrexh            r12, [r0]
-        cmp               r12, r1
+        uxth.w            r12, r1
+        movs              r1, #0x1
+        ldrexh            r3, [r0]
+        cmp               r3, r12
         bne               0f
         dmb               sy
-        strexh            r3, r2, [r0]
-        b                 1f
+        strexh            r1, r2, [r0]
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
-        clz               r0, r3
+        clz               r0, r1
         lsrs              r1, r0, #0x5
-        mov               r0, r12
+        mov               r0, r3
         pop               {r7, pc}
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         dmb               sy
         strex             r3, r2, [r0]
-        b                 1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -1720,16 +1519,13 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         dmb               sy
         strex             r3, r2, [r0]
-        b                 1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -1739,16 +1535,13 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         dmb               sy
         strex             r3, r2, [r0]
-        b                 1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -1758,21 +1551,16 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         dmb               sy
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               1f
-        b                 2f
-0:
-        mov.w             r3, #0x1
-        clrex
-        b                 2f
-1:
+        bne               0f
         dmb               sy
-2:
+0:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1781,15 +1569,12 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         strex             r3, r2, [r0]
-        b                 1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -1799,19 +1584,16 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
+1:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1820,20 +1602,17 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
 asm_test::compare_exchange_weak::u32::release_seqcst:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         dmb               sy
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
+1:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1842,16 +1621,13 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         dmb               sy
         strex             r3, r2, [r0]
-        b                 1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -1861,21 +1637,16 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         dmb               sy
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               1f
-        b                 2f
-0:
-        mov.w             r3, #0x1
-        clrex
-        b                 2f
-1:
+        bne               0f
         dmb               sy
-2:
+0:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1884,15 +1655,12 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
 asm_test::compare_exchange_weak::u32::acquire_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         strex             r3, r2, [r0]
-        b                 1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
         clz               r0, r3
         lsrs              r1, r0, #0x5
@@ -1902,20 +1670,15 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               1f
-        b                 2f
-0:
-        mov.w             r3, #0x1
-        clrex
-        b                 2f
-1:
+        bne               0f
         dmb               sy
-2:
+0:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1924,19 +1687,16 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
+1:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1945,15 +1705,12 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         strex             r3, r2, [r0]
-        b                 1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1962,20 +1719,17 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
 asm_test::compare_exchange_weak::u32::release_acquire:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         dmb               sy
         strex             r3, r2, [r0]
         cmp               r3, #0x0
-        beq               2f
-        b                 1f
+        beq               1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         dmb               sy
-2:
+1:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -1984,16 +1738,13 @@ asm_test::compare_exchange_weak::u32::release_acquire:
 asm_test::compare_exchange_weak::u32::release_relaxed:
         push              {r7, lr}
         mov               r7, sp
+        movs              r3, #0x1
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
         dmb               sy
         strex             r3, r2, [r0]
-        b                 1f
 0:
-        mov.w             r3, #0x1
-        clrex
-1:
         clz               r0, r3
         lsrs              r1, r0, #0x5
         mov               r0, r12
@@ -2304,4 +2055,3 @@ asm_test::store::u32::release:
         dmb               sy
         str               r1, [r0]
         pop               {r7, pc}
-
