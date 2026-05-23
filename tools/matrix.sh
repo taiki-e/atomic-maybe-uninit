@@ -109,9 +109,8 @@ min_stable_toolchain() {
   fi
   case "${target}" in
     arm64ec* | s390x*) toolchain=1.84 ;; # LLVM 19
-    # TODO: uncomment once 1.95 is stable
-    # powerpc*) toolchain=1.95 ;; # LLVM 22
-    *) toolchain=1.74 ;; # LLVM 17 (oldest version that MaybeUninit register is supported)
+    powerpc*) toolchain=1.95 ;;          # LLVM 22
+    *) toolchain=1.74 ;;                 # LLVM 17 (oldest version that MaybeUninit register is supported)
   esac
 }
 min_nightly_toolchain() {
@@ -177,12 +176,11 @@ add_matrix() {
         1.7[4-9] | 1.8[0-3]) convert_toolchain_for_unstable_asm ;;
       esac
       ;;
-    # TODO: uncomment once 1.95 is stable
-    # powerpc*)
-    #   case "${toolchain}" in
-    #     1.[7-8][0-9] | 1.9[0-4]) convert_toolchain_for_unstable_asm ;;
-    #   esac
-    #   ;;
+    powerpc*)
+      case "${toolchain}" in
+        1.[7-8][0-9] | 1.9[0-4]) convert_toolchain_for_unstable_asm ;;
+      esac
+      ;;
     *) [[ -z "${require_nightly}" ]] || convert_toolchain_for_unstable_asm ;;
   esac
   if [[ -z "${toolchain}" ]]; then
@@ -203,8 +201,7 @@ for target in "${targets[@]}"; do
   # Check target with unstable asm or tier 3 target.
   require_nightly=''
   case "${target}" in
-    # TODO: remove powerpc once 1.95 is stable
-    aarch64_be* | armeb* | riscv32* | csky* | hexagon* | m68k* | mips* | powerpc* | sparc*)
+    aarch64_be* | armeb* | riscv32* | csky* | hexagon* | m68k* | mips* | sparc*)
       require_nightly=1
       ;;
   esac
@@ -276,7 +273,7 @@ for target in "${targets[@]}"; do
         ;;
       arm-unknown-linux-gnueabi | armv7-unknown-linux-gnueabi | armeb-unknown-linux-gnueabi)
         case "${toolchain}" in
-          1.8[7-9] | 1.9[0-5]) toolchain='' ;; # SIGILL on QEMU with LLVM 20-22
+          1.8[7-9] | 1.9[0-6]) toolchain='' ;; # SIGILL on QEMU with LLVM 20-22
           # TODO(arm): SIGILL on QEMU with LLVM 20-22
           stable | beta) toolchain='' ;;
           nightly) toolchain=nightly-2025-02-17 ;;
@@ -285,15 +282,13 @@ for target in "${targets[@]}"; do
       hexagon-unknown-linux-musl)
         case "${toolchain}" in
           1.9[1-4]) toolchain='' ;; # "symbol 'fma' is already defined" error fixed in Rust 1.95 https://github.com/rust-lang/compiler-builtins/pull/1066
-          # TODO(hexagon): "symbol 'fma' is already defined" error fixed in Rust 1.95 https://github.com/rust-lang/compiler-builtins/pull/1066
-          stable) toolchain='' ;;
           # TODO(hexagon): undefined symbol: __fstat_time64/__stat_time64/__clock_gettime64
           nightly) toolchain='nightly-2026-03-31' ;;
         esac
         ;;
       sparc64-unknown-linux-gnu)
         case "${toolchain}" in
-          1.8[7-9] | 1.9[0-5]) toolchain='' ;; # "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-22
+          1.8[7-9] | 1.9[0-6]) toolchain='' ;; # "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-22
           # TODO(sprac): "rustc-LLVM ERROR: Not supported instr: <MCInst 11 <MCOperand Reg:162>>" with LLVM 20-22
           stable | beta) toolchain='' ;;
           nightly) toolchain=nightly-2025-02-17 ;;
@@ -301,9 +296,8 @@ for target in "${targets[@]}"; do
         ;;
       mipsisa32r6*)
         case "${toolchain}" in
-          1.95) toolchain='' ;; # compiler SIGILL with LLVM 22
+          1.9[5-6]) toolchain='' ;; # compiler SIGILL with LLVM 22
           # TODO(mips): compiler SIGILL with LLVM 22
-          beta) toolchain='' ;;
           nightly) toolchain=nightly-2026-01-28 ;;
         esac
         ;;
