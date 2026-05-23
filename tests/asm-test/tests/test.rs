@@ -71,7 +71,7 @@ fn test() {
         Revision::new("csky", "csky-unknown-linux-gnuabiv2")
             .rustc_args(["-C", "target-cpu=ck860"]),
         // Hexagon
-        Revision::new("hexagon", "hexagon-unknown-linux-musl"),
+        // Revision::new("hexagon", "hexagon-unknown-linux-musl"), # TODO: https://github.com/rust-lang/stdarch/pull/2133
         // LoongArch32 and LoongArch64
         Revision::new("loongarch32", "loongarch32-unknown-none"),
         Revision::new("loongarch64", "loongarch64-unknown-linux-gnu"),
