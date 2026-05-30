@@ -33,23 +33,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  tidy:
+    uses: taiki-e/github-actions/.github/workflows/tidy.yml@1bb80ca038216cd1fb7b6ca6d76240b3772963ab # main
+    permissions:
+      security-events: write # for github/codeql-action/*
   codegen:
     needs: tidy
-    uses: taiki-e/github-actions/.github/workflows/gen.yml@a57add62f2464b6791c594783f513e5194350ac9 # main
+    uses: taiki-e/github-actions/.github/workflows/gen.yml@1bb80ca038216cd1fb7b6ca6d76240b3772963ab # main
     permissions:
       contents: write # for creating branch for pr
-      pull-requests: write # unused (used in `automerge: true` case)
     secrets:
       PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
   msrv:
     needs: tidy
-    uses: taiki-e/github-actions/.github/workflows/msrv.yml@a57add62f2464b6791c594783f513e5194350ac9 # main
-  tidy:
-    uses: taiki-e/github-actions/.github/workflows/tidy.yml@a57add62f2464b6791c594783f513e5194350ac9 # main
-    permissions:
-      security-events: write # for github/codeql-action/*
+    uses: taiki-e/github-actions/.github/workflows/rust-msrv.yml@1bb80ca038216cd1fb7b6ca6d76240b3772963ab # main
 
   prepare:
+    needs: tidy
     runs-on: ubuntu-slim
     timeout-minutes: 15 # Max execution time of ubuntu-slim runner.
     steps:
@@ -61,9 +61,7 @@ jobs:
       test-matrix: ${{ steps.prepare.outputs.test-matrix }}
 
   test:
-    needs:
-      - prepare
-      - tidy
+    needs: prepare
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.test-matrix) }}
@@ -71,7 +69,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/github-actions/free-device-space@a57add62f2464b6791c594783f513e5194350ac9 # main # zizmor: ignore[stale-action-refs]
+      - uses: taiki-e/github-actions/free-device-space@1bb80ca038216cd1fb7b6ca6d76240b3772963ab # main # zizmor: ignore[stale-action-refs]
         if: startsWith(matrix.target, 'hexagon')
       # - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
       #   if: startsWith(matrix.os, 'ubuntu') || matrix.os == ''
@@ -388,8 +386,8 @@ jobs:
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-} --direct
 
   test-container:
-    needs: tidy
     name: test (${{ matrix.rust }}, ${{ matrix.target }}, ${{ matrix.os }})
+    needs: tidy
     strategy:
       fail-fast: false
       matrix:
@@ -643,8 +641,8 @@ jobs:
         if: startsWith(matrix.rust, 'nightly') && (matrix.target == 'armv5te-unknown-linux-gnueabi' || (matrix.target == 'armv4t-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2024') && !startsWith(matrix.rust, 'nightly-2025') && !startsWith(matrix.rust, 'nightly-2026-01'))) && !startsWith(matrix.rust, 'nightly-2023')
 
   build:
-    needs: tidy
     name: build (${{ matrix.name || matrix.rust }})
+    needs: tidy
     strategy:
       fail-fast: false
       matrix:
@@ -803,8 +801,8 @@ jobs:
         if: matrix.rust == 'stable'
 
   valgrind:
-    needs: tidy
     name: valgrind (${{ matrix.target }})
+    needs: tidy
     strategy:
       fail-fast: false
       matrix:
@@ -919,8 +917,8 @@ jobs:
         if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
 
   valgrind-cross:
-    needs: tidy
     name: valgrind (${{ matrix.target }})
+    needs: tidy
     strategy:
       fail-fast: false
       matrix:
@@ -944,7 +942,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           runner: valgrind
-      - uses: taiki-e/github-actions/setup-docker@a57add62f2464b6791c594783f513e5194350ac9 # main # zizmor: ignore[stale-action-refs]
+      - uses: taiki-e/github-actions/setup-docker@1bb80ca038216cd1fb7b6ca6d76240b3772963ab # main # zizmor: ignore[stale-action-refs]
         with:
           buildx: false
           qemu: ${{ matrix.arch }}
