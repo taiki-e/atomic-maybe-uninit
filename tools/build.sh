@@ -82,7 +82,7 @@ default_targets=(
 
   # hexagon
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "hexagon" then .key else empty end'
-  # hexagon-unknown-linux-musl # TODO: https://github.com/rust-lang/stdarch/pull/2133
+  hexagon-unknown-linux-musl
 
   # loongarch
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "loongarch32" or .value.arch == "loongarch64" then .key else empty end'
