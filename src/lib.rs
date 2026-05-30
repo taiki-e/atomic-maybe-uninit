@@ -38,18 +38,18 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 | powerpc \[12]                               | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | powerpc64 \[12]                             | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | powerpc64 (+quadword-atomics) \[6] \[12]    | i128,u128                                           | ✓          | ✓        |
-| mips / mips32r6 \[13]                       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| mips64 / mips64r6 \[13]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| sparc \[13] (experimental)                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| sparc (+v8plus) \[8] \[13] (experimental)   | i64,u64                                             | ✓          | ✓        |
-| sparc64 \[13] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| avr \[13] (experimental)                    | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| msp430 \[13] (experimental)                 | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| hexagon \[13] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| m68k \[13] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| m68k (+isa-68020) \[9] \[13] (experimental) | i64,u64                                             | ✓          | ✓        |
-| csky \[13] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| xtensa \[13] (experimental)                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| mips / mips32r6 (experimental \[13])        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| mips64 / mips64r6 (experimental \[13])      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| sparc (experimental \[13])                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| sparc (+v8plus) \[8] (experimental \[13])   | i64,u64                                             | ✓          | ✓        |
+| sparc64 (experimental \[13])                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| avr (experimental \[13])                    | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| msp430 (experimental \[13])                 | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| hexagon (experimental \[13])                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| m68k (experimental \[13])                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| m68k (+isa-68020) \[9] (experimental \[13]) | i64,u64                                             | ✓          | ✓        |
+| csky (experimental \[13])                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| xtensa (experimental \[13])                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 
 \[1] Arm's RMW operations are not available on Armv6-M (thumbv6m). RISC-V's RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. 32-bit SPARC's RMW operations requires `v9` or `leoncasa` target feature (enabled by default on Linux). M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* or c860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
