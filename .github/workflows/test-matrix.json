@@ -214,16 +214,82 @@
       "os": "windows-11-arm"
     },
     {
+      "rust": "nightly-2023-08-24",
+      "target": "armv4t-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly",
+      "target": "armv4t-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
       "rust": "nightly",
       "target": "armv4t-unknown-linux-gnueabi"
+    },
+    {
+      "rust": "1.74",
+      "target": "armv5te-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly-2023-08-24",
+      "target": "armv5te-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "stable",
+      "target": "armv5te-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly",
+      "target": "armv5te-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
     },
     {
       "rust": "nightly",
       "target": "armv5te-unknown-linux-gnueabi"
     },
     {
+      "rust": "1.74",
+      "target": "arm-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly-2023-08-24",
+      "target": "arm-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "stable",
+      "target": "arm-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly",
+      "target": "arm-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
       "rust": "nightly-2025-02-17",
       "target": "arm-unknown-linux-gnueabi"
+    },
+    {
+      "rust": "nightly",
+      "target": "armv7-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
     },
     {
       "rust": "nightly-2025-02-17",
