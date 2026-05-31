@@ -70,13 +70,10 @@ jobs:
     container: ${{ matrix.container && fromJSON(format('{{"image":"{0}","options":"--privileged"}}', matrix.container)) || '' }}
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - run: |
-          apt-get -o Acquire::Retries=10 -qq update
-          apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends gcc libc6-dev
-          # apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
-        if: matrix.container != ''
       - uses: taiki-e/github-actions/free-device-space@1bb80ca038216cd1fb7b6ca6d76240b3772963ab # main # zizmor: ignore[stale-action-refs]
         if: startsWith(matrix.target, 'hexagon')
+      - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends gcc libc6-dev
+        if: matrix.container != ''
       # - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
       #   if: startsWith(matrix.os, 'ubuntu') || matrix.os == ''
       # - run: brew install moreutils
@@ -568,6 +565,12 @@ jobs:
           # TODO: "unhandled instruction: 0x4508 0xD103" in atomic_sub in Arc::drop (as of Valgrind 3.26)
           # - target: thumbv7neon-unknown-linux-gnueabihf
           #   os: ubuntu-24.04-arm
+          - target: powerpc64le-unknown-linux-gnu
+            arch: ppc64le
+          - target: riscv64gc-unknown-linux-gnu
+            arch: riscv64
+          - target: s390x-unknown-linux-gnu
+            arch: s390x
     runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
     timeout-minutes: 60
     steps:
@@ -576,8 +579,7 @@ jobs:
         with:
           tool: rust@nightly
           fallback: none
-      - id: prepare
-        run: |
+      - run: |
           if [[ -z "${TARGET}" ]]; then
             printf 'matrix.target must be set\n'
             exit 1
@@ -586,110 +588,11 @@ jobs:
           if [[ "${host}" != "${TARGET}" ]]; then
             printf 'TARGET=--target=%s\n' "${TARGET}" >>"${GITHUB_ENV}"
           fi
+          printf 'VALGRIND=%s\n' "${VALGRIND}" >>"${GITHUB_ENV}"
         env:
           TARGET: ${{ matrix.target }}
+          VALGRIND: ${{ matrix.arch && 'valgrind-cross' || 'valgrind' }}
       # - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
-      - uses: taiki-e/setup-cross-toolchain-action@3d9770ce98eb7dbcf378563182a5e8031165f75b # v1.41.0
-        with:
-          target: ${{ matrix.target }}
-          runner: valgrind
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-      # x86_64 +cmpxchg16b
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
-        if: startsWith(matrix.target, 'x86_64')
-      # x86_64 +cmpxchg16b,+avx
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b,+avx
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b,+avx
-        if: startsWith(matrix.target, 'x86_64')
-      # x86 -sse2
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
-        if: startsWith(matrix.target, 'i686')
-      # x86 -sse
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
-        if: startsWith(matrix.target, 'i686')
-      # x86 -x87
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
-        if: startsWith(matrix.target, 'i686')
-      # aarch64 +lse
-      # As of Valgrind 3.26, Valgrind supports atomic instructions of Armv8.0, Armv8.1 (FEAT_LSE), and Armv8.3 (FEAT_LRCPC).
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
-        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
-      # aarch64 +lse,+rcpc
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse,+rcpc
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse,+rcpc
-        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
-      # arm v8 little endian
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v6 kuser_memory_barrier
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v6 cp15_barrier
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v5 kuser_cmpxchg+kuser_memory_barrier
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v4 kuser_cmpxchg+kuser_memory_barrier+bx
-      - run: tools/test.sh valgrind -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-
-  valgrind-cross:
-    name: valgrind (${{ matrix.target }})
-    needs: tidy
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: powerpc64le-unknown-linux-gnu
-            arch: ppc64le
-          - target: riscv64gc-unknown-linux-gnu
-            arch: riscv64
-          - target: s390x-unknown-linux-gnu
-            arch: s390x
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    steps:
-      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/install-action@e3134ec54b36203e18f2d1e80652058bd078dd91 # v2.77.3
-        with:
-          tool: rust@nightly
-          fallback: none
-      # - run: sudo apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
       - uses: taiki-e/setup-cross-toolchain-action@3d9770ce98eb7dbcf378563182a5e8031165f75b # v1.41.0
         with:
           target: ${{ matrix.target }}
@@ -698,80 +601,93 @@ jobs:
         with:
           buildx: false
           qemu: ${{ matrix.arch }}
-      - run: |
-          export CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=true
-          # Skip debug mode because it's slow.
-          binary_path=$(
-            ./tools/test.sh build-valgrind --target "${TARGET}" --release
-          )
-          mv -- "${binary_path}" ./release
-          binary_path=$(
-            CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
-              CARGO_PROFILE_RELEASE_LTO=fat \
-              ./tools/test.sh build-valgrind --target "${TARGET}" --release
-          )
-          mv -- "${binary_path}" ./release-fat-lto
-          case "${TARGET}" in
-            powerpc64le-*)
-              # powerpc64 pwr7
-              binary_path=$(
-                RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=pwr7" \
-                  ./tools/test.sh build-valgrind --target "${TARGET}" --release
-              )
-              mv -- "${binary_path}" ./release-pwr7
-              binary_path=$(
-                RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=pwr7" \
-                  CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
-                  CARGO_PROFILE_RELEASE_LTO=fat \
-                  ./tools/test.sh build-valgrind --target "${TARGET}" --release
-              )
-              mv -- "${binary_path}" ./release-pwr7-fat-lto
-              ;;
-            s390x*)
-              # s390x z196 (arch9)
-              binary_path=$(
-                RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=z196" \
-                  ./tools/test.sh build-valgrind --target "${TARGET}" --release
-              )
-              mv -- "${binary_path}" ./release-z196
-              binary_path=$(
-                RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=z196" \
-                  CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
-                  CARGO_PROFILE_RELEASE_LTO=fat \
-                  ./tools/test.sh build-valgrind --target "${TARGET}" --release
-              )
-              mv -- "${binary_path}" ./release-z196-fat-lto
-              ;;
-          esac
-
-          # NB: Sync with arguments in tools/test.sh.
-          workspace_dir="${PWD}"
-          args='-v --error-exitcode=1 --error-limit=no --leak-check=full --track-origins=yes --fair-sched=yes --gen-suppressions=all'
-          supp="${workspace_dir}/tools/valgrind/${TARGET%%-*}.supp"
-          if [[ -f "${supp}" ]]; then
-            args+=" --suppressions=\"${supp}\""
-          fi
-          cat >run <<'EOF'
-          #!/usr/bin/env bash
-          set -CeEuxo pipefail
-          EOF
-          for bin in ./release*; do
-            printf '%s\n' "valgrind ${args} ${bin}" >>run
-          done
-          cat -- ./run
-          chmod +x ./run
-          # https://github.com/taiki-e/setup-cross-toolchain-action#valgrind-runner
-          valgrind_version='3.27.1'
-          docker run --rm --init --user "$(id -u)":"$(id -g)" \
-            --mount "type=bind,source=${workspace_dir},target=${workspace_dir}" --workdir "${workspace_dir}" \
-            -e CI -e GITHUB_ACTIONS \
-            -e RUST_BACKTRACE -e RUST_TEST_THREADS \
-            -e ATOMIC_MAYBE_UNINIT_DENY_WARNINGS \
-            --platform=linux/"${ARCH}" ghcr.io/taiki-e/valgrind:"${valgrind_version}-${ARCH}"-cross \
-            ./run
+        if: matrix.arch != ''
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+      # x86_64 +cmpxchg16b
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
         env:
-          TARGET: ${{ matrix.target }}
-          ARCH: ${{ matrix.arch }}
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
+        if: startsWith(matrix.target, 'x86_64')
+      # x86_64 +cmpxchg16b,+avx
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b,+avx
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b,+avx
+        if: startsWith(matrix.target, 'x86_64')
+      # x86 -sse2
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
+        if: startsWith(matrix.target, 'i686')
+      # x86 -sse
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
+        if: startsWith(matrix.target, 'i686')
+      # x86 -x87
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
+        if: startsWith(matrix.target, 'i686')
+      # aarch64 +lse
+      # As of Valgrind 3.26, Valgrind supports atomic instructions of Armv8.0, Armv8.1 (FEAT_LSE), and Armv8.3 (FEAT_LRCPC).
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
+        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
+      # aarch64 +lse,+rcpc
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse,+rcpc
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse,+rcpc
+        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
+      # arm v8 little endian
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # arm v6 kuser_memory_barrier
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # arm v6 cp15_barrier
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # arm v5 kuser_cmpxchg+kuser_memory_barrier
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # arm v4 kuser_cmpxchg+kuser_memory_barrier+bx
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
+        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+      # powerpc64 pwr7
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
+        if: startsWith(matrix.target, 'powerpc64le-')
+      # s390x z196 (arch9)
+      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+        env:
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=z196
+        if: startsWith(matrix.target, 's390x')
 
   asm-test:
     needs: tidy

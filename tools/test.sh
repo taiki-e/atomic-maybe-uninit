@@ -8,7 +8,7 @@ cd -- "$(dirname -- "$0")"/..
 
 # USAGE:
 #    ./tools/test.sh [+toolchain] [cargo_options]...
-#    ./tools/test.sh [+toolchain] build|build-valgrind|valgrind [cargo_options]...
+#    ./tools/test.sh [+toolchain] build|valgrind|valgrind-cross [cargo_options]...
 
 x() {
   (
@@ -58,7 +58,7 @@ if [[ "${1:-}" == "+"* ]]; then
 fi
 cmd='test'
 case "${1:-}" in
-  build | build-valgrind | valgrind)
+  build | valgrind | valgrind-cross)
     cmd="$1"
     shift
     ;;
@@ -220,7 +220,7 @@ if [[ -n "${cranelift}" ]] || [[ -n "${gcc}" ]]; then
 fi
 
 case "${cmd}" in
-  *valgrind)
+  *valgrind*)
     # TODO: always pass randomize-layout
     export RUSTFLAGS="${RUSTFLAGS:-} --cfg valgrind"
     export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} --cfg valgrind"
@@ -242,13 +242,54 @@ case "${cmd}" in
   valgrind)
     # Refs: https://valgrind.org/docs/manual/mc-manual.html
     # See also https://wiki.wxwidgets.org/Valgrind_Suppression_File_Howto for suppression file.
-    # NB: Sync with arguments in valgrind-other job in .github/workflows/ci.yml.
+    # NB: Sync with valgrind-cross case.
     valgrind="valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --track-origins=yes --fair-sched=yes --gen-suppressions=all"
     supp="${workspace_dir}/tools/valgrind/${target%%-*}.supp"
     if [[ -f "${supp}" ]]; then
       valgrind+=" --suppressions=${supp}"
     fi
     export "CARGO_TARGET_${target_upper}_RUNNER"="${valgrind}"
+    # doctest on Valgrind is very slow
+    if [[ ${#tests[@]} -eq 0 ]]; then
+      tests=(--tests)
+    fi
+    ;;
+  valgrind-cross)
+    export RUSTFLAGS="${RUSTFLAGS:-} --cfg valgrind_cross"
+    export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} --cfg valgrind_cross"
+    # Refs: https://valgrind.org/docs/manual/mc-manual.html
+    # See also https://wiki.wxwidgets.org/Valgrind_Suppression_File_Howto for suppression file.
+    # NB: Sync with valgrind case.
+    valgrind="valgrind -v --error-exitcode=1 --error-limit=no --leak-check=full --track-origins=yes --fair-sched=yes --gen-suppressions=all"
+    supp="${workspace_dir}/tools/valgrind/${target%%-*}.supp"
+    if [[ -f "${supp}" ]]; then
+      valgrind+=" --suppressions=${supp}"
+    fi
+    # https://github.com/taiki-e/setup-cross-toolchain-action#valgrind-runner
+    valgrind_version='3.27.1'
+    case "${target}" in
+      powerpc64le-*) arch=ppc64le ;;
+      riscv64*) arch=riscv64 ;;
+      s390x*) arch=s390x ;;
+      *) bail "unrecognized target for valgrind-cross: ${target}" ;;
+    esac
+    mkdir -p -- tmp
+    # --privileged is for better performance.
+    cat >|tmp/valgrind-cross <<EOF
+#!/usr/bin/env bash
+set -CeEuxo pipefail
+docker run --rm --init --user "$(id -u):$(id -g)" \\
+  --privileged \\
+  --mount type=bind,source=${workspace_dir},target=${workspace_dir} --workdir ${workspace_dir} \\
+  -e CI -e GITHUB_ACTIONS -e RUST_BACKTRACE -e RUST_TEST_THREADS \\
+  -e ATOMIC_MAYBE_UNINIT_DENY_WARNINGS \\
+  --platform=linux/${arch} ghcr.io/taiki-e/valgrind:${valgrind_version}-${arch}-cross \\
+  valgrind "\$@"
+EOF
+    chmod +x ./tmp/valgrind-cross
+    export "CARGO_TARGET_${target_upper}_RUNNER"="${workspace_dir}/tmp/valgrind-cross"
+    # Skip debug mode because it's slow.
+    release=(--release)
     # doctest on Valgrind is very slow
     if [[ ${#tests[@]} -eq 0 ]]; then
       tests=(--tests)
