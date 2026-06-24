@@ -342,7 +342,7 @@ run() {
       hexagon-unknown-linux-musl) skip=1 ;;
       arm64ec-pc-windows-msvc)
         if [[ "${rustc_minor_version}" -lt 84 ]]; then
-          # LINK : fatal error LNK1000: unknown error at 00007FF6ABEA2DE8; consult documentation for technical support options␍
+          # LINK : fatal error LNK1000: unknown error at 00007FF6ABEA2DE8; consult documentation for technical support options
           skip=1
         fi
         ;;
