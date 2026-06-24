@@ -49,8 +49,9 @@ pub trait AtomicLoad: Primitive {
     /// except that concurrent atomic operations on `src` are allowed if the
     /// pointer go through [`UnsafeCell::get`].
     ///
+    /// Compatibility with read-only memory applies only to relaxed operations with a register or smaller width.
     /// See the ["Atomic accesses to read-only memory" section in the `core::sync::atomic` docs][read-only-memory]
-    /// for compatibility with read-only memory.
+    /// for more.
     ///
     /// [read-only-memory]: core::sync::atomic#atomic-accesses-to-read-only-memory
     /// [validity]: core::ptr#safety
@@ -88,6 +89,11 @@ pub trait AtomicStore: Primitive {
     /// except that concurrent atomic operations on `dst` are allowed if the
     /// pointer go through [`UnsafeCell::get`].
     ///
+    /// Compatibility with write-only memory applies only to relaxed operations with a register or smaller width.
+    /// See the ["Atomic accesses to read-only memory" section in the `core::sync::atomic` docs][read-only-memory]
+    /// for more.
+    ///
+    /// [read-only-memory]: core::sync::atomic#atomic-accesses-to-read-only-memory
     /// [validity]: core::ptr#safety
     unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering);
 }
