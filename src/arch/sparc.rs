@@ -122,6 +122,7 @@ cfg_sel!({
         // - GRLIB-TN-0009:
         //   - Insert this or others twice between a <= 32-bit store instruction and a store instruction.
         //   - Insert this or others between a 64-bit store instruction and a store instruction.
+        //   - > Note that stores that are part of an atomic instruction (e.g. ldst / casa) are not affected.
         // - GRLIB-TN-0010:
         //   - Insert this or others between a load instruction and an atomic instruction (swap, ldstub, casa).
         // Refs: https://www.gaisler.com/app-notes-tech-notes-and-white-papers
