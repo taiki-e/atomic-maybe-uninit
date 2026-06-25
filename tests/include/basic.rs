@@ -235,7 +235,7 @@ macro_rules! __test_atomic {
                             let flipped = base ^ (1 << bit);
                             let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
                             assert_eq!(
-                                a.compare_exchange(
+                                a.compare_exchange_weak(
                                     MaybeUninit::new(flipped),
                                     MaybeUninit::new(flipped),
                                     success,
@@ -248,7 +248,7 @@ macro_rules! __test_atomic {
                             );
                             let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(flipped));
                             assert_eq!(
-                                a.compare_exchange(
+                                a.compare_exchange_weak(
                                     MaybeUninit::new(base),
                                     MaybeUninit::new(base),
                                     success,
