@@ -15,7 +15,8 @@ include!("common.rs");
 use core::arch::x86_64::{__cpuid, _xgetbv, CpuidResult};
 
 #[cold]
-fn _detect(info: &mut CpuInfo) {
+#[must_use]
+fn _detect(mut info: CpuInfo) -> CpuInfo {
     #[allow(unused_unsafe)] // safe in newer rustc
     // SAFETY: Calling `__cpuid` is safe on all x86_64 CPUs except for SGX,
     // which doesn't support `cpuid`.
@@ -36,6 +37,7 @@ fn _detect(info: &mut CpuInfo) {
             }
         }
     }
+    info
 }
 
 #[allow(
