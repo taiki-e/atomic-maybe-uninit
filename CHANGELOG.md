@@ -12,6 +12,16 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix default cpu handling of sparc-unknown-none-elf. ([9922b04](https://github.com/taiki-e/atomic-maybe-uninit/commit/9922b04e89738c672843f9b706d2dc3464a6b654))
+
+- Improve handling of armv8m targets on nightly. ([d631861](https://github.com/taiki-e/atomic-maybe-uninit/commit/d631861dcb34269df12d159c40fb5877a7c30ae2))
+
+- Optimize swap/CAS on SPARC-V8+ and SPARC64. ([575c7a1](https://github.com/taiki-e/atomic-maybe-uninit/commit/575c7a1f13bd610051038d4aa7fff17cb26a35b2))
+
+- Optimize run-time CPU feature detection. ([f039131](https://github.com/taiki-e/atomic-maybe-uninit/commit/f039131f681054d1dd4e6d7fb802d20c1de018ca))
+
+- Documentation improvements.
+
 ## [0.3.18] - 2026-04-13
 
 - Remove reliance on unguaranteed behavior of the compiler in CAS on riscv64, MIPS64, and LoongArch64. ([ad48602](https://github.com/taiki-e/atomic-maybe-uninit/commit/ad48602ec2f57132baed41d6d86b5b912bd2e59a))
