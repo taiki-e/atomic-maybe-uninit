@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.19] - 2026-07-06
+
 - Fix default cpu handling of sparc-unknown-none-elf. ([9922b04](https://github.com/taiki-e/atomic-maybe-uninit/commit/9922b04e89738c672843f9b706d2dc3464a6b654))
 
 - Improve handling of armv8m targets on nightly. ([d631861](https://github.com/taiki-e/atomic-maybe-uninit/commit/d631861dcb34269df12d159c40fb5877a7c30ae2))
@@ -467,7 +469,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.19...HEAD
+[0.3.19]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...v0.3.19
 [0.3.18]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.17...v0.3.18
 [0.3.17]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.16...v0.3.17
 [0.3.16]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.15...v0.3.16
