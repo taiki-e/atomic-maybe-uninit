@@ -33,7 +33,7 @@ fn main() {
 
     if version.minor >= 80 {
         println!(
-            r#"cargo:rustc-check-cfg=cfg(target_feature,values("v8m","fast-serialization","zalasr"))"#
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("acquire-release","fast-serialization","zalasr"))"#
         );
 
         // Custom cfgs set by build script. Not public API.
@@ -44,7 +44,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","fast-serialization","isa-68020","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8","v8m","v8plus","v9","x87","zaamo","zabha","zacas","zalasr","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","acquire-release","fast-serialization","isa-68020","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8plus","v9","x87","zaamo","zabha","zacas","zalasr","zalrsc"))"#
         );
     }
 
@@ -274,7 +274,8 @@ fn main() {
             let mut v5te = known && subarch.starts_with("v5te");
             let mut v6 = known && subarch.starts_with("v6");
             let mut v7 = known && subarch.starts_with("v7");
-            let (v8, v8m) = if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
+            let mut acquire_release = false;
+            if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
                 // Armv8-M is not considered as v8 by LLVM.
                 // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
                 if mclass {
@@ -283,19 +284,17 @@ fn main() {
                     // That said, LLVM handles thumbv8m.main without v8m like v6m, not v7m: https://godbolt.org/z/Ph96v9zae
                     // TODO: Armv9-M has not yet been released,
                     // so it is not clear how it will be handled here.
+                    v6 = true;
                     v7 = suffix == "main";
-                    (false, true)
                 } else {
-                    (true, false)
+                    v7 = true;
                 }
-            } else {
-                (false, false)
-            };
-            // As of rustc 1.90, target_feature "v8m" is not available on rustc side:
+                acquire_release = true;
+            }
+            // As of rustc 1.90, target_feature "acquire-release" is not available on rustc side:
             // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/target_features.rs#L132
-            v6 |= target_feature_fallback("v8m", v8m);
+            target_feature_fallback("acquire-release", acquire_release);
             if needs_target_feature_fallback(&version, None) {
-                v7 |= target_feature_fallback("v8", v8);
                 v6 |= target_feature_fallback("v7", v7);
                 v5te |= target_feature_fallback("v6", v6);
                 target_feature_fallback("v5te", v5te);

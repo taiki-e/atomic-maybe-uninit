@@ -1178,9 +1178,8 @@ pub(crate) const IMP_ARM_LINUX: bool = cfg!(all(
     ),
     not(any(
         target_feature = "v8",
-        atomic_maybe_uninit_target_feature = "v8",
-        target_feature = "v8m",
-        atomic_maybe_uninit_target_feature = "v8m",
+        target_feature = "acquire-release",
+        atomic_maybe_uninit_target_feature = "acquire-release",
     )),
 ));
 // true if the current implementation implements sub-word atomics using word-size CAS.

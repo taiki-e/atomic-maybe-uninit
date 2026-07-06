@@ -843,9 +843,8 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
         // Use armv8.rs for Armv8+.
         not(any(
             target_feature = "v8",
-            atomic_maybe_uninit_target_feature = "v8",
-            target_feature = "v8m",
-            atomic_maybe_uninit_target_feature = "v8m",
+            target_feature = "acquire-release",
+            atomic_maybe_uninit_target_feature = "acquire-release",
         )),
     ),
     path = "arch/arm.rs"
@@ -856,9 +855,8 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
         // Use arm.rs for pre-v8 Arm.
         any(
             target_feature = "v8",
-            atomic_maybe_uninit_target_feature = "v8",
-            target_feature = "v8m",
-            atomic_maybe_uninit_target_feature = "v8m",
+            target_feature = "acquire-release",
+            atomic_maybe_uninit_target_feature = "acquire-release",
         ),
     ),
     path = "arch/armv8.rs"
