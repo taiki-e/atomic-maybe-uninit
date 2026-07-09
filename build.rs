@@ -206,105 +206,106 @@ fn main() {
             }
         }
         "arm" => {
-            // #[cfg(target_feature = "v7")] and others don't work on stable.
-            // armv7-unknown-linux-gnueabihf
-            //    ^^
-            let mut subarch =
-                target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")).unwrap();
-            subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
-            subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
-            let (mut subarch, suffix) = subarch.split_once('.').unwrap_or((subarch, "")); // .base/.main suffix
-            let mut known = true;
-            // As of rustc nightly-2026-03-08, there are the following "vN*" patterns:
-            // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
-            // ""
-            // "v4t"
-            // "v5te"
-            // "v6"
-            // "v6k"
-            // "v6m"
-            // "v7"
-            // "v7a"
-            // "v7em"
-            // "v7k"
-            // "v7m"
-            // "v7neon"
-            // "v7r"
-            // "v7s"
-            // "v8m"
-            // "v8r"
-            //
-            // - v7, v7a, v7neon, v7s, and v7k are aclass
-            // - v6m, v7em, v7m, and v8m are mclass
-            // - v7r and v8r are rclass
-            //
-            // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
-            // For example:
-            // $ rustc +nightly --print cfg --target arm-unknown-linux-gnueabi | grep -F target_feature
-            // target_feature="v5te"
-            // target_feature="v6"
-            //
-            // In addition to above known sub-architectures, we also recognize armv{8,9}-{a,r}.
-            // Note that there is a CPU that Armv8-A but 32-bit only (Cortex-A32).
-            let mut mclass = false;
-            match subarch {
-                "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8" | "v8a" | "v9" | "v9a" => {} // aclass
-                "v7r" | "v8r" | "v9r" => {} // rclass
-                "v6m" | "v7em" | "v7m" | "v8m" => mclass = true,
-                // arm-linux-androideabi is v5te
-                // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L19
-                _ if target == "arm-linux-androideabi" => subarch = "v5te",
-                // armeb-unknown-linux-gnueabi is v8 & aclass
-                // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L20
-                _ if target == "armeb-unknown-linux-gnueabi" => subarch = "v8",
+            // target_feature "acquire-release" is unstable and available on rustc side since nightly-2026-07-07: https://github.com/rust-lang/rust/pull/158405
+            if !version.probe(99, 2026, 7, 6) || needs_target_feature_fallback(&version, None) {
+                // #[cfg(target_feature = "v7")] and others don't work on stable.
+                // armv7-unknown-linux-gnueabihf
+                //    ^^
+                let mut subarch =
+                    target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb")).unwrap();
+                subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
+                subarch = subarch.split_once('-').unwrap().0; // ignore vender/os/env
+                let (mut subarch, suffix) = subarch.split_once('.').unwrap_or((subarch, "")); // .base/.main suffix
+                let mut known = true;
+                // As of rustc nightly-2026-03-08, there are the following "vN*" patterns:
+                // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
+                // ""
+                // "v4t"
+                // "v5te"
+                // "v6"
+                // "v6k"
+                // "v6m"
+                // "v7"
+                // "v7a"
+                // "v7em"
+                // "v7k"
+                // "v7m"
+                // "v7neon"
+                // "v7r"
+                // "v7s"
+                // "v8m"
+                // "v8r"
+                //
+                // - v7, v7a, v7neon, v7s, and v7k are aclass
+                // - v6m, v7em, v7m, and v8m are mclass
+                // - v7r and v8r are rclass
+                //
                 // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
-                "" => subarch = "v6",
-                "v4t" | "v5te" | "v6" | "v6k" => {}
-                _ => {
-                    known = false;
-                    if env::var_os("ATOMIC_MAYBE_UNINIT_DENY_WARNINGS").is_some() {
-                        panic!("unrecognized Arm subarch: {target}")
+                // For example:
+                // $ rustc +nightly --print cfg --target arm-unknown-linux-gnueabi | grep -F target_feature
+                // target_feature="v5te"
+                // target_feature="v6"
+                //
+                // In addition to above known sub-architectures, we also recognize armv{8,9}-{a,r}.
+                // Note that there is a CPU that Armv8-A but 32-bit only (Cortex-A32).
+                let mut mclass = false;
+                match subarch {
+                    "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8" | "v8a" | "v9" | "v9a" => {} // aclass
+                    "v7r" | "v8r" | "v9r" => {} // rclass
+                    "v6m" | "v7em" | "v7m" | "v8m" => mclass = true,
+                    // arm-linux-androideabi is v5te
+                    // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L19
+                    _ if target == "arm-linux-androideabi" => subarch = "v5te",
+                    // armeb-unknown-linux-gnueabi is v8 & aclass
+                    // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L20
+                    _ if target == "armeb-unknown-linux-gnueabi" => subarch = "v8",
+                    // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
+                    "" => subarch = "v6",
+                    "v4t" | "v5te" | "v6" | "v6k" => {}
+                    _ => {
+                        known = false;
+                        if env::var_os("ATOMIC_MAYBE_UNINIT_DENY_WARNINGS").is_some() {
+                            panic!("unrecognized Arm subarch: {target}")
+                        }
+                        println!(
+                            "cargo:warning={}: unrecognized Arm subarch: {target}",
+                            env!("CARGO_PKG_NAME")
+                        );
                     }
-                    println!(
-                        "cargo:warning={}: unrecognized Arm subarch: {target}",
-                        env!("CARGO_PKG_NAME")
-                    );
                 }
-            }
-            let mut v5te = known && subarch.starts_with("v5te");
-            let mut v6 = known && subarch.starts_with("v6");
-            let mut v7 = known && subarch.starts_with("v7");
-            let mut acquire_release = false;
-            if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
-                // Armv8-M is not considered as v8 by LLVM.
-                // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
-                if mclass {
-                    // Armv8-M Mainline is a superset of Armv7-M.
-                    // Armv8-M Baseline is a superset of Armv6-M.
-                    // That said, LLVM handles thumbv8m.main without v8m like v6m, not v7m: https://godbolt.org/z/Ph96v9zae
-                    // TODO: Armv9-M has not yet been released,
-                    // so it is not clear how it will be handled here.
-                    v6 = true;
-                    v7 = suffix == "main";
-                } else {
-                    v7 = true;
+                let mut v5te = known && subarch.starts_with("v5te");
+                let mut v6 = known && subarch.starts_with("v6");
+                let mut v7 = known && subarch.starts_with("v7");
+                let mut acquire_release = false;
+                if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
+                    // Armv8-M is not considered as v8 by LLVM.
+                    // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
+                    if mclass {
+                        // Armv8-M Mainline is a superset of Armv7-M.
+                        // Armv8-M Baseline is a superset of Armv6-M.
+                        // That said, LLVM handles thumbv8m.main without v8m like v6m, not v7m: https://godbolt.org/z/Ph96v9zae
+                        // TODO: Armv9-M has not yet been released,
+                        // so it is not clear how it will be handled here.
+                        v6 = true;
+                        v7 = suffix == "main";
+                    } else {
+                        v7 = true;
+                    }
+                    acquire_release = true;
                 }
-                acquire_release = true;
-            }
-            // As of rustc 1.90, target_feature "acquire-release" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/target_features.rs#L132
-            target_feature_fallback("acquire-release", acquire_release);
-            if needs_target_feature_fallback(&version, None) {
-                v6 |= target_feature_fallback("v7", v7);
-                v5te |= target_feature_fallback("v6", v6);
-                target_feature_fallback("v5te", v5te);
-                target_feature_fallback("mclass", mclass);
-                // All builtin targets that start with "thumb" enable thumb-mode, and
-                // some builtin targets that start with "arm" are also enable thumb-mode.
-                let thumb_mode =
-                    target.starts_with("thumb") || generated::ARM_BUT_THUMB_MODE.contains(&target);
-                target_feature_fallback("thumb-mode", thumb_mode);
-                target_feature_fallback("thumb2", v7);
+                target_feature_fallback("acquire-release", acquire_release);
+                if needs_target_feature_fallback(&version, None) {
+                    v6 |= target_feature_fallback("v7", v7);
+                    v5te |= target_feature_fallback("v6", v6);
+                    target_feature_fallback("v5te", v5te);
+                    target_feature_fallback("mclass", mclass);
+                    // All builtin targets that start with "thumb" enable thumb-mode, and
+                    // some builtin targets that start with "arm" are also enable thumb-mode.
+                    let thumb_mode = target.starts_with("thumb")
+                        || generated::ARM_BUT_THUMB_MODE.contains(&target);
+                    target_feature_fallback("thumb-mode", thumb_mode);
+                    target_feature_fallback("thumb2", v7);
+                }
             }
         }
         "riscv32" | "riscv64" => {
