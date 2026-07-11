@@ -219,21 +219,29 @@ macro_rules! atomic_store_swap_amswap {
             unsafe fn atomic_swap(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
-                _order: Ordering,
+                order: Ordering,
             ) -> MaybeUninit<Self> {
                 debug_assert_atomic_unsafe_precondition!(dst, $ty);
                 let out: MaybeUninit<Self>;
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    // AMO has SeqCst semantics.
-                    asm!(
-                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = sign_extend(_x) }
-                        dst = in(reg) ptr_reg!(dst),
-                        val = in(reg) val,
-                        out = out(reg) out,
-                        options(nostack, preserves_flags),
-                    );
+                    macro_rules! swap {
+                        ($db:tt) => {
+                            asm!(
+                                concat!("amswap", $db, ".", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = sign_extend(_x) }
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) val,
+                                out = out(reg) out,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => swap!(""),
+                        // AM*_DB has SeqCst semantics.
+                        _ => swap!("_db"),
+                    }
                 }
                 out
             }
