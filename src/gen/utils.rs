@@ -21,10 +21,10 @@
 // a safe default for such ABIs).
 //
 // Known architectures that have such ABI are x86_64 (X32), AArch64 (ILP32),
-// mips64 (N32), riscv64 (RV64ILP32*), PowerPC64 (Lv2). (As of 2026-03-22,
-// only the former two are supported by rustc.) However, we list all known
-// 64-bit architectures because similar ABIs may exist or future added for
-// other architectures.
+// mips64/mips64r6 (N32), riscv64 (RV64ILP32*), PowerPC64 (Lv2). (As of
+// 2026-03-22, only the former two are supported by rustc.) However, we list
+// all known 64-bit architectures because similar ABIs may exist or future added
+// for other architectures.
 #[cfg(all(
     target_pointer_width = "32",
     any(

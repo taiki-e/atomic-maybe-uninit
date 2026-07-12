@@ -530,7 +530,7 @@ macro_rules! atomic {
                                         $fence,                                                         // fence
                                         // old will be used for later comparison.
                                         "mv {out}, {old}",                                              // out = old
-                                        concat!("amocas.", $suffix, $order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = sign_extend(*dst) } }
+                                        concat!("amocas.", $suffix, $order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new }; out = sign_extend(*dst) }
                                         "xor {r}, {out}, {old}",                                        // r = out ^ old
                                         "seqz {r}, {r}",                                                // if r == 0 { r = 1 } else { r = 0 }
                                         dst = in(reg) ptr_reg!(dst),
@@ -700,7 +700,7 @@ macro_rules! atomic_sub_word {
                                             "mv {out_tmp}, {out}",                                  // out_tmp = out
                                             "and {tmp}, {out}, {mask}",                             // tmp = out & mask
                                             "or {tmp}, {tmp}, {val}",                               // tmp |= val
-                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = sign_extend(*dst) } }
+                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp }; out = sign_extend(*dst) }
                                             "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
                                         dst = in(reg) ptr_reg!(dst),
                                         val = in(reg) sllw!(crate::utils::extend32::$ty::zero(val), shift),
@@ -752,7 +752,7 @@ macro_rules! atomic_sub_word {
                                         // old will be used for later comparison.
                                         "mv {out}, {old}",                                              // out = old
                                         concat!("slli {old}, {old}, ", xlen!(), "-", $size, "*8"),      // old <<= XLEN - $size * 8
-                                        concat!("amocas.", $suffix, $order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new } else { out = sign_extend(*dst) } }
+                                        concat!("amocas.", $suffix, $order, " {out}, {new}, 0({dst})"), // atomic { if *dst == out { *dst = new }; out = sign_extend(*dst) }
                                         concat!("srai {old}, {old}, ", xlen!(), "-", $size, "*8"),      // old >>= XLEN - $size * 8
                                         "xor {r}, {out}, {old}",                                        // r = out ^ old
                                         "seqz {r}, {r}",                                                // if r == 0 { r = 1 } else { r = 0 }
@@ -877,7 +877,7 @@ macro_rules! atomic_sub_word {
                                             "xor {tmp}, {out}, {new}",                              // tmp = out ^ new
                                             "and {tmp}, {tmp}, {mask}",                             // tmp &= mask
                                             "xor {tmp}, {tmp}, {out}",                              // tmp ^= out
-                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = sign_extend(*dst) } }
+                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp }; out = sign_extend(*dst) }
                                             "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
                                             "and {tmp}, {out}, {mask}",                             // tmp = out & mask
                                         "3:", // 'cmp-fail:
@@ -907,7 +907,7 @@ macro_rules! atomic_sub_word {
                                             "xor {tmp}, {out}, {new}",                              // tmp = out ^ new
                                             "and {tmp}, {tmp}, {mask}",                             // tmp &= mask
                                             "xor {tmp}, {tmp}, {out}",                              // tmp ^= out
-                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp } else { out = sign_extend(*dst) } }
+                                            concat!("amocas.w", $order, " {out}, {tmp}, 0({dst})"), // atomic { if *dst == out { *dst = tmp }; out = sign_extend(*dst) }
                                             "bne {out}, {out_tmp}, 2b",                             // if out != out_tmp { jump 'retry }
                                             "and {tmp}, {out}, {mask}",                             // tmp = out & mask
                                             "j 4f",                                                 // jump 'success
@@ -977,7 +977,7 @@ macro_rules! atomic_dw {
                         ($fence:tt, $order:tt) => {
                             asm!(
                                 $fence,                                                   // fence
-                                concat!("amocas.", $suffix, $order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 } else { a2:a3 = *dst } }
+                                concat!("amocas.", $suffix, $order, " a2, a2, 0({src})"), // atomic { if *dst == a2:a3 { *dst = a2:a3 }; a2:a3 = *dst }
                                 src = in(reg) ptr_reg!(src),
                                 inout("a2") 0 as RegSize => out_lo,
                                 inout("a3") 0 as RegSize => out_hi,
@@ -1034,7 +1034,7 @@ macro_rules! atomic_dw {
                                     // tmp_lo:tmp_hi will be used for later comparison.
                                     "mv {tmp_lo}, a4",                                         // tmp_lo = a4
                                     "mv {tmp_hi}, a5",                                         // tmp_hi = a5
-                                    concat!("amocas.", $suffix, $order, " a4, a2, 0({dst})"),  // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                    concat!("amocas.", $suffix, $order, " a4, a2, 0({dst})"),  // atomic { if *dst == a4:a5 { *dst = a2:a3 }; a4:a5 = *dst }
                                     "xor {tmp_lo}, {tmp_lo}, a4",                              // tmp_lo ^= a4
                                     "xor {tmp_hi}, {tmp_hi}, a5",                              // tmp_hi ^= a5
                                     "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                         // tmp_lo |= tmp_hi
@@ -1083,7 +1083,7 @@ macro_rules! atomic_dw {
                                 // tmp_lo:tmp_hi will be used for later comparison.
                                 "mv {tmp_lo}, a4",                                        // tmp_lo = a4
                                 "mv {tmp_hi}, a5",                                        // tmp_hi = a5
-                                concat!("amocas.", $suffix, $order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 } else { a4:a5 = *dst } }
+                                concat!("amocas.", $suffix, $order, " a4, a2, 0({dst})"), // atomic { if *dst == a4:a5 { *dst = a2:a3 }; a4:a5 = *dst }
                                 "xor {tmp_lo}, {tmp_lo}, a4",                             // tmp_lo ^= a4
                                 "xor {tmp_hi}, {tmp_hi}, a5",                             // tmp_hi ^= a5
                                 "or {tmp_lo}, {tmp_lo}, {tmp_hi}",                        // tmp_lo |= tmp_hi
