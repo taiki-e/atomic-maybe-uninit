@@ -620,6 +620,7 @@ atomic_update!(u64);
 #[cfg(any(
     target_arch = "aarch64",
     target_arch = "arm64ec",
+    all(target_arch = "loongarch64", target_feature = "scq"),
     all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
     target_arch = "s390x",
     all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -659,6 +660,7 @@ pub mod load {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -699,6 +701,7 @@ pub mod store {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -747,6 +750,7 @@ pub mod swap {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -895,6 +899,7 @@ pub mod compare_exchange {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1043,6 +1048,7 @@ pub mod compare_exchange_weak {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1092,6 +1098,7 @@ pub mod fetch_add {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1140,6 +1147,7 @@ pub mod fetch_sub {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1188,6 +1196,7 @@ pub mod fetch_and {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1236,6 +1245,7 @@ pub mod fetch_nand {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1284,6 +1294,7 @@ pub mod fetch_or {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1332,6 +1343,7 @@ pub mod fetch_xor {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1380,6 +1392,7 @@ pub mod fetch_not {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1428,6 +1441,7 @@ pub mod fetch_neg {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1516,6 +1530,7 @@ pub mod fetch_max {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         // all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1595,6 +1610,7 @@ pub mod fetch_umax {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         // all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1685,6 +1701,7 @@ pub mod fetch_min {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         // all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),
@@ -1764,6 +1781,7 @@ pub mod fetch_umin {
     #[cfg(any(
         target_arch = "aarch64",
         target_arch = "arm64ec",
+        all(target_arch = "loongarch64", target_feature = "scq"),
         // all(target_arch = "powerpc64", target_feature = "quadword-atomics"),
         target_arch = "s390x",
         all(target_arch = "x86_64", target_feature = "cmpxchg16b"),

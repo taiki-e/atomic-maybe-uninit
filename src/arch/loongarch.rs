@@ -138,8 +138,9 @@ macro_rules! atomic_load {
     };
 }
 
+#[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh", not(atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap))))]
 #[rustfmt::skip]
-macro_rules! atomic_store {
+macro_rules! atomic_store_st {
     ($ty:ident, $suffix:tt) => {
         impl AtomicStore for $ty {
             #[inline]
@@ -176,18 +177,10 @@ macro_rules! atomic_store {
     };
 }
 
-macro_rules! atomic {
+#[cfg(target_arch = "loongarch64")]
+#[cfg(any(not(atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap), target_feature = "lam-bh"))]
+macro_rules! atomic_store_swap_amswap {
     ($ty:ident, $suffix:tt) => {
-        atomic_load!($ty, $suffix);
-        #[cfg(any(
-            target_arch = "loongarch32",
-            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
-        ))]
-        atomic_store!($ty, $suffix);
-        #[cfg(not(any(
-            target_arch = "loongarch32",
-            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
-        )))]
         impl AtomicStore for $ty {
             #[inline]
             unsafe fn atomic_store(
@@ -233,11 +226,51 @@ macro_rules! atomic {
 
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
+                    // AMO has SeqCst semantics.
+                    asm!(
+                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = sign_extend(_x) }
+                        dst = in(reg) ptr_reg!(dst),
+                        val = in(reg) val,
+                        out = out(reg) out,
+                        options(nostack, preserves_flags),
+                    );
+                }
+                out
+            }
+        }
+    };
+}
+
+macro_rules! atomic {
+    ($ty:ident, $suffix:tt) => {
+        atomic_load!($ty, $suffix);
+        #[cfg(any(
+            target_arch = "loongarch32",
+            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+        ))]
+        atomic_store_st!($ty, $suffix);
+        #[cfg(not(any(
+            target_arch = "loongarch32",
+            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+        )))]
+        atomic_store_swap_amswap!($ty, $suffix);
+        #[cfg(any(
+            target_arch = "loongarch32",
+            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+        ))]
+        impl AtomicSwap for $ty {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
+                let out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
                     // successful LL/SC has SeqCst semantics.
-                    #[cfg(any(
-                        target_arch = "loongarch32",
-                        atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
-                    ))]
                     asm!(
                         "2:", // 'retry:
                             concat!("ll.", $suffix, " {out}, {dst}, 0"),  // atomic { out = sign_extend(*dst); LL = dst }
@@ -248,18 +281,6 @@ macro_rules! atomic {
                         val = in(reg) val,
                         out = out(reg) out,
                         tmp = out(reg) _,
-                        options(nostack, preserves_flags),
-                    );
-                    // AMO has SeqCst semantics.
-                    #[cfg(not(any(
-                        target_arch = "loongarch32",
-                        atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
-                    )))]
-                    asm!(
-                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = sign_extend(_x) }
-                        dst = in(reg) ptr_reg!(dst),
-                        val = in(reg) val,
-                        out = out(reg) out,
                         options(nostack, preserves_flags),
                     );
                 }
@@ -325,7 +346,11 @@ macro_rules! atomic {
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
         atomic_load!($ty, $suffix);
-        atomic_store!($ty, $suffix);
+        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh")))]
+        atomic_store_st!($ty, $suffix);
+        #[cfg(all(target_arch = "loongarch64", target_feature = "lam-bh"))]
+        atomic_store_swap_amswap!($ty, $suffix);
+        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh")))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn atomic_swap(

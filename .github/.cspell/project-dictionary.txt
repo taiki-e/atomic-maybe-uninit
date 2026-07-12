@@ -60,6 +60,7 @@ ishld
 isync
 kuser
 LAAL
+lamcas
 lclang
 ldar
 ldarx

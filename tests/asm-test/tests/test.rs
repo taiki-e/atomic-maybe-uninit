@@ -76,6 +76,8 @@ fn test() {
         // LoongArch32 and LoongArch64
         Revision::new("loongarch32", "loongarch32-unknown-none"),
         Revision::new("loongarch64", "loongarch64-unknown-linux-gnu"),
+        Revision::new("loongarch64_v1_1", "loongarch64-unknown-linux-gnu")
+            .rustc_args(["-C", "target-feature=+lam-bh,+lamcas,+scq"]),
         // M68k
         Revision::new("m68k", "m68k-unknown-linux-gnu"),
         // MIPS32 and MIPS64
