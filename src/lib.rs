@@ -33,6 +33,7 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 | riscv64                                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
 | riscv64 (+zacas) \[4]                       | i128,u128                                           | ✓          | ✓        |
 | loongarch64                                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| loongarch64 (+scq) \[5]                     | i128,u128                                           | ✓          | ✓        |
 | loongarch32 \[11]                           | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | s390x \[10]                                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | powerpc \[12]                               | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
@@ -55,6 +56,7 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[4] Requires `zacas` target feature.<br>
+\[5] Requires `scq` target feature.<br>
 \[6] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
 \[8] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
 \[9] Requires target-cpu M68020+ (enabled by default on Linux).<br>
@@ -62,7 +64,6 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 \[11] Requires Rust 1.91+.<br>
 \[12] Requires Rust 1.95+.<br>
 \[13] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
-<!-- loongarch64: \[5] Requires `scq` target feature.<br> -->
 <!-- mips32r6/mips64r6: \[7] Requires Release 6 Paired LL/SC family of instructions.<br> -->
 
 See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md)

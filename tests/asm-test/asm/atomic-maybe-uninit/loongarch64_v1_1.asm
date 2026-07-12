@@ -583,6 +583,336 @@ asm_test::compare_exchange::u64::release_relaxed:
         move              $a0, $a3
         ret
 
+asm_test::compare_exchange::u128::acqrel_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::seqcst_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::acqrel_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::acqrel_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::acquire_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::relaxed_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::release_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::seqcst_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::seqcst_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::acquire_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::acquire_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::relaxed_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::relaxed_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::release_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange::u128::release_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         ext.w.b           $a1, $a1
         move              $a3, $a1
@@ -1168,6 +1498,336 @@ asm_test::compare_exchange_weak::u64::release_relaxed:
         move              $a0, $a3
         ret
 
+asm_test::compare_exchange_weak::u128::acqrel_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::seqcst_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::acqrel_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::acqrel_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::acquire_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::relaxed_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::release_seqcst:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::seqcst_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::seqcst_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::acquire_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::acquire_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::relaxed_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::relaxed_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::release_acquire:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
+asm_test::compare_exchange_weak::u128::release_relaxed:
+0:
+        ll.d              $a6, $a1, 0
+        dbar              20
+        ld.d              $a7, $a1, 8
+        bne               $a6, $a2, 1f
+        bne               $a7, $a3, 1f
+        move              $t0, $a4
+        sc.q              $t0, $a5, $a1
+        beqz              $t0, 0b
+        b                 2f
+1:
+        move              $t0, $a6
+        sc.q              $t0, $a7, $a1
+        beqz              $t0, 0b
+        move              $t0, $zero
+2:
+        st.d              $a7, $a0, 8
+        st.d              $a6, $a0, 0
+        st.b              $t0, $a0, 16
+        ret
+
 asm_test::load::u8::seqcst:
         ld.b              $a0, $a0, 0
         dbar              16
@@ -1222,6 +1882,39 @@ asm_test::load::u64::acquire:
 
 asm_test::load::u64::relaxed:
         ld.d              $a0, $a0, 0
+        ret
+
+asm_test::load::u128::seqcst:
+0:
+        ll.d              $a2, $a0, 0
+        dbar              20
+        ld.d              $a1, $a0, 8
+        move              $a3, $a2
+        sc.q              $a3, $a1, $a0
+        beqz              $a3, 0b
+        move              $a0, $a2
+        ret
+
+asm_test::load::u128::acquire:
+0:
+        ll.d              $a2, $a0, 0
+        dbar              20
+        ld.d              $a1, $a0, 8
+        move              $a3, $a2
+        sc.q              $a3, $a1, $a0
+        beqz              $a3, 0b
+        move              $a0, $a2
+        ret
+
+asm_test::load::u128::relaxed:
+0:
+        ll.d              $a2, $a0, 0
+        dbar              20
+        ld.d              $a1, $a0, 8
+        move              $a3, $a2
+        sc.q              $a3, $a1, $a0
+        beqz              $a3, 0b
+        move              $a0, $a2
         ret
 
 asm_test::swap::u8::acqrel:
@@ -1324,6 +2017,66 @@ asm_test::swap::u64::release:
         move              $a0, $a2
         ret
 
+asm_test::swap::u128::acqrel:
+0:
+        ll.d              $a3, $a0, 0
+        dbar              20
+        ld.d              $a4, $a0, 8
+        move              $a5, $a1
+        sc.q              $a5, $a2, $a0
+        beqz              $a5, 0b
+        move              $a0, $a3
+        move              $a1, $a4
+        ret
+
+asm_test::swap::u128::seqcst:
+0:
+        ll.d              $a3, $a0, 0
+        dbar              20
+        ld.d              $a4, $a0, 8
+        move              $a5, $a1
+        sc.q              $a5, $a2, $a0
+        beqz              $a5, 0b
+        move              $a0, $a3
+        move              $a1, $a4
+        ret
+
+asm_test::swap::u128::acquire:
+0:
+        ll.d              $a3, $a0, 0
+        dbar              20
+        ld.d              $a4, $a0, 8
+        move              $a5, $a1
+        sc.q              $a5, $a2, $a0
+        beqz              $a5, 0b
+        move              $a0, $a3
+        move              $a1, $a4
+        ret
+
+asm_test::swap::u128::relaxed:
+0:
+        ll.d              $a3, $a0, 0
+        dbar              20
+        ld.d              $a4, $a0, 8
+        move              $a5, $a1
+        sc.q              $a5, $a2, $a0
+        beqz              $a5, 0b
+        move              $a0, $a3
+        move              $a1, $a4
+        ret
+
+asm_test::swap::u128::release:
+0:
+        ll.d              $a3, $a0, 0
+        dbar              20
+        ld.d              $a4, $a0, 8
+        move              $a5, $a1
+        sc.q              $a5, $a2, $a0
+        beqz              $a5, 0b
+        move              $a0, $a3
+        move              $a1, $a4
+        ret
+
 asm_test::store::u8::seqcst:
         amswap_db.b       $zero, $a1, $a0
         ret
@@ -1370,4 +2123,34 @@ asm_test::store::u64::relaxed:
 
 asm_test::store::u64::release:
         amswap_db.d       $zero, $a1, $a0
+        ret
+
+asm_test::store::u128::seqcst:
+0:
+        ll.d              $a3, $a0, 0
+        dbar              20
+        ld.d              $a4, $a0, 8
+        move              $a5, $a1
+        sc.q              $a5, $a2, $a0
+        beqz              $a5, 0b
+        ret
+
+asm_test::store::u128::relaxed:
+0:
+        ll.d              $a3, $a0, 0
+        dbar              20
+        ld.d              $a4, $a0, 8
+        move              $a5, $a1
+        sc.q              $a5, $a2, $a0
+        beqz              $a5, 0b
+        ret
+
+asm_test::store::u128::release:
+0:
+        ll.d              $a3, $a0, 0
+        dbar              20
+        ld.d              $a4, $a0, 8
+        move              $a5, $a1
+        sc.q              $a5, $a2, $a0
+        beqz              $a5, 0b
         ret

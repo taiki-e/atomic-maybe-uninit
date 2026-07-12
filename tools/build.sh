@@ -504,6 +504,20 @@ build() {
           x_cargo "${args[@]}" "$@"
       fi
       ;;
+    loongarch64*)
+      CARGO_TARGET_DIR="${target_dir}/lam-bh" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lam-bh" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/lamcas" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lamcas" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/scq" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+scq" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/v1.1" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lam-bh,+lamcas,+scq" \
+        x_cargo "${args[@]}" "$@"
+      ;;
     s390x*)
       CARGO_TARGET_DIR="${target_dir}/z196" \
         RUSTFLAGS="${target_rustflags} -C target-cpu=z196" \

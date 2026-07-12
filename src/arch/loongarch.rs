@@ -18,6 +18,9 @@ use core::{
     sync::atomic::Ordering,
 };
 
+#[cfg(target_arch = "loongarch64")]
+#[cfg(target_feature = "scq")]
+use crate::utils::{MaybeUninit128, Pair};
 use crate::{
     raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
     utils::RegSize,
@@ -553,6 +556,160 @@ atomic!(u32, "w");
 atomic!(u64, "d");
 
 // -----------------------------------------------------------------------------
+// 128-bit atomics on LoongArch64
+
+#[cfg(target_arch = "loongarch64")]
+#[cfg(target_feature = "scq")]
+#[rustfmt::skip]
+macro_rules! atomic128 {
+    () => {
+        delegate_signed!(delegate_all, u128);
+        impl AtomicLoad for u128 {
+            #[inline]
+            unsafe fn atomic_load(
+                src: *const MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert_atomic_unsafe_precondition!(src, u128);
+                let (out_lo, out_hi);
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports SCQ.
+                unsafe {
+                    // successful LL/SC has SeqCst semantics.
+                    asm!(
+                        "2:", // 'retry:
+                            "ll.d {out_lo}, {src}, 0",     // atomic { out_lo = *src; LL = src }
+                            // prevent reordering of ll.d and ld.d
+                            "dbar 20",                     // fence
+                            "ld.d {out_hi}, {src}, 8",     // atomic { out_hi = *src.byte_add(8). }
+                            // write back to ensure atomicity
+                            "move {tmp}, {out_lo}",        // tmp = out_lo
+                            "sc.q {tmp}, {out_hi}, {src}", // atomic { if LL == src { *src = tmp:out_hi; lo = 1 } else { lo = 0 }; LL = None }
+                            "beqz {tmp}, 2b",              // if tmp == 0 { jump 'retry }
+                        src = in(reg) ptr_reg!(src),
+                        out_lo = out(reg) out_lo,
+                        out_hi = out(reg) out_hi,
+                        tmp = out(reg) _,
+                        options(nostack, preserves_flags),
+                    );
+                    MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
+                }
+            }
+        }
+        impl AtomicStore for u128 {
+            #[inline]
+            unsafe fn atomic_store(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    <u128 as AtomicSwap>::atomic_swap(dst, val, order);
+                }
+            }
+        }
+        impl AtomicSwap for u128 {
+            #[inline]
+            unsafe fn atomic_swap(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert_atomic_unsafe_precondition!(dst, u128);
+                let val = MaybeUninit128 { whole: val };
+                let (mut prev_lo, mut prev_hi);
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports SCQ.
+                unsafe {
+                    // successful LL/SC has SeqCst semantics.
+                    asm!(
+                        "2:", // 'retry:
+                            "ll.d {prev_lo}, {dst}, 0",     // atomic { prev_lo = *dst; LL = dst }
+                            // prevent reordering of ll.d and ld.d
+                            "dbar 20",                      // fence
+                            "ld.d {prev_hi}, {dst}, 8",     // atomic { prev_hi = *dst.byte_add(8). }
+                            "move {tmp}, {val_lo}",         // tmp = val_lo
+                            "sc.q {tmp}, {val_hi}, {dst}",  // atomic { if LL == dst { *dst = tmp:val_hi; lo = 1 } else { lo = 0 }; LL = None }
+                            "beqz {tmp}, 2b",               // if tmp == 0 { jump 'retry }
+                        dst = in(reg) ptr_reg!(dst),
+                        val_lo = in(reg) val.pair.lo,
+                        val_hi = in(reg) val.pair.hi,
+                        prev_lo = out(reg) prev_lo,
+                        prev_hi = out(reg) prev_hi,
+                        tmp = out(reg) _,
+                        options(nostack, preserves_flags),
+                    );
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+                }
+            }
+        }
+        impl AtomicCompareExchange for u128 {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                _success: Ordering,
+                _failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert_atomic_unsafe_precondition!(dst, u128);
+                let old = MaybeUninit128 { whole: old };
+                let new = MaybeUninit128 { whole: new };
+                let (prev_lo, prev_hi);
+                let mut r: RegSize;
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports SCQ.
+                unsafe {
+                    // successful LL/SC has SeqCst semantics.
+                    asm!(
+                        "2:", // 'retry:
+                            "ll.d {prev_lo}, {dst}, 0",     // atomic { prev_lo = *dst; LL = dst }
+                            // prevent reordering of ll.d and ld.d
+                            "dbar 20",                      // fence
+                            "ld.d {prev_hi}, {dst}, 8",     // atomic { prev_hi = *dst.byte_add(8). }
+                            "bne {prev_lo}, {old_lo}, 3f",  // if prev_lo != old_lo { jump 'cmp-fail }
+                            "bne {prev_hi}, {old_hi}, 3f",  // if prev_hi != old_hi { jump 'cmp-fail }
+                            "move {tmp}, {new_lo}",         // tmp = new_lo
+                            "sc.q {tmp}, {new_hi}, {dst}",  // atomic { if LL == dst { *dst = tmp:new_hi; lo = 1 } else { lo = 0 }; LL = None }
+                            "beqz {tmp}, 2b",               // if tmp == 0 { jump 'retry }
+                            "b 4f",                         // jump 'success
+                        "3:", // 'cmp-fail:
+                            // write back to ensure atomicity
+                            "move {tmp}, {prev_lo}",        // tmp = prev_lo
+                            "sc.q {tmp}, {prev_hi}, {dst}", // atomic { if LL == dst { *dst = tmp:prev_hi; lo = 1 } else { lo = 0 }; LL = None }
+                            "beqz {tmp}, 2b",               // if tmp == 0 { jump 'retry }
+                            "move {tmp}, $zero",            // tmp = 0
+                        "4:", // 'success:
+                        dst = in(reg) ptr_reg!(dst),
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
+                        new_lo = in(reg) new.pair.lo,
+                        new_hi = in(reg) new.pair.hi,
+                        prev_lo = out(reg) prev_lo,
+                        prev_hi = out(reg) prev_hi,
+                        tmp = out(reg) r,
+                        options(nostack, preserves_flags),
+                    );
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+                    (
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
+                        r != 0
+                    )
+                }
+            }
+        }
+    };
+}
+
+#[cfg(target_arch = "loongarch64")]
+#[cfg(target_feature = "scq")]
+atomic128!();
+
+// -----------------------------------------------------------------------------
 // cfg macros
 
 #[macro_export]
@@ -599,10 +756,22 @@ macro_rules! cfg_has_atomic_64 {
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(all(target_arch = "loongarch64", target_feature = "scq"))]
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(all(target_arch = "loongarch64", target_feature = "scq"))]
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(all(target_arch = "loongarch64", target_feature = "scq")))]
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {
     ($($tt:tt)*) => {};
 }
+#[cfg(not(all(target_arch = "loongarch64", target_feature = "scq")))]
 #[macro_export]
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
