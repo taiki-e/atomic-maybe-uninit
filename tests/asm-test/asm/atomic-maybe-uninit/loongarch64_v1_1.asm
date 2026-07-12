@@ -1,2520 +1,1170 @@
 asm_test::compare_exchange::u8::acqrel_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::acqrel_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::acquire_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::release_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::seqcst_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::acquire_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::acquire_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::relaxed_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::relaxed_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas.b           $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::release_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u8::release_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::acqrel_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::seqcst_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::acqrel_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::acqrel_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::acquire_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::relaxed_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::release_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::seqcst_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::seqcst_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::acquire_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::acquire_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::relaxed_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::relaxed_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas.h           $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::release_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u16::release_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::acqrel_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::seqcst_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::acqrel_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::acqrel_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::acquire_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::relaxed_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::release_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::seqcst_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::seqcst_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::acquire_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::acquire_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::relaxed_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::relaxed_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas.w           $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::release_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u32::release_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::acqrel_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::seqcst_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::acqrel_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::acqrel_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::acquire_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::relaxed_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::release_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::seqcst_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::seqcst_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::acquire_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::acquire_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::relaxed_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::relaxed_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas.d           $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::release_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange::u64::release_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::acquire_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::acquire_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::relaxed_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::relaxed_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas.b           $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::release_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        ori               $a5, $zero, 255
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.b           $a1, $a1
+        move              $a3, $a1
+        amcas_db.b        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::acqrel_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::release_seqcst:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::acquire_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::acquire_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::relaxed_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::relaxed_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas.h           $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::release_acquire:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u16::release_relaxed:
-        slli.d            $a4, $a0, 3
-        bstrins.d         $a0, $zero, 1, 0
-        sll.w             $a1, $a1, $a4
-        sll.w             $a2, $a2, $a4
-        lu12i.w           $a3, 15
-        ori               $a5, $a3, 4095
-        sll.w             $a5, $a5, $a4
-0:
-        ll.w              $a3, $a0, 0
-        and               $a6, $a3, $a5
-        bne               $a6, $a1, 1f
-        andn              $a6, $a3, $a5
-        or                $a6, $a6, $a2
-        sc.w              $a6, $a0, 0
-        beqz              $a6, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a6, $zero
-2:
-        srl.w             $a3, $a3, $a4
-        sltu              $a1, $zero, $a6
+        ext.w.h           $a1, $a1
+        move              $a3, $a1
+        amcas_db.h        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::release_seqcst:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::acquire_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas.w           $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::release_acquire:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
         slli.w            $a1, $a1, 0
-0:
-        ll.w              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.w              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.w        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::acqrel_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::seqcst_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::acqrel_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::acqrel_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::acquire_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::relaxed_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::release_seqcst:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              16
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::seqcst_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::seqcst_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::acquire_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::acquire_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::relaxed_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::relaxed_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas.d           $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::release_acquire:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              20
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 
 asm_test::compare_exchange_weak::u64::release_relaxed:
-0:
-        ll.d              $a3, $a0, 0
-        bne               $a3, $a1, 1f
-        move              $a4, $a2
-        sc.d              $a4, $a0, 0
-        beqz              $a4, 0b
-        b                 2f
-1:
-        dbar              1792
-        move              $a4, $zero
-2:
-        sltu              $a1, $zero, $a4
+        move              $a3, $a1
+        amcas_db.d        $a3, $a2, $a0
+        xor               $a0, $a3, $a1
+        sltui             $a0, $a0, 1
+        sltu              $a1, $zero, $a0
         move              $a0, $a3
         ret
 

@@ -23,6 +23,11 @@ use crate::{
     utils::RegSize,
 };
 
+#[cfg(not(all(
+    target_arch = "loongarch64",
+    target_feature = "lam-bh",
+    target_feature = "lamcas",
+)))]
 macro_rules! sll_w {
     ($val:expr, $shift:expr) => {{
         let mut val = $val;
@@ -56,6 +61,11 @@ macro_rules! sll_w {
         out
     }};
 }
+#[cfg(not(all(
+    target_arch = "loongarch64",
+    target_feature = "lam-bh",
+    target_feature = "lamcas",
+)))]
 #[inline(always)]
 fn srl_w(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
     // SAFETY: calling SRL.W is safe
@@ -87,6 +97,34 @@ macro_rules! sign_extend {
         unsafe {
             asm!(
                 "slli.w {out}, {val}, 0", // out = sign_extend(val << 0)
+                out = lateout(reg) out,
+                val = in(reg) $val,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        out
+    }};
+    ($val:expr, u16) => {{
+        let out: MaybeUninit<u64>;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling EXT.W.H is safe
+        unsafe {
+            asm!(
+                concat!("ext.w.h {out}, {val}"), // out = sign_extend(val)
+                out = lateout(reg) out,
+                val = in(reg) $val,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        out
+    }};
+    ($val:expr, u8) => {{
+        let out: MaybeUninit<u64>;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling EXT.W.B is safe
+        unsafe {
+            asm!(
+                concat!("ext.w.b {out}, {val}"), // out = sign_extend(val)
                 out = lateout(reg) out,
                 val = in(reg) $val,
                 options(pure, nomem, nostack, preserves_flags),
@@ -249,6 +287,54 @@ macro_rules! atomic_store_swap_amswap {
     };
 }
 
+#[cfg(all(target_arch = "loongarch64", target_feature = "lamcas"))]
+#[rustfmt::skip]
+macro_rules! atomic_cas_amcas {
+    ($ty:ident, $suffix:tt) => {
+        impl AtomicCompareExchange for $ty {
+            #[inline]
+            unsafe fn atomic_compare_exchange(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
+                let mut out: MaybeUninit<Self>;
+                let mut r: RegSize;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    macro_rules! cmpxchg {
+                        ($db:tt) => {
+                            asm!(
+                                "move {out}, {old}",                                         // out = old
+                                concat!("amcas", $db, ".", $suffix, " {out}, {new}, {dst}"), // atomic { if *dst == out { *dst = new }; out = sign_extend(*dst) }
+                                "xor {r}, {out}, {old}",                                     // r = out ^ old
+                                "sltui {r}, {r}, 1",                                         // if r < 1 { r = 1 } else { r = 0 }
+                                dst = in(reg) ptr_reg!(dst),
+                                old = in(reg) sign_extend!(old, $ty),
+                                new = in(reg) new,
+                                out = out(reg) out,
+                                r = lateout(reg) r,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    match (success, failure) {
+                        (Ordering::Relaxed, Ordering::Relaxed) => cmpxchg!(""),
+                        // AM*_DB has SeqCst semantics.
+                        _ => cmpxchg!("_db"),
+                    }
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+                }
+                (out, r != 0)
+            }
+        }
+    };
+}
+
 macro_rules! atomic {
     ($ty:ident, $suffix:tt) => {
         atomic_load!($ty, $suffix);
@@ -295,6 +381,9 @@ macro_rules! atomic {
                 out
             }
         }
+        #[cfg(all(target_arch = "loongarch64", target_feature = "lamcas"))]
+        atomic_cas_amcas!($ty, $suffix);
+        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lamcas")))]
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
@@ -393,6 +482,9 @@ macro_rules! atomic_sub_word {
                 crate::utils::extend32::$ty::extract(srl_w(out, shift))
             }
         }
+        #[cfg(all(target_arch = "loongarch64", target_feature = "lamcas"))]
+        atomic_cas_amcas!($ty, $suffix);
+        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lamcas")))]
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
