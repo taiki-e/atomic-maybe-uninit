@@ -5,3 +5,4 @@ asmtest
 crabgrind
 fastrand
 quickcheck
+rustversion
