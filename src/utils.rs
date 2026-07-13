@@ -167,6 +167,8 @@ macro_rules! fn_alias {
 // Rust 1.83) when using transmute_copy with generic type in const context
 // (because this is a by-value transmutation that doesn't create a reference to
 // the source value).
+// Additionally, this is usually safer than transmute_copy because there is no
+// need to care about the destructor of src.
 /// # Safety
 ///
 /// This function has the same safety requirements as [`core::mem::transmute_copy`].
