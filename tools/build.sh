@@ -15,11 +15,10 @@ default_targets=(
   aarch64-unknown-linux-gnu
   # big endian
   aarch64_be-unknown-linux-gnu
-  # TODO: re-enable once https://github.com/rust-lang/rust/pull/159167 released.
-  # # ILP32 ABI
-  # aarch64-unknown-linux-gnu_ilp32
-  # # ILP32 ABI big endian
-  # aarch64_be-unknown-linux-gnu_ilp32
+  # ILP32 ABI
+  aarch64-unknown-linux-gnu_ilp32
+  # ILP32 ABI big endian
+  aarch64_be-unknown-linux-gnu_ilp32
   # FEAT_LSE & FEAT_LSE2 & FEAT_LRCPC
   aarch64-apple-darwin
 
