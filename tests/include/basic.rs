@@ -118,6 +118,27 @@ macro_rules! __test_atomic {
                     let _v = a.load(load_order);
                 }
             }
+            unsafe {
+                assert_eq!(VAR.load_consume().assume_init().val, 10);
+                VAR.store(MaybeUninit::new(5), Ordering::Release);
+                assert_eq!(VAR.load_consume().assume_init().val, 5);
+                VAR.store(MaybeUninit::uninit(), Ordering::Release);
+                let _v = VAR.load_consume();
+                VAR.store(MaybeUninit::new(10), Ordering::Release);
+
+                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(1));
+                assert_eq!(a.load_consume().assume_init().val, 1);
+                a.store(MaybeUninit::new($ty::MIN), Ordering::Release);
+                assert_eq!(a.load_consume().assume_init().val, $ty::MIN);
+                a.store(MaybeUninit::new($ty::MAX), Ordering::Release);
+                assert_eq!(a.load_consume().assume_init().val, $ty::MAX);
+                let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::uninit());
+                let _v = a.load_consume();
+                a.store(MaybeUninit::new(2), Ordering::Release);
+                assert_eq!(a.load_consume().assume_init().val, 2);
+                a.store(MaybeUninit::uninit(), Ordering::Release);
+                let _v = a.load_consume();
+            }
         }
         cfg_has_atomic_cas! {
         swap();

@@ -154,6 +154,7 @@ mod utils;
 #[macro_use]
 mod tests;
 
+mod consume;
 pub mod raw;
 
 #[cfg(doc)]
@@ -165,6 +166,7 @@ use core::{
     sync::atomic::Ordering,
 };
 
+pub use self::consume::{Dependency, Dependent, WithDependency};
 use self::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Primitive};
 
 // -----------------------------------------------------------------------------
@@ -351,6 +353,23 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         // `PrimitivePriv`'s safety requirement ensures sufficient alignment
         // of `T::Align`, and we got our `_align` field.
         unsafe { T::atomic_load(self.v.get(), order) }
+    }
+
+    /// Loads a value from the atomic value with "consume" memory ordering.
+    ///
+    /// # Examples
+    ///
+    /// TODO
+    #[inline]
+    pub fn load_consume(&self) -> Dependent<MaybeUninit<T>>
+    where
+        T: AtomicLoad,
+    {
+        // SAFETY: any data races are prevented by atomic intrinsics, the raw
+        // pointer passed in is valid because we got it from a reference. Alignment
+        // is upheld because `PrimitivePriv`'s safety requirement ensures
+        // sufficient alignment of `T::Align`, and we got our `_align` field.
+        unsafe { T::atomic_load_consume(self.v.get()) }
     }
 
     /// Stores a value into the atomic value.
@@ -974,8 +993,9 @@ mod private {
     use crate::{
         AtomicMaybeUninit, cfg_has_atomic_8, cfg_has_atomic_16, cfg_has_atomic_32,
         cfg_has_atomic_64, cfg_has_atomic_128, cfg_has_atomic_cas, cfg_has_atomic_ptr,
-        cfg_no_atomic_8, cfg_no_atomic_16, cfg_no_atomic_32, cfg_no_atomic_64, cfg_no_atomic_128,
-        cfg_no_atomic_cas, cfg_no_atomic_ptr,
+        cfg_has_fast_consume, cfg_no_atomic_8, cfg_no_atomic_16, cfg_no_atomic_32,
+        cfg_no_atomic_64, cfg_no_atomic_128, cfg_no_atomic_cas, cfg_no_atomic_ptr,
+        cfg_no_fast_consume,
     };
     // TODO: make these type aliases public?
     cfg_has_atomic_8! {
@@ -1033,5 +1053,13 @@ mod private {
     cfg_no_atomic_cas! {
         type __AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
         type __AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
+    }
+    cfg_has_fast_consume! {
+        type ___AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
+        type ___AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
+    }
+    cfg_no_fast_consume! {
+        type ___AtomicMaybeUninitIsize = AtomicMaybeUninit<isize>;
+        type ___AtomicMaybeUninitUsize = AtomicMaybeUninit<usize>;
     }
 }

@@ -34,9 +34,12 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use crate::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap};
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 use crate::utils::{MaybeUninit64, Pair};
+use crate::{
+    consume::{DependencyType, Dependent},
+    raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
+};
 
 macro_rules! atomic_rmw {
     ($op:ident, $order:ident) => {
@@ -68,9 +71,19 @@ cfg_sel!({
                 concat!($op, " ", $operand)
             };
         }
+        macro_rules! asm_use_s {
+            ($($asm:tt)*) => {
+                asm!(
+                    $($asm)*
+                    options(preserves_flags),
+                )
+            };
+        }
     }
     #[cfg(else)]
     {
+        use core::arch::asm as asm_use_s;
+
         macro_rules! s {
             ($op:tt, $operand:tt) => {
                 concat!($op, "s ", $operand)
@@ -104,6 +117,28 @@ cfg_sel!({
         }
     }
 });
+
+macro_rules! with_dep {
+    ($name:ident, $base:ty) => {
+        #[inline(always)]
+        pub(crate) fn $name(mut a: $base, b: DependencyType) -> $base {
+            #[allow(clippy::pointers_in_nomem_asm_block)]
+            // SAFETY: calling ADD{,S} is safe.
+            unsafe {
+                asm_use_s!(
+                    s!("add", "{a}, {b}"), // a += b
+                    a = inout(reg) a,
+                    b = in(reg) b,
+                    // `preserves_flags` is set by asm_use_s! when s! doesn't modify the condition flags.
+                    options(pure, nomem, nostack),
+                );
+            }
+            a
+        }
+    };
+}
+with_dep!(dep_with_dep, DependencyType);
+with_dep!(ptr_with_dep, *mut u8);
 
 // -----------------------------------------------------------------------------
 // Register-width or smaller atomics
@@ -141,6 +176,28 @@ macro_rules! atomic {
                     }
                 }
                 out
+            }
+            #[inline]
+            unsafe fn atomic_load_consume(
+                src: *const MaybeUninit<Self>,
+            ) -> Dependent<MaybeUninit<Self>> {
+                debug_assert_atomic_unsafe_precondition!(src, $ty);
+                let out: MaybeUninit<Self>;
+                let dep;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    asm_use_s!(
+                        concat!("ldr", $suffix, " {out}, [{src}]"), // atomic { out = zero_extend(*src) }
+                        s!("eor", "{dep}, {out}, {out}"),           // dep = out ^ out
+                        src = in(reg) src,
+                        out = lateout(reg) out,
+                        dep = lateout(reg) dep,
+                        // `preserves_flags` is set by asm_use_s! when s! doesn't modify the condition flags.
+                        options(nostack),
+                    );
+                }
+                Dependent::from_parts(out, dep)
             }
         }
         impl AtomicStore for $ty {
@@ -342,6 +399,31 @@ impl AtomicLoad for u64 {
                 _ => crate::utils::unreachable_unchecked(),
             }
             MaybeUninit64 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
+        }
+    }
+    #[inline]
+    unsafe fn atomic_load_consume(src: *const MaybeUninit<Self>) -> Dependent<MaybeUninit<Self>> {
+        debug_assert_atomic_unsafe_precondition!(src, u64);
+        let (prev_lo, prev_hi);
+        let dep;
+
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe {
+            asm!(
+                "ldrexd r0, r1, [{src}]", // atomic { r0:r1 = *src; EXCLUSIVE = src }
+                "clrex",                  // EXCLUSIVE = None
+                "eor {dep}, r0, r0",      // dep = r0 ^ r0
+                src = in(reg) src,
+                dep = lateout(reg) dep,
+                // prev pair - must be even-numbered and not R14
+                lateout("r0") prev_lo,
+                lateout("r1") prev_hi,
+                options(nostack, preserves_flags),
+            );
+            Dependent::from_parts(
+                MaybeUninit64 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
+                dep,
+            )
         }
     }
 }
@@ -597,5 +679,13 @@ macro_rules! cfg_has_atomic_cas {
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_cas {
+    ($($tt:tt)*) => {};
+}
+#[macro_export]
+macro_rules! cfg_has_fast_consume {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[macro_export]
+macro_rules! cfg_no_fast_consume {
     ($($tt:tt)*) => {};
 }
