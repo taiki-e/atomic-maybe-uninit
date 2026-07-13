@@ -207,6 +207,11 @@ cfg_sel!({
             not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
         )))]
         const KUSER_CMPXCHG: usize = 0xFFFF0FC0;
+        #[cfg(not(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        )))]
+        const _: () = assert!((KUSER_CMPXCHG - 32) == KUSER_MEMORY_BARRIER);
         // __kuser_memory_barrier
         // https://github.com/torvalds/linux/blob/v2.6.15/arch/arm/kernel/entry-armv.S#L614-L651
         // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L763-L767
@@ -764,20 +769,21 @@ macro_rules! atomic {
                     let mut r: i32;
                     asm!(
                         "2:", // 'retry:
-                            "ldr {out}, [r2]",       // atomic { out = *r2 }
-                            s!("mov", "r0, {out}"),  // r0 = out
-                            "cmp {out}, {old}",      // if out == old { Z = 1 } else { Z = 0 }
-                            "bne 3f",                // if Z == 0 { jump 'cmp-fail }
-                            s!("mov", "r1, {new}"),  // r1 = new
-                            blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",                // if C == 0 { jump 'retry }
-                            "b 4f",                  // jump 'success
+                            "ldr {out}, [r2]",                       // atomic { out = *r2 }
+                            s!("mov", "r0, {out}"),                  // r0 = out
+                            "cmp {out}, {old}",                      // if out == old { Z = 1 } else { Z = 0 }
+                            "bne 3f",                                // if Z == 0 { jump 'cmp-fail }
+                            s!("mov", "r1, {new}"),                  // r1 = new
+                            blx!("{kuser_cmpxchg}"),                 // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                                // if C == 0 { jump 'retry }
+                            "b 4f",                                  // jump 'success
                         "3:", // 'cmp-fail:
-                            // write back to synchronize
-                            s!("mov", "r1, r0"),     // r1 = r0
-                            blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",                // if C == 0 { jump 'retry }
-                            s!("mov", "r0, #1"),     // r0 = 1
+                            // (KUSER_CMPXCHG - 32) == KUSER_MEMORY_BARRIER
+                            if_arm!("sub r3, {kuser_cmpxchg}, #32"), // r3 = kuser_cmpxchg - 32
+                            if_thumb!("movs r3, {kuser_cmpxchg}"),   // r3 = kuser_cmpxchg
+                            if_thumb!("subs r3, #32"),               // r3 -= 32
+                            blx!("r3"),                              // fence
+                            s!("mov", "r0, #1"),                     // r0 = 1
                         "4:", // 'success:
                         old = in(reg) old,
                         new = in(reg) new,
@@ -790,7 +796,7 @@ macro_rules! atomic {
                         out("r3") _,
                         out("ip") _,
                         out("lr") _,
-                        // Do not use `preserves_flags` because CMP, __kuser_cmpxchg, and s! modify the condition flags.
+                        // Do not use `preserves_flags` because CMP, __kuser_cmpxchg, s!, and *S modify the condition flags.
                         // Do not use `nostack` because __kuser_cmpxchg may push to stack.
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
@@ -947,22 +953,21 @@ macro_rules! atomic_sub_word {
                             )))]
                             asm!(
                                 "2:", // 'retry:
-                                    "ldr r0, [r2]",          // atomic { r0 = *r2 }
-                                    "and {out}, r0, {mask}", // out = r0 & mask
-                                    "cmp {out}, {old}",      // if out == old { Z = 1 } else { Z = 0 }
-                                    "bne 3f",                // if Z == 0 { jump 'cmp-fail }
-                                    "mvn r1, {mask}",        // r1 = !mask
-                                    "and r1, r0",            // r1 &= r0
-                                    "orr r1, {new}",         // r1 |= new
-                                    blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                                    "bcc 2b",                // if C == 0 { jump 'retry }
-                                    "b 4f",                  // jump 'success
+                                    "ldr r0, [r2]",                 // atomic { r0 = *r2 }
+                                    "and {out}, r0, {mask}",        // out = r0 & mask
+                                    "cmp {out}, {old}",             // if out == old { Z = 1 } else { Z = 0 }
+                                    "bne 3f",                       // if Z == 0 { jump 'cmp-fail }
+                                    "mvn r1, {mask}",               // r1 = !mask
+                                    "and r1, r0",                   // r1 &= r0
+                                    "orr r1, {new}",                // r1 |= new
+                                    blx!("{kuser_cmpxchg}"),        // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                                    "bcc 2b",                       // if C == 0 { jump 'retry }
+                                    "b 4f",                         // jump 'success
                                 "3:", // 'cmp-fail:
-                                    // write back to synchronize
-                                    "mov r1, r0",            // r1 = r0
-                                    blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                                    "bcc 2b",                // if C == 0 { jump 'retry }
-                                    "mov r0, #1",            // r0 = 1
+                                    // (KUSER_CMPXCHG - 32) == KUSER_MEMORY_BARRIER
+                                    "sub r3, {kuser_cmpxchg}, #32", // r3 = kuser_cmpxchg - 32
+                                    blx!("r3"),                     // fence
+                                    "mov r0, #1",                   // r0 = 1
                                 "4:", // 'success:
                                 old = in(reg) lsl(crate::utils::extend32::$ty::zero(old), shift),
                                 new = in(reg) lsl(crate::utils::extend32::$ty::zero(new), shift),
@@ -1002,10 +1007,9 @@ macro_rules! atomic_sub_word {
                                     "bcc 2b",             // if C == 0 { jump 'retry }
                                     "b 4f",               // jump 'success
                                 "3:", // 'cmp-fail:
-                                    // write back to synchronize
-                                    "movs r1, r0",        // r1 = r0
-                                    blx!("r3"),           // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                                    "bcc 2b",             // if C == 0 { jump 'retry }
+                                    // (KUSER_CMPXCHG - 32) == KUSER_MEMORY_BARRIER
+                                    "subs r3, #32",       // r3 -= 32
+                                    blx!("r3"),           // fence
                                     "movs r0, #1",        // r0 = 1
                                 "4:", // 'success:
                                 "add sp, #8",
