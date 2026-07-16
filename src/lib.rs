@@ -174,6 +174,9 @@ use self::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Prim
 ///
 /// This type has the same in-memory representation as the underlying
 /// value type, `MaybeUninit<T>`.
+/// However, the alignment of this type is always equal to its
+/// size, even on targets where `MaybeUninit<T>` has a
+/// lesser alignment.
 #[repr(C)]
 pub struct AtomicMaybeUninit<T: Primitive> {
     v: UnsafeCell<MaybeUninit<T>>,
