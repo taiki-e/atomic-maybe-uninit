@@ -26,10 +26,7 @@ use crate::raw::{AtomicLoad, AtomicStore};
 cfg_sel!({
     #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
     {
-        use crate::{
-            raw::{AtomicCompareExchange, AtomicSwap},
-            utils::{MaybeUninit64, Pair},
-        };
+        use crate::raw::{AtomicCompareExchange, AtomicSwap};
 
         delegate_size!(delegate_all);
     }
@@ -162,7 +159,7 @@ atomic!(u32, "l");
 cfg_sel!({
     // MC68060 has no native CAS2. This is usually emulated in software, but not in some environments.
     // https://github.com/torvalds/linux/blob/e22254e9ddd8020130c4b806b6b4aa77b09c2560/arch/m68k/ifpsp060/isp.doc#L174
-    // https://github.com/NetBSD/src/blob/bd9f26305380f03b3821f55381448a82827d6749/share/man/man4/options.4#L2580
+    // https://github.com/search?q=repo%3ANetBSD%2Fsrc%20%2FM060SP%2F&type=code
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?format=multiple&id=17627
     #[cfg(all(
         any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"),
@@ -176,6 +173,8 @@ cfg_sel!({
         ),
     ))]
     {
+        use crate::utils::{MaybeUninit64, Pair};
+
         delegate_signed!(delegate_all, u64);
         impl AtomicLoad for u64 {
             #[inline]

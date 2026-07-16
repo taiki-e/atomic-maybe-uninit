@@ -59,7 +59,7 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 \[5] Requires `scq` target feature and Rust 1.97+.<br>
 \[6] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
 \[8] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
-\[9] Requires target-cpu M68020+ (enabled by default on Linux).<br>
+\[9] Requires target-cpu M68020 (Linux's default), M68030, M68040, or M68060 (Linux/NetBSD only).<br>
 \[10] Requires Rust 1.84+.<br>
 \[11] Requires Rust 1.91+.<br>
 \[12] Requires Rust 1.95+.<br>

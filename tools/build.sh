@@ -92,6 +92,7 @@ default_targets=(
   # m68k
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "m68k" then .key else empty end'
   m68k-unknown-linux-gnu
+  m68k-unknown-none-elf
 
   # mips
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "mips" or .value.arch == "mips32r6" or .value.arch == "mips64" or .value.arch == "mips64r6" then .key else empty end'
@@ -552,6 +553,19 @@ build() {
     csky-unknown-linux-gnuabiv2)
       CARGO_TARGET_DIR="${target_dir}/ck860" \
         RUSTFLAGS="${target_rustflags} -C target-cpu=ck860" \
+        x_cargo "${args[@]}" "$@"
+      ;;
+    m68k-unknown-linux-gnu)
+      CARGO_TARGET_DIR="${target_dir}/m68060" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=M68060" \
+        x_cargo "${args[@]}" "$@"
+      ;;
+    m68k-unknown-none-elf)
+      CARGO_TARGET_DIR="${target_dir}/m68020" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=M68020" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/m68060" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=M68060" \
         x_cargo "${args[@]}" "$@"
       ;;
   esac
