@@ -211,6 +211,11 @@ fn main() {
                 // #[cfg(target_feature = "v7")] and others don't work on stable.
                 // armv7-unknown-linux-gnueabihf
                 //    ^^
+                let mut mclass = false;
+                let mut v5te = false;
+                let mut v6 = false;
+                let mut v7 = false;
+                let mut acquire_release = false;
                 if let Some(mut subarch) =
                     target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb"))
                 {
@@ -249,7 +254,6 @@ fn main() {
                     //
                     // In addition to above known sub-architectures, we also recognize armv{8,9}-{a,r}.
                     // Note that there is a CPU that Armv8-A but 32-bit only (Cortex-A32).
-                    let mut mclass = false;
                     match subarch {
                         "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8" | "v8a" | "v9" | "v9a" => {} // aclass
                         "v7r" | "v8r" | "v9r" => {} // rclass
@@ -274,10 +278,9 @@ fn main() {
                             );
                         }
                     }
-                    let mut v5te = known && subarch.starts_with("v5te");
-                    let mut v6 = known && subarch.starts_with("v6");
-                    let mut v7 = known && subarch.starts_with("v7");
-                    let mut acquire_release = false;
+                    v5te = known && subarch.starts_with("v5te");
+                    v6 = known && subarch.starts_with("v6");
+                    v7 = known && subarch.starts_with("v7");
                     if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
                         // Armv8-M is not considered as v8 by LLVM.
                         // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
@@ -294,19 +297,19 @@ fn main() {
                         }
                         acquire_release = true;
                     }
-                    target_feature_fallback("acquire-release", acquire_release);
-                    if needs_target_feature_fallback(&version, None) {
-                        v6 |= target_feature_fallback("v7", v7);
-                        v5te |= target_feature_fallback("v6", v6);
-                        target_feature_fallback("v5te", v5te);
-                        target_feature_fallback("mclass", mclass);
-                        // All builtin targets that start with "thumb" enable thumb-mode, and
-                        // some builtin targets that start with "arm" are also enable thumb-mode.
-                        let thumb_mode = target.starts_with("thumb")
-                            || generated::ARM_BUT_THUMB_MODE.contains(&target);
-                        target_feature_fallback("thumb-mode", thumb_mode);
-                        target_feature_fallback("thumb2", v7);
-                    }
+                }
+                target_feature_fallback("acquire-release", acquire_release);
+                if needs_target_feature_fallback(&version, None) {
+                    v6 |= target_feature_fallback("v7", v7);
+                    v5te |= target_feature_fallback("v6", v6);
+                    target_feature_fallback("v5te", v5te);
+                    target_feature_fallback("mclass", mclass);
+                    // All builtin targets that start with "thumb" enable thumb-mode, and
+                    // some builtin targets that start with "arm" are also enable thumb-mode.
+                    let thumb_mode = target.starts_with("thumb")
+                        || generated::ARM_BUT_THUMB_MODE.contains(&target);
+                    target_feature_fallback("thumb-mode", thumb_mode);
+                    target_feature_fallback("thumb2", v7);
                 }
             }
         }
@@ -357,6 +360,7 @@ fn main() {
             if needs_target_feature_fallback(&version, Some(75)) {
                 // riscv64gc-unknown-linux-gnu
                 //        ^^
+                let mut a = false;
                 if let Some(mut subarch) = target.strip_prefix(target_arch) {
                     subarch = subarch.split_once('-').unwrap_or((subarch, "")).0;
                     subarch = subarch.split_once(['z', 'Z']).unwrap_or((subarch, "")).0;
@@ -369,9 +373,9 @@ fn main() {
                         subarch = "gc";
                     }
                     // G = IMAFD
-                    let a = subarch.contains('a') || subarch.contains('g');
-                    target_feature_fallback("a", a);
+                    a = subarch.contains('a') || subarch.contains('g');
                 }
+                target_feature_fallback("a", a);
             }
         }
         "powerpc" | "powerpc64" => {
