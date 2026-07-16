@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.20] - 2026-07-16
+
 - Support 128-bit atomics on LoongArch64 when scq is enabled. ([30bddc8](https://github.com/taiki-e/atomic-maybe-uninit/commit/30bddc855b0093716b85db21f63a2475a2ef02d4))
 
 - Fix an issue where a workaround for an old LLVM bug were not applied when the build system did not run the build script or when version detection failed. ([64d6bc7](https://github.com/taiki-e/atomic-maybe-uninit/commit/64d6bc7e1392cf46dc8a41c4ed474e494b718b3c))
@@ -491,7 +493,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.19...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.20...HEAD
+[0.3.20]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.19...v0.3.20
 [0.3.19]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...v0.3.19
 [0.3.18]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.17...v0.3.18
 [0.3.17]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.16...v0.3.17
