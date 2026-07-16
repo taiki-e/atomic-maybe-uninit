@@ -16,8 +16,8 @@ fn main() {
     let target_arch = &*env::var("CARGO_CFG_TARGET_ARCH").expect("CARGO_CFG_TARGET_ARCH not set");
     let target_os = &*env::var("CARGO_CFG_TARGET_OS").expect("CARGO_CFG_TARGET_OS not set");
 
-    let version = match rustc_version() {
-        Some(version) => version,
+    let (version, version_pass) = match rustc_version() {
+        Some(version) => (version, true),
         None => {
             if env::var_os("ATOMIC_MAYBE_UNINIT_DENY_WARNINGS").is_some() {
                 panic!("unable to determine rustc version")
@@ -27,7 +27,7 @@ fn main() {
                 env!("CARGO_PKG_NAME"),
                 Version::LATEST.minor
             );
-            Version::LATEST
+            (Version::LATEST, false)
         }
     };
 
@@ -39,7 +39,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_ll_sc,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_pre_llvm_20,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_ll_sc,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_llvm_20_or_later,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -81,8 +81,8 @@ fn main() {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_strict_provenance");
     }
 
-    if version.llvm < 20 {
-        println!("cargo:rustc-cfg=atomic_maybe_uninit_pre_llvm_20");
+    if version_pass && version.llvm >= 20 {
+        println!("cargo:rustc-cfg=atomic_maybe_uninit_llvm_20_or_later");
     }
 
     match target_arch {

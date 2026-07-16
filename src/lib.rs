@@ -381,7 +381,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     {
         utils::assert_store_ordering(order);
         // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
         let val = core::hint::black_box(val);
         // SAFETY: any data races are prevented by atomic intrinsics, the raw
         // pointer passed in is valid because we got it from a reference,
@@ -417,7 +417,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         T: AtomicSwap,
     {
         // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
         let val = core::hint::black_box(val);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
@@ -594,9 +594,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     {
         utils::assert_compare_exchange_ordering(success, failure);
         // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
         let current = core::hint::black_box(current);
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
         let new = core::hint::black_box(new);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
@@ -677,9 +677,9 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     {
         utils::assert_compare_exchange_ordering(success, failure);
         // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
         let current = core::hint::black_box(current);
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
         let new = core::hint::black_box(new);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
