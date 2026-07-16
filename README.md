@@ -59,7 +59,7 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[4] Requires `zacas` target feature.<br>
-\[5] Requires `scq` target feature.<br>
+\[5] Requires `scq` target feature and Rust 1.97+.<br>
 \[6] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
 \[8] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
 \[9] Requires target-cpu M68020+ (enabled by default on Linux).<br>
