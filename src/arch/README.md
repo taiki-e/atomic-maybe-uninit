@@ -102,7 +102,7 @@ The following instructions are atomic if the address is properly aligned and the
 - Multiprocessor Instructions
   - TAS: 8-bit TAS (M68000 or later)
   - CAS: {8,16,32}-bit CAS (M68020 or later)
-  - CAS2: {16,32}-bit double CAS (M68020 or later)
+  - CAS2: {16,32}-bit double CAS (M68020, M68030, M68040)
 
   (Refs: Section 3.1.11 "Multiprocessor Instructions" of M68000 FAMILY Programmer's Reference Manual)
 

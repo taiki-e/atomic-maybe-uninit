@@ -44,7 +44,7 @@ fn main() {
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","acquire-release","fast-serialization","isa-68020","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8plus","v9","x87","zaamo","zabha","zacas","zalasr","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","acquire-release","fast-serialization","isa-68020","isa-68060","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8plus","v9","x87","zaamo","zabha","zacas","zalasr","zalrsc"))"#
         );
     }
 
@@ -524,10 +524,15 @@ fn main() {
             // target_feature "isa-68020" is unstable and available on rustc side since nightly-2024-12-16: https://github.com/rust-lang/rust/pull/134329
             if !version.probe(85, 2024, 12, 15) || needs_target_feature_fallback(&version, None) {
                 let mut isa_68020 = false;
+                let mut isa_68060 = false;
                 if let Some(cpu) = target_cpu() {
                     // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/M68k/M68k.td#L69
                     match &*cpu {
-                        "M68020" | "M68030" | "M68040" | "M68060" => isa_68020 = true,
+                        "M68020" | "M68030" | "M68040" => isa_68020 = true,
+                        "M68060" => {
+                            isa_68020 = true;
+                            isa_68060 = true;
+                        }
                         _ => {}
                     }
                 } else {
@@ -535,6 +540,7 @@ fn main() {
                     isa_68020 = target_os == "linux";
                 }
                 target_feature_fallback("isa-68020", isa_68020);
+                target_feature_fallback("isa-68060", isa_68060);
             }
         }
         "avr" => {
