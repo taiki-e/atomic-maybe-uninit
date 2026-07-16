@@ -12,6 +12,26 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support 128-bit atomics on LoongArch64 when scq is enabled. ([30bddc8](https://github.com/taiki-e/atomic-maybe-uninit/commit/30bddc855b0093716b85db21f63a2475a2ef02d4))
+
+- Fix an issue where a workaround for an old LLVM bug were not applied when the build system did not run the build script or when version detection failed. ([64d6bc7](https://github.com/taiki-e/atomic-maybe-uninit/commit/64d6bc7e1392cf46dc8a41c4ed474e494b718b3c))
+
+- Fix panic in build script when custom target with non-standard name on old rustc. ([54c8235](https://github.com/taiki-e/atomic-maybe-uninit/commit/54c8235bbb8df5f2224d113e99cb93ff3e69f816))
+
+- Fix 64-bit atomic support on non-Linux/NetBSD MC68060. ([e884a4c](https://github.com/taiki-e/atomic-maybe-uninit/commit/e884a4c918f21790ce093fb0860ce6ed8e290478))
+
+- Optimize {8,16,32}-bit CAS on pre-v6 Arm Linux/Android. ([b862449](https://github.com/taiki-e/atomic-maybe-uninit/commit/b8624498b0000ef1dfab35a645ec21fd69d6d026))
+
+- Optimize relaxed swap on LoongArch64. ([19813c7](https://github.com/taiki-e/atomic-maybe-uninit/commit/19813c7e60c1e1173acc4df3d61139a1d1e550ef))
+
+- Optimize CAS on LoongArch64 when lamcas is enabled. ([4af30f2](https://github.com/taiki-e/atomic-maybe-uninit/commit/4af30f2da66fdb9885389889940324e2eb786b81))
+
+- Optimize {8,16}-bit swap on LoongArch64 when lam-bh is enabled. ([8775efb](https://github.com/taiki-e/atomic-maybe-uninit/commit/8775efba23d05c0de5239ad8c867665ff06cae6a))
+
+- Improve compile-time detection of armv8m target features. ([ead614e](https://github.com/taiki-e/atomic-maybe-uninit/commit/628ecee47adc88fa7428363114dc21c0612d32bd))
+
+- Documentation improvements.
+
 ## [0.3.19] - 2026-07-06
 
 - Fix default cpu handling of sparc-unknown-none-elf. ([9922b04](https://github.com/taiki-e/atomic-maybe-uninit/commit/9922b04e89738c672843f9b706d2dc3464a6b654))
@@ -130,6 +150,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - Deprecate `AtomicMaybeUninit::const_new` because `AtomicMaybeUninit::new` is now always `const fn` because of the MSRV bump. ([#48](https://github.com/taiki-e/atomic-maybe-uninit/pull/48), [d428f97](https://github.com/taiki-e/atomic-maybe-uninit/commit/d428f975f88f4bfeffd2e31656bc18200722deff))
 
 - Fix bug in 64-bit atomics on pre-v6 Arm Linux/Android. ([075494c](https://github.com/taiki-e/atomic-maybe-uninit/commit/075494c1d7c6ab6db6c12c2adc149a1e16b9c5ae))
+
+  (Note that the `cfg_{has,no}_atomic_64!` for affected targets treats this target as one that does not support 64-bit atomics in this and all previous versions.)
 
 - Optimize AArch64 128-bit CAS when FEAT_LSE is not enabled. ([0015d1a](https://github.com/taiki-e/atomic-maybe-uninit/commit/0015d1ae76c8d79285d482c999f250386c5fb142))
 
