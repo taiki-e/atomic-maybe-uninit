@@ -106,6 +106,10 @@ jobs:
             printf 'TARGET=--target=%s\n' "${TARGET}" >>"${GITHUB_ENV}"
             printf 'target-not-host=true\n' >>"${GITHUB_OUTPUT}"
           fi
+          if [[ "${TARGET}" == 'loongarch64'* ]]; then
+            # TODO: QEMU 11.0 has bug on LL/SC with cpu=max.
+            printf 'QEMU_CPU=la464\n' >>"${GITHUB_ENV}"
+          fi
         env:
           TARGET: ${{ matrix.target }}
       - uses: taiki-e/setup-cross-toolchain-action@3d9770ce98eb7dbcf378563182a5e8031165f75b # v1.41.0
@@ -376,7 +380,8 @@ jobs:
         env:
           RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lam-bh,+lamcas,+scq
           RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lam-bh,+lamcas,+scq
-        if: startsWith(matrix.target, 'loongarch64')
+          QEMU_CPU: max
+        if: startsWith(matrix.target, 'loongarch64') && !startsWith(matrix.rust, '1.7') && !startsWith(matrix.rust, 'nightly-2023')
       # loongarch64 test loongarch32 path
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
         env:
