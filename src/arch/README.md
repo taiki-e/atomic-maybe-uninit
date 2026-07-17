@@ -243,33 +243,33 @@ with appropriate sequence corresponds to Acquire semantics.
 
 target_arch: riscv32, riscv64<br>
 Implementation: [riscv.rs](riscv.rs)<br>
-Refs: [RISC-V Instruction Set Manual](https://github.com/riscv/riscv-isa-manual)
+Refs: [RISC-V Instruction Set Manual](https://docs.riscv.org/reference/isa/index.html)
 
 The following instructions are atomic if the address is properly aligned and the specified storage meets the requirements:
 
 - Load/Store Instructions (relaxed load/store)
   - All {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) load/store instructions<br>
-    (Refs: [Section "Memory Model Primitives" of RVWMO Memory Consistency Model, Version 2.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/rvwmo.adoc#memory-model-primitives))
+    (Refs: [Section "Memory Model Primitives" of RVWMO Memory Consistency Model, Version 2.0](https://docs.riscv.org/reference/isa/v20260120/unpriv/rvwmo.html#rvwmo-primitives))
 
 - Load-Acquire and Store-Release Instructions
   - Zalasr extension: {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) acquire/seqcst load, release/seqcst store<br>
-    (Refs: ["Zalasr" Atomic Load-Acquire and Store-Release Instructions](https://github.com/riscv/riscv-isa-manual/blob/91210aeb65f7e2cdf164797c4b28d4d6b0661681/src/zalasr.adoc))
+    (Refs: ["Zalasr" Atomic Load-Acquire and Store-Release Instructions](https://docs.riscv.org/reference/isa/v20260120/unpriv/zalasr.html)
 
 - Load-Reserved/Store-Conditional (LR/SC) Instructions (aka LL/SC)
   - Zalrsc extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64)<br>
-    (Refs: ["Zalrsc" Extension for Load-Reserved/Store-Conditional Instructions](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/a-st-ext.adoc#zalrsc-extension-for-load-reservedstore-conditional-instructions))
+    (Refs: ["Zalrsc" Extension for Load-Reserved/Store-Conditional Instructions](https://docs.riscv.org/reference/isa/v20260120/unpriv/a-st-ext.html#sec:lrsc))
 
 - Atomic Memory Operation (AMO) Instructions
   - Zaamo extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64) swap,fetch_{add,and,or,xor,max,min}<br>
-    (Refs: ["Zaamo" Extension for Atomic Memory Operations](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/a-st-ext.adoc#zaamo-extension-for-atomic-memory-operations))
+    (Refs: ["Zaamo" Extension for Atomic Memory Operations](https://docs.riscv.org/reference/isa/v20260120/unpriv/a-st-ext.html#sec:amo))
   - Zabha extension: {8,16}-bit swap,fetch_{add,and,or,xor,max,min}<br>
-    (Refs: ["Zabha" Extension for Byte and Halfword Atomic Memory Operations, Version 1.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/zabha.adoc))
+    (Refs: ["Zabha" Extension for Byte and Halfword Atomic Memory Operations, Version 1.0](https://docs.riscv.org/reference/isa/v20260120/unpriv/zabha.html))
 
 - Atomic Compare-and-Swap (CAS) Instructions
   - Zacas extension: {32,64}-bit (for RV32 & RV64) and 128-bit (for RV64)<br>
-    (Refs: ["Zacas" Extension for Atomic Compare-and-Swap (CAS) Instructions, Version 1.0.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/zacas.adoc))
+    (Refs: ["Zacas" Extension for Atomic Compare-and-Swap (CAS) Instructions, Version 1.0.0](https://docs.riscv.org/reference/isa/v20260120/unpriv/zacas.html))
   - Zacas and Zabha extensions: {8,16}-bit<br>
-    (Refs: ["Zabha" Extension for Byte and Halfword Atomic Memory Operations, Version 1.0](https://github.com/riscv/riscv-isa-manual/blob/riscv-isa-release-56e76be-2025-08-26/src/zabha.adoc))
+    (Refs: ["Zabha" Extension for Byte and Halfword Atomic Memory Operations, Version 1.0](https://docs.riscv.org/reference/isa/v20260120/unpriv/zabha.html))
 
 Of the above instructions, instructions other than relaxed load/store, can specify the memory ordering.<br>
 The mappings from the C/C++ atomic operations are described in the [RISC-V Atomics ABI Specification](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/draft-20250812-301374e92976e298e676e7129a6212926b2299ce/riscv-atomic.adoc).
