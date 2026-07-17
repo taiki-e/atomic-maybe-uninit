@@ -582,7 +582,7 @@ macro_rules! atomic128 {
                             "ll.d {out_lo}, {src}, 0",     // atomic { out_lo = *src; LL = src }
                             // prevent reordering of ll.d and ld.d
                             "dbar 20",                     // fence
-                            "ld.d {out_hi}, {src}, 8",     // atomic { out_hi = *src.byte_add(8). }
+                            "ld.d {out_hi}, {src}, 8",     // atomic { out_hi = *src.byte_add(8) }
                             // write back to ensure atomicity
                             "move {tmp}, {out_lo}",        // tmp = out_lo
                             "sc.q {tmp}, {out_hi}, {src}", // atomic { if LL == src { *src = tmp:out_hi; lo = 1 } else { lo = 0 }; LL = None }
@@ -630,7 +630,7 @@ macro_rules! atomic128 {
                             "ll.d {prev_lo}, {dst}, 0",     // atomic { prev_lo = *dst; LL = dst }
                             // prevent reordering of ll.d and ld.d
                             "dbar 20",                      // fence
-                            "ld.d {prev_hi}, {dst}, 8",     // atomic { prev_hi = *dst.byte_add(8). }
+                            "ld.d {prev_hi}, {dst}, 8",     // atomic { prev_hi = *dst.byte_add(8) }
                             "move {tmp}, {val_lo}",         // tmp = val_lo
                             "sc.q {tmp}, {val_hi}, {dst}",  // atomic { if LL == dst { *dst = tmp:val_hi; lo = 1 } else { lo = 0 }; LL = None }
                             "beqz {tmp}, 2b",               // if tmp == 0 { jump 'retry }
@@ -670,7 +670,7 @@ macro_rules! atomic128 {
                             "ll.d {prev_lo}, {dst}, 0",     // atomic { prev_lo = *dst; LL = dst }
                             // prevent reordering of ll.d and ld.d
                             "dbar 20",                      // fence
-                            "ld.d {prev_hi}, {dst}, 8",     // atomic { prev_hi = *dst.byte_add(8). }
+                            "ld.d {prev_hi}, {dst}, 8",     // atomic { prev_hi = *dst.byte_add(8) }
                             "bne {prev_lo}, {old_lo}, 3f",  // if prev_lo != old_lo { jump 'cmp-fail }
                             "bne {prev_hi}, {old_hi}, 3f",  // if prev_hi != old_hi { jump 'cmp-fail }
                             "move {tmp}, {new_lo}",         // tmp = new_lo
