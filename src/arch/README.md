@@ -253,7 +253,7 @@ The following instructions are atomic if the address is properly aligned and the
 
 - Load-Acquire and Store-Release Instructions
   - Zalasr extension: {8,16,32}-bit (for RV32 & RV64) and 64-bit (for RV64) acquire/seqcst load, release/seqcst store<br>
-    (Refs: ["Zalasr" Atomic Load-Acquire and Store-Release Instructions](https://docs.riscv.org/reference/isa/v20260120/unpriv/zalasr.html)
+    (Refs: ["Zalasr" Atomic Load-Acquire and Store-Release Instructions](https://docs.riscv.org/reference/isa/v20260120/unpriv/zalasr.html))
 
 - Load-Reserved/Store-Conditional (LR/SC) Instructions (aka LL/SC)
   - Zalrsc extension: 32-bit (for RV32 & RV64) and 64-bit (for RV64)<br>
