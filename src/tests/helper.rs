@@ -547,14 +547,6 @@ macro_rules! __test_atomic {
                     }
 
                     for base in [0, !0] {
-                        if cfg!(target_arch = "loongarch64") && mem::size_of::<$ty>() == 8 && !cfg!(target_feature = "lamcas") {
-                            // TODO(loongarch): QEMU 11.0 bug
-                            // thread 'tests::test_atomic_i64::compare_exchange' (2835) panicked at src/tests/mod.rs:49:5:
-                            //   assertion `left == right` failed: flipped bit: 0
-                            //     left: 0
-                            //    right: 0
-                            continue;
-                        }
                         for bit in 0..$ty::BITS {
                             let flipped = base ^ (1 << bit);
                             let a = AtomicMaybeUninit::<$ty>::new(MaybeUninit::new(base));
@@ -644,14 +636,6 @@ macro_rules! __test_atomic {
                     failure,
                 );
             });
-            if cfg!(target_arch = "loongarch64") && mem::size_of::<$ty>() == 8 && !cfg!(target_feature = "lamcas") {
-                // TODO(loongarch): QEMU 11.0 bug
-                // thread 'tests::test_atomic_i64::compare_exchange_weak' (2800) panicked at src/tests/mod.rs:49:5:
-                //   assertion `left == right` failed: flipped bit: 0
-                //     left: 0
-                //    right: 0
-                return;
-            }
             for (success, failure) in COMPARE_EXCHANGE_ORDERINGS {
                 unsafe {
                     for x in [4, $ty::MAX, $ty::MIN] {
@@ -900,10 +884,6 @@ macro_rules! __test_atomic {
             // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
             if cfg!(target_arch = "riscv64") && mem::size_of::<$ty>() <= 2 {
-                return;
-            }
-            if cfg!(target_arch = "loongarch64") && mem::size_of::<$ty>() == 8 && !cfg!(target_feature = "lamcas") && rustversion::cfg!(before(1.75)) {
-                // TODO(loongarch): QEMU 11.0 bug
                 return;
             }
             let mut rng = fastrand::Rng::new();
