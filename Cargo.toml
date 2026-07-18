@@ -37,7 +37,7 @@ quickcheck = { version = "1", default-features = false, git = "https://github.co
 test-helper = { features = ["std", "sys"], git = "https://github.com/taiki-e/test-helper.git", rev = "82e3b012a49fb16587e165986674290ef682a5b0" }
 
 [target.'cfg(valgrind)'.dev-dependencies]
-crabgrind = "0.2"
+crabgrind = "0.3"
 
 [lints]
 workspace = true
