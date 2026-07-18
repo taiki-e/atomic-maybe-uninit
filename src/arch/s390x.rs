@@ -348,21 +348,30 @@ impl AtomicSwap for u128 {
         // SAFETY: the caller must uphold the safety contract.
         // CDSG has SeqCst semantics.
         unsafe {
-            asm!(
-                "lg %r1, 8({dst})",             // atomic { r1 = *dst.byte_add(8) }
-                "lg %r0, 0({dst})",             // atomic { r0 = *dst }
-                "2:", // 'retry:
-                    "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:r13 } else { cc = 1; r0:r1 = *dst } }
-                    "jl 2b",                    // if cc == 1 { jump 'retry }
-                dst = in(reg_addr) ptr_reg!(dst),
-                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                out("r0") prev_hi,
-                out("r1") prev_lo,
-                in("r12") val.pair.hi,
-                in("r13") val.pair.lo,
-                // Do not use `preserves_flags` because CDSG modifies the condition code.
-                options(nostack),
-            );
+            macro_rules! swap {
+                ($val_hi:tt, $val_lo:tt) => {
+                    asm!(
+                        "lg %r1, 8({dst})",                                // atomic { r1 = *dst.byte_add(8) }
+                        "lg %r0, 0({dst})",                                // atomic { r0 = *dst }
+                        "2:", // 'retry:
+                            concat!("cdsg %r0, %", $val_hi, ", 0({dst})"), // atomic { if *dst == r0:r1 { cc = 0; *dst = val_hi:val_lo } else { cc = 1; r0:r1 = *dst } }
+                            "jl 2b",                                       // if cc == 1 { jump 'retry }
+                        dst = in(reg_addr) ptr_reg!(dst),
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        out("r0") prev_hi,
+                        out("r1") prev_lo,
+                        in($val_hi) val.pair.hi,
+                        in($val_lo) val.pair.lo,
+                        // Do not use `preserves_flags` because CDSG modifies the condition code.
+                        options(nostack),
+                    )
+                };
+            }
+            // r4 is stack pointer on z/OS.
+            #[cfg(not(target_os = "zos"))]
+            swap!("r4", "r5");
+            #[cfg(target_os = "zos")]
+            swap!("r12", "r13");
             MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
         }
     }
@@ -385,19 +394,28 @@ impl AtomicCompareExchange for u128 {
         // SAFETY: the caller must uphold the safety contract.
         // CDSG has SeqCst semantics.
         unsafe {
-            asm!(
-                "cdsg %r0, %r12, 0({dst})", // atomic { if *dst == r0:r1 { cc = 0; *dst = r12:13 } else { cc = 1; r0:r1 = *dst } }
-                "ipm {r}",                  // r[:] = cc
-                dst = in(reg_addr) ptr_reg!(dst),
-                r = lateout(reg) r,
-                // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                inout("r0") old.pair.hi => prev_hi,
-                inout("r1") old.pair.lo => prev_lo,
-                in("r12") new.pair.hi,
-                in("r13") new.pair.lo,
-                // Do not use `preserves_flags` because CDSG modifies the condition code.
-                options(nostack),
-            );
+            macro_rules! cmpxchg {
+                ($new_hi:tt, $new_lo:tt) => {
+                    asm!(
+                        concat!("cdsg %r0, %", $new_hi, ", 0({dst})"), // atomic { if *dst == r0:r1 { cc = 0; *dst = new_hi:new_lo } else { cc = 1; r0:r1 = *dst } }
+                        "ipm {r}",                                     // r[:] = cc
+                        dst = in(reg_addr) ptr_reg!(dst),
+                        r = lateout(reg) r,
+                        // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
+                        inout("r0") old.pair.hi => prev_hi,
+                        inout("r1") old.pair.lo => prev_lo,
+                        in($new_hi) new.pair.hi,
+                        in($new_lo) new.pair.lo,
+                        // Do not use `preserves_flags` because CDSG modifies the condition code.
+                        options(nostack),
+                    )
+                };
+            }
+            // r4 is stack pointer on z/OS.
+            #[cfg(not(target_os = "zos"))]
+            cmpxchg!("r4", "r5");
+            #[cfg(target_os = "zos")]
+            cmpxchg!("r12", "r13");
             (MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, extract_cc(r))
         }
     }
