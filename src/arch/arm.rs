@@ -1052,7 +1052,7 @@ atomic!(u32, "");
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/LDREXD
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/STREXD
 //
-// Section A3.5.3 "Atomicity in the ARM architecture" of ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition says:
+// Section A3.5.3 "Atomicity in the ARM architecture" of ARM Architecture Reference Manual ARMv7-A and ARMv7-R edition issue C.d says:
 // > Memory accesses caused by an LDREXD/STREXD to a doubleword-aligned location for which the STREXD
 // > succeeds cause single-copy atomic updates of the doubleword being accessed.
 // > Note
