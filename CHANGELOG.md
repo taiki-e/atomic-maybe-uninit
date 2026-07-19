@@ -12,6 +12,20 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Add `try_update` and `update`. (align to the [std atomic change in Rust 1.95](https://github.com/rust-lang/rust/pull/148590)) ([0e28b20](https://github.com/taiki-e/atomic-maybe-uninit/commit/0e28b20e3208c2ca68f3fed3beac890a29f4ab27))
+
+- Deprecate `fetch_update`. (align to the [std atomic change in Rust 1.99](https://github.com/rust-lang/rust/pull/148590)) ([0e28b20](https://github.com/taiki-e/atomic-maybe-uninit/commit/0e28b20e3208c2ca68f3fed3beac890a29f4ab27))
+
+- Make `from_ptr` always `const fn`. Previously it was `const fn` only on Rust 1.83+. ([ec36e13](https://github.com/taiki-e/atomic-maybe-uninit/commit/ec36e1386e83d62b0e7ac7db2ddea6785a5db84f))
+
+- Fix an issue where a workaround for an old LLVM bug were not applied to `raw` APIs. ([d635243](https://github.com/taiki-e/atomic-maybe-uninit/commit/d6352437fbd647637e1187716e7764cf677e313d))
+
+- Improve support for custom target with non-standard name on old rustc. ([94743d8](https://github.com/taiki-e/atomic-maybe-uninit/commit/94743d818db9aa675c9e79acc5ee142aca66e836))
+
+- Optimize 128-bit CAS/swap on s390x. ([e10c779](https://github.com/taiki-e/atomic-maybe-uninit/commit/e10c77957f146806218d6031cdf791e1a9d5b749))
+
+- Documentation improvements.
+
 ## [0.3.20] - 2026-07-16
 
 - Support 128-bit atomics on LoongArch64 when scq is enabled. ([30bddc8](https://github.com/taiki-e/atomic-maybe-uninit/commit/30bddc855b0093716b85db21f63a2475a2ef02d4))
@@ -30,7 +44,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - Optimize {8,16}-bit swap on LoongArch64 when lam-bh is enabled. ([8775efb](https://github.com/taiki-e/atomic-maybe-uninit/commit/8775efba23d05c0de5239ad8c867665ff06cae6a))
 
-- Improve compile-time detection of armv8m target features. ([ead614e](https://github.com/taiki-e/atomic-maybe-uninit/commit/628ecee47adc88fa7428363114dc21c0612d32bd))
+- Improve compile-time detection of armv8m target features. ([ead614e](https://github.com/taiki-e/atomic-maybe-uninit/commit/ead614e5709ebebd251a1192327cd51c3fadb854))
 
 - Documentation improvements.
 
