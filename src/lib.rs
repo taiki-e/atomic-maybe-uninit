@@ -239,7 +239,6 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         Self { v: UnsafeCell::new(v), _align: [] }
     }
 
-    // TODO: update docs based on https://github.com/rust-lang/rust/pull/116762
     /// Creates a new reference to an atomic value from a pointer.
     ///
     /// # Safety
@@ -247,19 +246,12 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// * `ptr` must be aligned to `align_of::<AtomicMaybeUninit<T>>()` (note that on some platforms this
     ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
     /// * `ptr` must be [valid] for both reads and writes for the whole lifetime `'a`.
-    /// * Non-atomic accesses to the value behind `ptr` must have a happens-before
-    ///   relationship with atomic accesses via the returned value (or vice-versa).
-    ///   * In other words, time periods where the value is accessed atomically may not
-    ///     overlap with periods where the value is accessed non-atomically.
-    ///   * This requirement is trivially satisfied if `ptr` is never used non-atomically
-    ///     for the duration of lifetime `'a`. Most use cases should be able to follow
-    ///     this guideline.
-    ///   * This requirement is also trivially satisfied if all accesses (atomic or not) are
-    ///     done from the same thread.
-    /// * This method must not be used to create overlapping or mixed-size atomic
-    ///   accesses, as these are not supported by the memory model.
+    /// * You must adhere to the [Memory model for atomic accesses]. In particular, it is not
+    ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
+    ///   sizes, without synchronization.
     ///
     /// [valid]: core::ptr#safety
+    /// [Memory model for atomic accesses]: core::sync::atomic#memory-model-for-atomic-accesses
     #[inline]
     #[must_use]
     pub const unsafe fn from_ptr<'a>(ptr: *mut MaybeUninit<T>) -> &'a Self {
@@ -848,11 +840,17 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
 
     /// Returns a mutable pointer to the underlying value.
     ///
+    /// Doing non-atomic reads and writes on the resulting value can be a data race.
+    /// This method is mostly useful for FFI, where the function signature may use
+    /// `*mut T` instead of `&AtomicMaybeUninit<T>`.
+    ///
     /// Returning an `*mut` pointer from a shared reference to this atomic is safe because the
     /// atomic types work with interior mutability. All modifications of an atomic change the value
     /// through a shared reference, and can do so safely as long as they use atomic operations. Any
-    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the same
-    /// restriction: operations on it must be atomic.
+    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the
+    /// requirements of the [memory model].
+    ///
+    /// [memory model]: core::sync::atomic#memory-model-for-atomic-accesses
     #[inline]
     pub const fn as_ptr(&self) -> *mut MaybeUninit<T> {
         self.v.get()
