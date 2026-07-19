@@ -695,15 +695,32 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         if ok { Ok(out) } else { Err(out) }
     }
 
+    /// An alias for [`try_update`](Self::try_update).
+    #[inline]
+    #[deprecated(note = "renamed to `try_update` for consistency")]
+    pub fn fetch_update<F>(
+        &self,
+        set_order: Ordering,
+        fetch_order: Ordering,
+        f: F,
+    ) -> Result<MaybeUninit<T>, MaybeUninit<T>>
+    where
+        F: FnMut(MaybeUninit<T>) -> Option<MaybeUninit<T>>,
+        T: AtomicCompareExchange,
+    {
+        self.try_update(set_order, fetch_order, f)
+    }
+
     /// Fetches the value, and applies a function to it that returns an optional
     /// new value. Returns a `Result` of `Ok(previous_value)` if the function returned `Some(_)`, else
     /// `Err(previous_value)`.
+    /// See also: [`update`](Self::update).
     ///
     /// Note: This may call the function multiple times if the value has been changed from other threads in
     /// the meantime, as long as the function returns `Some(_)`, but the function will have been applied
     /// only once to the stored value.
     ///
-    /// `fetch_update` takes two [`Ordering`] arguments to describe the memory ordering of this operation.
+    /// `try_update` takes two [`Ordering`] arguments to describe the memory ordering of this operation.
     /// The first describes the required ordering for when the operation finally succeeds while the second
     /// describes the required ordering for loads. These correspond to the success and failure orderings of
     /// [`compare_exchange`](Self::compare_exchange) respectively.
@@ -718,12 +735,16 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///
     /// # Considerations
     ///
-    /// This method is not magic; it is not provided by the hardware.
-    /// It is implemented in terms of [`compare_exchange_weak`](Self::compare_exchange_weak),
-    /// and suffers from the same drawbacks.
-    /// In particular, this method will not circumvent the [ABA Problem].
+    /// This method is not magic; it is not provided by the hardware, and does not act like a
+    /// critical section or mutex.
+    ///
+    /// It is implemented on top of an atomic [compare-and-swap operation], and thus is subject to
+    /// the usual drawbacks of CAS operations. In particular, be careful of the [ABA problem]
+    /// if this atomic integer is an index or more generally if knowledge of only the *bitwise value*
+    /// of the atomic is not in and of itself sufficient to ensure any required preconditions.
     ///
     /// [ABA Problem]: https://en.wikipedia.org/wiki/ABA_problem
+    /// [compare-and-swap operation]: https://en.wikipedia.org/wiki/Compare-and-swap
     ///
     /// # Examples
     ///
@@ -735,11 +756,11 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// unsafe {
     ///     let v = AtomicMaybeUninit::from(5_i32);
     ///     assert_eq!(
-    ///         v.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |_| None).unwrap_err().assume_init(),
+    ///         v.try_update(Ordering::SeqCst, Ordering::SeqCst, |_| None).unwrap_err().assume_init(),
     ///         5
     ///     );
     ///     assert_eq!(
-    ///         v.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |x| Some(MaybeUninit::new(
+    ///         v.try_update(Ordering::SeqCst, Ordering::SeqCst, |x| Some(MaybeUninit::new(
     ///             x.assume_init() + 1
     ///         )))
     ///         .unwrap()
@@ -749,16 +770,15 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///     assert_eq!(v.load(Ordering::SeqCst).assume_init(), 6);
     /// }
     /// ```
+    #[allow(clippy::impl_trait_in_params)] // Align to core::sync::atomic
     #[inline]
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub fn fetch_update<F>(
+    pub fn try_update(
         &self,
         set_order: Ordering,
         fetch_order: Ordering,
-        mut f: F,
+        mut f: impl FnMut(MaybeUninit<T>) -> Option<MaybeUninit<T>>,
     ) -> Result<MaybeUninit<T>, MaybeUninit<T>>
     where
-        F: FnMut(MaybeUninit<T>) -> Option<MaybeUninit<T>>,
         T: AtomicCompareExchange,
     {
         let mut prev = self.load(fetch_order);
@@ -769,6 +789,82 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
             }
         }
         Err(prev)
+    }
+
+    /// Fetches the value, applies a function to it that it return a new value.
+    /// The new value is stored and the old value is returned.
+    /// See also: [`try_update`](Self::try_update).
+    ///
+    /// Note: This may call the function multiple times if the value has been changed from other threads in
+    /// the meantime, but the function will have been applied only once to the stored value.
+    ///
+    /// `update` takes two [`Ordering`] arguments to describe the memory ordering of this operation.
+    /// The first describes the required ordering for when the operation finally succeeds while the second
+    /// describes the required ordering for loads. These correspond to the success and failure orderings of
+    /// [`compare_exchange`](Self::compare_exchange) respectively.
+    ///
+    /// Using [`Acquire`] as success ordering makes the store part
+    /// of this operation [`Relaxed`], and using [`Release`] makes the final successful load
+    /// [`Relaxed`]. The (failed) load ordering can only be [`SeqCst`], [`Acquire`] or [`Relaxed`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `fetch_order` is [`Release`], [`AcqRel`].
+    ///
+    /// # Considerations
+    ///
+    /// [CAS operation]: https://en.wikipedia.org/wiki/Compare-and-swap
+    /// This method is not magic; it is not provided by the hardware, and does not act like a
+    /// critical section or mutex.
+    ///
+    /// It is implemented on top of an atomic [compare-and-swap operation], and thus is subject to
+    /// the usual drawbacks of CAS operations. In particular, be careful of the [ABA problem]
+    /// if this atomic integer is an index or more generally if knowledge of only the *bitwise value*
+    /// of the atomic is not in and of itself sufficient to ensure any required preconditions.
+    ///
+    /// [ABA Problem]: https://en.wikipedia.org/wiki/ABA_problem
+    /// [compare-and-swap operation]: https://en.wikipedia.org/wiki/Compare-and-swap
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::{mem::MaybeUninit, sync::atomic::Ordering};
+    ///
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// unsafe {
+    ///     let v = AtomicMaybeUninit::from(5_i32);
+    ///     assert_eq!(
+    ///         v.update(Ordering::SeqCst, Ordering::SeqCst, |x| MaybeUninit::new(x.assume_init() + 1))
+    ///             .assume_init(),
+    ///         5
+    ///     );
+    ///     assert_eq!(
+    ///         v.update(Ordering::SeqCst, Ordering::SeqCst, |x| MaybeUninit::new(x.assume_init() + 1))
+    ///             .assume_init(),
+    ///         6
+    ///     );
+    ///     assert_eq!(v.load(Ordering::SeqCst).assume_init(), 7);
+    /// }
+    /// ```
+    #[allow(clippy::impl_trait_in_params)] // Align to core::sync::atomic
+    #[inline]
+    pub fn update(
+        &self,
+        set_order: Ordering,
+        fetch_order: Ordering,
+        mut f: impl FnMut(MaybeUninit<T>) -> MaybeUninit<T>,
+    ) -> MaybeUninit<T>
+    where
+        T: AtomicCompareExchange,
+    {
+        let mut prev = self.load(fetch_order);
+        loop {
+            match self.compare_exchange_weak(prev, f(prev), set_order, fetch_order) {
+                Ok(x) => break x,
+                Err(next_prev) => prev = next_prev,
+            }
+        }
     }
 
     /// Returns a mutable pointer to the underlying value.
