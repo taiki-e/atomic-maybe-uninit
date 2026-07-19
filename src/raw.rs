@@ -95,7 +95,21 @@ pub trait AtomicStore: Primitive {
     ///
     /// [read-only-memory]: core::sync::atomic#atomic-accesses-to-read-only-memory
     /// [validity]: core::ptr#safety
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering);
+    #[inline]
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let val = core::hint::black_box(val);
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe { Self::__atomic_store_impl(dst, val, order) }
+    }
+
+    #[doc(hidden)] // Not public API.
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    );
 }
 
 /// Atomic swap.
@@ -132,7 +146,21 @@ pub trait AtomicSwap: AtomicLoad + AtomicStore {
     /// pointer go through [`UnsafeCell::get`].
     ///
     /// [validity]: core::ptr#safety
+    #[inline]
     unsafe fn atomic_swap(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) -> MaybeUninit<Self> {
+        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let val = core::hint::black_box(val);
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe { Self::__atomic_swap_impl(dst, val, order) }
+    }
+
+    #[doc(hidden)] // Not public API.
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         order: Ordering,
@@ -191,7 +219,25 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     /// inequal even when they are equal as Rust values.
     ///
     /// See [`AtomicMaybeUninit::compare_exchange`](crate::AtomicMaybeUninit::compare_exchange) for details.
+    #[inline]
     unsafe fn atomic_compare_exchange(
+        dst: *mut MaybeUninit<Self>,
+        current: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let current = core::hint::black_box(current);
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let new = core::hint::black_box(new);
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe { Self::__atomic_compare_exchange_impl(dst, current, new, success, failure) }
+    }
+
+    #[doc(hidden)] // Not public API.
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         current: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -248,7 +294,25 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
         success: Ordering,
         failure: Ordering,
     ) -> (MaybeUninit<Self>, bool) {
+        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let current = core::hint::black_box(current);
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let new = core::hint::black_box(new);
         // SAFETY: the caller must uphold the safety contract.
-        unsafe { Self::atomic_compare_exchange(dst, current, new, success, failure) }
+        unsafe { Self::__atomic_compare_exchange_weak_impl(dst, current, new, success, failure) }
+    }
+
+    #[doc(hidden)] // Not public API.
+    #[inline]
+    unsafe fn __atomic_compare_exchange_weak_impl(
+        dst: *mut MaybeUninit<Self>,
+        current: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe { Self::__atomic_compare_exchange_impl(dst, current, new, success, failure) }
     }
 }

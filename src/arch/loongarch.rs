@@ -185,7 +185,7 @@ macro_rules! atomic_store_st {
     ($ty:ident, $suffix:tt) => {
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -224,7 +224,7 @@ macro_rules! atomic_store_swap_amswap {
     ($ty:ident, $suffix:tt) => {
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -257,7 +257,7 @@ macro_rules! atomic_store_swap_amswap {
         }
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -296,7 +296,7 @@ macro_rules! atomic_cas_amcas {
     ($ty:ident, $suffix:tt) => {
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -357,7 +357,7 @@ macro_rules! atomic {
         ))]
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -390,7 +390,7 @@ macro_rules! atomic {
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -453,7 +453,7 @@ macro_rules! atomic_sub_word {
         #[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh")))]
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -491,7 +491,7 @@ macro_rules! atomic_sub_word {
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -599,20 +599,20 @@ macro_rules! atomic128 {
         }
         impl AtomicStore for u128 {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
-                    <u128 as AtomicSwap>::atomic_swap(dst, val, order);
+                    <u128 as AtomicSwap>::__atomic_swap_impl(dst, val, order);
                 }
             }
         }
         impl AtomicSwap for u128 {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -648,7 +648,7 @@ macro_rules! atomic128 {
         }
         impl AtomicCompareExchange for u128 {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,

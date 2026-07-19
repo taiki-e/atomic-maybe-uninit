@@ -314,7 +314,7 @@ macro_rules! delegate_load_store {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -322,7 +322,7 @@ macro_rules! delegate_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
-                    <$base as AtomicStore>::atomic_store(
+                    <$base as AtomicStore>::__atomic_store_impl(
                         dst.cast::<MaybeUninit<$base>>(),
                         mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
                         order,
@@ -341,7 +341,7 @@ macro_rules! delegate_swap {
         };
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -350,7 +350,7 @@ macro_rules! delegate_swap {
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
                     mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(
-                        <$base as AtomicSwap>::atomic_swap(
+                        <$base as AtomicSwap>::__atomic_swap_impl(
                             dst.cast::<MaybeUninit<$base>>(),
                             mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
                             order,
@@ -370,7 +370,7 @@ macro_rules! delegate_cas {
         };
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 current: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -380,18 +380,19 @@ macro_rules! delegate_cas {
                 // SAFETY: the caller must uphold the safety contract.
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
-                    let (out, ok) = <$base as AtomicCompareExchange>::atomic_compare_exchange(
-                        dst.cast::<MaybeUninit<$base>>(),
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
-                        success,
-                        failure,
-                    );
+                    let (out, ok) =
+                        <$base as AtomicCompareExchange>::__atomic_compare_exchange_impl(
+                            dst.cast::<MaybeUninit<$base>>(),
+                            mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
+                            mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
+                            success,
+                            failure,
+                        );
                     (mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
                 }
             }
             #[inline]
-            unsafe fn atomic_compare_exchange_weak(
+            unsafe fn __atomic_compare_exchange_weak_impl(
                 dst: *mut MaybeUninit<Self>,
                 current: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -401,13 +402,14 @@ macro_rules! delegate_cas {
                 // SAFETY: the caller must uphold the safety contract.
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
-                    let (out, ok) = <$base as AtomicCompareExchange>::atomic_compare_exchange_weak(
-                        dst.cast::<MaybeUninit<$base>>(),
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
-                        success,
-                        failure,
-                    );
+                    let (out, ok) =
+                        <$base as AtomicCompareExchange>::__atomic_compare_exchange_weak_impl(
+                            dst.cast::<MaybeUninit<$base>>(),
+                            mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
+                            mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
+                            success,
+                            failure,
+                        );
                     (mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
                 }
             }

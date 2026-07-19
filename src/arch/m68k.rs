@@ -69,7 +69,7 @@ macro_rules! atomic {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -90,7 +90,7 @@ macro_rules! atomic {
         #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -117,7 +117,7 @@ macro_rules! atomic {
         #[cfg(any(target_feature = "isa-68020", atomic_maybe_uninit_target_feature = "isa-68020"))]
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -219,7 +219,7 @@ cfg_sel!({
         }
         impl AtomicStore for u64 {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -227,13 +227,13 @@ cfg_sel!({
                 // SAFETY: the caller must uphold the safety contract.
                 // CAS2 has SeqCst semantics.
                 unsafe {
-                    <Self as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
+                    <Self as AtomicSwap>::__atomic_swap_impl(dst, val, Ordering::SeqCst);
                 }
             }
         }
         impl AtomicSwap for u64 {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -284,7 +284,7 @@ cfg_sel!({
         }
         impl AtomicCompareExchange for u64 {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,

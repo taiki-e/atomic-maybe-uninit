@@ -66,7 +66,11 @@ impl AtomicLoad for u8 {
 }
 impl AtomicStore for u8 {
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, _order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        _order: Ordering,
+    ) {
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
             asm!(
@@ -80,7 +84,7 @@ impl AtomicStore for u8 {
 }
 impl AtomicSwap for u8 {
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         _order: Ordering,
@@ -119,7 +123,7 @@ impl AtomicSwap for u8 {
 }
 impl AtomicCompareExchange for u8 {
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -199,7 +203,11 @@ impl AtomicLoad for u16 {
 }
 impl AtomicStore for u16 {
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, _order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        _order: Ordering,
+    ) {
         // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
         // On single-core systems, disabling interrupts is enough to prevent data race.
         unsafe {
@@ -280,7 +288,7 @@ impl AtomicStore for u16 {
 }
 impl AtomicSwap for u16 {
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         _order: Ordering,
@@ -383,7 +391,7 @@ impl AtomicSwap for u16 {
 }
 impl AtomicCompareExchange for u16 {
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,

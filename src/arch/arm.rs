@@ -538,7 +538,7 @@ macro_rules! atomic_load_store {
                 instruction_set(arm::a32) // needed for cp15 barrier
             )]
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -597,7 +597,7 @@ macro_rules! atomic {
                 instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
             )]
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -684,7 +684,7 @@ macro_rules! atomic {
                 instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
             )]
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -825,7 +825,7 @@ macro_rules! atomic {
                 instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
             )]
             #[inline]
-            unsafe fn atomic_compare_exchange_weak(
+            unsafe fn __atomic_compare_exchange_weak_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -886,7 +886,7 @@ macro_rules! atomic_sub_word {
                 atomic_load_store!($ty, $suffix);
                 impl AtomicSwap for $ty {
                     #[inline]
-                    unsafe fn atomic_swap(
+                    unsafe fn __atomic_swap_impl(
                         dst: *mut MaybeUninit<Self>,
                         val: MaybeUninit<Self>,
                         _order: Ordering,
@@ -930,7 +930,7 @@ macro_rules! atomic_sub_word {
                 }
                 impl AtomicCompareExchange for $ty {
                     #[inline]
-                    unsafe fn atomic_compare_exchange(
+                    unsafe fn __atomic_compare_exchange_impl(
                         dst: *mut MaybeUninit<Self>,
                         old: MaybeUninit<Self>,
                         new: MaybeUninit<Self>,
@@ -1168,7 +1168,11 @@ impl AtomicStore for u64 {
         instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
     )]
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) {
         debug_assert_atomic_unsafe_precondition!(dst, u64);
 
         #[cfg(all(
@@ -1216,7 +1220,7 @@ impl AtomicStore for u64 {
         unsafe {
             // __kuser_cmpxchg64 has SeqCst semantics.
             let _ = order;
-            <u64 as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
+            <u64 as AtomicSwap>::__atomic_swap_impl(dst, val, Ordering::SeqCst);
         }
     }
 }
@@ -1239,7 +1243,7 @@ impl AtomicSwap for u64 {
         instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
     )]
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         order: Ordering,
@@ -1335,7 +1339,7 @@ impl AtomicCompareExchange for u64 {
         instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
     )]
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -1556,7 +1560,7 @@ impl AtomicCompareExchange for u64 {
         instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
     )]
     #[inline]
-    unsafe fn atomic_compare_exchange_weak(
+    unsafe fn __atomic_compare_exchange_weak_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
