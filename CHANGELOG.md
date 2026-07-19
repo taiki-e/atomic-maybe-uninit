@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.21] - 2026-07-19
+
 - Add `try_update` and `update`. (align to the [std atomic change in Rust 1.95](https://github.com/rust-lang/rust/pull/148590)) ([0e28b20](https://github.com/taiki-e/atomic-maybe-uninit/commit/0e28b20e3208c2ca68f3fed3beac890a29f4ab27))
 
 - Deprecate `fetch_update`. (align to the [std atomic change in Rust 1.99](https://github.com/rust-lang/rust/pull/148590)) ([0e28b20](https://github.com/taiki-e/atomic-maybe-uninit/commit/0e28b20e3208c2ca68f3fed3beac890a29f4ab27))
@@ -507,7 +509,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.20...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.21...HEAD
+[0.3.21]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.20...v0.3.21
 [0.3.20]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.19...v0.3.20
 [0.3.19]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...v0.3.19
 [0.3.18]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.17...v0.3.18
