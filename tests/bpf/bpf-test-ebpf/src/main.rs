@@ -223,6 +223,10 @@ fn run(ctx: XdpContext) -> Result<u32, u32> {
     test_atomic!(usize);
     #[cfg(target_feature = "alu32")]
     {
+        // test_atomic!(i8);
+        // test_atomic!(u8);
+        // test_atomic!(i16);
+        // test_atomic!(u16);
         #[cfg(feature = "i32")]
         test_atomic!(i32);
         #[cfg(feature = "u32")]
