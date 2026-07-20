@@ -449,6 +449,10 @@ jobs:
         with:
           tool: rust@${{ matrix.rust }}${{ matrix.rust == 'stable' && ',cargo-hack,espup' || '' }}
           fallback: none
+      - uses: taiki-e/cache-cargo-install-action@417450f3c33ee20393705369577571770643d4c7 # v3.0.7
+        with:
+          tool: bpf-linker
+        if: matrix.rust == 'nightly'
       - run: |
           retry() {
             for i in {1..10}; do

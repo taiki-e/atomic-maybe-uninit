@@ -122,7 +122,8 @@ fn main() {
                 }
             }
         }
-        "avr" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430" | "xtensa" => {
+        "avr" | "bpf" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430"
+        | "xtensa" => {
             if version.nightly && is_allowed_feature("asm_experimental_arch") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }

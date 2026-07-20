@@ -1,0 +1,31 @@
+[package]
+name = "bpf-test-ebpf"
+version = "0.0.0"
+edition.workspace = true
+publish = false
+
+license = "MIT"
+
+[features]
+default = ["isize", "i64"]
+isize = []
+usize = []
+i32 = []
+u32 = []
+i64 = []
+u64 = []
+
+[dependencies]
+bpf-test-common = { path = "../bpf-test-common" }
+atomic-maybe-uninit = { path = "../../.." }
+
+aya-ebpf = { workspace = true }
+aya-log-ebpf = { workspace = true }
+paste = "1"
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]]
+name = "bpf-test"
+path = "src/main.rs"
