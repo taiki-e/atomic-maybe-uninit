@@ -47,7 +47,7 @@ pub trait AtomicLoad: Primitive {
     ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
     ///   sizes, without synchronization.
     ///
-    /// Compatibility with read-only memory applies only to relaxed operations with a register or smaller width.
+    /// Compatibility with read-only memory applies only to "sufficiently small" loads with `Ordering::Relaxed`.
     /// See the ["Atomic accesses to read-only memory" section in the `core::sync::atomic` docs][read-only-memory]
     /// for more.
     ///
@@ -86,7 +86,7 @@ pub trait AtomicStore: Primitive {
     ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
     ///   sizes, without synchronization.
     ///
-    /// Compatibility with write-only memory applies only to relaxed operations with a register or smaller width.
+    /// Compatibility with write-only memory applies only to "sufficiently small" stores with `Ordering::Relaxed`.
     /// See the ["Atomic accesses to read-only memory" section in the `core::sync::atomic` docs][read-only-memory]
     /// for more.
     ///
