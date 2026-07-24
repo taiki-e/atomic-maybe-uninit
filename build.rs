@@ -39,7 +39,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_ll_sc,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_llvm_20_or_later,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_llvm_20_or_later,atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_ll_sc,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,atomic_maybe_uninit_v4)"
         );
         // TODO: handle multi-line target_feature_fallback
         // grep -F 'target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -122,7 +122,8 @@ fn main() {
                 }
             }
         }
-        "avr" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430" | "xtensa" => {
+        "avr" | "bpf" | "m68k" | "mips" | "mips32r6" | "mips64" | "mips64r6" | "msp430"
+        | "xtensa" => {
             if version.nightly && is_allowed_feature("asm_experimental_arch") {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
             }
@@ -644,6 +645,24 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_ldex_stex");
             }
         }
+        // TODO(bpf): Enable once https://github.com/aya-rs/bpf-linker/pull/386 released.
+        // "bpf" => {
+        //     // atomic_fetch_{add,and,xor,or}, {,cmp}xchg{32_32,_64}: LLVM 17+ (17 is our min LLVM version) https://github.com/llvm/llvm-project/commit/d0d1431ab1c88dd2fb8c09ae28909da3fb5f3a57
+        //     // load_acquire, store_release: LLVM 21+ https://github.com/llvm/llvm-project/commit/17bfc00f7c4a424d7b5dc6da575865833701fd1a
+        //     let mut v4 = false;
+        //     if let Some(cpu) = target_cpu() {
+        //         if let Some(cpu_version) = cpu.strip_prefix("v") {
+        //             if let Ok(cpu_version) = cpu_version.parse::<u32>() {
+        //                 if version.llvm >= 21 {
+        //                     v4 = cpu_version >= 4;
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     if v4 {
+        //         println!("cargo:rustc-cfg=atomic_maybe_uninit_v4");
+        //     }
+        // }
         _ => {}
     }
 }

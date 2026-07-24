@@ -445,9 +445,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/install-action@b8cecb83565409bcc297b2df6e77f030b2a468d5 # v2.82.0
+      - uses: taiki-e/install-action@7572810d7dd469b651bb7793945692cf78da5dd7 # v2.85.0
         with:
-          tool: rust@${{ matrix.rust }}${{ matrix.rust == 'stable' && ',cargo-hack,espup' || '' }}
+          tool: rust@${{ matrix.rust }}${{ matrix.rust == 'stable' && ',cargo-hack,espup' || '' }}${{ (startsWith(matrix.rust, 'nightly') && matrix.rust != 'nightly-2023-08-24' && matrix.rust != 'nightly-2024-07-31' && matrix.rust != 'nightly-2025-02-17') && ',bpf-linker' || '' }}
           fallback: none
       - run: |
           retry() {
