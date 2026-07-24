@@ -4,6 +4,7 @@
 #![allow(unused, internal_features, unsafe_op_in_unsafe_fn)]
 #![cfg_attr(feature = "core", feature(cfg_target_has_atomic, core_intrinsics))]
 #![cfg_attr(feature = "core", cfg(not(target_arch = "xtensa")))] // TODO: new atomic intrinsics not available yet
+#![cfg_attr(feature = "core", cfg(not(target_arch = "bpf")))] // TODO: rustc-LLVM ERROR: Cannot select: 0x1108120e0: i64,ch = AtomicLoad<(load seq_cst (s64) from %ir.0)> 0x110590488, 0x110812070
 
 // -----------------------------------------------------------------------------
 // feature = "atomic-maybe-uninit"

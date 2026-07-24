@@ -8,6 +8,7 @@ This document describes the operations that are considered atomic by architectur
 - [AArch64](#aarch64)
 - [Arm](#arm)
 - [AVR](#avr)
+- [BPF](#bpf)
 - [C-SKY](#c-sky)
 - [Hexagon](#hexagon)
 - [LoongArch](#loongarch)
@@ -63,6 +64,33 @@ This architecture is always single-core and the following operations are atomic:
   However, pure operations that are not affected by compiler fences (Note: the correct interrupt
   disabling and restoring implementation must imply compiler fences, e.g., asm without nomem/readonly)
   may be moved out of the critical section by compiler optimizations.
+
+## BPF
+
+target_arch: bpf<br>
+Implementation: [bpf.rs](bpf.rs)<br>
+Refs: [BPF Instruction Set Architecture (ISA)](https://github.com/torvalds/linux/blob/v7.1/Documentation/bpf/standardization/instruction-set.rst)
+
+The following instructions are atomic if the address is properly aligned and the specified storage meets the requirements:
+
+- {8,16,32}-bit load/store instructions: Relaxed load/store
+- 64-bit load/store instructions on 64-bit host: Relaxed load/store
+  - On 32-bit host, these are not atomic (e.g., [x86](https://github.com/torvalds/linux/blob/v7.1/arch/x86/net/bpf_jit_comp32.c#L1941), [riscv32](https://github.com/torvalds/linux/blob/v7.1/arch/riscv/net/bpf_jit_comp32.c#L862)).
+- `ADD`/`AND`/`OR`/`XOR`: {32,64}-bit Relaxed {add,and,or,xor} (no return value)
+- Atomic instructions with `FETCH` (Linux 5.12+ on x86_64 ([1](https://github.com/torvalds/linux/commit/5ca419f2864a2c60940dcf4bbaeb69546200e36f), [2](https://github.com/torvalds/linux/commit/981f94c3e92146705baf97fb417a5ed1ab1a79a5), [3](https://github.com/torvalds/linux/commit/5ffa25502b5ab3d639829a2d1e316cff7f59a41e)), Linux 5.13+ on [s390x](https://github.com/torvalds/linux/commit/ba3b86b9cef0c72ae78173f2c4db8a08bf4d3770), Linux 5.16+ on [mips](https://github.com/torvalds/linux/commit/eb63cfcd2ee8ec3805f6881f43341f589c3d2278)/[mips64](https://github.com/torvalds/linux/commit/fbc802de6b10669bfe2d4ebc4dcf12563bba117c), Linux 5.18+ on [aarch64](https://github.com/torvalds/linux/commit/1902472b4fa97dba1fd10a204c6b231d6a560081), Linux 5.19+ on [riscv64](https://github.com/torvalds/linux/commit/dd642ccb45ecce1402eb2550f5284fc6bb9ed7b8), Linux 6.0+ on powerpc64 ([1](https://github.com/torvalds/linux/commit/dbe6e2456fb0263a5a961a92836d2cebdbca979c), [2](https://github.com/torvalds/linux/commit/1e82dfaa7819f03f0b0022be7ca15bbc83090da1))/powerpc (32-bit only, [1](https://github.com/torvalds/linux/commit/aea7ef8a82c0ea13ff20b65ff2edf8a38a17eda8), [2](https://github.com/torvalds/linux/commit/2d9206b227434912582049c49af1085660fa1e50)), Linux 6.1+ on [loongarch64](https://github.com/torvalds/linux/commit/5dc615520c4dfb358245680f1904bad61116648e), etc.)
+  - `ADD`/`AND`/`OR`/`XOR`: {32,64}-bit SeqCst fetch_{add,or,xor}
+  - `XCHG`: {32,64}-bit SeqCst swap
+  - `CMPXCHG`: {32,64}-bit CAS(SeqCst, Relaxed)
+- `LOAD_ACQ`/`STORE_REL`: {8,16,32,64}-bit Acquire load / Release store. (Linux 6.15+ on [x86_64](https://github.com/torvalds/linux/commit/5341c9a4d833009071595230e3a038a823265a86)/[aarch64](https://github.com/torvalds/linux/commit/9bb12368d539d40457af593bc1b6b380430cc9d7), Linux 6.16+ on [riscv64](https://github.com/torvalds/linux/commit/8afd3170d5116385740aef8ab77d10b83f9b8e60), Linux 6.17+ on [powerpc64](https://github.com/torvalds/linux/commit/cf2a6de32cabbf84a889e24a9ee7c51dee4a1f70), Linux 7.1+ on [loongarch64](https://github.com/torvalds/linux/commit/ee823fe7c12f92bac5e5b1ea6dd0ac8b267dd464), etc.)
+
+Looking at the actual JIT implementations (e.g., [aarch64](https://github.com/torvalds/linux/blob/v7.1/arch/arm64/net/bpf_jit_comp.c#L845), [riscv64](https://github.com/torvalds/linux/blob/v7.1/arch/riscv/net/bpf_jit.h#L1293)) and [riscv](https://github.com/torvalds/linux/commit/20a759df3bba35bf5c3ddec0c02ad69b603b584c)/[powerpc](https://github.com/torvalds/linux/commit/b1e7cee96127468c2483cf10c2899c9b5cf79bf8)/[s390x](https://github.com/torvalds/linux/commit/68378982f0b21de02ac3c6a11e2420badefcb4bc) fix in Linux 6.10, the ordering of atomic instructions matches that described in the "ORDERING" section of the [documentation for atomic types in the core kernel APIs](https://docs.kernel.org/core-api/wrappers/atomic_t.html).
+TODO: mips/loongarch64 JIT implementations are still unsound.
+
+Note that not all host architectures support the same operations.
+
+LLVM generates atomic RMWs other than `ADD` without `FETCH` only when `alu32` feature is enabled. ([Linux doc](https://github.com/torvalds/linux/blob/v7.1/Documentation/bpf/clang-notes.rst#atomic-operations), [godbolt](https://godbolt.org/z/nEnxYoT4n))
+
+LLVM generates Acquire load / Release store only when v4 or later cpu is enabled. ([LLVM PR](https://github.com/llvm/llvm-project/pull/108636))
 
 ## C-SKY
 

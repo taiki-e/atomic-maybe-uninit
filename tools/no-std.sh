@@ -57,6 +57,9 @@ default_targets=(
 
   # m68k
   m68k-unknown-linux-gnu
+
+  # bpf
+  bpfel-unknown-none
 )
 
 x() {
@@ -205,6 +208,12 @@ run() {
           subcmd=build
         fi
         ;;
+      bpf*)
+        if ! type -P "${BPF_LINKER:-bpf-linker}" >/dev/null; then
+          info "target '${target}' requires bpf-linker (skipped)"
+          return 0
+        fi
+        ;;
     esac
   fi
   case "${target}" in
@@ -216,11 +225,18 @@ run() {
       fi
       ;;
   esac
-  local args=("${target_flags[@]}")
+  local args=()
+  case "${target}" in
+    bpf*) ;;
+    *) args+=("${target_flags[@]}") ;;
+  esac
   if grep -Eq "^${target}$" <<<"${rustup_target_list}"; then
     retry rustup ${pre_args[@]+"${pre_args[@]}"} target add "${target}" &>/dev/null
   elif [[ -n "${nightly}" ]]; then
-    args+=(-Z build-std="core")
+    case "${target}" in
+      bpf*) ;;
+      *) args+=(-Z build-std="core") ;;
+    esac
   else
     info "target '${target}' requires nightly compiler (skipped)"
     return 0
@@ -326,18 +342,40 @@ run() {
       fi
       test_dir=tests/no-std-linux
       ;;
+    bpf*)
+      case "${commit_date}" in
+        2023-08-23 | 2024-07-30 | 2025-02-16)
+          # 2023-08-23/2024-07-30: bpf-test uses 2024 edition
+          # 2025-02-16: aya* uses a lot of features unavailable on this version.
+          printf '%s\n' "testing target '${target}' is not supported on this version (skipped)"
+          return 0
+          ;;
+        2025-08-05) export BPF_TOOLCHAIN=nightly-2025-08-06 ;;
+        2026-01-27) export BPF_TOOLCHAIN=nightly-2026-01-28 ;;
+      esac
+      BPF_LINKER=$(type -P "${BPF_LINKER:-bpf-linker}")
+      export BPF_LINKER
+      export BPF_CPU=v3
+      test_dir=tests/bpf
+      args+=(--config "target.\"cfg(all())\".runner=\"${workspace_dir}/tools/runner.sh sudo ${target}\"")
+      ;;
     *) bail "unrecognized target '${target}'" ;;
   esac
   case "${target}" in
-    m68k*) ;;
+    m68k* | bpf*) ;;
     *) args+=(--all-features) ;;
   esac
 
   (
     cd -- "${test_dir}"
-    CARGO_TARGET_DIR="${target_dir}/no-std-test" \
-      RUSTFLAGS="${target_rustflags}" \
-      x_cargo "${args[@]}" "$@"
+    case "${target}" in
+      bpf*) ;;
+      *)
+        CARGO_TARGET_DIR="${target_dir}/no-std-test" \
+          RUSTFLAGS="${target_rustflags}" \
+          x_cargo "${args[@]}" "$@"
+        ;;
+    esac
     CARGO_TARGET_DIR="${target_dir}/no-std-test" \
       RUSTFLAGS="${target_rustflags}" \
       x_cargo "${args[@]}" --release "$@"
@@ -500,6 +538,28 @@ run() {
             RUSTFLAGS="${target_rustflags}" \
             x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
         done
+        ;;
+      bpf*)
+        # Note: We cannot test everything at once due to size.
+        # isize are covered by the run with the default feature.
+        # NB: Sync feature list with tests/bpf/Cargo.toml
+        for feature in usize i64 u64 i32 u32; do
+          # RUSTFLAGS="${target_rustflags}" \
+          #   x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
+          RUSTFLAGS="${target_rustflags}" \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        done
+        # TODO(bpf): Enable once https://github.com/aya-rs/bpf-linker/pull/386 released.
+        # for feature in isize usize i64 u64 i32 u32; do
+        #   # CARGO_TARGET_DIR="${target_dir}/no-std-test-v4" \
+        #   #   RUSTFLAGS="${target_rustflags}" \
+        #   #   BPF_CPU=v4 \
+        #   #   x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
+        #   CARGO_TARGET_DIR="${target_dir}/no-std-test-v4" \
+        #     RUSTFLAGS="${target_rustflags}" \
+        #     BPF_CPU=v4 \
+        #     x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        # done
         ;;
     esac
   )

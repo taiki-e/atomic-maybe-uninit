@@ -16,6 +16,7 @@ balign
 beqz
 beqzc
 Bicc
+bindeps
 bnez
 boundedly
 brne
@@ -54,6 +55,7 @@ gettime
 GRLIB
 Halfword
 hwsync
+iface
 IMAFD
 inequal
 insertnopload
@@ -92,8 +94,10 @@ lwarx
 lwsync
 mcpu
 membar
+memcg
 memcheck
 memd
+memlock
 memw
 mfcr
 mfence
@@ -121,6 +125,8 @@ qbsp
 quadword
 rcpc
 risbg
+rlim
+rlimit
 rsbegin
 rsend
 RVWMO
@@ -131,6 +137,7 @@ SCWP
 SCWPE
 seqz
 sete
+setrlimit
 signedness
 simavr
 simio
@@ -173,6 +180,7 @@ versatilepb
 virt
 vmovdqa
 wokwi
+wreg
 xadd
 xchg
 xgetbv
