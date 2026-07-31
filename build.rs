@@ -106,6 +106,9 @@ fn main() {
             // asm! on loongarch32 stabilized in Rust 1.91 (nightly-2025-08-11): https://github.com/rust-lang/rust/pull/144402
             if !version.probe(91, 2025, 8, 10) {
                 if version.nightly && is_allowed_feature("asm_experimental_arch") {
+                    // Inline assembly support is implemented from the beginning: https://github.com/rust-lang/rust/pull/142053
+                    // The part of this feature we use has not been changed since added
+                    // until it was stabilized, so it can safely be enabled in nightly for that period.
                     println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
                 } else {
                     println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm");
@@ -116,6 +119,8 @@ fn main() {
             // asm! on PowerPC stabilized in Rust 1.95 (nightly-2026-01-28): https://github.com/rust-lang/rust/pull/147996
             if !version.probe(95, 2026, 1, 27) {
                 if version.nightly && is_allowed_feature("asm_experimental_arch") {
+                    // The part of this feature we use has not been changed since our MSRV
+                    // until it was stabilized, so it can safely be enabled in nightly for that period.
                     println!("cargo:rustc-cfg=atomic_maybe_uninit_unstable_asm_experimental_arch");
                 } else {
                     println!("cargo:rustc-cfg=atomic_maybe_uninit_no_asm");

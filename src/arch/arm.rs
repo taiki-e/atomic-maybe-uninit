@@ -1144,7 +1144,7 @@ impl AtomicLoad for u64 {
                 out("r3") _,
                 out("lr") _,
                 // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
-                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+                // Do not use `nostack` because __kuser_cmpxchg64 pushes to stack.
             );
             out
         }
@@ -1315,7 +1315,7 @@ impl AtomicSwap for u64 {
                 out("r3") _,
                 out("lr") _,
                 // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
-                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+                // Do not use `nostack` because __kuser_cmpxchg64 pushes to stack.
             );
             out
         }
@@ -1488,7 +1488,7 @@ impl AtomicCompareExchange for u64 {
                 out("r3") _,
                 out("lr") _,
                 // Do not use `preserves_flags` because ORRS and __kuser_cmpxchg64 modify the condition flags.
-                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+                // Do not use `nostack` because __kuser_cmpxchg64 pushes to stack.
             );
             #[cfg(any(
                 target_feature = "thumb-mode",
@@ -1533,7 +1533,7 @@ impl AtomicCompareExchange for u64 {
                 inout("r3") KUSER_CMPXCHG64 => _,
                 out("lr") _,
                 // Do not use `preserves_flags` because ORRS, __kuser_cmpxchg64, and *S modify the condition flags.
-                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+                // Do not use `nostack` because __kuser_cmpxchg64 pushes to stack.
             );
             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
             // 0 if the store was successful, 1 if no store was performed
