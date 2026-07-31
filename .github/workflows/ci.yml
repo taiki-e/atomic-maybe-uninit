@@ -542,6 +542,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUST: ${{ matrix.rust }}
+      # cortex-m-rt 0.7.6 requires Rust 1.85.
+      - run: |
+          cargo generate-lockfile
+          cargo update -p cortex-m-rt --precise 0.7.5
+        working-directory: tests/no-std-qemu
+        if: startsWith(matrix.rust, '1.7') || startsWith(matrix.rust, '1.8') || startsWith(matrix.rust, 'nightly-2023') || startsWith(matrix.rust, 'nightly-2024')
       - run: tools/no-std.sh
         env:
           ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
