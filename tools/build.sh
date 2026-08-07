@@ -101,14 +101,14 @@ default_targets=(
   # mips32r2
   mips-unknown-linux-gnu
   mipsel-unknown-linux-gnu
-  # TODO(mips): compiler SIGILL with LLVM 22
+  # TODO(mips): compiler SIGILL with LLVM 22-23
   # # mips32r6
   # mipsisa32r6-unknown-linux-gnu
   # mipsisa32r6el-unknown-linux-gnu
-  # mips64r2
-  mips64-unknown-linux-gnuabi64
-  mips64el-unknown-linux-gnuabi64
-  # TODO(mips): compiler SIGILL with LLVM 22
+  # TODO(mips): LLVM 23 bug https://github.com/llvm/llvm-project/issues/112010
+  # # mips64r2
+  # mips64-unknown-linux-gnuabi64
+  # mips64el-unknown-linux-gnuabi64
   # # mips64r6
   # mipsisa64r6-unknown-linux-gnuabi64
   # mipsisa64r6el-unknown-linux-gnuabi64

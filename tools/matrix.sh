@@ -98,6 +98,7 @@ toolchains=(
   1.86 # LLVM 19
   1.90 # LLVM 20
   1.94 # LLVM 21
+  # 1.98 # LLVM 22
   stable
   beta
   nightly
@@ -161,6 +162,12 @@ convert_toolchain_for_unstable_asm() {
       # LLVM 21
       case "${target}" in
         *) toolchain=nightly-2026-01-28 ;; # Rust 1.95
+      esac
+      ;;
+    1.9[5-8])
+      # LLVM 22
+      case "${target}" in
+        *) toolchain=nightly-2026-08-05 ;; # Rust 1.99
       esac
       ;;
     1.*) bail "unhandled ${toolchain}" ;;
@@ -307,6 +314,13 @@ for target in "${targets[@]}"; do
           1.9[5-6]) toolchain='' ;; # compiler SIGILL with LLVM 22
           # TODO(mips): compiler SIGILL with LLVM 22
           nightly) toolchain=nightly-2026-01-28 ;;
+        esac
+        ;;
+      mips64* | mipsisa64r6*)
+        case "${toolchain}" in
+          1.99) toolchain='' ;; # LLVM 23 bug https://github.com/llvm/llvm-project/issues/112010
+          # TODO(mips): LLVM 23 bug https://github.com/llvm/llvm-project/issues/112010
+          nightly) toolchain=nightly-2026-08-05 ;;
         esac
         ;;
     esac

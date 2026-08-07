@@ -198,7 +198,7 @@ jobs:
               printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
               ;;
           esac
-          # Workaround for "rustc-LLVM ERROR: Unsupported instruction : <MCInst 11 <MCOperand Reg:174>>" with LLVM 20-22
+          # Workaround for "rustc-LLVM ERROR: Unsupported instruction : <MCInst 11 <MCOperand Reg:174>>" with LLVM 20-23
           printf 'CARGO_PROFILE_RELEASE_OPT_LEVEL=0\n' >>"${GITHUB_ENV}"
         env:
           RUST: ${{ matrix.rust }}
@@ -410,7 +410,7 @@ jobs:
             rust: nightly
             tests: 1
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
@@ -433,6 +433,7 @@ jobs:
           # - '1.86' # LLVM 19
           # - '1.90' # LLVM 20
           # - '1.94' # LLVM 21
+          # - '1.98' # LLVM 22
           - stable
           # - beta
           - nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
@@ -440,9 +441,10 @@ jobs:
           # - nightly-2025-02-17 # Rust 1.87, LLVM 19
           # - nightly-2025-08-06 # Rust 1.91, LLVM 20
           # - nightly-2026-01-28 # Rust 1.95, LLVM 21
+          # - nightly-2026-08-05 # Rust 1.99, LLVM 22
           - nightly
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
@@ -585,7 +587,7 @@ jobs:
           - target: s390x-unknown-linux-gnu
             arch: s390x
     runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
@@ -705,7 +707,7 @@ jobs:
   asm-test:
     needs: tidy
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4

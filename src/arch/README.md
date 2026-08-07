@@ -106,7 +106,7 @@ The following instructions are atomic if the address is properly aligned and the
 
   (Refs: Section 3.1.11 "Multiprocessor Instructions" of M68000 FAMILY Programmer's Reference Manual)
 
-Note that CAS2 is not yet supported in LLVM (as of 21) (our code use `.2byte` directive to work around it).
+Note that CAS2 is not yet supported in LLVM (as of 23) (our code use `.2byte` directive to work around it).
 
 ## MIPS
 
@@ -127,7 +127,7 @@ The following instructions are atomic if the address is properly aligned and the
   - LLWPE/SCWPE: 64-bit LL/SC (MIPS32R6 or later, only present if Config5XNP=0 and Config5EVA=1)
   - LLDP/SCDP: 128-bit LL/SC (MIPS64R6 or later, only present if Config5XNP is 0)
 
-Note that LL{W,D}P{,E}/SC{W,D}P{,E} is not yet supported in LLVM (as of 19).
+Note that LL{W,D}P{,E}/SC{W,D}P{,E} is not yet supported in LLVM (as of 23).
 
 None of the above instructions imply a memory barrier.
 Several types of memory barriers are provided by SYNC instruction, but only SYNC (SYNC 0) is mandatory.
@@ -218,7 +218,7 @@ Load-store instructions are atomic only if properly aligned. LL/SC and AMO instr
 proper alignment, otherwise the system alignment error handler is invoked or the results are boundedly undefined.<br>
 (Refs: Section 1.4 "Single-Copy Atomicity", 4.6.2 "Load And Reserve and Store Conditional Instructions", and 4.5 "Atomic Memory Operations" of Power ISA 3.1C Book II)
 
-Note that plq/pstq is not yet supported in LLVM (as of 19).
+Note that plq/pstq is not yet supported in LLVM (as of 23).
 
 None of the above instructions imply a memory barrier.
 
