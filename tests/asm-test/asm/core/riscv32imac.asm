@@ -1,705 +1,705 @@
 asm_test::compare_exchange::u8::acqrel_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::seqcst_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::acqrel_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::acqrel_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::acquire_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::relaxed_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::release_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::seqcst_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::seqcst_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::acquire_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::acquire_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::relaxed_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::relaxed_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w              a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w              a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::release_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u8::release_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w              a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w              a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::acqrel_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::seqcst_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::acqrel_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::acqrel_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::acquire_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::relaxed_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::release_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::seqcst_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::seqcst_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::acquire_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::acquire_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::relaxed_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::relaxed_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w              a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w              a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::release_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange::u16::release_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w              a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w              a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
@@ -884,707 +884,707 @@ asm_test::compare_exchange::u32::release_relaxed:
         ret
 
 asm_test::compare_exchange_weak::u8::acqrel_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::seqcst_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::acqrel_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::acqrel_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::acquire_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::relaxed_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::release_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::acquire_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::acquire_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::relaxed_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::relaxed_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w              a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w              a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::release_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u8::release_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        li                a4, 0xff
-        sll               a4, a4, a0
-        sll               a1, a1, a0
-        sll               a2, a2, a0
+        li                a3, 0xff
+        slli              a4, a0, 0x3
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w              a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w              a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::acqrel_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::seqcst_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::acqrel_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::acqrel_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::acquire_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::relaxed_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::release_seqcst:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aqrl         a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aqrl         a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::acquire_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::acquire_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::relaxed_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::relaxed_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w              a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w              a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w              a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w              a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::release_acquire:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w.aq           a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w.aq           a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
 asm_test::compare_exchange_weak::u16::release_relaxed:
-        andi              a6, a0, -0x4
-        slli              a0, a0, 0x3
-        lui               a4, 0x10
-        addi              a4, a4, -0x1
-        sll               a1, a1, a0
-        sll               a2, a2, a0
-        sll               a4, a4, a0
+        lui               a3, 0x10
+        slli              a4, a0, 0x3
+        addi              a3, a3, -0x1
+        andi              a0, a0, -0x4
+        sll               a3, a3, a4
+        sll               a1, a1, a4
+        sll               a2, a2, a4
 0:
-        lr.w              a5, (a6)
-        and               a3, a5, a4
-        bne               a3, a1, 1f
-        xor               a3, a5, a2
-        and               a3, a3, a4
-        xor               a3, a3, a5
-        sc.w.rl           a3, a3, (a6)
-        bnez              a3, 0b
+        lr.w              a5, (a0)
+        and               a6, a5, a3
+        bne               a6, a1, 1f
+        xor               a6, a5, a2
+        and               a6, a6, a3
+        xor               a6, a5, a6
+        sc.w.rl           a6, a6, (a0)
+        bnez              a6, 0b
 1:
-        srl               a0, a5, a0
-        and               a4, a4, a5
-        xor               a1, a1, a4
+        and               a3, a3, a5
+        xor               a1, a1, a3
+        srl               a0, a5, a4
         seqz              a1, a1
         ret
 
@@ -1899,91 +1899,91 @@ asm_test::swap::u8::release:
         ret
 
 asm_test::swap::u16::acqrel:
-        andi              a2, a0, -0x4
+        lui               a2, 0x10
+        andi              a3, a0, -0x4
         slli              a0, a0, 0x3
-        lui               a3, 0x10
-        addi              a3, a3, -0x1
-        sll               a3, a3, a0
+        addi              a2, a2, -0x1
+        sll               a2, a2, a0
         sll               a1, a1, a0
 0:
-        lr.w.aq           a4, (a2)
+        lr.w.aq           a4, (a3)
         mv                a5, a1
         xor               a5, a5, a4
-        and               a5, a5, a3
+        and               a5, a5, a2
         xor               a5, a5, a4
-        sc.w.rl           a5, a5, (a2)
+        sc.w.rl           a5, a5, (a3)
         bnez              a5, 0b
         srl               a0, a4, a0
         ret
 
 asm_test::swap::u16::seqcst:
-        andi              a2, a0, -0x4
+        lui               a2, 0x10
+        andi              a3, a0, -0x4
         slli              a0, a0, 0x3
-        lui               a3, 0x10
-        addi              a3, a3, -0x1
-        sll               a3, a3, a0
+        addi              a2, a2, -0x1
+        sll               a2, a2, a0
         sll               a1, a1, a0
 0:
-        lr.w.aqrl         a4, (a2)
+        lr.w.aqrl         a4, (a3)
         mv                a5, a1
         xor               a5, a5, a4
-        and               a5, a5, a3
+        and               a5, a5, a2
         xor               a5, a5, a4
-        sc.w.rl           a5, a5, (a2)
+        sc.w.rl           a5, a5, (a3)
         bnez              a5, 0b
         srl               a0, a4, a0
         ret
 
 asm_test::swap::u16::acquire:
-        andi              a2, a0, -0x4
+        lui               a2, 0x10
+        andi              a3, a0, -0x4
         slli              a0, a0, 0x3
-        lui               a3, 0x10
-        addi              a3, a3, -0x1
-        sll               a3, a3, a0
+        addi              a2, a2, -0x1
+        sll               a2, a2, a0
         sll               a1, a1, a0
 0:
-        lr.w.aq           a4, (a2)
+        lr.w.aq           a4, (a3)
         mv                a5, a1
         xor               a5, a5, a4
-        and               a5, a5, a3
+        and               a5, a5, a2
         xor               a5, a5, a4
-        sc.w              a5, a5, (a2)
+        sc.w              a5, a5, (a3)
         bnez              a5, 0b
         srl               a0, a4, a0
         ret
 
 asm_test::swap::u16::relaxed:
-        andi              a2, a0, -0x4
+        lui               a2, 0x10
+        andi              a3, a0, -0x4
         slli              a0, a0, 0x3
-        lui               a3, 0x10
-        addi              a3, a3, -0x1
-        sll               a3, a3, a0
+        addi              a2, a2, -0x1
+        sll               a2, a2, a0
         sll               a1, a1, a0
 0:
-        lr.w              a4, (a2)
+        lr.w              a4, (a3)
         mv                a5, a1
         xor               a5, a5, a4
-        and               a5, a5, a3
+        and               a5, a5, a2
         xor               a5, a5, a4
-        sc.w              a5, a5, (a2)
+        sc.w              a5, a5, (a3)
         bnez              a5, 0b
         srl               a0, a4, a0
         ret
 
 asm_test::swap::u16::release:
-        andi              a2, a0, -0x4
+        lui               a2, 0x10
+        andi              a3, a0, -0x4
         slli              a0, a0, 0x3
-        lui               a3, 0x10
-        addi              a3, a3, -0x1
-        sll               a3, a3, a0
+        addi              a2, a2, -0x1
+        sll               a2, a2, a0
         sll               a1, a1, a0
 0:
-        lr.w              a4, (a2)
+        lr.w              a4, (a3)
         mv                a5, a1
         xor               a5, a5, a4
-        and               a5, a5, a3
+        and               a5, a5, a2
         xor               a5, a5, a4
-        sc.w.rl           a5, a5, (a2)
+        sc.w.rl           a5, a5, (a3)
         bnez              a5, 0b
         srl               a0, a4, a0
         ret
