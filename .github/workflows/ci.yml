@@ -462,6 +462,7 @@ jobs:
           }
           apt_packages=(
             device-tree-compiler
+            libslirp0
           )
           if [[ "${RUST}" == "nightly"* ]]; then
             apt_packages+=(

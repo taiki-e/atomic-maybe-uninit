@@ -80,6 +80,7 @@ lgcc
 libatomic
 libcu
 libnspr
+libslirp
 linkall
 LLDP
 LLWP
