@@ -10,9 +10,6 @@ use std::{
     thread,
 };
 
-#[cfg(valgrind)]
-use crabgrind::memcheck;
-
 use crate::*;
 
 macro_rules! test_common {
@@ -1264,46 +1261,18 @@ pub(crate) const IMP_ARM_LINUX: bool = cfg!(all(
 pub(crate) const IMP_EMU_SUB_WORD_CAS: bool = cfg!(target_arch = "s390x") || IMP_ARM_LINUX;
 
 #[cfg(valgrind)]
-#[inline(always)]
-pub(crate) fn mark_no_access<T: ?Sized>(a: &T) {
-    memcheck::mark_memory(
-        a as *const T as *mut core::ffi::c_void,
-        size_of_val(a),
-        memcheck::MemState::NoAccess,
-    )
-    .unwrap();
-}
-#[cfg(valgrind)]
-#[inline(always)]
-pub(crate) fn mark_defined<T: ?Sized>(a: &T) {
-    memcheck::mark_memory(
-        a as *const T as *mut core::ffi::c_void,
-        size_of_val(a),
-        memcheck::MemState::Defined,
-    )
-    .unwrap();
-}
+pub(crate) use test_helper::valgrind::{
+    make_mem_defined as mark_defined, make_mem_no_access as mark_no_access,
+};
 #[cfg(valgrind)]
 #[inline(always)]
 pub(crate) fn mark_aligned_defined<T: ?Sized>(a: &T) {
-    assert!(size_of_val(a) <= 2);
-    memcheck::mark_memory(
-        (a as *const T as *mut core::ffi::c_void).map_addr(|a| a & !3),
-        4,
-        memcheck::MemState::Defined,
-    )
-    .unwrap();
+    test_helper::valgrind::make_aligned_mem_defined::<T, 4>(a);
 }
 #[cfg(valgrind)]
 #[inline(always)]
 pub(crate) fn mark_aligned_undefined<T: ?Sized>(a: &T) {
-    assert!(size_of_val(a) <= 2);
-    memcheck::mark_memory(
-        (a as *const T as *mut core::ffi::c_void).map_addr(|a| a & !3),
-        4,
-        memcheck::MemState::Undefined,
-    )
-    .unwrap();
+    test_helper::valgrind::make_aligned_mem_undefined::<T, 4>(a);
 }
 
 fn skip_should_panic_test() -> bool {
