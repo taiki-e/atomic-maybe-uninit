@@ -34,6 +34,7 @@ EOF
 }
 
 no_exit=1
+sudo_kill=''
 case "${target}" in
   avr*)
     case "${runner}" in
@@ -102,6 +103,19 @@ EOF
       *) bail "unrecognized runner '${runner}'" ;;
     esac
     ;;
+  bpf*)
+    no_exit=''
+    case "${runner}" in
+      sudo)
+        sudo_kill=1
+        start_simulator() {
+          # shellcheck disable=SC2024
+          sudo -E timeout --kill-after=5s 60s "${bin}" &>>"${stdout}" &
+        }
+        ;;
+      *) bail "unrecognized runner '${runner}'" ;;
+    esac
+    ;;
   *) bail "unrecognized target '${target}'" ;;
 esac
 
@@ -109,7 +123,13 @@ simulator_pid=''
 tail_pid=''
 code=1
 cleanup() {
-  [[ -z "${simulator_pid}" ]] || kill -- "${simulator_pid}" || true
+  if [[ -n "${simulator_pid}" ]]; then
+    if [[ -n "${sudo_kill}" ]]; then
+      sudo kill -- "${simulator_pid}" || true
+    else
+      kill -- "${simulator_pid}" || true
+    fi
+  fi
   [[ -z "${tail_pid}" ]] || kill -- "${tail_pid}" || true
   rm -f -- ./"${stdout}"
   exit "${code}"
@@ -141,9 +161,14 @@ if [[ -n "${no_exit}" ]]; then
 else
   # If there is no way to exit the simulator with non-zero from the program,
   # check output of the simulator after the simulator finished.
+  set +e
   wait "${simulator_pid}"
+  child_code=$?
+  set -e
   simulator_pid='' # simulator finished
-  if grep -Fq 'panicked' "${stdout}"; then
+  if [[ "${child_code}" -ne 0 ]]; then
+    code="${child_code}"
+  elif grep -Fq 'panicked' "${stdout}"; then
     code=101
   elif grep -Fq 'Tests finished successfully' "${stdout}"; then
     code=0

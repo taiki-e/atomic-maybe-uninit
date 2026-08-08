@@ -19,7 +19,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, Arm64EC, RISC-V, LoongArch, s390x, PowerPC, MIPS, SPARC, AVR, MSP430, Hexagon, M68k, C-SKY, and Xtensa) are supported.
+Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, Arm64EC, RISC-V, LoongArch, s390x, PowerPC, MIPS, SPARC, AVR, MSP430, Hexagon, M68k, C-SKY, and Xtensa) and BPF are supported.
 (You can use `cfg_{has,no}_*` macros to write code based on which primitive sizes are available for the current target and Rust version.)
 
 | target_arch                                 | primitives                                          | load/store | swap/CAS |
@@ -45,15 +45,16 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 | mips / mips32r6 (experimental \[13])        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | mips64 / mips64r6 (experimental \[13])      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | sparc (experimental \[13])                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| sparc (+v8plus) \[8] (experimental \[13])   | i64,u64                                             | ✓          | ✓        |
+| sparc (+v8plus) \[7] (experimental \[13])   | i64,u64                                             | ✓          | ✓        |
 | sparc64 (experimental \[13])                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | avr (experimental \[13])                    | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
 | msp430 (experimental \[13])                 | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
 | hexagon (experimental \[13])                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | m68k (experimental \[13])                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| m68k (+isa-68020) \[9] (experimental \[13]) | i64,u64                                             | ✓          | ✓        |
+| m68k (+isa-68020) \[8] (experimental \[13]) | i64,u64                                             | ✓          | ✓        |
 | csky (experimental \[13])                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
 | xtensa (experimental \[13])                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| bpf (+alu32) \[9] (experimental \[13])      | isize,usize,i32,u32,i64,u64                         | ✓          | ✓        |
 
 \[1] Arm's RMW operations are not available on Armv6-M (thumbv6m). RISC-V's RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. 32-bit SPARC's RMW operations requires `v9` or `leoncasa` target feature (enabled by default on Linux). M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* or c860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
@@ -61,13 +62,13 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 \[4] Requires `zacas` target feature.<br>
 \[5] Requires `scq` target feature and Rust 1.97+.<br>
 \[6] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
-\[8] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
-\[9] Requires target-cpu M68020 (Linux's default), M68030, M68040, or M68060 (Linux/NetBSD only).<br>
+\[7] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
+\[8] Requires target-cpu M68020 (Linux's default), M68030, M68040, or M68060 (Linux/NetBSD only).<br>
+\[9] Requires `alu32` target feature.<br>
 \[10] Requires Rust 1.84+.<br>
 \[11] Requires Rust 1.91+.<br>
 \[12] Requires Rust 1.95+.<br>
 \[13] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
-<!-- mips32r6/mips64r6: \[7] Requires Release 6 Paired LL/SC family of instructions.<br> -->
 
 See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md)
 for more information about atomic operations in these architectures.
