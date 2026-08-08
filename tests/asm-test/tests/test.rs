@@ -67,6 +67,12 @@ fn test() {
             .rustc_args(["-C", "target-cpu=atxmega384d3"]),
         Revision::new("avr_lowbytefirst_rmw", "avr-none")
             .rustc_args(["-C", "target-cpu=atxmega384c3"]),
+        // BPF
+        // TODO: llvm-objdump: error: 'target/bpfel-unknown-none/release/deps/asm_test-0460cba961cf6e8c.o': The file was not recognized as a valid object file
+        // Revision::new("bpf_v3", "bpfel-unknown-none")
+        //     .rustc_args(["-C", "target-cpu=v3"]),
+        // Revision::new("bpf_v4", "bpfel-unknown-none")
+        //     .rustc_args(["-C", "target-cpu=v4"]),
         // C-SKY
         Revision::new("csky", "csky-unknown-linux-gnuabiv2")
             .rustc_args(["-C", "target-cpu=ck860"]),

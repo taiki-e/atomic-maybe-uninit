@@ -1,0 +1,17 @@
+[package]
+name = "bpf-test-common"
+version = "0.0.0"
+edition.workspace = true
+publish = false
+
+license.workspace = true
+
+[features]
+default = []
+user = ["aya"]
+
+[dependencies]
+aya = { workspace = true, optional = true }
+
+[lib]
+path = "src/lib.rs"
