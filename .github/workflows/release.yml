@@ -21,7 +21,7 @@ concurrency:
 jobs:
   release:
     if: github.repository_owner == 'taiki-e'
-    uses: taiki-e/github-actions/.github/workflows/rust-release.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+    uses: taiki-e/github-actions/.github/workflows/rust-release.yml@ae8aa690261a62ad55772b3d73e281668f38a7e4 # 2026.7.10
     permissions:
       contents: write # for taiki-e/create-gh-release-action
       id-token: write # for rust-lang/crates-io-auth-action
