@@ -670,6 +670,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
 
     /// An alias for [`try_update`](Self::try_update).
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
     #[deprecated(note = "renamed to `try_update` for consistency")]
     pub fn fetch_update<F>(
         &self,
@@ -745,6 +746,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// ```
     #[allow(clippy::impl_trait_in_params)] // Align to core::sync::atomic
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn try_update(
         &self,
         set_order: Ordering,
@@ -822,6 +824,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// ```
     #[allow(clippy::impl_trait_in_params)] // Align to core::sync::atomic
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn update(
         &self,
         set_order: Ordering,
