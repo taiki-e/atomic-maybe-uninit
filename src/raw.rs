@@ -3,10 +3,7 @@
 //! Low level API.
 
 #[cfg(doc)]
-use core::{
-    cell::UnsafeCell,
-    sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst},
-};
+use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
 // TODO(semver): merge AtomicLoad and AtomicStore and rename to AtomicLoadStore?
@@ -40,8 +37,8 @@ pub trait AtomicLoad: Primitive {
     /// Behavior is undefined if any of the following conditions are violated:
     ///
     /// - `src` must be [valid] for reads.
-    /// - `src` must be aligned to `size_of::<MaybeUninit<T>>()` (note that on some platforms this
-    ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
+    /// - `src` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `order` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
     /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not
     ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
@@ -79,8 +76,8 @@ pub trait AtomicStore: Primitive {
     /// Behavior is undefined if any of the following conditions are violated:
     ///
     /// - `dst` must be [valid] for writes
-    /// - `dst` must be aligned to `size_of::<MaybeUninit<T>>()` (note that on some platforms this
-    ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
+    /// - `dst` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `order` must be [`SeqCst`], [`Release`], or [`Relaxed`].
     /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not
     ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
@@ -134,8 +131,8 @@ pub trait AtomicSwap: AtomicLoad + AtomicStore {
     /// Behavior is undefined if any of the following conditions are violated:
     ///
     /// - `dst` must be [valid] for both reads and writes.
-    /// - `dst` must be aligned to `size_of::<MaybeUninit<T>>()` (note that on some platforms this
-    ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
+    /// - `dst` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `order` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not
     ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
@@ -196,9 +193,9 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     ///
     /// Behavior is undefined if any of the following conditions are violated:
     ///
-    /// - `dst` must be valid for both reads and writes.
-    /// - `dst` must be aligned to `size_of::<MaybeUninit<T>>()` (note that on some platforms this
-    ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
+    /// - `dst` must be [valid] for both reads and writes.
+    /// - `dst` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `success` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     /// - `failure` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
     /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not
@@ -263,8 +260,8 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     /// Behavior is undefined if any of the following conditions are violated:
     ///
     /// - `dst` must be [valid] for both reads and writes.
-    /// - `dst` must be aligned to `size_of::<MaybeUninit<T>>()` (note that on some platforms this
-    ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
+    /// - `dst` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `success` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     /// - `failure` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
     /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not

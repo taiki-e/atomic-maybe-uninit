@@ -354,7 +354,7 @@ impl AtomicSwap for u16 {
                 "ld {out:h}, Z",  //   out.hi = *Z
                 "subi r30, 0x01", //   Z.lo -= 1
                 "sbci r31, 0x00", //   Z.hi -= borrow
-                "st Z+, {val:l}", //   Z = Z.byte_sub(1); *Z = val.lo
+                "st Z+, {val:l}", //   *Z = val.lo; Z = Z.byte_add(1)
                 "st Z, {val:h}",  //   *Z = val.hi
                 restore!(),       // }
                 val = in(reg_pair) val,
@@ -419,7 +419,7 @@ impl AtomicCompareExchange for u16 {
                 "ldd {out:h}, Z+1",      //   out.hi = *Z.byte_add(1)
                 "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo |= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
                 "st Z, {new:l}",         //   *Z = new.lo
                 "std Z+1, {new:h}",      //   *Z.byte_add(1) = new.hi
@@ -448,7 +448,7 @@ impl AtomicCompareExchange for u16 {
                 "ldd {out:h}, Z+1",      //   out.hi = *Z.byte_add(1)
                 "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo |= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
                 "std Z+1, {new:h}",      //   *Z.byte_add(1) = new.hi
                 "st Z, {new:l}",         //   *Z = new.lo
@@ -477,11 +477,11 @@ impl AtomicCompareExchange for u16 {
                 "ld {out:h}, Z",         //   out.hi = *Z
                 "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo |= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
                 "subi r30, 0x01",        //   Z.lo -= 1
                 "sbci r31, 0x00",        //   Z.hi -= borrow
-                "st Z+, {new:l}",        //   Z = Z.byte_sub(1); *Z = new.lo
+                "st Z+, {new:l}",        //   *Z = new.lo; Z = Z.byte_add(1)
                 "st Z, {new:h}",         //   *Z = new.hi
                 "2:", // 'cmp-fail:
                 restore!(),              // }
@@ -508,7 +508,7 @@ impl AtomicCompareExchange for u16 {
                 "ld {out:h}, Z",         //   out.hi = *Z
                 "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo |= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
                 "st Z, {new:h}",         //   *Z = new.hi
                 "st -Z, {new:l}",        //   Z = Z.byte_sub(1); *Z = new.lo

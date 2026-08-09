@@ -788,7 +788,6 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///
     /// # Considerations
     ///
-    /// [CAS operation]: https://en.wikipedia.org/wiki/Compare-and-swap
     /// This method is not magic; it is not provided by the hardware, and does not act like a
     /// critical section or mutex.
     ///

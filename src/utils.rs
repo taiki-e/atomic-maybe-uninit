@@ -98,8 +98,8 @@ macro_rules! cfg_sel {
 // Adapted from https://github.com/BurntSushi/memchr/blob/2.4.1/src/memchr/x86/mod.rs#L9-L71.
 /// # Safety
 ///
-/// - the caller must uphold the safety contract for the function returned by $detect_body.
-/// - the memory pointed by the function pointer returned by $detect_body must be visible from any threads.
+/// - the caller must uphold the safety contract for the function returned by $init_body.
+/// - the memory pointed by the function pointer returned by $init_body must be visible from any threads.
 ///
 /// The second requirement is always met if the function pointer is to the function definition.
 /// (Currently, all uses of this macro in our code are in this case.)
@@ -594,7 +594,9 @@ macro_rules! pair {
         const _: () = assert!(mem::size_of::<$whole>() == mem::size_of::<$half>() * 2);
         /// An potentially uninitialized
         #[doc = stringify!($whole)]
-        /// value that can be represented as a pair of 64-bit values.
+        /// value that can be represented as a pair of
+        #[doc = stringify!($half)]
+        /// values.
         ///
         /// This type is `#[repr(C)]`, both fields have the same in-memory representation
         /// and all fields are `MaybeUninit`, so access to the fields is always safe.
@@ -671,7 +673,7 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
     if SHIFT_MASK {
         mask <<= shift;
     }
-    // ptr_lsb << 3 will never overflow u32, cast usize to u32 is no-op on 32-bit targets.
+    // only low bits are used on s390x, cast usize to u32 is no-op on 32-bit targets.
     #[cfg_attr(
         any(target_arch = "s390x", target_pointer_width = "32"),
         allow(clippy::cast_possible_truncation)

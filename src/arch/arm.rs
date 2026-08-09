@@ -1058,7 +1058,7 @@ atomic!(u32, "");
 // > Note
 // > The way to atomically load two 32-bit quantities is to perform an LDREXD/STREXD sequence, reading and writing
 // > the same value, for which the STREXD succeeds, and use the read values.
-// However, both GCC, LLVM, and Linux kernel use LDREXD without corresponding STREXD for load.
+// However, GCC, LLVM, and Linux kernel use LDREXD without corresponding STREXD for load.
 // https://godbolt.org/z/cf8dhvjn3
 // https://github.com/torvalds/linux/blob/v7.1/arch/arm/include/asm/atomic.h#L287
 
