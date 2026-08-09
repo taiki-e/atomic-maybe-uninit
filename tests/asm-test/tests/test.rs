@@ -44,9 +44,11 @@ fn test() {
         Revision::new("armv6_kuser_memory_barrier", "arm-unknown-linux-gnueabi"),
         Revision::new("armv6_cp15_barrier", "arm-unknown-linux-gnueabi")
             .rustc_args(["--cfg", "atomic_maybe_uninit_use_cp15_barrier"]),
+        Revision::new("armv6_cp15_barrier_thumb", "thumbv6-none-eabi"),
         Revision::new("armv6m", "thumbv6m-none-eabi"),
-        Revision::new("armv6_thumb", "thumbv6-none-eabi"),
         Revision::new("armv7a", "armv7-unknown-linux-gnueabi"),
+        Revision::new("armv7a_thumb", "armv7-unknown-linux-gnueabi")
+            .rustc_args(["-C", "target-feature=+thumb-mode"]),
         Revision::new("armv7m", "thumbv7m-none-eabi"),
         Revision::new("armv8a", "armv7-unknown-linux-gnueabi")
             .rustc_args(["-C", "target-feature=+v8"]),
