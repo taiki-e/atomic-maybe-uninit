@@ -227,13 +227,14 @@ macro_rules! cfg_has_atomic_32 {
 macro_rules! cfg_no_atomic_32 {
     ($($tt:tt)*) => {};
 }
+// TODO: set has_atomic_64 to true (see TODO comment in within_register)
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
-    ($($tt:tt)*) => { $($tt)* };
+    ($($tt:tt)*) => {};
 }
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
-    ($($tt:tt)*) => {};
+    ($($tt:tt)*) => { $($tt)* };
 }
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {

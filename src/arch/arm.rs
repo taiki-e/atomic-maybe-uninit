@@ -1685,7 +1685,7 @@ macro_rules! cfg_no_atomic_64 {
     any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
     not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
 )))]
-// TODO: set has_atomic_64 to true
+// TODO: set has_atomic_64 to true (see TODO comment on assert_has_kuser_cmpxchg64)
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
     ($($tt:tt)*) => {};
@@ -1694,7 +1694,6 @@ macro_rules! cfg_has_atomic_64 {
     any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
     not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
 )))]
-// TODO: set has_atomic_64 to true
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
