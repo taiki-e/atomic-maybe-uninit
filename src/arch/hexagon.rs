@@ -364,13 +364,10 @@ impl AtomicCompareExchange for u64 {
             asm!(
                 "2:", // 'retry:
                     "{{ r7:6 = memd_locked({dst}) }}", // atomic { r6:r7 = *dst; RESERVE = dst }
-                    // TODO: merge two cmp?
-                    "{{ p0 = cmp.eq(r6,r2)",          // parallel { p0 = r6 == r2
-                        "if (!p0.new) jump:nt 3f }}", //   if !p0.new { unlikely(); jump 'cmp-fail } }
-                    "{{ p0 = cmp.eq(r7,r3)",          // parallel { p0 = r7 == r3
-                        "if (!p0.new) jump:nt 3f }}", //   if !p0.new { unlikely(); jump 'cmp-fail } }
-                    "memd_locked({dst},p0) = r5:4",   // atomic { if RESERVE == dst { *dst = r4:r5; p0 = true } else { p0 = false }; RESERVE = None }
-                    "if (!p0) jump:nt 2b",            // if !p0 { unlikely(); jump 'retry }
+                    "{{ p0 = cmp.eq(r7:6,r3:2)",       // parallel { p0 = r6:r7 == r2:r3
+                        "if (!p0.new) jump:nt 3f }}",  //   if !p0.new { unlikely(); jump 'cmp-fail } }
+                    "memd_locked({dst},p0) = r5:4",    // atomic { if RESERVE == dst { *dst = r4:r5; p0 = true } else { p0 = false }; RESERVE = None }
+                    "if (!p0) jump:nt 2b",             // if !p0 { unlikely(); jump 'retry }
                 "3:", // 'cmp-fail:
                 "{r} = mux(p0,#1,#0)",
                 dst = in(reg) dst,
