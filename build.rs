@@ -304,8 +304,8 @@ fn main() {
                         acquire_release = true;
                     }
                 }
-                target_feature_fallback("acquire-release", acquire_release);
                 if needs_target_feature_fallback(&version, None) {
+                    acquire_release |= target_feature_fallback("v8", false); // Catch -C target-feature=+v8
                     v6 |= target_feature_fallback("v7", v7);
                     v5te |= target_feature_fallback("v6", v6);
                     target_feature_fallback("v5te", v5te);
@@ -317,6 +317,7 @@ fn main() {
                     target_feature_fallback("thumb-mode", thumb_mode);
                     target_feature_fallback("thumb2", v7);
                 }
+                target_feature_fallback("acquire-release", acquire_release);
             }
         }
         "riscv32" | "riscv64" => {
