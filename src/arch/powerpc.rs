@@ -121,7 +121,7 @@ macro_rules! atomic_cmpxchg {
             (Release, Acquire) => $cmpxchg_cond_release!("isync", lwsync!(), "3f" /* emit-fence-on-fail */, "4f" /* skip-fence-on-success */, "" /* emit-fence-on-fail */),
             (AcqRel, Relaxed) => $cmpxchg_cond_release!("isync", lwsync!(), "4f" /* skip-fence-on-fail */, "3f" /* emit-fence-on-success */, "b 4f" /* skip-fence-on-fail */),
             (AcqRel, Acquire) => $cmpxchg_cond_release!("isync", lwsync!(), "3f" /* emit-fence-on-fail */, "3f" /* emit-fence-on-success */, "" /* emit-fence-on-fail */),
-            // LLVM doesn't emit SYNC before LL in these cases, but seems to wrong considering load's lowering.
+            // LLVM doesn't emit SYNC before LL in these cases, but seems to be wrong considering load's lowering.
             (Relaxed | Release, _) => $cmpxchg!("isync", "sync", "3f" /* emit-fence-on-fail */, "b 4f" /* skip-fence-on-success */),
             (SeqCst, Relaxed) => $cmpxchg!("isync", "sync", "4f" /* skip-fence-on-fail */, "" /* emit-fence-on-success */),
             (Acquire | AcqRel | SeqCst, _) => $cmpxchg!("isync", "sync", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-success */),
@@ -143,7 +143,7 @@ macro_rules! atomic_cmpxchg_weak {
             (Release, Acquire) => $cmpxchg_weak!("isync", "", lwsync!(), "3f" /* emit-fence-on-fail */, "beq+ %cr0, 4f" /* skip-fence-on-success */),
             (AcqRel, Relaxed) => $cmpxchg_weak!("isync", "", lwsync!(), "4f" /* skip-fence-on-fail */, "bne- %cr0, 4f" /* skip-fence-on-fail */),
             (AcqRel, Acquire) => $cmpxchg_weak!("isync", "", lwsync!(), "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
-            // LLVM doesn't emit SYNC before LL in these cases, but seems to wrong considering load's lowering.
+            // LLVM doesn't emit SYNC before LL in these cases, but seems to be wrong considering load's lowering.
             (Relaxed | Release, _) => $cmpxchg_weak!("isync", "sync", "", "3f" /* emit-fence-on-fail */, "beq+ %cr0, 4f" /* skip-fence-on-success */),
             (SeqCst, Relaxed) => $cmpxchg_weak!("isync", "sync", "", "4f" /* skip-fence-on-fail */, "bne- %cr0, 4f" /* skip-fence-on-fail */),
             (Acquire | AcqRel | SeqCst, _) => $cmpxchg_weak!("isync", "sync", "", "3f" /* emit-fence-on-fail */, "" /* emit-fence-on-both */),
@@ -210,7 +210,7 @@ macro_rules! atomic_load_store {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -248,7 +248,7 @@ macro_rules! atomic {
         atomic_load_store!($ty, $suffix, $load_ext);
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -282,7 +282,7 @@ macro_rules! atomic {
         }
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -354,7 +354,7 @@ macro_rules! atomic {
                 (out, test_cr0_eq(r))
             }
             #[inline]
-            unsafe fn atomic_compare_exchange_weak(
+            unsafe fn __atomic_compare_exchange_weak_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -419,7 +419,7 @@ macro_rules! atomic_sub_word {
         )))]
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -465,7 +465,7 @@ macro_rules! atomic_sub_word {
         )))]
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -550,7 +550,7 @@ macro_rules! atomic_sub_word {
                 (crate::utils::extend32::$ty::extract(srw(out, shift)), test_cr0_eq(r))
             }
             #[inline]
-            unsafe fn atomic_compare_exchange_weak(
+            unsafe fn __atomic_compare_exchange_weak_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -647,7 +647,7 @@ impl AtomicLoad for u128 {
                         "isync",            // fence (works in combination with a branch that depends on the loaded value)
                         src = in(reg_nonzero) ptr_reg!(src),
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or greater.
                         out("r4") out_hi,
                         out("r5") out_lo,
                         out("cr0") _,
@@ -661,7 +661,7 @@ impl AtomicLoad for u128 {
                         "lq %r4, 0({src})", // atomic { r4:r5 = *src }
                         src = in(reg_nonzero) ptr_reg!(src),
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or greater.
                         out("r4") out_hi,
                         out("r5") out_lo,
                         options(nostack, preserves_flags),
@@ -684,7 +684,11 @@ impl AtomicLoad for u128 {
 ))]
 impl AtomicStore for u128 {
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) {
         debug_assert_atomic_unsafe_precondition!(dst, u128);
         let val = MaybeUninit128 { whole: val };
 
@@ -697,7 +701,7 @@ impl AtomicStore for u128 {
                         "stq %r4, 0({dst})", // atomic { *dst = r4:r5 }
                         dst = in(reg_nonzero) ptr_reg!(dst),
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or greater.
                         in("r4") val.pair.hi,
                         in("r5") val.pair.lo,
                         options(nostack, preserves_flags),
@@ -722,7 +726,7 @@ impl AtomicStore for u128 {
 ))]
 impl AtomicSwap for u128 {
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         order: Ordering,
@@ -744,7 +748,7 @@ impl AtomicSwap for u128 {
                         $acquire,                   // fence
                         dst = in(reg_nonzero) ptr_reg!(dst),
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or greater.
                         out("r6") prev_hi,
                         out("r7") prev_lo,
                         in("r8") val.pair.hi,
@@ -768,7 +772,7 @@ impl AtomicSwap for u128 {
 ))]
 impl AtomicCompareExchange for u128 {
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -806,7 +810,7 @@ impl AtomicCompareExchange for u128 {
                         tmp_hi = out(reg) _,
                         tmp_lo = out(reg) r,
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or greater.
                         in("r6") new.pair.hi,
                         in("r7") new.pair.lo,
                         out("r8") prev_hi,
@@ -846,7 +850,7 @@ impl AtomicCompareExchange for u128 {
                         tmp_hi = out(reg) _,
                         tmp_lo = out(reg) r,
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or greater.
                         in("r6") new.pair.hi,
                         in("r7") new.pair.lo,
                         out("r8") prev_hi,
@@ -862,7 +866,7 @@ impl AtomicCompareExchange for u128 {
         }
     }
     #[inline]
-    unsafe fn atomic_compare_exchange_weak(
+    unsafe fn __atomic_compare_exchange_weak_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -901,7 +905,7 @@ impl AtomicCompareExchange for u128 {
                         tmp_hi = out(reg) _,
                         tmp_lo = out(reg) r,
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
-                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or grater.
+                        // We cannot use r1 (sp) and r2 (system reserved), so start with r4 or greater.
                         in("r6") new.pair.hi,
                         in("r7") new.pair.lo,
                         out("r8") prev_hi,

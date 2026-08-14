@@ -18,11 +18,19 @@ use core::{
     sync::atomic::Ordering,
 };
 
+#[cfg(target_arch = "loongarch64")]
+#[cfg(target_feature = "scq")]
+use crate::utils::{MaybeUninit128, Pair};
 use crate::{
     raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
     utils::RegSize,
 };
 
+#[cfg(not(all(
+    target_arch = "loongarch64",
+    target_feature = "lam-bh",
+    target_feature = "lamcas",
+)))]
 macro_rules! sll_w {
     ($val:expr, $shift:expr) => {{
         let mut val = $val;
@@ -56,6 +64,11 @@ macro_rules! sll_w {
         out
     }};
 }
+#[cfg(not(all(
+    target_arch = "loongarch64",
+    target_feature = "lam-bh",
+    target_feature = "lamcas",
+)))]
 #[inline(always)]
 fn srl_w(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
     // SAFETY: calling SRL.W is safe
@@ -87,6 +100,34 @@ macro_rules! sign_extend {
         unsafe {
             asm!(
                 "slli.w {out}, {val}, 0", // out = sign_extend(val << 0)
+                out = lateout(reg) out,
+                val = in(reg) $val,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        out
+    }};
+    ($val:expr, u16) => {{
+        let out: MaybeUninit<u64>;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling EXT.W.H is safe
+        unsafe {
+            asm!(
+                concat!("ext.w.h {out}, {val}"), // out = sign_extend(val)
+                out = lateout(reg) out,
+                val = in(reg) $val,
+                options(pure, nomem, nostack, preserves_flags),
+            );
+        }
+        out
+    }};
+    ($val:expr, u8) => {{
+        let out: MaybeUninit<u64>;
+        #[allow(unused_unsafe)]
+        // SAFETY: calling EXT.W.B is safe
+        unsafe {
+            asm!(
+                concat!("ext.w.b {out}, {val}"), // out = sign_extend(val)
                 out = lateout(reg) out,
                 val = in(reg) $val,
                 options(pure, nomem, nostack, preserves_flags),
@@ -138,12 +179,13 @@ macro_rules! atomic_load {
     };
 }
 
+#[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh", not(atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap))))]
 #[rustfmt::skip]
-macro_rules! atomic_store {
+macro_rules! atomic_store_st {
     ($ty:ident, $suffix:tt) => {
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -176,21 +218,13 @@ macro_rules! atomic_store {
     };
 }
 
-macro_rules! atomic {
+#[cfg(target_arch = "loongarch64")]
+#[cfg(any(not(atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap), target_feature = "lam-bh"))]
+macro_rules! atomic_store_swap_amswap {
     ($ty:ident, $suffix:tt) => {
-        atomic_load!($ty, $suffix);
-        #[cfg(any(
-            target_arch = "loongarch32",
-            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
-        ))]
-        atomic_store!($ty, $suffix);
-        #[cfg(not(any(
-            target_arch = "loongarch32",
-            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
-        )))]
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -223,7 +257,107 @@ macro_rules! atomic {
         }
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
+                let out: MaybeUninit<Self>;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    macro_rules! swap {
+                        ($db:tt) => {
+                            asm!(
+                                concat!("amswap", $db, ".", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = sign_extend(_x) }
+                                dst = in(reg) ptr_reg!(dst),
+                                val = in(reg) val,
+                                out = out(reg) out,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    match order {
+                        Ordering::Relaxed => swap!(""),
+                        // AM*_DB has SeqCst semantics.
+                        _ => swap!("_db"),
+                    }
+                }
+                out
+            }
+        }
+    };
+}
+
+#[cfg(all(target_arch = "loongarch64", target_feature = "lamcas"))]
+#[rustfmt::skip]
+macro_rules! atomic_cas_amcas {
+    ($ty:ident, $suffix:tt) => {
+        impl AtomicCompareExchange for $ty {
+            #[inline]
+            unsafe fn __atomic_compare_exchange_impl(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                success: Ordering,
+                failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert_atomic_unsafe_precondition!(dst, $ty);
+                let mut out: MaybeUninit<Self>;
+                let mut r: RegSize;
+
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    macro_rules! cmpxchg {
+                        ($db:tt) => {
+                            asm!(
+                                "move {out}, {old}",                                         // out = old
+                                concat!("amcas", $db, ".", $suffix, " {out}, {new}, {dst}"), // atomic { if *dst == out { *dst = new }; out = sign_extend(*dst) }
+                                "xor {r}, {out}, {old}",                                     // r = out ^ old
+                                "sltui {r}, {r}, 1",                                         // if r < 1 { r = 1 } else { r = 0 }
+                                dst = in(reg) ptr_reg!(dst),
+                                old = in(reg) sign_extend!(old, $ty),
+                                new = in(reg) new,
+                                out = out(reg) out,
+                                r = lateout(reg) r,
+                                options(nostack, preserves_flags),
+                            )
+                        };
+                    }
+                    match (success, failure) {
+                        (Ordering::Relaxed, Ordering::Relaxed) => cmpxchg!(""),
+                        // AM*_DB has SeqCst semantics.
+                        _ => cmpxchg!("_db"),
+                    }
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+                }
+                (out, r != 0)
+            }
+        }
+    };
+}
+
+macro_rules! atomic {
+    ($ty:ident, $suffix:tt) => {
+        atomic_load!($ty, $suffix);
+        #[cfg(any(
+            target_arch = "loongarch32",
+            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+        ))]
+        atomic_store_st!($ty, $suffix);
+        #[cfg(not(any(
+            target_arch = "loongarch32",
+            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+        )))]
+        atomic_store_swap_amswap!($ty, $suffix);
+        #[cfg(any(
+            target_arch = "loongarch32",
+            atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
+        ))]
+        impl AtomicSwap for $ty {
+            #[inline]
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -234,10 +368,6 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     // successful LL/SC has SeqCst semantics.
-                    #[cfg(any(
-                        target_arch = "loongarch32",
-                        atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
-                    ))]
                     asm!(
                         "2:", // 'retry:
                             concat!("ll.", $suffix, " {out}, {dst}, 0"),  // atomic { out = sign_extend(*dst); LL = dst }
@@ -250,26 +380,17 @@ macro_rules! atomic {
                         tmp = out(reg) _,
                         options(nostack, preserves_flags),
                     );
-                    // AMO has SeqCst semantics.
-                    #[cfg(not(any(
-                        target_arch = "loongarch32",
-                        atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,
-                    )))]
-                    asm!(
-                        concat!("amswap_db.", $suffix, " {out}, {val}, {dst}"), // atomic { _x = *dst; *dst = val; out = sign_extend(_x) }
-                        dst = in(reg) ptr_reg!(dst),
-                        val = in(reg) val,
-                        out = out(reg) out,
-                        options(nostack, preserves_flags),
-                    );
                 }
                 out
             }
         }
+        #[cfg(all(target_arch = "loongarch64", target_feature = "lamcas"))]
+        atomic_cas_amcas!($ty, $suffix);
+        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lamcas")))]
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -325,10 +446,14 @@ macro_rules! atomic {
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
         atomic_load!($ty, $suffix);
-        atomic_store!($ty, $suffix);
+        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh")))]
+        atomic_store_st!($ty, $suffix);
+        #[cfg(all(target_arch = "loongarch64", target_feature = "lam-bh"))]
+        atomic_store_swap_amswap!($ty, $suffix);
+        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh")))]
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -360,10 +485,13 @@ macro_rules! atomic_sub_word {
                 crate::utils::extend32::$ty::extract(srl_w(out, shift))
             }
         }
+        #[cfg(all(target_arch = "loongarch64", target_feature = "lamcas"))]
+        atomic_cas_amcas!($ty, $suffix);
+        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lamcas")))]
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -428,6 +556,160 @@ atomic!(u32, "w");
 atomic!(u64, "d");
 
 // -----------------------------------------------------------------------------
+// 128-bit atomics on LoongArch64
+
+#[cfg(target_arch = "loongarch64")]
+#[cfg(target_feature = "scq")]
+#[rustfmt::skip]
+macro_rules! atomic128 {
+    () => {
+        delegate_signed!(delegate_all, u128);
+        impl AtomicLoad for u128 {
+            #[inline]
+            unsafe fn atomic_load(
+                src: *const MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert_atomic_unsafe_precondition!(src, u128);
+                let (out_lo, out_hi);
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports SCQ.
+                unsafe {
+                    // successful LL/SC has SeqCst semantics.
+                    asm!(
+                        "2:", // 'retry:
+                            "ll.d {out_lo}, {src}, 0",     // atomic { out_lo = *src; LL = src }
+                            // prevent reordering of ll.d and ld.d
+                            "dbar 20",                     // fence
+                            "ld.d {out_hi}, {src}, 8",     // atomic { out_hi = *src.byte_add(8) }
+                            // write back to ensure atomicity
+                            "move {tmp}, {out_lo}",        // tmp = out_lo
+                            "sc.q {tmp}, {out_hi}, {src}", // atomic { if LL == src { *src = tmp:out_hi; lo = 1 } else { lo = 0 }; LL = None }
+                            "beqz {tmp}, 2b",              // if tmp == 0 { jump 'retry }
+                        src = in(reg) ptr_reg!(src),
+                        out_lo = out(reg) out_lo,
+                        out_hi = out(reg) out_hi,
+                        tmp = out(reg) _,
+                        options(nostack, preserves_flags),
+                    );
+                    MaybeUninit128 { pair: Pair { lo: out_lo, hi: out_hi } }.whole
+                }
+            }
+        }
+        impl AtomicStore for u128 {
+            #[inline]
+            unsafe fn __atomic_store_impl(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                order: Ordering,
+            ) {
+                // SAFETY: the caller must uphold the safety contract.
+                unsafe {
+                    <u128 as AtomicSwap>::__atomic_swap_impl(dst, val, order);
+                }
+            }
+        }
+        impl AtomicSwap for u128 {
+            #[inline]
+            unsafe fn __atomic_swap_impl(
+                dst: *mut MaybeUninit<Self>,
+                val: MaybeUninit<Self>,
+                _order: Ordering,
+            ) -> MaybeUninit<Self> {
+                debug_assert_atomic_unsafe_precondition!(dst, u128);
+                let val = MaybeUninit128 { whole: val };
+                let (mut prev_lo, mut prev_hi);
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports SCQ.
+                unsafe {
+                    // successful LL/SC has SeqCst semantics.
+                    asm!(
+                        "2:", // 'retry:
+                            "ll.d {prev_lo}, {dst}, 0",     // atomic { prev_lo = *dst; LL = dst }
+                            // prevent reordering of ll.d and ld.d
+                            "dbar 20",                      // fence
+                            "ld.d {prev_hi}, {dst}, 8",     // atomic { prev_hi = *dst.byte_add(8) }
+                            "move {tmp}, {val_lo}",         // tmp = val_lo
+                            "sc.q {tmp}, {val_hi}, {dst}",  // atomic { if LL == dst { *dst = tmp:val_hi; lo = 1 } else { lo = 0 }; LL = None }
+                            "beqz {tmp}, 2b",               // if tmp == 0 { jump 'retry }
+                        dst = in(reg) ptr_reg!(dst),
+                        val_lo = in(reg) val.pair.lo,
+                        val_hi = in(reg) val.pair.hi,
+                        prev_lo = out(reg) prev_lo,
+                        prev_hi = out(reg) prev_hi,
+                        tmp = out(reg) _,
+                        options(nostack, preserves_flags),
+                    );
+                    MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole
+                }
+            }
+        }
+        impl AtomicCompareExchange for u128 {
+            #[inline]
+            unsafe fn __atomic_compare_exchange_impl(
+                dst: *mut MaybeUninit<Self>,
+                old: MaybeUninit<Self>,
+                new: MaybeUninit<Self>,
+                _success: Ordering,
+                _failure: Ordering,
+            ) -> (MaybeUninit<Self>, bool) {
+                debug_assert_atomic_unsafe_precondition!(dst, u128);
+                let old = MaybeUninit128 { whole: old };
+                let new = MaybeUninit128 { whole: new };
+                let (prev_lo, prev_hi);
+                let mut r: RegSize;
+
+                // SAFETY: the caller must uphold the safety contract,
+                // the cfg guarantee that the CPU supports SCQ.
+                unsafe {
+                    // successful LL/SC has SeqCst semantics.
+                    asm!(
+                        "2:", // 'retry:
+                            "ll.d {prev_lo}, {dst}, 0",     // atomic { prev_lo = *dst; LL = dst }
+                            // prevent reordering of ll.d and ld.d
+                            "dbar 20",                      // fence
+                            "ld.d {prev_hi}, {dst}, 8",     // atomic { prev_hi = *dst.byte_add(8) }
+                            "bne {prev_lo}, {old_lo}, 3f",  // if prev_lo != old_lo { jump 'cmp-fail }
+                            "bne {prev_hi}, {old_hi}, 3f",  // if prev_hi != old_hi { jump 'cmp-fail }
+                            "move {tmp}, {new_lo}",         // tmp = new_lo
+                            "sc.q {tmp}, {new_hi}, {dst}",  // atomic { if LL == dst { *dst = tmp:new_hi; lo = 1 } else { lo = 0 }; LL = None }
+                            "beqz {tmp}, 2b",               // if tmp == 0 { jump 'retry }
+                            "b 4f",                         // jump 'success
+                        "3:", // 'cmp-fail:
+                            // write back to ensure atomicity
+                            "move {tmp}, {prev_lo}",        // tmp = prev_lo
+                            "sc.q {tmp}, {prev_hi}, {dst}", // atomic { if LL == dst { *dst = tmp:prev_hi; lo = 1 } else { lo = 0 }; LL = None }
+                            "beqz {tmp}, 2b",               // if tmp == 0 { jump 'retry }
+                            "move {tmp}, $zero",            // tmp = 0
+                        "4:", // 'success:
+                        dst = in(reg) ptr_reg!(dst),
+                        old_lo = in(reg) old.pair.lo,
+                        old_hi = in(reg) old.pair.hi,
+                        new_lo = in(reg) new.pair.lo,
+                        new_hi = in(reg) new.pair.hi,
+                        prev_lo = out(reg) prev_lo,
+                        prev_hi = out(reg) prev_hi,
+                        tmp = out(reg) r,
+                        options(nostack, preserves_flags),
+                    );
+                    crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
+                    (
+                        MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole,
+                        r != 0
+                    )
+                }
+            }
+        }
+    };
+}
+
+#[cfg(target_arch = "loongarch64")]
+#[cfg(target_feature = "scq")]
+atomic128!();
+
+// -----------------------------------------------------------------------------
 // cfg macros
 
 #[macro_export]
@@ -474,10 +756,22 @@ macro_rules! cfg_has_atomic_64 {
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
+#[cfg(all(target_arch = "loongarch64", target_feature = "scq"))]
+#[macro_export]
+macro_rules! cfg_has_atomic_128 {
+    ($($tt:tt)*) => { $($tt)* };
+}
+#[cfg(all(target_arch = "loongarch64", target_feature = "scq"))]
+#[macro_export]
+macro_rules! cfg_no_atomic_128 {
+    ($($tt:tt)*) => {};
+}
+#[cfg(not(all(target_arch = "loongarch64", target_feature = "scq")))]
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {
     ($($tt:tt)*) => {};
 }
+#[cfg(not(all(target_arch = "loongarch64", target_feature = "scq")))]
 #[macro_export]
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };

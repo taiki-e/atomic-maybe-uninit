@@ -121,7 +121,7 @@ macro_rules! atomic_load_store {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -159,7 +159,7 @@ macro_rules! atomic {
         #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -194,7 +194,7 @@ macro_rules! atomic {
         #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -246,7 +246,7 @@ macro_rules! atomic_sub_word {
         #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -286,7 +286,7 @@ macro_rules! atomic_sub_word {
         #[cfg(not(atomic_maybe_uninit_no_ldex_stex))]
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,

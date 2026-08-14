@@ -10,7 +10,7 @@ atomic-maybe-uninit = { path = "../.." }
 
 paste = "1"
 semihosting = { version = "0.1", features = ["stdio", "panic-handler"] }
-semihosting-no-std-test-rt = { features = ["qemu-system"], git = "https://github.com/taiki-e/semihosting.git", rev = "075a26b" }
+semihosting-no-std-test-rt = { features = ["qemu-system"], git = "https://github.com/taiki-e/semihosting.git", rev = "e2430fa1b34b35570459b01ebd913051b2e4cbbc" }
 
 [lints]
 workspace = true
@@ -44,6 +44,7 @@ transmute_undefined_repr = "warn"
 undocumented_unsafe_blocks = "warn"
 unused_trait_names = "warn"
 # Suppress buggy or noisy clippy lints
+assert_is_empty = { level = "allow", priority = 1 } # completely useless in assert_ne case
 bool_assert_comparison = { level = "allow", priority = 1 }
 borrow_as_ptr = { level = "allow", priority = 1 } # https://github.com/rust-lang/rust-clippy/issues/8286
 cast_lossless = { level = "allow", priority = 1 } # suggested code has poor codegen with -C opt-level=0 https://godbolt.org/z/GzTxzbd9q

@@ -3,10 +3,7 @@
 //! Low level API.
 
 #[cfg(doc)]
-use core::{
-    cell::UnsafeCell,
-    sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst},
-};
+use core::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed, Release, SeqCst};
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
 // TODO(semver): merge AtomicLoad and AtomicStore and rename to AtomicLoadStore?
@@ -39,21 +36,21 @@ pub trait AtomicLoad: Primitive {
     ///
     /// Behavior is undefined if any of the following conditions are violated:
     ///
-    /// - `src` must be valid for reads.
-    /// - `src` must be properly aligned **to the size of `Self`**.
-    ///   (For example, if `Self` is `u128`, `src` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
+    /// - `src` must be [valid] for reads.
+    /// - `src` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `order` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
+    /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not
+    ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
+    ///   sizes, without synchronization.
     ///
-    /// The rules for the validity of the pointer follow [the rules applied to
-    /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `src` are allowed if the
-    /// pointer go through [`UnsafeCell::get`].
-    ///
+    /// Compatibility with read-only memory applies only to "sufficiently small" loads with `Ordering::Relaxed`.
     /// See the ["Atomic accesses to read-only memory" section in the `core::sync::atomic` docs][read-only-memory]
-    /// for compatibility with read-only memory.
+    /// for more.
     ///
+    /// [valid]: core::ptr#safety
+    /// [Memory model for atomic accesses]: core::sync::atomic#memory-model-for-atomic-accesses
     /// [read-only-memory]: core::sync::atomic#atomic-accesses-to-read-only-memory
-    /// [validity]: core::ptr#safety
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, order: Ordering) -> MaybeUninit<Self>;
 }
 
@@ -78,18 +75,36 @@ pub trait AtomicStore: Primitive {
     ///
     /// Behavior is undefined if any of the following conditions are violated:
     ///
-    /// - `dst` must be valid for writes
-    /// - `dst` must be properly aligned **to the size of `Self`**.
-    ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
+    /// - `dst` must be [valid] for writes
+    /// - `dst` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `order` must be [`SeqCst`], [`Release`], or [`Relaxed`].
+    /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not
+    ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
+    ///   sizes, without synchronization.
     ///
-    /// The rules for the validity of the pointer follow [the rules applied to
-    /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `dst` are allowed if the
-    /// pointer go through [`UnsafeCell::get`].
+    /// Compatibility with write-only memory applies only to "sufficiently small" stores with `Ordering::Relaxed`.
+    /// See the ["Atomic accesses to read-only memory" section in the `core::sync::atomic` docs][read-only-memory]
+    /// for more.
     ///
-    /// [validity]: core::ptr#safety
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering);
+    /// [valid]: core::ptr#safety
+    /// [Memory model for atomic accesses]: core::sync::atomic#memory-model-for-atomic-accesses
+    /// [read-only-memory]: core::sync::atomic#atomic-accesses-to-read-only-memory
+    #[inline]
+    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let val = core::hint::black_box(val);
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe { Self::__atomic_store_impl(dst, val, order) }
+    }
+
+    #[doc(hidden)] // Not public API.
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    );
 }
 
 /// Atomic swap.
@@ -115,18 +130,31 @@ pub trait AtomicSwap: AtomicLoad + AtomicStore {
     ///
     /// Behavior is undefined if any of the following conditions are violated:
     ///
-    /// - `dst` must be valid for both reads and writes.
-    /// - `dst` must be properly aligned **to the size of `Self`**.
-    ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
+    /// - `dst` must be [valid] for both reads and writes.
+    /// - `dst` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `order` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
+    /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not
+    ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
+    ///   sizes, without synchronization.
     ///
-    /// The rules for the validity of the pointer follow [the rules applied to
-    /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `dst` are allowed if the
-    /// pointer go through [`UnsafeCell::get`].
-    ///
-    /// [validity]: core::ptr#safety
+    /// [valid]: core::ptr#safety
+    /// [Memory model for atomic accesses]: core::sync::atomic#memory-model-for-atomic-accesses
+    #[inline]
     unsafe fn atomic_swap(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) -> MaybeUninit<Self> {
+        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let val = core::hint::black_box(val);
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe { Self::__atomic_swap_impl(dst, val, order) }
+    }
+
+    #[doc(hidden)] // Not public API.
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         order: Ordering,
@@ -165,18 +193,17 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     ///
     /// Behavior is undefined if any of the following conditions are violated:
     ///
-    /// - `dst` must be valid for both reads and writes.
-    /// - `dst` must be properly aligned **to the size of `Self`**.
-    ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
+    /// - `dst` must be [valid] for both reads and writes.
+    /// - `dst` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `success` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     /// - `failure` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
+    /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not
+    ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
+    ///   sizes, without synchronization.
     ///
-    /// The rules for the validity of the pointer follow [the rules applied to
-    /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `dst` are allowed if the
-    /// pointer go through [`UnsafeCell::get`].
-    ///
-    /// [validity]: core::ptr#safety
+    /// [valid]: core::ptr#safety
+    /// [Memory model for atomic accesses]: core::sync::atomic#memory-model-for-atomic-accesses
     ///
     /// # Notes
     ///
@@ -185,7 +212,25 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     /// inequal even when they are equal as Rust values.
     ///
     /// See [`AtomicMaybeUninit::compare_exchange`](crate::AtomicMaybeUninit::compare_exchange) for details.
+    #[inline]
     unsafe fn atomic_compare_exchange(
+        dst: *mut MaybeUninit<Self>,
+        current: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let current = core::hint::black_box(current);
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let new = core::hint::black_box(new);
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe { Self::__atomic_compare_exchange_impl(dst, current, new, success, failure) }
+    }
+
+    #[doc(hidden)] // Not public API.
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         current: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -214,18 +259,17 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
     ///
     /// Behavior is undefined if any of the following conditions are violated:
     ///
-    /// - `dst` must be valid for both reads and writes.
-    /// - `dst` must be properly aligned **to the size of `Self`**.
-    ///   (For example, if `Self` is `u128`, `dst` must be aligned to 16-byte even if the alignment of `u128` is 8-byte.)
+    /// - `dst` must be [valid] for both reads and writes.
+    /// - `dst` must be aligned to `size_of::<MaybeUninit<Self>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<Self>>()`).
     /// - `success` must be [`SeqCst`], [`AcqRel`], [`Acquire`], [`Release`], or [`Relaxed`].
     /// - `failure` must be [`SeqCst`], [`Acquire`], or [`Relaxed`].
+    /// - You must adhere to the [Memory model for atomic accesses]. In particular, it is not
+    ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
+    ///   sizes, without synchronization.
     ///
-    /// The rules for the validity of the pointer follow [the rules applied to
-    /// functions exposed by the standard library's `ptr` module][validity],
-    /// except that concurrent atomic operations on `dst` are allowed if the
-    /// pointer go through [`UnsafeCell::get`].
-    ///
-    /// [validity]: core::ptr#safety
+    /// [valid]: core::ptr#safety
+    /// [Memory model for atomic accesses]: core::sync::atomic#memory-model-for-atomic-accesses
     ///
     /// # Notes
     ///
@@ -242,7 +286,25 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
         success: Ordering,
         failure: Ordering,
     ) -> (MaybeUninit<Self>, bool) {
+        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let current = core::hint::black_box(current);
+        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        let new = core::hint::black_box(new);
         // SAFETY: the caller must uphold the safety contract.
-        unsafe { Self::atomic_compare_exchange(dst, current, new, success, failure) }
+        unsafe { Self::__atomic_compare_exchange_weak_impl(dst, current, new, success, failure) }
+    }
+
+    #[doc(hidden)] // Not public API.
+    #[inline]
+    unsafe fn __atomic_compare_exchange_weak_impl(
+        dst: *mut MaybeUninit<Self>,
+        current: MaybeUninit<Self>,
+        new: MaybeUninit<Self>,
+        success: Ordering,
+        failure: Ordering,
+    ) -> (MaybeUninit<Self>, bool) {
+        // SAFETY: the caller must uphold the safety contract.
+        unsafe { Self::__atomic_compare_exchange_impl(dst, current, new, success, failure) }
     }
 }

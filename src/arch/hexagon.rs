@@ -80,7 +80,7 @@ macro_rules! atomic_load_store {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -107,7 +107,7 @@ macro_rules! atomic {
         atomic_load_store!($ty, "w", "");
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -135,7 +135,7 @@ macro_rules! atomic {
         }
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -179,7 +179,7 @@ macro_rules! atomic_sub_word {
         atomic_load_store!($ty, $suffix, "u");
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -214,7 +214,7 @@ macro_rules! atomic_sub_word {
         }
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -291,7 +291,11 @@ impl AtomicLoad for u64 {
 }
 impl AtomicStore for u64 {
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, _order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        _order: Ordering,
+    ) {
         debug_assert_atomic_unsafe_precondition!(dst, u64);
         let val = MaybeUninit64 { whole: val };
 
@@ -310,7 +314,7 @@ impl AtomicStore for u64 {
 }
 impl AtomicSwap for u64 {
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         _order: Ordering,
@@ -341,7 +345,7 @@ impl AtomicSwap for u64 {
 }
 impl AtomicCompareExchange for u64 {
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -360,13 +364,10 @@ impl AtomicCompareExchange for u64 {
             asm!(
                 "2:", // 'retry:
                     "{{ r7:6 = memd_locked({dst}) }}", // atomic { r6:r7 = *dst; RESERVE = dst }
-                    // TODO: merge two cmp?
-                    "{{ p0 = cmp.eq(r6,r2)",          // parallel { p0 = r6 == r2
-                        "if (!p0.new) jump:nt 3f }}", //   if !p0.new { unlikely(); jump 'cmp-fail } }
-                    "{{ p0 = cmp.eq(r7,r3)",          // parallel { p0 = r7 == r3
-                        "if (!p0.new) jump:nt 3f }}", //   if !p0.new { unlikely(); jump 'cmp-fail } }
-                    "memd_locked({dst},p0) = r5:4",   // atomic { if RESERVE == dst { *dst = r4:r5; p0 = true } else { p0 = false }; RESERVE = None }
-                    "if (!p0) jump:nt 2b",            // if !p0 { unlikely(); jump 'retry }
+                    "{{ p0 = cmp.eq(r7:6,r3:2)",       // parallel { p0 = r6:r7 == r2:r3
+                        "if (!p0.new) jump:nt 3f }}",  //   if !p0.new { unlikely(); jump 'cmp-fail } }
+                    "memd_locked({dst},p0) = r5:4",    // atomic { if RESERVE == dst { *dst = r4:r5; p0 = true } else { p0 = false }; RESERVE = None }
+                    "if (!p0) jump:nt 2b",             // if !p0 { unlikely(); jump 'retry }
                 "3:", // 'cmp-fail:
                 "{r} = mux(p0,#1,#0)",
                 dst = in(reg) dst,

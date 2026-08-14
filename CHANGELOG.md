@@ -12,6 +12,56 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.21] - 2026-07-19
+
+- Add `try_update` and `update`. (align to the [std atomic change in Rust 1.95](https://github.com/rust-lang/rust/pull/148590)) ([0e28b20](https://github.com/taiki-e/atomic-maybe-uninit/commit/0e28b20e3208c2ca68f3fed3beac890a29f4ab27))
+
+- Deprecate `fetch_update`. (align to the [std atomic change in Rust 1.99](https://github.com/rust-lang/rust/pull/148590)) ([0e28b20](https://github.com/taiki-e/atomic-maybe-uninit/commit/0e28b20e3208c2ca68f3fed3beac890a29f4ab27))
+
+- Make `from_ptr` always `const fn`. Previously it was `const fn` only on Rust 1.83+. ([ec36e13](https://github.com/taiki-e/atomic-maybe-uninit/commit/ec36e1386e83d62b0e7ac7db2ddea6785a5db84f))
+
+- Fix an issue where a workaround for an old LLVM bug were not applied to `raw` APIs. ([d635243](https://github.com/taiki-e/atomic-maybe-uninit/commit/d6352437fbd647637e1187716e7764cf677e313d))
+
+- Improve support for custom target with non-standard name on old rustc. ([94743d8](https://github.com/taiki-e/atomic-maybe-uninit/commit/94743d818db9aa675c9e79acc5ee142aca66e836))
+
+- Optimize 128-bit CAS/swap on s390x. ([e10c779](https://github.com/taiki-e/atomic-maybe-uninit/commit/e10c77957f146806218d6031cdf791e1a9d5b749))
+
+- Documentation improvements.
+
+## [0.3.20] - 2026-07-16
+
+- Support 128-bit atomics on LoongArch64 when scq is enabled. ([30bddc8](https://github.com/taiki-e/atomic-maybe-uninit/commit/30bddc855b0093716b85db21f63a2475a2ef02d4))
+
+- Fix an issue where a workaround for an old LLVM bug were not applied when the build system did not run the build script or when version detection failed. ([64d6bc7](https://github.com/taiki-e/atomic-maybe-uninit/commit/64d6bc7e1392cf46dc8a41c4ed474e494b718b3c))
+
+- Fix panic in build script when custom target with non-standard name on old rustc. ([54c8235](https://github.com/taiki-e/atomic-maybe-uninit/commit/54c8235bbb8df5f2224d113e99cb93ff3e69f816))
+
+- Fix 64-bit atomic support on non-Linux/NetBSD MC68060. ([e884a4c](https://github.com/taiki-e/atomic-maybe-uninit/commit/e884a4c918f21790ce093fb0860ce6ed8e290478))
+
+- Optimize {8,16,32}-bit CAS on pre-v6 Arm Linux/Android. ([b862449](https://github.com/taiki-e/atomic-maybe-uninit/commit/b8624498b0000ef1dfab35a645ec21fd69d6d026))
+
+- Optimize relaxed swap on LoongArch64. ([19813c7](https://github.com/taiki-e/atomic-maybe-uninit/commit/19813c7e60c1e1173acc4df3d61139a1d1e550ef))
+
+- Optimize CAS on LoongArch64 when lamcas is enabled. ([4af30f2](https://github.com/taiki-e/atomic-maybe-uninit/commit/4af30f2da66fdb9885389889940324e2eb786b81))
+
+- Optimize {8,16}-bit swap on LoongArch64 when lam-bh is enabled. ([8775efb](https://github.com/taiki-e/atomic-maybe-uninit/commit/8775efba23d05c0de5239ad8c867665ff06cae6a))
+
+- Improve compile-time detection of armv8m target features. ([ead614e](https://github.com/taiki-e/atomic-maybe-uninit/commit/ead614e5709ebebd251a1192327cd51c3fadb854))
+
+- Documentation improvements.
+
+## [0.3.19] - 2026-07-06
+
+- Fix default cpu handling of sparc-unknown-none-elf. ([9922b04](https://github.com/taiki-e/atomic-maybe-uninit/commit/9922b04e89738c672843f9b706d2dc3464a6b654))
+
+- Improve handling of armv8m targets on nightly. ([d631861](https://github.com/taiki-e/atomic-maybe-uninit/commit/d631861dcb34269df12d159c40fb5877a7c30ae2))
+
+- Optimize swap/CAS on SPARC-V8+ and SPARC64. ([575c7a1](https://github.com/taiki-e/atomic-maybe-uninit/commit/575c7a1f13bd610051038d4aa7fff17cb26a35b2))
+
+- Optimize run-time CPU feature detection. ([f039131](https://github.com/taiki-e/atomic-maybe-uninit/commit/f039131f681054d1dd4e6d7fb802d20c1de018ca))
+
+- Documentation improvements.
+
 ## [0.3.18] - 2026-04-13
 
 - Remove reliance on unguaranteed behavior of the compiler in CAS on riscv64, MIPS64, and LoongArch64. ([ad48602](https://github.com/taiki-e/atomic-maybe-uninit/commit/ad48602ec2f57132baed41d6d86b5b912bd2e59a))
@@ -118,6 +168,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - Deprecate `AtomicMaybeUninit::const_new` because `AtomicMaybeUninit::new` is now always `const fn` because of the MSRV bump. ([#48](https://github.com/taiki-e/atomic-maybe-uninit/pull/48), [d428f97](https://github.com/taiki-e/atomic-maybe-uninit/commit/d428f975f88f4bfeffd2e31656bc18200722deff))
 
 - Fix bug in 64-bit atomics on pre-v6 Arm Linux/Android. ([075494c](https://github.com/taiki-e/atomic-maybe-uninit/commit/075494c1d7c6ab6db6c12c2adc149a1e16b9c5ae))
+
+  (Note that the `cfg_{has,no}_atomic_64!` for affected targets treats this target as one that does not support 64-bit atomics in this and all previous versions.)
 
 - Optimize AArch64 128-bit CAS when FEAT_LSE is not enabled. ([0015d1a](https://github.com/taiki-e/atomic-maybe-uninit/commit/0015d1ae76c8d79285d482c999f250386c5fb142))
 
@@ -457,7 +509,10 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.21...HEAD
+[0.3.21]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.20...v0.3.21
+[0.3.20]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.19...v0.3.20
+[0.3.19]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...v0.3.19
 [0.3.18]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.17...v0.3.18
 [0.3.17]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.16...v0.3.17
 [0.3.16]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.15...v0.3.16

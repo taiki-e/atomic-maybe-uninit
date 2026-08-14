@@ -976,9 +976,7 @@ asm_test::compare_exchange::u32::release_relaxed:
 asm_test::compare_exchange::u64::acqrel_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -991,9 +989,7 @@ asm_test::compare_exchange::u64::acqrel_seqcst:
 asm_test::compare_exchange::u64::seqcst_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1006,9 +1002,7 @@ asm_test::compare_exchange::u64::seqcst_seqcst:
 asm_test::compare_exchange::u64::acqrel_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1021,9 +1015,7 @@ asm_test::compare_exchange::u64::acqrel_acquire:
 asm_test::compare_exchange::u64::acqrel_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1036,9 +1028,7 @@ asm_test::compare_exchange::u64::acqrel_relaxed:
 asm_test::compare_exchange::u64::acquire_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1051,9 +1041,7 @@ asm_test::compare_exchange::u64::acquire_seqcst:
 asm_test::compare_exchange::u64::relaxed_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1066,9 +1054,7 @@ asm_test::compare_exchange::u64::relaxed_seqcst:
 asm_test::compare_exchange::u64::release_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1081,9 +1067,7 @@ asm_test::compare_exchange::u64::release_seqcst:
 asm_test::compare_exchange::u64::seqcst_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1096,9 +1080,7 @@ asm_test::compare_exchange::u64::seqcst_acquire:
 asm_test::compare_exchange::u64::seqcst_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1111,9 +1093,7 @@ asm_test::compare_exchange::u64::seqcst_relaxed:
 asm_test::compare_exchange::u64::acquire_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1126,9 +1106,7 @@ asm_test::compare_exchange::u64::acquire_acquire:
 asm_test::compare_exchange::u64::acquire_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1141,9 +1119,7 @@ asm_test::compare_exchange::u64::acquire_relaxed:
 asm_test::compare_exchange::u64::relaxed_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1156,9 +1132,7 @@ asm_test::compare_exchange::u64::relaxed_acquire:
 asm_test::compare_exchange::u64::relaxed_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1171,9 +1145,7 @@ asm_test::compare_exchange::u64::relaxed_relaxed:
 asm_test::compare_exchange::u64::release_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -1186,9 +1158,7 @@ asm_test::compare_exchange::u64::release_acquire:
 asm_test::compare_exchange::u64::release_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2176,9 +2146,7 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
 asm_test::compare_exchange_weak::u64::acqrel_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2191,9 +2159,7 @@ asm_test::compare_exchange_weak::u64::acqrel_seqcst:
 asm_test::compare_exchange_weak::u64::seqcst_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2206,9 +2172,7 @@ asm_test::compare_exchange_weak::u64::seqcst_seqcst:
 asm_test::compare_exchange_weak::u64::acqrel_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2221,9 +2185,7 @@ asm_test::compare_exchange_weak::u64::acqrel_acquire:
 asm_test::compare_exchange_weak::u64::acqrel_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2236,9 +2198,7 @@ asm_test::compare_exchange_weak::u64::acqrel_relaxed:
 asm_test::compare_exchange_weak::u64::acquire_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2251,9 +2211,7 @@ asm_test::compare_exchange_weak::u64::acquire_seqcst:
 asm_test::compare_exchange_weak::u64::relaxed_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2266,9 +2224,7 @@ asm_test::compare_exchange_weak::u64::relaxed_seqcst:
 asm_test::compare_exchange_weak::u64::release_seqcst:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2281,9 +2237,7 @@ asm_test::compare_exchange_weak::u64::release_seqcst:
 asm_test::compare_exchange_weak::u64::seqcst_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2296,9 +2250,7 @@ asm_test::compare_exchange_weak::u64::seqcst_acquire:
 asm_test::compare_exchange_weak::u64::seqcst_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2311,9 +2263,7 @@ asm_test::compare_exchange_weak::u64::seqcst_relaxed:
 asm_test::compare_exchange_weak::u64::acquire_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2326,9 +2276,7 @@ asm_test::compare_exchange_weak::u64::acquire_acquire:
 asm_test::compare_exchange_weak::u64::acquire_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2341,9 +2289,7 @@ asm_test::compare_exchange_weak::u64::acquire_relaxed:
 asm_test::compare_exchange_weak::u64::relaxed_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2356,9 +2302,7 @@ asm_test::compare_exchange_weak::u64::relaxed_acquire:
 asm_test::compare_exchange_weak::u64::relaxed_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2371,9 +2315,7 @@ asm_test::compare_exchange_weak::u64::relaxed_relaxed:
 asm_test::compare_exchange_weak::u64::release_acquire:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }
@@ -2386,9 +2328,7 @@ asm_test::compare_exchange_weak::u64::release_acquire:
 asm_test::compare_exchange_weak::u64::release_relaxed:
 0:
         { r7:6 = memd_locked(r1) }
-        { p0 = cmp.eq(r6,r2)
-          if (!p0.new) jump:nt 1f }
-        { p0 = cmp.eq(r7,r3)
+        { p0 = cmp.eq(r7:6,r3:2)
           if (!p0.new) jump:nt 1f }
         { memd_locked(r1,p0) = r5:4 }
         { if (!p0) jump:nt 0b }

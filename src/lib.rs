@@ -16,7 +16,7 @@ This crate provides a way to soundly perform such operations.
 
 ## Platform Support
 
-Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, Arm64EC, RISC-V, LoongArch, s390x, PowerPC, MIPS, SPARC, AVR, MSP430, Hexagon, M68k, C-SKY, and Xtensa) are supported.
+Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, Arm64EC, RISC-V, LoongArch, s390x, PowerPC, MIPS, SPARC, AVR, MSP430, Hexagon, M68k, C-SKY, and Xtensa) and BPF are supported.
 (You can use `cfg_{has,no}_*` macros to write code based on which primitive sizes are available for the current target and Rust version.)
 
 | target_arch                                 | primitives                                          | load/store | swap/CAS |
@@ -33,37 +33,39 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 | riscv64                                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓\[1]    |
 | riscv64 (+zacas) \[4]                       | i128,u128                                           | ✓          | ✓        |
 | loongarch64                                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| loongarch64 (+scq) \[5]                     | i128,u128                                           | ✓          | ✓        |
 | loongarch32 \[11]                           | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | s390x \[10]                                 | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64,i128,u128 | ✓          | ✓        |
 | powerpc \[12]                               | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
 | powerpc64 \[12]                             | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
 | powerpc64 (+quadword-atomics) \[6] \[12]    | i128,u128                                           | ✓          | ✓        |
-| mips / mips32r6 \[13]                       | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
-| mips64 / mips64r6 \[13]                     | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| sparc \[13] (experimental)                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| sparc (+v8plus) \[8] \[13] (experimental)   | i64,u64                                             | ✓          | ✓        |
-| sparc64 \[13] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| avr \[13] (experimental)                    | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| msp430 \[13] (experimental)                 | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
-| hexagon \[13] (experimental)                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
-| m68k \[13] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| m68k (+isa-68020) \[9] \[13] (experimental) | i64,u64                                             | ✓          | ✓        |
-| csky \[13] (experimental)                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
-| xtensa \[13] (experimental)                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| mips / mips32r6 (experimental \[13])        | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓        |
+| mips64 / mips64r6 (experimental \[13])      | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| sparc (experimental \[13])                  | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| sparc (+v8plus) \[7] (experimental \[13])   | i64,u64                                             | ✓          | ✓        |
+| sparc64 (experimental \[13])                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| avr (experimental \[13])                    | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| msp430 (experimental \[13])                 | isize,usize,i8,u8,i16,u16                           | ✓          | ✓        |
+| hexagon (experimental \[13])                | isize,usize,i8,u8,i16,u16,i32,u32,i64,u64           | ✓          | ✓        |
+| m68k (experimental \[13])                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| m68k (+isa-68020) \[8] (experimental \[13]) | i64,u64                                             | ✓          | ✓        |
+| csky (experimental \[13])                   | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| xtensa (experimental \[13])                 | isize,usize,i8,u8,i16,u16,i32,u32                   | ✓          | ✓\[1]    |
+| bpf (+alu32) \[9] (experimental \[13])      | isize,usize,i32,u32,i64,u64                         | ✓          | ✓        |
 
 \[1] Arm's RMW operations are not available on Armv6-M (thumbv6m). RISC-V's RMW operations are not available on targets without the A (or G which means IMAFD) or Zalrsc or Zacas extension, such as riscv32i, riscv32imc, etc. 32-bit SPARC's RMW operations requires `v9` or `leoncasa` target feature (enabled by default on Linux). M68k's atomic RMW operations requires target-cpu M68020+ (enabled by default on Linux). C-SKY's atomic RMW operations requires target-cpu ck860\* or c860\* (enabled by default on the hard-float target). Xtensa's atomic RMW operations are not available on esp32s2.<br>
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[4] Requires `zacas` target feature.<br>
+\[5] Requires `scq` target feature and Rust 1.97+.<br>
 \[6] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
-\[8] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
-\[9] Requires target-cpu M68020+ (enabled by default on Linux).<br>
+\[7] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
+\[8] Requires target-cpu M68020 (Linux's default), M68030, M68040, or M68060 (Linux/NetBSD only).<br>
+\[9] Requires `alu32` target feature.<br>
 \[10] Requires Rust 1.84+.<br>
 \[11] Requires Rust 1.91+.<br>
 \[12] Requires Rust 1.95+.<br>
 \[13] Requires nightly due to `#![feature(asm_experimental_arch)]`.<br>
-<!-- loongarch64: \[5] Requires `scq` target feature.<br> -->
-<!-- mips32r6/mips64r6: \[7] Requires Release 6 Paired LL/SC family of instructions.<br> -->
 
 See also [Atomic operation overview by architecture](https://github.com/taiki-e/atomic-maybe-uninit/blob/HEAD/src/arch/README.md)
 for more information about atomic operations in these architectures.
@@ -123,6 +125,7 @@ This crate uses inline assembly to implement atomic operations (this is currentl
             // These cases currently don't use asm!
             all(target_arch = "sparc", atomic_maybe_uninit_no_stbar),
             all(target_arch = "mips", atomic_maybe_uninit_no_sync),
+            all(target_arch = "bpf", not(target_feature = "alu32")),
         )),
     ),
     feature(asm_experimental_arch)
@@ -173,6 +176,9 @@ use self::raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap, Prim
 ///
 /// This type has the same in-memory representation as the underlying
 /// value type, `MaybeUninit<T>`.
+/// However, the alignment of this type is always equal to its
+/// size, even on targets where `MaybeUninit<T>` has a
+/// lesser alignment.
 #[repr(C)]
 pub struct AtomicMaybeUninit<T: Primitive> {
     v: UnsafeCell<MaybeUninit<T>>,
@@ -235,37 +241,24 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         Self { v: UnsafeCell::new(v), _align: [] }
     }
 
-    // TODO: update docs based on https://github.com/rust-lang/rust/pull/116762
-    const_fn! {
-        const_if: #[cfg(not(atomic_maybe_uninit_no_const_mut_refs))];
-        /// Creates a new reference to an atomic value from a pointer.
-        ///
-        /// This is `const fn` on Rust 1.83+.
-        ///
-        /// # Safety
-        ///
-        /// * `ptr` must be aligned to `align_of::<AtomicMaybeUninit<T>>()` (note that on some platforms this
-        ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
-        /// * `ptr` must be [valid] for both reads and writes for the whole lifetime `'a`.
-        /// * Non-atomic accesses to the value behind `ptr` must have a happens-before
-        ///   relationship with atomic accesses via the returned value (or vice-versa).
-        ///   * In other words, time periods where the value is accessed atomically may not
-        ///     overlap with periods where the value is accessed non-atomically.
-        ///   * This requirement is trivially satisfied if `ptr` is never used non-atomically
-        ///     for the duration of lifetime `'a`. Most use cases should be able to follow
-        ///     this guideline.
-        ///   * This requirement is also trivially satisfied if all accesses (atomic or not) are
-        ///     done from the same thread.
-        /// * This method must not be used to create overlapping or mixed-size atomic
-        ///   accesses, as these are not supported by the memory model.
-        ///
-        /// [valid]: core::ptr#safety
-        #[inline]
-        #[must_use]
-        pub const unsafe fn from_ptr<'a>(ptr: *mut MaybeUninit<T>) -> &'a Self {
-            // SAFETY: guaranteed by the caller
-            unsafe { &*ptr.cast::<Self>() }
-        }
+    /// Creates a new reference to an atomic value from a pointer.
+    ///
+    /// # Safety
+    ///
+    /// * `ptr` must be aligned to `align_of::<AtomicMaybeUninit<T>>()` (note that on some platforms this
+    ///   can be bigger than `align_of::<MaybeUninit<T>>()`).
+    /// * `ptr` must be [valid] for both reads and writes for the whole lifetime `'a`.
+    /// * You must adhere to the [Memory model for atomic accesses]. In particular, it is not
+    ///   allowed to mix conflicting atomic and non-atomic accesses, or atomic accesses of different
+    ///   sizes, without synchronization.
+    ///
+    /// [valid]: core::ptr#safety
+    /// [Memory model for atomic accesses]: core::sync::atomic#memory-model-for-atomic-accesses
+    #[inline]
+    #[must_use]
+    pub const unsafe fn from_ptr<'a>(ptr: *mut MaybeUninit<T>) -> &'a Self {
+        // SAFETY: guaranteed by the caller
+        unsafe { &*ptr.cast::<Self>().cast_const() }
     }
 
     const_fn! {
@@ -379,9 +372,6 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         T: AtomicStore,
     {
         utils::assert_store_ordering(order);
-        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
-        let val = core::hint::black_box(val);
         // SAFETY: any data races are prevented by atomic intrinsics, the raw
         // pointer passed in is valid because we got it from a reference,
         // and we've checked the order is valid. Alignment is upheld because
@@ -415,9 +405,6 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     where
         T: AtomicSwap,
     {
-        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
-        let val = core::hint::black_box(val);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
         // Alignment is upheld because `PrimitivePriv`'s safety requirement
@@ -592,11 +579,6 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         T: AtomicCompareExchange,
     {
         utils::assert_compare_exchange_ordering(success, failure);
-        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
-        let current = core::hint::black_box(current);
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
-        let new = core::hint::black_box(new);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
         // Alignment is upheld because `PrimitivePriv`'s safety requirement
@@ -675,11 +657,6 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         T: AtomicCompareExchange,
     {
         utils::assert_compare_exchange_ordering(success, failure);
-        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
-        let current = core::hint::black_box(current);
-        #[cfg(atomic_maybe_uninit_pre_llvm_20)]
-        let new = core::hint::black_box(new);
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
         // Alignment is upheld because `PrimitivePriv`'s safety requirement
@@ -691,15 +668,33 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         if ok { Ok(out) } else { Err(out) }
     }
 
+    /// An alias for [`try_update`](Self::try_update).
+    #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
+    #[deprecated(note = "renamed to `try_update` for consistency", since = "0.3.21")]
+    pub fn fetch_update<F>(
+        &self,
+        set_order: Ordering,
+        fetch_order: Ordering,
+        f: F,
+    ) -> Result<MaybeUninit<T>, MaybeUninit<T>>
+    where
+        F: FnMut(MaybeUninit<T>) -> Option<MaybeUninit<T>>,
+        T: AtomicCompareExchange,
+    {
+        self.try_update(set_order, fetch_order, f)
+    }
+
     /// Fetches the value, and applies a function to it that returns an optional
     /// new value. Returns a `Result` of `Ok(previous_value)` if the function returned `Some(_)`, else
     /// `Err(previous_value)`.
+    /// See also: [`update`](Self::update).
     ///
     /// Note: This may call the function multiple times if the value has been changed from other threads in
     /// the meantime, as long as the function returns `Some(_)`, but the function will have been applied
     /// only once to the stored value.
     ///
-    /// `fetch_update` takes two [`Ordering`] arguments to describe the memory ordering of this operation.
+    /// `try_update` takes two [`Ordering`] arguments to describe the memory ordering of this operation.
     /// The first describes the required ordering for when the operation finally succeeds while the second
     /// describes the required ordering for loads. These correspond to the success and failure orderings of
     /// [`compare_exchange`](Self::compare_exchange) respectively.
@@ -714,12 +709,16 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///
     /// # Considerations
     ///
-    /// This method is not magic; it is not provided by the hardware.
-    /// It is implemented in terms of [`compare_exchange_weak`](Self::compare_exchange_weak),
-    /// and suffers from the same drawbacks.
-    /// In particular, this method will not circumvent the [ABA Problem].
+    /// This method is not magic; it is not provided by the hardware, and does not act like a
+    /// critical section or mutex.
+    ///
+    /// It is implemented on top of an atomic [compare-and-swap operation], and thus is subject to
+    /// the usual drawbacks of CAS operations. In particular, be careful of the [ABA problem]
+    /// if this atomic integer is an index or more generally if knowledge of only the *bitwise value*
+    /// of the atomic is not in and of itself sufficient to ensure any required preconditions.
     ///
     /// [ABA Problem]: https://en.wikipedia.org/wiki/ABA_problem
+    /// [compare-and-swap operation]: https://en.wikipedia.org/wiki/Compare-and-swap
     ///
     /// # Examples
     ///
@@ -731,11 +730,11 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// unsafe {
     ///     let v = AtomicMaybeUninit::from(5_i32);
     ///     assert_eq!(
-    ///         v.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |_| None).unwrap_err().assume_init(),
+    ///         v.try_update(Ordering::SeqCst, Ordering::SeqCst, |_| None).unwrap_err().assume_init(),
     ///         5
     ///     );
     ///     assert_eq!(
-    ///         v.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |x| Some(MaybeUninit::new(
+    ///         v.try_update(Ordering::SeqCst, Ordering::SeqCst, |x| Some(MaybeUninit::new(
     ///             x.assume_init() + 1
     ///         )))
     ///         .unwrap()
@@ -745,16 +744,16 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     ///     assert_eq!(v.load(Ordering::SeqCst).assume_init(), 6);
     /// }
     /// ```
+    #[allow(clippy::impl_trait_in_params)] // Align to core::sync::atomic
     #[inline]
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn fetch_update<F>(
+    pub fn try_update(
         &self,
         set_order: Ordering,
         fetch_order: Ordering,
-        mut f: F,
+        mut f: impl FnMut(MaybeUninit<T>) -> Option<MaybeUninit<T>>,
     ) -> Result<MaybeUninit<T>, MaybeUninit<T>>
     where
-        F: FnMut(MaybeUninit<T>) -> Option<MaybeUninit<T>>,
         T: AtomicCompareExchange,
     {
         let mut prev = self.load(fetch_order);
@@ -767,13 +766,95 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
         Err(prev)
     }
 
+    /// Fetches the value, applies a function to it that it return a new value.
+    /// The new value is stored and the old value is returned.
+    /// See also: [`try_update`](Self::try_update).
+    ///
+    /// Note: This may call the function multiple times if the value has been changed from other threads in
+    /// the meantime, but the function will have been applied only once to the stored value.
+    ///
+    /// `update` takes two [`Ordering`] arguments to describe the memory ordering of this operation.
+    /// The first describes the required ordering for when the operation finally succeeds while the second
+    /// describes the required ordering for loads. These correspond to the success and failure orderings of
+    /// [`compare_exchange`](Self::compare_exchange) respectively.
+    ///
+    /// Using [`Acquire`] as success ordering makes the store part
+    /// of this operation [`Relaxed`], and using [`Release`] makes the final successful load
+    /// [`Relaxed`]. The (failed) load ordering can only be [`SeqCst`], [`Acquire`] or [`Relaxed`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `fetch_order` is [`Release`], [`AcqRel`].
+    ///
+    /// # Considerations
+    ///
+    /// This method is not magic; it is not provided by the hardware, and does not act like a
+    /// critical section or mutex.
+    ///
+    /// It is implemented on top of an atomic [compare-and-swap operation], and thus is subject to
+    /// the usual drawbacks of CAS operations. In particular, be careful of the [ABA problem]
+    /// if this atomic integer is an index or more generally if knowledge of only the *bitwise value*
+    /// of the atomic is not in and of itself sufficient to ensure any required preconditions.
+    ///
+    /// [ABA Problem]: https://en.wikipedia.org/wiki/ABA_problem
+    /// [compare-and-swap operation]: https://en.wikipedia.org/wiki/Compare-and-swap
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::{mem::MaybeUninit, sync::atomic::Ordering};
+    ///
+    /// use atomic_maybe_uninit::AtomicMaybeUninit;
+    ///
+    /// unsafe {
+    ///     let v = AtomicMaybeUninit::from(5_i32);
+    ///     assert_eq!(
+    ///         v.update(Ordering::SeqCst, Ordering::SeqCst, |x| MaybeUninit::new(x.assume_init() + 1))
+    ///             .assume_init(),
+    ///         5
+    ///     );
+    ///     assert_eq!(
+    ///         v.update(Ordering::SeqCst, Ordering::SeqCst, |x| MaybeUninit::new(x.assume_init() + 1))
+    ///             .assume_init(),
+    ///         6
+    ///     );
+    ///     assert_eq!(v.load(Ordering::SeqCst).assume_init(), 7);
+    /// }
+    /// ```
+    #[allow(clippy::impl_trait_in_params)] // Align to core::sync::atomic
+    #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn update(
+        &self,
+        set_order: Ordering,
+        fetch_order: Ordering,
+        mut f: impl FnMut(MaybeUninit<T>) -> MaybeUninit<T>,
+    ) -> MaybeUninit<T>
+    where
+        T: AtomicCompareExchange,
+    {
+        let mut prev = self.load(fetch_order);
+        loop {
+            match self.compare_exchange_weak(prev, f(prev), set_order, fetch_order) {
+                Ok(x) => break x,
+                Err(next_prev) => prev = next_prev,
+            }
+        }
+    }
+
     /// Returns a mutable pointer to the underlying value.
+    ///
+    /// Doing non-atomic reads and writes on the resulting value can be a data race.
+    /// This method is mostly useful for FFI, where the function signature may use
+    /// `*mut T` instead of `&AtomicMaybeUninit<T>`.
     ///
     /// Returning an `*mut` pointer from a shared reference to this atomic is safe because the
     /// atomic types work with interior mutability. All modifications of an atomic change the value
     /// through a shared reference, and can do so safely as long as they use atomic operations. Any
-    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the same
-    /// restriction: operations on it must be atomic.
+    /// use of the returned raw pointer requires an `unsafe` block and still has to uphold the
+    /// requirements of the [memory model].
+    ///
+    /// [memory model]: core::sync::atomic#memory-model-for-atomic-accesses
     #[inline]
     pub const fn as_ptr(&self) -> *mut MaybeUninit<T> {
         self.v.get()
@@ -843,9 +924,8 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
         // Use armv8.rs for Armv8+.
         not(any(
             target_feature = "v8",
-            atomic_maybe_uninit_target_feature = "v8",
-            target_feature = "v8m",
-            atomic_maybe_uninit_target_feature = "v8m",
+            target_feature = "acquire-release",
+            atomic_maybe_uninit_target_feature = "acquire-release",
         )),
     ),
     path = "arch/arm.rs"
@@ -856,9 +936,8 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
         // Use arm.rs for pre-v8 Arm.
         any(
             target_feature = "v8",
-            atomic_maybe_uninit_target_feature = "v8",
-            target_feature = "v8m",
-            atomic_maybe_uninit_target_feature = "v8m",
+            target_feature = "acquire-release",
+            atomic_maybe_uninit_target_feature = "acquire-release",
         ),
     ),
     path = "arch/armv8.rs"
@@ -866,6 +945,14 @@ pub use {cfg_has_atomic_128 as cfg_has_atomic_ptr, cfg_no_atomic_128 as cfg_no_a
 #[cfg_attr(
     all(target_arch = "avr", atomic_maybe_uninit_unstable_asm_experimental_arch),
     path = "arch/avr.rs"
+)]
+#[cfg_attr(
+    all(
+        target_arch = "bpf",
+        target_feature = "alu32",
+        atomic_maybe_uninit_unstable_asm_experimental_arch,
+    ),
+    path = "arch/bpf.rs"
 )]
 #[cfg_attr(
     all(target_arch = "csky", atomic_maybe_uninit_unstable_asm_experimental_arch),

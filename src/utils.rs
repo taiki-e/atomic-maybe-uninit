@@ -98,8 +98,8 @@ macro_rules! cfg_sel {
 // Adapted from https://github.com/BurntSushi/memchr/blob/2.4.1/src/memchr/x86/mod.rs#L9-L71.
 /// # Safety
 ///
-/// - the caller must uphold the safety contract for the function returned by $detect_body.
-/// - the memory pointed by the function pointer returned by $detect_body must be visible from any threads.
+/// - the caller must uphold the safety contract for the function returned by $init_body.
+/// - the memory pointed by the function pointer returned by $init_body must be visible from any threads.
 ///
 /// The second requirement is always met if the function pointer is to the function definition.
 /// (Currently, all uses of this macro in our code are in this case.)
@@ -167,6 +167,8 @@ macro_rules! fn_alias {
 // Rust 1.83) when using transmute_copy with generic type in const context
 // (because this is a by-value transmutation that doesn't create a reference to
 // the source value).
+// Additionally, this is usually safer than transmute_copy because there is no
+// need to care about the destructor of src.
 /// # Safety
 ///
 /// This function has the same safety requirements as [`core::mem::transmute_copy`].
@@ -264,7 +266,7 @@ pub(crate) fn upgrade_success_ordering(success: Ordering, failure: Ordering) -> 
     }
 }
 
-// Note: avr.rs, csky.rs, m68k.rs, msp430.rs, and xtensa.rs currently don't use this due to size issue.
+// Note: avr.rs, bpf.rs, csky.rs, m68k.rs, msp430.rs, and xtensa.rs currently don't use this due to size issue.
 // Since this is just a debug assertion, the user must not depend on presence of this.
 #[allow(unused_macros)]
 macro_rules! debug_assert_atomic_unsafe_precondition {
@@ -312,7 +314,7 @@ macro_rules! delegate_load_store {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -320,7 +322,7 @@ macro_rules! delegate_load_store {
                 // SAFETY: the caller must uphold the safety contract.
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
-                    <$base as AtomicStore>::atomic_store(
+                    <$base as AtomicStore>::__atomic_store_impl(
                         dst.cast::<MaybeUninit<$base>>(),
                         mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
                         order,
@@ -339,7 +341,7 @@ macro_rules! delegate_swap {
         };
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -348,7 +350,7 @@ macro_rules! delegate_swap {
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
                     mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(
-                        <$base as AtomicSwap>::atomic_swap(
+                        <$base as AtomicSwap>::__atomic_swap_impl(
                             dst.cast::<MaybeUninit<$base>>(),
                             mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(val),
                             order,
@@ -368,7 +370,7 @@ macro_rules! delegate_cas {
         };
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 current: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -378,18 +380,19 @@ macro_rules! delegate_cas {
                 // SAFETY: the caller must uphold the safety contract.
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
-                    let (out, ok) = <$base as AtomicCompareExchange>::atomic_compare_exchange(
-                        dst.cast::<MaybeUninit<$base>>(),
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
-                        success,
-                        failure,
-                    );
+                    let (out, ok) =
+                        <$base as AtomicCompareExchange>::__atomic_compare_exchange_impl(
+                            dst.cast::<MaybeUninit<$base>>(),
+                            mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
+                            mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
+                            success,
+                            failure,
+                        );
                     (mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
                 }
             }
             #[inline]
-            unsafe fn atomic_compare_exchange_weak(
+            unsafe fn __atomic_compare_exchange_weak_impl(
                 dst: *mut MaybeUninit<Self>,
                 current: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -399,13 +402,14 @@ macro_rules! delegate_cas {
                 // SAFETY: the caller must uphold the safety contract.
                 // cast and transmute are okay because $ty and $base implement the same layout.
                 unsafe {
-                    let (out, ok) = <$base as AtomicCompareExchange>::atomic_compare_exchange_weak(
-                        dst.cast::<MaybeUninit<$base>>(),
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
-                        mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
-                        success,
-                        failure,
-                    );
+                    let (out, ok) =
+                        <$base as AtomicCompareExchange>::__atomic_compare_exchange_weak_impl(
+                            dst.cast::<MaybeUninit<$base>>(),
+                            mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(current),
+                            mem::transmute::<MaybeUninit<Self>, MaybeUninit<$base>>(new),
+                            success,
+                            failure,
+                        );
                     (mem::transmute::<MaybeUninit<$base>, MaybeUninit<Self>>(out), ok)
                 }
             }
@@ -590,7 +594,9 @@ macro_rules! pair {
         const _: () = assert!(mem::size_of::<$whole>() == mem::size_of::<$half>() * 2);
         /// An potentially uninitialized
         #[doc = stringify!($whole)]
-        /// value that can be represented as a pair of 64-bit values.
+        /// value that can be represented as a pair of
+        #[doc = stringify!($half)]
+        /// values.
         ///
         /// This type is `#[repr(C)]`, both fields have the same in-memory representation
         /// and all fields are `MaybeUninit`, so access to the fields is always safe.
@@ -667,7 +673,7 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
     if SHIFT_MASK {
         mask <<= shift;
     }
-    // ptr_lsb << 3 will never overflow u32, cast usize to u32 is no-op on 32-bit targets.
+    // only low bits are used on s390x, cast usize to u32 is no-op on 32-bit targets.
     #[cfg_attr(
         any(target_arch = "s390x", target_pointer_width = "32"),
         allow(clippy::cast_possible_truncation)

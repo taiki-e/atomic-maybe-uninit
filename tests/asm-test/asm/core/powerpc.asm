@@ -1442,8 +1442,8 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         not               8, 8
         slw               4, 5, 4
         and               5, 7, 8
-        or                4, 5, 4
         lwsync
+        or                4, 5, 4
         stwcx.            4, 0, 6
         bf-               2, 1f
         lwsync
@@ -1474,8 +1474,8 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         not               8, 8
         slw               4, 5, 4
         and               5, 7, 8
-        or                4, 5, 4
         sync
+        or                4, 5, 4
         stwcx.            4, 0, 6
         bf-               2, 1f
         lwsync
@@ -1506,8 +1506,8 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         not               8, 8
         slw               4, 5, 4
         and               5, 7, 8
-        or                4, 5, 4
         lwsync
+        or                4, 5, 4
         stwcx.            4, 0, 6
         bf-               2, 1f
         lwsync
@@ -1539,8 +1539,8 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         not               8, 8
         slw               4, 5, 4
         and               5, 7, 8
-        or                4, 5, 4
         lwsync
+        or                4, 5, 4
         stwcx.            4, 0, 6
         bf-               2, 0f
         crset             20
@@ -1628,8 +1628,8 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         not               8, 8
         slw               4, 5, 4
         and               5, 7, 8
-        or                4, 5, 4
         lwsync
+        or                4, 5, 4
         crset             20
         stwcx.            4, 0, 6
         bf-               2, 1f
@@ -1659,8 +1659,8 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         not               8, 8
         slw               4, 5, 4
         and               5, 7, 8
-        or                4, 5, 4
         sync
+        or                4, 5, 4
         stwcx.            4, 0, 6
         bf-               2, 1f
         lwsync
@@ -1692,8 +1692,8 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         not               8, 8
         slw               4, 5, 4
         and               5, 7, 8
-        or                4, 5, 4
         sync
+        or                4, 5, 4
         stwcx.            4, 0, 6
         bf-               2, 0f
         crset             20
@@ -1838,8 +1838,8 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         not               8, 8
         slw               4, 5, 4
         and               5, 7, 8
-        or                4, 5, 4
         lwsync
+        or                4, 5, 4
         crset             20
         stwcx.            4, 0, 6
         bf-               2, 1f
@@ -1869,8 +1869,8 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         not               8, 8
         slw               4, 5, 4
         and               5, 7, 8
-        or                4, 5, 4
         lwsync
+        or                4, 5, 4
         crset             20
         stwcx.            4, 0, 6
         bf-               2, 1f
@@ -1901,8 +1901,8 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         not               8, 8
         slw               5, 5, 7
         and               6, 6, 8
-        or                5, 6, 5
         lwsync
+        or                5, 6, 5
         stwcx.            5, 0, 4
         bf-               2, 1f
         lwsync
@@ -1935,8 +1935,8 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         not               8, 8
         slw               5, 5, 7
         and               6, 6, 8
-        or                5, 6, 5
         sync
+        or                5, 6, 5
         stwcx.            5, 0, 4
         bf-               2, 1f
         lwsync
@@ -1969,8 +1969,8 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         not               8, 8
         slw               5, 5, 7
         and               6, 6, 8
-        or                5, 6, 5
         lwsync
+        or                5, 6, 5
         stwcx.            5, 0, 4
         bf-               2, 1f
         lwsync
@@ -2004,8 +2004,8 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         not               8, 8
         slw               5, 5, 7
         and               6, 6, 8
-        or                5, 6, 5
         lwsync
+        or                5, 6, 5
         stwcx.            5, 0, 4
         bf-               2, 0f
         crset             20
@@ -2099,8 +2099,8 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         not               8, 8
         slw               5, 5, 7
         and               6, 6, 8
-        or                5, 6, 5
         lwsync
+        or                5, 6, 5
         crset             20
         stwcx.            5, 0, 4
         bf-               2, 1f
@@ -2132,8 +2132,8 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         not               8, 8
         slw               5, 5, 7
         and               6, 6, 8
-        or                5, 6, 5
         sync
+        or                5, 6, 5
         stwcx.            5, 0, 4
         bf-               2, 1f
         lwsync
@@ -2167,8 +2167,8 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         not               8, 8
         slw               5, 5, 7
         and               6, 6, 8
-        or                5, 6, 5
         sync
+        or                5, 6, 5
         stwcx.            5, 0, 4
         bf-               2, 0f
         crset             20
@@ -2323,8 +2323,8 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         not               8, 8
         slw               5, 5, 7
         and               6, 6, 8
-        or                5, 6, 5
         lwsync
+        or                5, 6, 5
         crset             20
         stwcx.            5, 0, 4
         bf-               2, 1f
@@ -2356,8 +2356,8 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         not               8, 8
         slw               5, 5, 7
         and               6, 6, 8
-        or                5, 6, 5
         lwsync
+        or                5, 6, 5
         crset             20
         stwcx.            5, 0, 4
         bf-               2, 1f

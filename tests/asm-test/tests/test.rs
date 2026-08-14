@@ -44,9 +44,11 @@ fn test() {
         Revision::new("armv6_kuser_memory_barrier", "arm-unknown-linux-gnueabi"),
         Revision::new("armv6_cp15_barrier", "arm-unknown-linux-gnueabi")
             .rustc_args(["--cfg", "atomic_maybe_uninit_use_cp15_barrier"]),
+        Revision::new("armv6_cp15_barrier_thumb", "thumbv6-none-eabi"),
         Revision::new("armv6m", "thumbv6m-none-eabi"),
-        Revision::new("armv6_thumb", "thumbv6-none-eabi"),
         Revision::new("armv7a", "armv7-unknown-linux-gnueabi"),
+        Revision::new("armv7a_thumb", "armv7-unknown-linux-gnueabi")
+            .rustc_args(["-C", "target-feature=+thumb-mode"]),
         Revision::new("armv7m", "thumbv7m-none-eabi"),
         Revision::new("armv8a", "armv7-unknown-linux-gnueabi")
             .rustc_args(["-C", "target-feature=+v8"]),
@@ -67,6 +69,12 @@ fn test() {
             .rustc_args(["-C", "target-cpu=atxmega384d3"]),
         Revision::new("avr_lowbytefirst_rmw", "avr-none")
             .rustc_args(["-C", "target-cpu=atxmega384c3"]),
+        // BPF
+        // TODO: llvm-objdump: error: 'target/bpfel-unknown-none/release/deps/asm_test-0460cba961cf6e8c.o': The file was not recognized as a valid object file
+        // Revision::new("bpf_v3", "bpfel-unknown-none")
+        //     .rustc_args(["-C", "target-cpu=v3"]),
+        // Revision::new("bpf_v4", "bpfel-unknown-none")
+        //     .rustc_args(["-C", "target-cpu=v4"]),
         // C-SKY
         Revision::new("csky", "csky-unknown-linux-gnuabiv2")
             .rustc_args(["-C", "target-cpu=ck860"]),
@@ -75,6 +83,8 @@ fn test() {
         // LoongArch32 and LoongArch64
         Revision::new("loongarch32", "loongarch32-unknown-none"),
         Revision::new("loongarch64", "loongarch64-unknown-linux-gnu"),
+        Revision::new("loongarch64_v1_1", "loongarch64-unknown-linux-gnu")
+            .rustc_args(["-C", "target-feature=+lam-bh,+lamcas,+scq"]),
         // M68k
         Revision::new("m68k", "m68k-unknown-linux-gnu"),
         // MIPS32 and MIPS64

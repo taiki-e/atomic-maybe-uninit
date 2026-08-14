@@ -207,6 +207,11 @@ cfg_sel!({
             not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
         )))]
         const KUSER_CMPXCHG: usize = 0xFFFF0FC0;
+        #[cfg(not(all(
+            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
+            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
+        )))]
+        const _: () = assert!((KUSER_CMPXCHG - 32) == KUSER_MEMORY_BARRIER);
         // __kuser_memory_barrier
         // https://github.com/torvalds/linux/blob/v2.6.15/arch/arm/kernel/entry-armv.S#L614-L651
         // https://github.com/torvalds/linux/blob/v6.19/arch/arm/kernel/entry-armv.S#L763-L767
@@ -533,7 +538,7 @@ macro_rules! atomic_load_store {
                 instruction_set(arm::a32) // needed for cp15 barrier
             )]
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -592,7 +597,7 @@ macro_rules! atomic {
                 instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
             )]
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -679,7 +684,7 @@ macro_rules! atomic {
                 instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
             )]
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -764,20 +769,21 @@ macro_rules! atomic {
                     let mut r: i32;
                     asm!(
                         "2:", // 'retry:
-                            "ldr {out}, [r2]",       // atomic { out = *r2 }
-                            s!("mov", "r0, {out}"),  // r0 = out
-                            "cmp {out}, {old}",      // if out == old { Z = 1 } else { Z = 0 }
-                            "bne 3f",                // if Z == 0 { jump 'cmp-fail }
-                            s!("mov", "r1, {new}"),  // r1 = new
-                            blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",                // if C == 0 { jump 'retry }
-                            "b 4f",                  // jump 'success
+                            "ldr {out}, [r2]",                       // atomic { out = *r2 }
+                            s!("mov", "r0, {out}"),                  // r0 = out
+                            "cmp {out}, {old}",                      // if out == old { Z = 1 } else { Z = 0 }
+                            "bne 3f",                                // if Z == 0 { jump 'cmp-fail }
+                            s!("mov", "r1, {new}"),                  // r1 = new
+                            blx!("{kuser_cmpxchg}"),                 // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                            "bcc 2b",                                // if C == 0 { jump 'retry }
+                            "b 4f",                                  // jump 'success
                         "3:", // 'cmp-fail:
-                            // write back to synchronize
-                            s!("mov", "r1, r0"),     // r1 = r0
-                            blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                            "bcc 2b",                // if C == 0 { jump 'retry }
-                            s!("mov", "r0, #1"),     // r0 = 1
+                            // (KUSER_CMPXCHG - 32) == KUSER_MEMORY_BARRIER
+                            if_arm!("sub r3, {kuser_cmpxchg}, #32"), // r3 = kuser_cmpxchg - 32
+                            if_thumb!("movs r3, {kuser_cmpxchg}"),   // r3 = kuser_cmpxchg
+                            if_thumb!("subs r3, #32"),               // r3 -= 32
+                            blx!("r3"),                              // fence
+                            s!("mov", "r0, #1"),                     // r0 = 1
                         "4:", // 'success:
                         old = in(reg) old,
                         new = in(reg) new,
@@ -790,7 +796,7 @@ macro_rules! atomic {
                         out("r3") _,
                         out("ip") _,
                         out("lr") _,
-                        // Do not use `preserves_flags` because CMP, __kuser_cmpxchg, and s! modify the condition flags.
+                        // Do not use `preserves_flags` because CMP, __kuser_cmpxchg, s!, and *S modify the condition flags.
                         // Do not use `nostack` because __kuser_cmpxchg may push to stack.
                     );
                     crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
@@ -819,7 +825,7 @@ macro_rules! atomic {
                 instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
             )]
             #[inline]
-            unsafe fn atomic_compare_exchange_weak(
+            unsafe fn __atomic_compare_exchange_weak_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -880,7 +886,7 @@ macro_rules! atomic_sub_word {
                 atomic_load_store!($ty, $suffix);
                 impl AtomicSwap for $ty {
                     #[inline]
-                    unsafe fn atomic_swap(
+                    unsafe fn __atomic_swap_impl(
                         dst: *mut MaybeUninit<Self>,
                         val: MaybeUninit<Self>,
                         _order: Ordering,
@@ -924,7 +930,7 @@ macro_rules! atomic_sub_word {
                 }
                 impl AtomicCompareExchange for $ty {
                     #[inline]
-                    unsafe fn atomic_compare_exchange(
+                    unsafe fn __atomic_compare_exchange_impl(
                         dst: *mut MaybeUninit<Self>,
                         old: MaybeUninit<Self>,
                         new: MaybeUninit<Self>,
@@ -947,22 +953,21 @@ macro_rules! atomic_sub_word {
                             )))]
                             asm!(
                                 "2:", // 'retry:
-                                    "ldr r0, [r2]",          // atomic { r0 = *r2 }
-                                    "and {out}, r0, {mask}", // out = r0 & mask
-                                    "cmp {out}, {old}",      // if out == old { Z = 1 } else { Z = 0 }
-                                    "bne 3f",                // if Z == 0 { jump 'cmp-fail }
-                                    "mvn r1, {mask}",        // r1 = !mask
-                                    "and r1, r0",            // r1 &= r0
-                                    "orr r1, {new}",         // r1 |= new
-                                    blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                                    "bcc 2b",                // if C == 0 { jump 'retry }
-                                    "b 4f",                  // jump 'success
+                                    "ldr r0, [r2]",                 // atomic { r0 = *r2 }
+                                    "and {out}, r0, {mask}",        // out = r0 & mask
+                                    "cmp {out}, {old}",             // if out == old { Z = 1 } else { Z = 0 }
+                                    "bne 3f",                       // if Z == 0 { jump 'cmp-fail }
+                                    "mvn r1, {mask}",               // r1 = !mask
+                                    "and r1, r0",                   // r1 &= r0
+                                    "orr r1, {new}",                // r1 |= new
+                                    blx!("{kuser_cmpxchg}"),        // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
+                                    "bcc 2b",                       // if C == 0 { jump 'retry }
+                                    "b 4f",                         // jump 'success
                                 "3:", // 'cmp-fail:
-                                    // write back to synchronize
-                                    "mov r1, r0",            // r1 = r0
-                                    blx!("{kuser_cmpxchg}"), // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                                    "bcc 2b",                // if C == 0 { jump 'retry }
-                                    "mov r0, #1",            // r0 = 1
+                                    // (KUSER_CMPXCHG - 32) == KUSER_MEMORY_BARRIER
+                                    "sub r3, {kuser_cmpxchg}, #32", // r3 = kuser_cmpxchg - 32
+                                    blx!("r3"),                     // fence
+                                    "mov r0, #1",                   // r0 = 1
                                 "4:", // 'success:
                                 old = in(reg) lsl(crate::utils::extend32::$ty::zero(old), shift),
                                 new = in(reg) lsl(crate::utils::extend32::$ty::zero(new), shift),
@@ -1002,10 +1007,9 @@ macro_rules! atomic_sub_word {
                                     "bcc 2b",             // if C == 0 { jump 'retry }
                                     "b 4f",               // jump 'success
                                 "3:", // 'cmp-fail:
-                                    // write back to synchronize
-                                    "movs r1, r0",        // r1 = r0
-                                    blx!("r3"),           // atomic { if *r2 == r0 { *r2 = r1; r0 = 0; C = 1 } else { r0 = nonzero; C = 0 } }
-                                    "bcc 2b",             // if C == 0 { jump 'retry }
+                                    // (KUSER_CMPXCHG - 32) == KUSER_MEMORY_BARRIER
+                                    "subs r3, #32",       // r3 -= 32
+                                    blx!("r3"),           // fence
                                     "movs r0, #1",        // r0 = 1
                                 "4:", // 'success:
                                 "add sp, #8",
@@ -1048,14 +1052,15 @@ atomic!(u32, "");
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/LDREXD
 // - https://developer.arm.com/documentation/ddi0406/cb/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/STREXD
 //
-// Section A3.5.3 "Atomicity in the ARM architecture" of ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition says:
+// Section A3.5.3 "Atomicity in the ARM architecture" of ARM Architecture Reference Manual ARMv7-A and ARMv7-R edition issue C.d says:
 // > Memory accesses caused by an LDREXD/STREXD to a doubleword-aligned location for which the STREXD
 // > succeeds cause single-copy atomic updates of the doubleword being accessed.
 // > Note
 // > The way to atomically load two 32-bit quantities is to perform an LDREXD/STREXD sequence, reading and writing
 // > the same value, for which the STREXD succeeds, and use the read values.
-// However, both GCC and LLVM use LDREXD without corresponding STREXD for load.
+// However, GCC, LLVM, and Linux kernel use LDREXD without corresponding STREXD for load.
 // https://godbolt.org/z/cf8dhvjn3
+// https://github.com/torvalds/linux/blob/v7.1/arch/arm/include/asm/atomic.h#L287
 
 #[cfg(not(any(target_feature = "mclass", atomic_maybe_uninit_target_feature = "mclass")))]
 delegate_signed!(delegate_all, u64);
@@ -1139,7 +1144,7 @@ impl AtomicLoad for u64 {
                 out("r3") _,
                 out("lr") _,
                 // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
-                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+                // Do not use `nostack` because __kuser_cmpxchg64 pushes to stack.
             );
             out
         }
@@ -1164,7 +1169,11 @@ impl AtomicStore for u64 {
         instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
     )]
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) {
         debug_assert_atomic_unsafe_precondition!(dst, u64);
 
         #[cfg(all(
@@ -1212,7 +1221,7 @@ impl AtomicStore for u64 {
         unsafe {
             // __kuser_cmpxchg64 has SeqCst semantics.
             let _ = order;
-            <u64 as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
+            <u64 as AtomicSwap>::__atomic_swap_impl(dst, val, Ordering::SeqCst);
         }
     }
 }
@@ -1235,7 +1244,7 @@ impl AtomicSwap for u64 {
         instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
     )]
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         order: Ordering,
@@ -1306,7 +1315,7 @@ impl AtomicSwap for u64 {
                 out("r3") _,
                 out("lr") _,
                 // Do not use `preserves_flags` because __kuser_cmpxchg64 and s! modify the condition flags.
-                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+                // Do not use `nostack` because __kuser_cmpxchg64 pushes to stack.
             );
             out
         }
@@ -1331,7 +1340,7 @@ impl AtomicCompareExchange for u64 {
         instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
     )]
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -1479,7 +1488,7 @@ impl AtomicCompareExchange for u64 {
                 out("r3") _,
                 out("lr") _,
                 // Do not use `preserves_flags` because ORRS and __kuser_cmpxchg64 modify the condition flags.
-                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+                // Do not use `nostack` because __kuser_cmpxchg64 pushes to stack.
             );
             #[cfg(any(
                 target_feature = "thumb-mode",
@@ -1524,7 +1533,7 @@ impl AtomicCompareExchange for u64 {
                 inout("r3") KUSER_CMPXCHG64 => _,
                 out("lr") _,
                 // Do not use `preserves_flags` because ORRS, __kuser_cmpxchg64, and *S modify the condition flags.
-                // Do not use `nostack` because __kuser_cmpxchg64 push to stack.
+                // Do not use `nostack` because __kuser_cmpxchg64 pushes to stack.
             );
             crate::utils::assert_unchecked(r == 0 || r == 1); // may help remove extra test
             // 0 if the store was successful, 1 if no store was performed
@@ -1552,7 +1561,7 @@ impl AtomicCompareExchange for u64 {
         instruction_set(arm::a32) // needed for LL/SC and cp15 barrier
     )]
     #[inline]
-    unsafe fn atomic_compare_exchange_weak(
+    unsafe fn __atomic_compare_exchange_weak_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -1676,7 +1685,7 @@ macro_rules! cfg_no_atomic_64 {
     any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
     not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
 )))]
-// TODO: set has_atomic_64 to true
+// TODO: set has_atomic_64 to true (see TODO comment on assert_has_kuser_cmpxchg64)
 #[macro_export]
 macro_rules! cfg_has_atomic_64 {
     ($($tt:tt)*) => {};
@@ -1685,7 +1694,6 @@ macro_rules! cfg_has_atomic_64 {
     any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
     not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
 )))]
-// TODO: set has_atomic_64 to true
 #[macro_export]
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };

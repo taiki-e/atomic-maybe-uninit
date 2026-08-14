@@ -1,6 +1,6 @@
 [package]
 name = "atomic-maybe-uninit"
-version = "0.3.18" #publish:version
+version = "0.3.21" #publish:version
 edition = "2021"
 # NB: Sync with rust-version field in other Cargo.toml files and msrv badge in README.md
 rust-version = "1.74" # For MaybeUninit registers in asm!: https://github.com/rust-lang/rust/pull/114790
@@ -33,11 +33,8 @@ doc-scrape-examples = false
 [dev-dependencies]
 fastrand = "2"
 paste = "1"
-quickcheck = { version = "1", default-features = false, git = "https://github.com/taiki-e/quickcheck.git", rev = "f0c7237" } # https://github.com/BurntSushi/quickcheck/pull/304 + https://github.com/BurntSushi/quickcheck/pull/282 + https://github.com/BurntSushi/quickcheck/pull/296 + rand -> fastrand + lower MSRV
-test-helper = { features = ["std", "sys"], git = "https://github.com/taiki-e/test-helper.git", rev = "c78a65c" }
-
-[target.'cfg(valgrind)'.dev-dependencies]
-crabgrind = "0.2"
+quickcheck = { version = "1", default-features = false, git = "https://github.com/taiki-e/quickcheck.git", rev = "f0c72378d7d21b45b4f479be03a0e01ee4aca036" } # https://github.com/BurntSushi/quickcheck/pull/304 + https://github.com/BurntSushi/quickcheck/pull/282 + https://github.com/BurntSushi/quickcheck/pull/296 + rand -> fastrand + lower MSRV
+test-helper = { features = ["std", "sys", "valgrind"], git = "https://github.com/taiki-e/test-helper.git", rev = "24b3ad70c19ea8de9cd4c87f2e549b930f1e3305" }
 
 [lints]
 workspace = true
@@ -58,14 +55,16 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(target_arch,values("xtensa"))', # 1.81+ https://github.com/rust-lang/rust/pull/125141
     'cfg(target_arch,values("amdgpu"))', # 1.86+ https://github.com/rust-lang/rust/pull/134740
     'cfg(target_arch,values("loongarch32"))', # 1.89+ https://github.com/rust-lang/rust/pull/142053
+    'cfg(target_os,values("zos"))', # https://github.com/rust-lang/compiler-team/issues/992
     'cfg(target_feature,values("lse2","lse128","rcpc3"))', # 1.82+ https://github.com/rust-lang/rust/pull/128192
     'cfg(target_feature,values("partword-atomics","quadword-atomics"))', # 1.83+ https://github.com/rust-lang/rust/pull/130873
     'cfg(target_feature,values("zaamo","zabha","zalrsc"))', # 1.83+ https://github.com/rust-lang/rust/pull/130877
     'cfg(target_feature,values("leoncasa","v8plus","v9"))', # 1.84+ https://github.com/rust-lang/rust/pull/132552
     'cfg(target_feature,values("x87"))', # 1.85+ https://github.com/rust-lang/rust/pull/133099
-    'cfg(target_feature,values("isa-68020"))', # 1.85+ https://github.com/rust-lang/rust/pull/134329
+    'cfg(target_feature,values("isa-68020","isa-68060"))', # 1.85+ https://github.com/rust-lang/rust/pull/134329
     'cfg(target_feature,values("zacas"))', # 1.87+ https://github.com/rust-lang/rust/pull/137417
     'cfg(target_feature,values("msync"))', # 1.87+ https://github.com/rust-lang/rust/pull/137860
+    'cfg(target_feature,values("lam-bh","lamcas","scq"))', # 1.87+ https://github.com/rust-lang/rust/pull/138056
     'cfg(target_feature,values("ztso"))', # 1.88+ https://github.com/rust-lang/rust/pull/139440
     'cfg(target_feature,values("tinyencoding","lowbytefirst","rmw"))', # 1.95+ https://github.com/rust-lang/rust/pull/146900
     'cfg(target_pointer_width,values("128"))',
@@ -101,7 +100,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # This is a cfg for compatibility with SPARC-V7.
     # 'cfg(atomic_maybe_uninit_no_stbar)', # check-cfg is already set by build script
     # Not public API.
-    'cfg(atomic_maybe_uninit_test_detect_false,atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_kuser_memory_barrier,atomic_maybe_uninit_test_prefer_kuser_cmpxchg,atomic_maybe_uninit_test_prefer_bx,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,atomic_maybe_uninit_test_prefer_swap_over_cas,qemu,valgrind)',
+    'cfg(atomic_maybe_uninit_test_detect_false,atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_kuser_memory_barrier,atomic_maybe_uninit_test_prefer_kuser_cmpxchg,atomic_maybe_uninit_test_prefer_bx,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,atomic_maybe_uninit_test_prefer_swap_over_cas,qemu,valgrind,valgrind_cross)',
 ] }
 unnameable_types = "warn"
 unreachable_pub = "warn"
@@ -118,6 +117,7 @@ transmute_undefined_repr = "warn"
 undocumented_unsafe_blocks = "warn"
 unused_trait_names = "warn"
 # Suppress buggy or noisy clippy lints
+assert_is_empty = { level = "allow", priority = 1 } # completely useless in assert_ne case
 bool_assert_comparison = { level = "allow", priority = 1 }
 borrow_as_ptr = { level = "allow", priority = 1 } # https://github.com/rust-lang/rust-clippy/issues/8286
 cast_lossless = { level = "allow", priority = 1 } # suggested code has poor codegen with -C opt-level=0 https://godbolt.org/z/GzTxzbd9q

@@ -2755,7 +2755,7 @@ asm_test::swap::u32::acquire:
         ret
 
 asm_test::swap::u32::relaxed:
-        amswap_db.w       $a2, $a1, $a0
+        amswap.w          $a2, $a1, $a0
         move              $a0, $a2
         ret
 
@@ -2780,7 +2780,7 @@ asm_test::swap::u64::acquire:
         ret
 
 asm_test::swap::u64::relaxed:
-        amswap_db.d       $a2, $a1, $a0
+        amswap.d          $a2, $a1, $a0
         move              $a0, $a2
         ret
 

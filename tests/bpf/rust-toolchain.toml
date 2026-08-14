@@ -1,0 +1,6 @@
+[toolchain]
+# TODO: bpf-linker currently only supports LLVM <= 22 https://github.com/aya-rs/bpf-linker/pull/396
+# NB: Sync with tools/no-std.sh
+channel = "nightly-2026-08-05"
+components = ["rust-src"]
+profile = "minimal"

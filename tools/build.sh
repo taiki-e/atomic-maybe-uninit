@@ -75,6 +75,11 @@ default_targets=(
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "avr" then .key else empty end'
   avr-none
 
+  # bpf
+  # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "bpf" then .key else empty end'
+  bpfeb-unknown-none
+  bpfel-unknown-none
+
   # csky
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "csky" then .key else empty end'
   csky-unknown-linux-gnuabiv2
@@ -92,6 +97,7 @@ default_targets=(
   # m68k
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "m68k" then .key else empty end'
   m68k-unknown-linux-gnu
+  m68k-unknown-none-elf
 
   # mips
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "mips" or .value.arch == "mips32r6" or .value.arch == "mips64" or .value.arch == "mips64r6" then .key else empty end'
@@ -100,14 +106,14 @@ default_targets=(
   # mips32r2
   mips-unknown-linux-gnu
   mipsel-unknown-linux-gnu
-  # TODO(mips): compiler SIGILL with LLVM 22
+  # TODO(mips): compiler SIGILL with LLVM 22-23
   # # mips32r6
   # mipsisa32r6-unknown-linux-gnu
   # mipsisa32r6el-unknown-linux-gnu
-  # mips64r2
-  mips64-unknown-linux-gnuabi64
-  mips64el-unknown-linux-gnuabi64
-  # TODO(mips): compiler SIGILL with LLVM 22
+  # TODO(mips): LLVM 23 bug https://github.com/llvm/llvm-project/issues/112010
+  # # mips64r2
+  # mips64-unknown-linux-gnuabi64
+  # mips64el-unknown-linux-gnuabi64
   # # mips64r6
   # mipsisa64r6-unknown-linux-gnuabi64
   # mipsisa64r6el-unknown-linux-gnuabi64
@@ -228,7 +234,7 @@ llvm_version=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | { grep -E '^LLVM vers
 llvm_version="${llvm_version%%.*}"
 commit_date=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^commit-date:' | cut -d' ' -f2)
 host=$(rustc ${pre_args[@]+"${pre_args[@]}"} -vV | grep -E '^host:' | cut -d' ' -f2)
-workspace_dir=$(pwd)
+workspace_dir="${PWD}"
 target_dir="${workspace_dir}/target"
 # Do not use check here because it misses some errors such as invalid inline asm operands and LLVM codegen errors.
 subcmd=build
@@ -246,12 +252,12 @@ if [[ "${rustc_version}" =~ nightly|dev ]]; then
     retry rustup ${pre_args[@]+"${pre_args[@]}"} component add rust-src &>/dev/null
   fi
   # We only run clippy on the recent nightly to avoid old clippy bugs.
-  if [[ "${rustc_minor_version}" -ge 86 ]] && [[ -z "${RUSTC:-}" ]] && [[ -n "${TESTS:-}" ]]; then
+  if [[ "${rustc_minor_version}" -ge 98 ]] && [[ -z "${RUSTC:-}" ]] && [[ -n "${TESTS:-}" ]]; then
     subcmd=clippy
     retry rustup ${pre_args[@]+"${pre_args[@]}"} component add clippy &>/dev/null
     base_args=(hack "${subcmd}")
     base_rustflags+=' -Z crate-attr=feature(unqualified_local_imports) -W unqualified_local_imports'
-    strict_provenance_lints=' -Z crate-attr=feature(strict_provenance_lints) -W fuzzy_provenance_casts -W lossy_provenance_casts'
+    strict_provenance_lints=' -Z crate-attr=feature(strict_provenance_lints) -W implicit_provenance_casts'
   fi
 fi
 export CARGO_TARGET_DIR="${target_dir}"
@@ -503,6 +509,20 @@ build() {
           x_cargo "${args[@]}" "$@"
       fi
       ;;
+    loongarch64*)
+      CARGO_TARGET_DIR="${target_dir}/lam-bh" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lam-bh" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/lamcas" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lamcas" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/scq" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+scq" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/v1.1" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+lam-bh,+lamcas,+scq" \
+        x_cargo "${args[@]}" "$@"
+      ;;
     s390x*)
       CARGO_TARGET_DIR="${target_dir}/z196" \
         RUSTFLAGS="${target_rustflags} -C target-cpu=z196" \
@@ -535,9 +555,27 @@ build() {
         RUSTFLAGS="${target_rustflags} -C target-feature=+rmw --cfg atomic_maybe_uninit_target_feature=\"lowbytefirst\"" \
         x_cargo "${args[@]}" "$@"
       ;;
+    bpf*)
+      CARGO_TARGET_DIR="${target_dir}/alu32" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+alu32" \
+        x_cargo "${args[@]}" "$@"
+      ;;
     csky-unknown-linux-gnuabiv2)
       CARGO_TARGET_DIR="${target_dir}/ck860" \
         RUSTFLAGS="${target_rustflags} -C target-cpu=ck860" \
+        x_cargo "${args[@]}" "$@"
+      ;;
+    m68k-unknown-linux-gnu)
+      CARGO_TARGET_DIR="${target_dir}/m68060" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=M68060" \
+        x_cargo "${args[@]}" "$@"
+      ;;
+    m68k-unknown-none-elf)
+      CARGO_TARGET_DIR="${target_dir}/m68020" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=M68020" \
+        x_cargo "${args[@]}" "$@"
+      CARGO_TARGET_DIR="${target_dir}/m68060" \
+        RUSTFLAGS="${target_rustflags} -C target-cpu=M68060" \
         x_cargo "${args[@]}" "$@"
       ;;
   esac

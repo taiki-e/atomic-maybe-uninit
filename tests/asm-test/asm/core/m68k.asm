@@ -9,6 +9,7 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -24,6 +25,7 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -39,6 +41,7 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -54,6 +57,7 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -69,6 +73,7 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -84,6 +89,7 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -99,6 +105,7 @@ asm_test::compare_exchange::u8::release_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -114,6 +121,7 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -129,6 +137,7 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -144,6 +153,7 @@ asm_test::compare_exchange::u8::acquire_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -159,6 +169,7 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -174,6 +185,7 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -189,6 +201,7 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -204,6 +217,7 @@ asm_test::compare_exchange::u8::release_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -219,6 +233,7 @@ asm_test::compare_exchange::u8::release_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -234,6 +249,7 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -249,6 +265,7 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -264,6 +281,7 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -279,6 +297,7 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -294,6 +313,7 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -309,6 +329,7 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -324,6 +345,7 @@ asm_test::compare_exchange::u16::release_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -339,6 +361,7 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -354,6 +377,7 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -369,6 +393,7 @@ asm_test::compare_exchange::u16::acquire_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -384,6 +409,7 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -399,6 +425,7 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -414,6 +441,7 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -429,6 +457,7 @@ asm_test::compare_exchange::u16::release_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -444,6 +473,7 @@ asm_test::compare_exchange::u16::release_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -459,6 +489,7 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -474,6 +505,7 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -489,6 +521,7 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -504,6 +537,7 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -519,6 +553,7 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -534,6 +569,7 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -549,6 +585,7 @@ asm_test::compare_exchange::u32::release_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -564,6 +601,7 @@ asm_test::compare_exchange::u32::seqcst_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -579,6 +617,7 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -594,6 +633,7 @@ asm_test::compare_exchange::u32::acquire_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -609,6 +649,7 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -624,6 +665,7 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -639,6 +681,7 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -654,6 +697,7 @@ asm_test::compare_exchange::u32::release_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -669,6 +713,7 @@ asm_test::compare_exchange::u32::release_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -684,6 +729,7 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -699,6 +745,7 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -714,6 +761,7 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -729,6 +777,7 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -744,6 +793,7 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -759,6 +809,7 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -774,6 +825,7 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -789,6 +841,7 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -804,6 +857,7 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -819,6 +873,7 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -834,6 +889,7 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -849,6 +905,7 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -864,6 +921,7 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -879,6 +937,7 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -894,6 +953,7 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         moveb             %d0,%d1
         subb              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -909,6 +969,7 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -924,6 +985,7 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -939,6 +1001,7 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -954,6 +1017,7 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -969,6 +1033,7 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -984,6 +1049,7 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -999,6 +1065,7 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1014,6 +1081,7 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1029,6 +1097,7 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1044,6 +1113,7 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1059,6 +1129,7 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1074,6 +1145,7 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1089,6 +1161,7 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1104,6 +1177,7 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1119,6 +1193,7 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         movew             %d0,%d1
         subw              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1134,6 +1209,7 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1149,6 +1225,7 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1164,6 +1241,7 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1179,6 +1257,7 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1194,6 +1273,7 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1209,6 +1289,7 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1224,6 +1305,7 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1239,6 +1321,7 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1254,6 +1337,7 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1269,6 +1353,7 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1284,6 +1369,7 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1299,6 +1385,7 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1314,6 +1401,7 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1329,6 +1417,7 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts
@@ -1344,6 +1433,7 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
         movel             %d0,%d1
         subl              %d2,%d1
         seq               %d1
+        andb              #1,%d1
         moveml            %sp@(0),%d2
         addal             #4,%sp
         rts

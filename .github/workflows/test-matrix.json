@@ -214,16 +214,82 @@
       "os": "windows-11-arm"
     },
     {
+      "rust": "nightly-2023-08-24",
+      "target": "armv4t-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly",
+      "target": "armv4t-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
       "rust": "nightly",
       "target": "armv4t-unknown-linux-gnueabi"
+    },
+    {
+      "rust": "1.74",
+      "target": "armv5te-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly-2023-08-24",
+      "target": "armv5te-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "stable",
+      "target": "armv5te-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly",
+      "target": "armv5te-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
     },
     {
       "rust": "nightly",
       "target": "armv5te-unknown-linux-gnueabi"
     },
     {
+      "rust": "1.74",
+      "target": "arm-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly-2023-08-24",
+      "target": "arm-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "stable",
+      "target": "arm-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
+      "rust": "nightly",
+      "target": "arm-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
+    },
+    {
       "rust": "nightly-2025-02-17",
       "target": "arm-unknown-linux-gnueabi"
+    },
+    {
+      "rust": "nightly",
+      "target": "armv7-unknown-linux-gnueabi",
+      "os": "ubuntu-24.04-arm",
+      "container": "debian:13-slim"
     },
     {
       "rust": "nightly-2025-02-17",
@@ -348,7 +414,7 @@
       "target": "mips64-unknown-linux-gnuabi64"
     },
     {
-      "rust": "nightly",
+      "rust": "nightly-2026-08-05",
       "target": "mips64-unknown-linux-gnuabi64"
     },
     {
@@ -356,7 +422,7 @@
       "target": "mips64el-unknown-linux-gnuabi64"
     },
     {
-      "rust": "nightly",
+      "rust": "nightly-2026-08-05",
       "target": "mips64el-unknown-linux-gnuabi64"
     },
     {
@@ -380,7 +446,7 @@
       "target": "mipsisa64r6-unknown-linux-gnuabi64"
     },
     {
-      "rust": "nightly",
+      "rust": "nightly-2026-08-05",
       "target": "mipsisa64r6-unknown-linux-gnuabi64"
     },
     {
@@ -388,11 +454,19 @@
       "target": "mipsisa64r6el-unknown-linux-gnuabi64"
     },
     {
-      "rust": "nightly",
+      "rust": "nightly-2026-08-05",
       "target": "mipsisa64r6el-unknown-linux-gnuabi64"
     },
     {
+      "rust": "1.95",
+      "target": "powerpc-unknown-linux-gnu"
+    },
+    {
       "rust": "nightly-2023-08-24",
+      "target": "powerpc-unknown-linux-gnu"
+    },
+    {
+      "rust": "stable",
       "target": "powerpc-unknown-linux-gnu"
     },
     {
@@ -400,7 +474,15 @@
       "target": "powerpc-unknown-linux-gnu"
     },
     {
+      "rust": "1.95",
+      "target": "powerpc64-unknown-linux-gnu"
+    },
+    {
       "rust": "nightly-2023-08-24",
+      "target": "powerpc64-unknown-linux-gnu"
+    },
+    {
+      "rust": "stable",
       "target": "powerpc64-unknown-linux-gnu"
     },
     {
@@ -408,7 +490,15 @@
       "target": "powerpc64-unknown-linux-gnu"
     },
     {
+      "rust": "1.95",
+      "target": "powerpc64le-unknown-linux-gnu"
+    },
+    {
       "rust": "nightly-2023-08-24",
+      "target": "powerpc64le-unknown-linux-gnu"
+    },
+    {
+      "rust": "stable",
       "target": "powerpc64le-unknown-linux-gnu"
     },
     {

@@ -133,7 +133,7 @@ macro_rules! atomic {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 mut val: MaybeUninit<Self>,
                 order: Ordering,
@@ -169,7 +169,7 @@ macro_rules! atomic {
         }
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -193,7 +193,7 @@ macro_rules! atomic {
         #[cfg(not(all(target_arch = "x86", atomic_maybe_uninit_no_cmpxchg)))]
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -355,7 +355,11 @@ impl AtomicLoad for u64 {
 #[cfg(all(target_arch = "x86", not(atomic_maybe_uninit_no_cmpxchg8b)))]
 impl AtomicStore for u64 {
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) {
         debug_assert_atomic_unsafe_precondition!(dst, u64);
 
         #[cfg(all(target_feature = "sse", not(atomic_maybe_uninit_test_prefer_x87_over_sse)))]
@@ -474,14 +478,14 @@ impl AtomicStore for u64 {
         unsafe {
             // CMPXCHG8B has SeqCst semantics.
             let _ = order;
-            <Self as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
+            <Self as AtomicSwap>::__atomic_swap_impl(dst, val, Ordering::SeqCst);
         }
     }
 }
 #[cfg(all(target_arch = "x86", not(atomic_maybe_uninit_no_cmpxchg8b)))]
 impl AtomicSwap for u64 {
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         _order: Ordering,
@@ -521,7 +525,7 @@ impl AtomicSwap for u64 {
 #[cfg(all(target_arch = "x86", not(atomic_maybe_uninit_no_cmpxchg8b)))]
 impl AtomicCompareExchange for u64 {
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -680,7 +684,7 @@ macro_rules! atomic128 {
         }
         impl AtomicStore for u128 {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -746,7 +750,7 @@ macro_rules! atomic128 {
                     // SAFETY: the caller must uphold the safety contract.
                     unsafe {
                         // CMPXCHG16B has SeqCst semantics.
-                        <u128 as AtomicSwap>::atomic_swap(dst, val, Ordering::SeqCst);
+                        <u128 as AtomicSwap>::__atomic_swap_impl(dst, val, Ordering::SeqCst);
                     }
                 }
                 debug_assert_atomic_unsafe_precondition!(dst, u128);
@@ -812,7 +816,7 @@ macro_rules! atomic128 {
         }
         impl AtomicSwap for u128 {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 _order: Ordering,
@@ -855,7 +859,7 @@ macro_rules! atomic128 {
         }
         impl AtomicCompareExchange for u128 {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,

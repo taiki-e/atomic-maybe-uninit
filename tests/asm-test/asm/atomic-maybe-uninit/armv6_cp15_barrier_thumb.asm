@@ -1953,7 +1953,7 @@ asm_test::store::u64::release:
         ldrexd            r0, r1, [r0]
         pop               {r11, pc}
 
-<u64 as atomic_maybe_uninit::raw::AtomicSwap>::atomic_swap:
+<u64 as atomic_maybe_uninit::raw::AtomicSwap>::__atomic_swap_impl:
         push              {r4, r10, r11, lr}
         add               r11, sp, #8
         mov               r12, r0
@@ -1997,7 +1997,7 @@ asm_test::store::u64::release:
         bne               3b
         pop               {r4, r10, r11, pc}
 
-<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange:
+<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::__atomic_compare_exchange_impl:
         push              {r4, r5, r6, r7, r8, r10, r11, lr}
         add               r11, sp, #24
         mov               r12, r3
@@ -2187,7 +2187,7 @@ asm_test::store::u64::release:
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, r10, r11, pc}
 
-<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
+<u64 as atomic_maybe_uninit::raw::AtomicCompareExchange>::__atomic_compare_exchange_weak_impl:
         push              {r4, r5, r6, r7, r8, r10, r11, lr}
         add               r11, sp, #24
         mov               r12, r3
@@ -2336,7 +2336,7 @@ asm_test::store::u64::release:
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, r10, r11, pc}
 
-<u64 as atomic_maybe_uninit::raw::AtomicStore>::atomic_store:
+<u64 as atomic_maybe_uninit::raw::AtomicStore>::__atomic_store_impl:
         push              {r4, r5, r11, lr}
         add               r11, sp, #8
         ldrb              r1, [r11, #0x8]
@@ -2369,7 +2369,7 @@ asm_test::store::u64::release:
         mcr               p15, #0x0, r1, c7, c10, #0x5
         pop               {r4, r5, r11, pc}
 
-<u8 as atomic_maybe_uninit::raw::AtomicSwap>::atomic_swap:
+<u8 as atomic_maybe_uninit::raw::AtomicSwap>::__atomic_swap_impl:
         push              {r11, lr}
         mov               r11, sp
         uxtb              r2, r2
@@ -2416,7 +2416,7 @@ asm_test::store::u64::release:
         mov               r0, r12
         pop               {r11, pc}
 
-<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange:
+<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::__atomic_compare_exchange_impl:
         push              {r11, lr}
         mov               r11, sp
         uxtb              r12, r1
@@ -2582,7 +2582,7 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 
-<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
+<u8 as atomic_maybe_uninit::raw::AtomicCompareExchange>::__atomic_compare_exchange_weak_impl:
         push              {r11, lr}
         mov               r11, sp
         uxtb              r12, r1
@@ -2730,7 +2730,7 @@ asm_test::store::u64::release:
         ldrb              r0, [r0]
         pop               {r11, pc}
 
-<u8 as atomic_maybe_uninit::raw::AtomicStore>::atomic_store:
+<u8 as atomic_maybe_uninit::raw::AtomicStore>::__atomic_store_impl:
         push              {r11, lr}
         mov               r11, sp
         uxtb              r2, r2
@@ -2752,7 +2752,7 @@ asm_test::store::u64::release:
         mcr               p15, #0x0, r2, c7, c10, #0x5
         pop               {r11, pc}
 
-<u16 as atomic_maybe_uninit::raw::AtomicSwap>::atomic_swap:
+<u16 as atomic_maybe_uninit::raw::AtomicSwap>::__atomic_swap_impl:
         push              {r11, lr}
         mov               r11, sp
         uxtb              r2, r2
@@ -2799,7 +2799,7 @@ asm_test::store::u64::release:
         mov               r0, r12
         pop               {r11, pc}
 
-<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange:
+<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::__atomic_compare_exchange_impl:
         push              {r11, lr}
         mov               r11, sp
         uxth              r12, r1
@@ -2965,7 +2965,7 @@ asm_test::store::u64::release:
         mov               r0, lr
         pop               {r11, pc}
 
-<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
+<u16 as atomic_maybe_uninit::raw::AtomicCompareExchange>::__atomic_compare_exchange_weak_impl:
         push              {r11, lr}
         mov               r11, sp
         uxth              r12, r1
@@ -3113,7 +3113,7 @@ asm_test::store::u64::release:
         ldrh              r0, [r0]
         pop               {r11, pc}
 
-<u16 as atomic_maybe_uninit::raw::AtomicStore>::atomic_store:
+<u16 as atomic_maybe_uninit::raw::AtomicStore>::__atomic_store_impl:
         push              {r11, lr}
         mov               r11, sp
         uxtb              r2, r2
@@ -3135,7 +3135,7 @@ asm_test::store::u64::release:
         mcr               p15, #0x0, r2, c7, c10, #0x5
         pop               {r11, pc}
 
-<u32 as atomic_maybe_uninit::raw::AtomicSwap>::atomic_swap:
+<u32 as atomic_maybe_uninit::raw::AtomicSwap>::__atomic_swap_impl:
         push              {r11, lr}
         mov               r11, sp
         uxtb              r2, r2
@@ -3182,7 +3182,7 @@ asm_test::store::u64::release:
         mov               r0, r12
         pop               {r11, pc}
 
-<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange:
+<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::__atomic_compare_exchange_impl:
         push              {r11, lr}
         mov               r11, sp
         ldr               r12, [r11, #0x8]
@@ -3335,7 +3335,7 @@ asm_test::store::u64::release:
         mov               r0, r12
         pop               {r11, pc}
 
-<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::atomic_compare_exchange_weak:
+<u32 as atomic_maybe_uninit::raw::AtomicCompareExchange>::__atomic_compare_exchange_weak_impl:
         push              {r11, lr}
         mov               r11, sp
         ldr               r12, [r11, #0x8]
@@ -3472,7 +3472,7 @@ asm_test::store::u64::release:
         ldr               r0, [r0]
         pop               {r11, pc}
 
-<u32 as atomic_maybe_uninit::raw::AtomicStore>::atomic_store:
+<u32 as atomic_maybe_uninit::raw::AtomicStore>::__atomic_store_impl:
         push              {r11, lr}
         mov               r11, sp
         uxtb              r2, r2

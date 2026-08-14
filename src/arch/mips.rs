@@ -224,7 +224,7 @@ macro_rules! atomic_load_store {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -267,7 +267,7 @@ macro_rules! atomic {
         #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -312,7 +312,7 @@ macro_rules! atomic {
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/zj3194Pc9
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -373,7 +373,7 @@ macro_rules! atomic_sub_word {
         #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -422,7 +422,7 @@ macro_rules! atomic_sub_word {
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/zj3194Pc9
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,

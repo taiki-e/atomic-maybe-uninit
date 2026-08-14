@@ -40,7 +40,7 @@ pub(crate) fn detect() -> CpuInfo {
     // Note: detect_false cfg is intended to make it easy for developers to test
     // cases where features usually available is not available, and is not a public API.
     if !cfg!(atomic_maybe_uninit_test_detect_false) {
-        _detect(&mut info);
+        info = _detect(info);
     }
     CACHE.store(info.0, Ordering::Relaxed);
     info
@@ -117,7 +117,7 @@ mod tests_common {
         let mut flags = vec![("init", CpuInfoFlag::Init)];
         flags.extend(CpuInfo::ALL_FLAGS.iter().map(|&(name, flag, _)| (name, flag)));
         let flag_set = flags.iter().map(|(_, flag)| flag).collect::<BTreeSet<_>>();
-        let name_set = flags.iter().map(|(_, flag)| flag).collect::<BTreeSet<_>>();
+        let name_set = flags.iter().map(|(name, _)| name).collect::<BTreeSet<_>>();
         if flag_set.len() != flags.len() {
             panic!("CpuInfo flag values must be unique")
         }

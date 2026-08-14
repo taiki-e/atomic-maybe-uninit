@@ -2688,8 +2688,9 @@ asm_test::swap::u128::acqrel:
         stmg              %r12,%r15,96(%r15)
         lg                %r1,8(%r4)
         lg                %r0,0(%r4)
-        lg                %r4,8(%r3)
-        lg                %r5,0(%r3)
+        lpq               %r12,0(%r3)
+        lgr               %r4,%r13
+        lgr               %r5,%r12
 0:
         lgr               %r12,%r5
         lgr               %r13,%r4
@@ -2706,8 +2707,9 @@ asm_test::swap::u128::seqcst:
         stmg              %r12,%r15,96(%r15)
         lg                %r1,8(%r4)
         lg                %r0,0(%r4)
-        lg                %r4,8(%r3)
-        lg                %r5,0(%r3)
+        lpq               %r12,0(%r3)
+        lgr               %r4,%r13
+        lgr               %r5,%r12
 0:
         lgr               %r12,%r5
         lgr               %r13,%r4
@@ -2724,8 +2726,9 @@ asm_test::swap::u128::acquire:
         stmg              %r12,%r15,96(%r15)
         lg                %r1,8(%r4)
         lg                %r0,0(%r4)
-        lg                %r4,8(%r3)
-        lg                %r5,0(%r3)
+        lpq               %r12,0(%r3)
+        lgr               %r4,%r13
+        lgr               %r5,%r12
 0:
         lgr               %r12,%r5
         lgr               %r13,%r4
@@ -2742,8 +2745,9 @@ asm_test::swap::u128::relaxed:
         stmg              %r12,%r15,96(%r15)
         lg                %r1,8(%r4)
         lg                %r0,0(%r4)
-        lg                %r4,8(%r3)
-        lg                %r5,0(%r3)
+        lpq               %r12,0(%r3)
+        lgr               %r4,%r13
+        lgr               %r5,%r12
 0:
         lgr               %r12,%r5
         lgr               %r13,%r4
@@ -2760,8 +2764,9 @@ asm_test::swap::u128::release:
         stmg              %r12,%r15,96(%r15)
         lg                %r1,8(%r4)
         lg                %r0,0(%r4)
-        lg                %r4,8(%r3)
-        lg                %r5,0(%r3)
+        lpq               %r12,0(%r3)
+        lgr               %r4,%r13
+        lgr               %r5,%r12
 0:
         lgr               %r12,%r5
         lgr               %r13,%r4

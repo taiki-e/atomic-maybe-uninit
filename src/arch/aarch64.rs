@@ -102,7 +102,7 @@ macro_rules! atomic {
         }
         impl AtomicStore for $ty {
             #[inline]
-            unsafe fn atomic_store(
+            unsafe fn __atomic_store_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -139,7 +139,7 @@ macro_rules! atomic {
         }
         impl AtomicSwap for $ty {
             #[inline]
-            unsafe fn atomic_swap(
+            unsafe fn __atomic_swap_impl(
                 dst: *mut MaybeUninit<Self>,
                 val: MaybeUninit<Self>,
                 order: Ordering,
@@ -189,7 +189,7 @@ macro_rules! atomic {
         }
         impl AtomicCompareExchange for $ty {
             #[inline]
-            unsafe fn atomic_compare_exchange(
+            unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -263,7 +263,7 @@ macro_rules! atomic {
             }
             #[cfg(not(target_feature = "lse"))]
             #[inline]
-            unsafe fn atomic_compare_exchange_weak(
+            unsafe fn __atomic_compare_exchange_weak_impl(
                 dst: *mut MaybeUninit<Self>,
                 old: MaybeUninit<Self>,
                 new: MaybeUninit<Self>,
@@ -470,7 +470,11 @@ impl AtomicLoad for u128 {
 }
 impl AtomicStore for u128 {
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        order: Ordering,
+    ) {
         debug_assert_atomic_unsafe_precondition!(dst, u128);
         let val = MaybeUninit128 { whole: val };
 
@@ -599,7 +603,7 @@ impl AtomicStore for u128 {
 }
 impl AtomicSwap for u128 {
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         order: Ordering,
@@ -651,7 +655,7 @@ impl AtomicSwap for u128 {
 }
 impl AtomicCompareExchange for u128 {
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,

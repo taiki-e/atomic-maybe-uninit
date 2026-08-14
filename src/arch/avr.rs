@@ -66,7 +66,11 @@ impl AtomicLoad for u8 {
 }
 impl AtomicStore for u8 {
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, _order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        _order: Ordering,
+    ) {
         // SAFETY: the caller must uphold the safety contract.
         unsafe {
             asm!(
@@ -80,7 +84,7 @@ impl AtomicStore for u8 {
 }
 impl AtomicSwap for u8 {
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         _order: Ordering,
@@ -119,7 +123,7 @@ impl AtomicSwap for u8 {
 }
 impl AtomicCompareExchange for u8 {
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -199,7 +203,11 @@ impl AtomicLoad for u16 {
 }
 impl AtomicStore for u16 {
     #[inline]
-    unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, _order: Ordering) {
+    unsafe fn __atomic_store_impl(
+        dst: *mut MaybeUninit<Self>,
+        val: MaybeUninit<Self>,
+        _order: Ordering,
+    ) {
         // SAFETY: the caller must guarantee that pointer is valid and properly aligned.
         // On single-core systems, disabling interrupts is enough to prevent data race.
         unsafe {
@@ -280,7 +288,7 @@ impl AtomicStore for u16 {
 }
 impl AtomicSwap for u16 {
     #[inline]
-    unsafe fn atomic_swap(
+    unsafe fn __atomic_swap_impl(
         dst: *mut MaybeUninit<Self>,
         val: MaybeUninit<Self>,
         _order: Ordering,
@@ -346,7 +354,7 @@ impl AtomicSwap for u16 {
                 "ld {out:h}, Z",  //   out.hi = *Z
                 "subi r30, 0x01", //   Z.lo -= 1
                 "sbci r31, 0x00", //   Z.hi -= borrow
-                "st Z+, {val:l}", //   Z = Z.byte_sub(1); *Z = val.lo
+                "st Z+, {val:l}", //   *Z = val.lo; Z = Z.byte_add(1)
                 "st Z, {val:h}",  //   *Z = val.hi
                 restore!(),       // }
                 val = in(reg_pair) val,
@@ -383,7 +391,7 @@ impl AtomicSwap for u16 {
 }
 impl AtomicCompareExchange for u16 {
     #[inline]
-    unsafe fn atomic_compare_exchange(
+    unsafe fn __atomic_compare_exchange_impl(
         dst: *mut MaybeUninit<Self>,
         old: MaybeUninit<Self>,
         new: MaybeUninit<Self>,
@@ -411,7 +419,7 @@ impl AtomicCompareExchange for u16 {
                 "ldd {out:h}, Z+1",      //   out.hi = *Z.byte_add(1)
                 "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo |= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
                 "st Z, {new:l}",         //   *Z = new.lo
                 "std Z+1, {new:h}",      //   *Z.byte_add(1) = new.hi
@@ -440,7 +448,7 @@ impl AtomicCompareExchange for u16 {
                 "ldd {out:h}, Z+1",      //   out.hi = *Z.byte_add(1)
                 "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo |= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
                 "std Z+1, {new:h}",      //   *Z.byte_add(1) = new.hi
                 "st Z, {new:l}",         //   *Z = new.lo
@@ -469,11 +477,11 @@ impl AtomicCompareExchange for u16 {
                 "ld {out:h}, Z",         //   out.hi = *Z
                 "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo |= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
                 "subi r30, 0x01",        //   Z.lo -= 1
                 "sbci r31, 0x00",        //   Z.hi -= borrow
-                "st Z+, {new:l}",        //   Z = Z.byte_sub(1); *Z = new.lo
+                "st Z+, {new:l}",        //   *Z = new.lo; Z = Z.byte_add(1)
                 "st Z, {new:h}",         //   *Z = new.hi
                 "2:", // 'cmp-fail:
                 restore!(),              // }
@@ -500,7 +508,7 @@ impl AtomicCompareExchange for u16 {
                 "ld {out:h}, Z",         //   out.hi = *Z
                 "eor {old_lo}, {out:l}", //   old_lo ^= out.lo; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "eor {old_hi}, {out:h}", //   old_hi ^= out.hi; if old_hi == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
-                "or {old_lo}, {old_hi}", //   old_lo ^= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
+                "or {old_lo}, {old_hi}", //   old_lo |= old_hi; if old_lo == 0 { SREG.Z = 1 } else { SREG.Z = 0 }
                 "brne 2f",               //   if SREG.Z == 0 { jump 'cmp-fail }
                 "st Z, {new:h}",         //   *Z = new.hi
                 "st -Z, {new:l}",        //   Z = Z.byte_sub(1); *Z = new.lo

@@ -14,7 +14,7 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -36,13 +36,12 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -55,7 +54,6 @@ asm_test::compare_exchange::u8::acqrel_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -75,7 +73,7 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -97,13 +95,12 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -116,7 +113,6 @@ asm_test::compare_exchange::u8::seqcst_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -136,7 +132,7 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -158,13 +154,12 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -177,7 +172,6 @@ asm_test::compare_exchange::u8::acqrel_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -197,7 +191,7 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -219,13 +213,12 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -238,7 +231,6 @@ asm_test::compare_exchange::u8::acqrel_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -258,7 +250,7 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -280,13 +272,12 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -299,7 +290,6 @@ asm_test::compare_exchange::u8::acquire_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -319,7 +309,7 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -341,13 +331,12 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -360,7 +349,6 @@ asm_test::compare_exchange::u8::relaxed_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -380,7 +368,7 @@ asm_test::compare_exchange::u8::release_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -402,13 +390,12 @@ asm_test::compare_exchange::u8::release_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -421,7 +408,6 @@ asm_test::compare_exchange::u8::release_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -441,7 +427,7 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -463,13 +449,12 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -482,7 +467,6 @@ asm_test::compare_exchange::u8::seqcst_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -502,7 +486,7 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -524,13 +508,12 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -543,7 +526,6 @@ asm_test::compare_exchange::u8::seqcst_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -563,7 +545,7 @@ asm_test::compare_exchange::u8::acquire_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -585,13 +567,12 @@ asm_test::compare_exchange::u8::acquire_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -604,7 +585,6 @@ asm_test::compare_exchange::u8::acquire_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -624,7 +604,7 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -646,13 +626,12 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -665,7 +644,6 @@ asm_test::compare_exchange::u8::acquire_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -685,7 +663,7 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -707,13 +685,12 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -726,7 +703,6 @@ asm_test::compare_exchange::u8::relaxed_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -746,7 +722,7 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -768,13 +744,12 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -787,7 +762,6 @@ asm_test::compare_exchange::u8::relaxed_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -807,7 +781,7 @@ asm_test::compare_exchange::u8::release_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -829,13 +803,12 @@ asm_test::compare_exchange::u8::release_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -848,7 +821,6 @@ asm_test::compare_exchange::u8::release_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -868,7 +840,7 @@ asm_test::compare_exchange::u8::release_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -890,13 +862,12 @@ asm_test::compare_exchange::u8::release_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -909,7 +880,6 @@ asm_test::compare_exchange::u8::release_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -919,7 +889,7 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -929,7 +899,7 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -951,13 +921,12 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -970,7 +939,6 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -982,7 +950,7 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -992,7 +960,7 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1014,13 +982,12 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1033,7 +1000,6 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1045,7 +1011,7 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1055,7 +1021,7 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1077,13 +1043,12 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1096,7 +1061,6 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1108,7 +1072,7 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1118,7 +1082,7 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1140,13 +1104,12 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1159,7 +1122,6 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1171,7 +1133,7 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1181,7 +1143,7 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1203,13 +1165,12 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1222,7 +1183,6 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1234,7 +1194,7 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1244,7 +1204,7 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1266,13 +1226,12 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1285,7 +1244,6 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1297,7 +1255,7 @@ asm_test::compare_exchange::u16::release_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1307,7 +1265,7 @@ asm_test::compare_exchange::u16::release_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1329,13 +1287,12 @@ asm_test::compare_exchange::u16::release_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1348,7 +1305,6 @@ asm_test::compare_exchange::u16::release_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1360,7 +1316,7 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1370,7 +1326,7 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1392,13 +1348,12 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1411,7 +1366,6 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1423,7 +1377,7 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1433,7 +1387,7 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1455,13 +1409,12 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1474,7 +1427,6 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1486,7 +1438,7 @@ asm_test::compare_exchange::u16::acquire_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1496,7 +1448,7 @@ asm_test::compare_exchange::u16::acquire_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1518,13 +1470,12 @@ asm_test::compare_exchange::u16::acquire_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1537,7 +1488,6 @@ asm_test::compare_exchange::u16::acquire_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1549,7 +1499,7 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1559,7 +1509,7 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1581,13 +1531,12 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1600,7 +1549,6 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1612,7 +1560,7 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1622,7 +1570,7 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1644,13 +1592,12 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1663,7 +1610,6 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1675,7 +1621,7 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1685,7 +1631,7 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1707,13 +1653,12 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1726,7 +1671,6 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1738,7 +1682,7 @@ asm_test::compare_exchange::u16::release_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1748,7 +1692,7 @@ asm_test::compare_exchange::u16::release_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1770,13 +1714,12 @@ asm_test::compare_exchange::u16::release_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1789,7 +1732,6 @@ asm_test::compare_exchange::u16::release_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1801,7 +1743,7 @@ asm_test::compare_exchange::u16::release_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -1811,7 +1753,7 @@ asm_test::compare_exchange::u16::release_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -1833,13 +1775,12 @@ asm_test::compare_exchange::u16::release_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -1852,7 +1793,6 @@ asm_test::compare_exchange::u16::release_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -1879,13 +1819,13 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -1920,13 +1860,13 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -1961,13 +1901,13 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2002,13 +1942,13 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2043,13 +1983,13 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2084,13 +2024,13 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2125,13 +2065,13 @@ asm_test::compare_exchange::u32::release_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2166,13 +2106,13 @@ asm_test::compare_exchange::u32::seqcst_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2207,13 +2147,13 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2248,13 +2188,13 @@ asm_test::compare_exchange::u32::acquire_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2289,13 +2229,13 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2330,13 +2270,13 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2371,13 +2311,13 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2412,13 +2352,13 @@ asm_test::compare_exchange::u32::release_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -2453,13 +2393,13 @@ asm_test::compare_exchange::u32::release_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -3464,7 +3404,7 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -3486,13 +3426,12 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -3505,7 +3444,6 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -3525,7 +3463,7 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -3547,13 +3485,12 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -3566,7 +3503,6 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -3586,7 +3522,7 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -3608,13 +3544,12 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -3627,7 +3562,6 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -3647,7 +3581,7 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -3669,13 +3603,12 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -3688,7 +3621,6 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -3708,7 +3640,7 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -3730,13 +3662,12 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -3749,7 +3680,6 @@ asm_test::compare_exchange_weak::u8::acquire_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -3769,7 +3699,7 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -3791,13 +3721,12 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -3810,7 +3739,6 @@ asm_test::compare_exchange_weak::u8::relaxed_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -3830,7 +3758,7 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -3852,13 +3780,12 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -3871,7 +3798,6 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -3891,7 +3817,7 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -3913,13 +3839,12 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -3932,7 +3857,6 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -3952,7 +3876,7 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -3974,13 +3898,12 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -3993,7 +3916,6 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -4013,7 +3935,7 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4035,13 +3957,12 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4054,7 +3975,6 @@ asm_test::compare_exchange_weak::u8::acquire_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -4074,7 +3994,7 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4096,13 +4016,12 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4115,7 +4034,6 @@ asm_test::compare_exchange_weak::u8::acquire_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -4135,7 +4053,7 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4157,13 +4075,12 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4176,7 +4093,6 @@ asm_test::compare_exchange_weak::u8::relaxed_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -4196,7 +4112,7 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4218,13 +4134,12 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4237,7 +4152,6 @@ asm_test::compare_exchange_weak::u8::relaxed_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -4257,7 +4171,7 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4279,13 +4193,12 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4298,7 +4211,6 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -4318,7 +4230,7 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x48]         @ 7f
+        ldr               r3, [pc, #0x44]         @ 7f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4340,13 +4252,12 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4359,7 +4270,6 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0xffff0fc0
 
@@ -4369,7 +4279,7 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4379,7 +4289,7 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4401,13 +4311,12 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4420,7 +4329,6 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4432,7 +4340,7 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4442,7 +4350,7 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4464,13 +4372,12 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4483,7 +4390,6 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4495,7 +4401,7 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4505,7 +4411,7 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4527,13 +4433,12 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4546,7 +4451,6 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4558,7 +4462,7 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4568,7 +4472,7 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4590,13 +4494,12 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4609,7 +4512,6 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4621,7 +4523,7 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4631,7 +4533,7 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4653,13 +4555,12 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4672,7 +4573,6 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4684,7 +4584,7 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4694,7 +4594,7 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4716,13 +4616,12 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4735,7 +4634,6 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4747,7 +4645,7 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4757,7 +4655,7 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4779,13 +4677,12 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4798,7 +4695,6 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4810,7 +4706,7 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4820,7 +4716,7 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4842,13 +4738,12 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4861,7 +4756,6 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4873,7 +4767,7 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4883,7 +4777,7 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4905,13 +4799,12 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4924,7 +4817,6 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4936,7 +4828,7 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -4946,7 +4838,7 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -4968,13 +4860,12 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -4987,7 +4878,6 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -4999,7 +4889,7 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -5009,7 +4899,7 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -5031,13 +4921,12 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -5050,7 +4939,6 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -5062,7 +4950,7 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -5072,7 +4960,7 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -5094,13 +4982,12 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -5113,7 +5000,6 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -5125,7 +5011,7 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -5135,7 +5021,7 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -5157,13 +5043,12 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -5176,7 +5061,6 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -5188,7 +5072,7 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -5198,7 +5082,7 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -5220,13 +5104,12 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -5239,7 +5122,6 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -5251,7 +5133,7 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         movs              r4, r2
         movs              r5, r1
         movs              r1, #0x3
-        ldr               r7, [pc, #0x5c]         @ 7f
+        ldr               r7, [pc, #0x58]         @ 7f
         ands              r5, r7
         lsls              r2, r0, #0x1e
         bics              r0, r1
@@ -5261,7 +5143,7 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         ands              r4, r7
         lsls              r4, r1
         lsls              r7, r1
-        ldr               r3, [pc, #0x4c]         @ 8f
+        ldr               r3, [pc, #0x48]         @ 8f
         movs              r2, r0
         sub               sp, #0x8
         str               r3, [sp]
@@ -5283,13 +5165,12 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
         bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         add               sp, #0x8
@@ -5302,7 +5183,6 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         pop               {r4, r5, r6, r7}
         pop               {r2}
         bx                r2
-        mov               r8, r8
 7:
         .word             0x0000ffff
 8:
@@ -5329,13 +5209,13 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5370,13 +5250,13 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5411,13 +5291,13 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5452,13 +5332,13 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5493,13 +5373,13 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5534,13 +5414,13 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5575,13 +5455,13 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5616,13 +5496,13 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5657,13 +5537,13 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5698,13 +5578,13 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5739,13 +5619,13 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5780,13 +5660,13 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5821,13 +5701,13 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5862,13 +5742,13 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0
@@ -5903,13 +5783,13 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
         blo               0b
         b                 6f
 3:
-        movs              r1, r0
+        movs              r3, r7
+        subs              r3, #0x20
         bl                4f
         b                 5f
 4:
-        bx                r7
+        bx                r3
 5:
-        blo               0b
         movs              r0, #0x1
 6:
         rsbs              r1, r0, #0

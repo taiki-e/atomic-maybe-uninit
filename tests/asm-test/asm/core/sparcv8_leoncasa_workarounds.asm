@@ -3251,6 +3251,7 @@ asm_test::store::u8::seqcst:
         stbar
         stb               %o1, [ %o0 ]
         stbar
+        nop
         ldstub            [ %sp + -1 ], %g0
         nop
         retl
@@ -3271,6 +3272,7 @@ asm_test::store::u16::seqcst:
         stbar
         sth               %o1, [ %o0 ]
         stbar
+        nop
         ldstub            [ %sp + -1 ], %g0
         nop
         retl
@@ -3291,6 +3293,7 @@ asm_test::store::u32::seqcst:
         stbar
         st                %o1, [ %o0 ]
         stbar
+        nop
         ldstub            [ %sp + -1 ], %g0
         nop
         retl
