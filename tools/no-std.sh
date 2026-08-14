@@ -132,6 +132,9 @@ if [[ "${rustc_version}" =~ nightly|dev ]]; then
 fi
 export QEMU_AUDIO_DRV=none
 export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
+# When RUSTDOCFLAGS is set, xtensa-lx-rt will mistakenly assume that is doc build.
+# https://github.com/esp-rs/esp-hal/blob/xtensa-lx-rt-v0.22.0/xtensa-lx-rt/build.rs#L120
+unset RUSTDOCFLAGS
 
 setup_wokwi() {
   local target="$1"

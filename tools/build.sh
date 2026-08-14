@@ -262,6 +262,9 @@ if [[ "${rustc_version}" =~ nightly|dev ]]; then
 fi
 export CARGO_TARGET_DIR="${target_dir}"
 export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
+# When RUSTDOCFLAGS is set, xtensa-lx-rt will mistakenly assume that is doc build.
+# https://github.com/esp-rs/esp-hal/blob/xtensa-lx-rt-v0.22.0/xtensa-lx-rt/build.rs#L120
+unset RUSTDOCFLAGS
 
 build() {
   local target="$1"
