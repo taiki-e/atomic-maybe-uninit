@@ -22,6 +22,21 @@ use core::{
 
 use crate::raw::{AtomicLoad, AtomicStore};
 
+#[cfg(target_feature = "s32c1i")]
+#[cfg(target_feature = "density")]
+macro_rules! n {
+    ($op:tt, $operand:tt) => {
+        concat!($op, ".n ", $operand)
+    };
+}
+#[cfg(target_feature = "s32c1i")]
+#[cfg(not(target_feature = "density"))]
+macro_rules! n {
+    ($op:tt, $operand:tt) => {
+        concat!($op, " ", $operand)
+    };
+}
+
 cfg_sel!({
     #[cfg(target_feature = "s32c1i")]
     {
@@ -142,7 +157,10 @@ macro_rules! atomic_load_store {
 #[rustfmt::skip]
 macro_rules! atomic {
     ($ty:ident) => {
+        #[cfg(target_feature = "density")]
         atomic_load_store!($ty, "32", ".n", "");
+        #[cfg(not(target_feature = "density"))]
+        atomic_load_store!($ty, "32", "", "");
         #[cfg(target_feature = "s32c1i")]
         impl AtomicSwap for $ty {
             #[inline]
@@ -158,15 +176,15 @@ macro_rules! atomic {
                     macro_rules! swap {
                         ($acquire:tt, $release:tt) => {
                             asm!(
-                                $release,                     // fence
-                                "l32i.n {out}, {dst}, 0",     // atomic { out = *dst }
+                                $release,                      // fence
+                                n!("l32i", "{out}, {dst}, 0"), // atomic { out = *dst }
                                 "2:", // 'retry:
-                                    "mov.n {tmp}, {out}",     // tmp = out
-                                    "wsr {tmp}, scompare1",   // scompare1 = tmp
-                                    "mov.n {out}, {val}",     // out = val
-                                    "s32c1i {out}, {dst}, 0", // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
-                                    "bne {tmp}, {out}, 2b",   // if tmp != out { jump 'retry }
-                                $acquire,                     // fence
+                                    n!("mov", "{tmp}, {out}"), // tmp = out
+                                    "wsr {tmp}, scompare1",    // scompare1 = tmp
+                                    n!("mov", "{out}, {val}"), // out = val
+                                    "s32c1i {out}, {dst}, 0",  // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
+                                    "bne {tmp}, {out}, 2b",    // if tmp != out { jump 'retry }
+                                $acquire,                      // fence
                                 dst = in(reg) ptr_reg!(dst),
                                 val = in(reg) val,
                                 out = out(reg) out,
@@ -205,7 +223,7 @@ macro_rules! atomic {
                                 "s32c1i {out}, {dst}, 0", // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
                                 $acquire,                 // fence
                                 "beq {old}, {out}, 2f",   // if old == out { jump 'success }
-                                "movi {r}, 0",            // r = 0
+                                n!("movi", "{r}, 0"),     // r = 0
                                 "2:", // 'success:
                                 dst = in(reg) ptr_reg!(dst),
                                 old = in(reg) old,
@@ -251,9 +269,9 @@ macro_rules! atomic_sub_word {
                                 "sll {mask}, {mask}",           // mask <<= sar
                                 "sll {val}, {val}",             // val <<= sar
                                 $release,                       // fence
-                                "l32i.n {out}, {dst}, 0",       // atomic { out = *dst }
+                                n!("l32i", "{out}, {dst}, 0"),  // atomic { out = *dst }
                                 "2:", // 'retry:
-                                    "mov.n {tmp}, {out}",       // tmp = out
+                                    n!("mov", "{tmp}, {out}"),  // tmp = out
                                     "wsr {tmp}, scompare1",     // scompare1 = tmp
                                     "xor {out}, {tmp}, {val}",  // out = tmp ^ val
                                     "and {out}, {out}, {mask}", // out &= mask
@@ -305,18 +323,18 @@ macro_rules! atomic_sub_word {
                                 "sll {old}, {old}",             // old <<= sar
                                 "sll {new}, {new}",             // new <<= sar
                                 $release,                       // fence
-                                "l32i.n {out}, {dst}, 0",       // atomic { out = *dst }
+                                n!("l32i", "{out}, {dst}, 0"),  // atomic { out = *dst }
                                 "2:", // 'retry:
                                     "and {tmp}, {out}, {mask}", // tmp = out & mask
                                     "bne {tmp}, {old}, 3f",     // if tmp != old { jump 'cmp-fail }
-                                    "mov.n {tmp}, {out}",       // tmp = out
+                                    n!("mov", "{tmp}, {out}"),  // tmp = out
                                     "wsr {tmp}, scompare1",     // scompare1 = tmp
                                     "xor {out}, {tmp}, {new}",  // out = tmp ^ new
                                     "and {out}, {out}, {mask}", // out &= mask
                                     "xor {out}, {out}, {tmp}",  // out ^= tmp
                                     "s32c1i {out}, {dst}, 0",   // atomic { _x = *dst; if _x == scompare1 { *dst = out }; out = _x }
                                     "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
-                                    "movi {r}, 1",              // r = 1
+                                    n!("movi", "{r}, 1"),       // r = 1
                                 "3:", // 'cmp-fail:
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),

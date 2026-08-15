@@ -162,6 +162,8 @@ fn test() {
     let esp_revisions = &[
         // Xtensa
         Revision::new("xtensa", "xtensa-esp32-none-elf"),
+        Revision::new("xtensa_no_density", "xtensa-esp32-none-elf")
+            .rustc_args(["-C", "target-feature=-density"]),
     ];
     let revisions = if build_context::RUSTC.contains(".rustup/toolchains/esp/bin/") {
         &esp_revisions[..]
