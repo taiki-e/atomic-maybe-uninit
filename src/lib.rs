@@ -155,6 +155,18 @@ mod utils;
 #[cfg(test)]
 #[macro_use]
 mod tests;
+#[cfg(test)] // for testing code used in build script
+#[path = "build"]
+mod build {
+    #![allow(
+        dead_code,
+        clippy::arithmetic_side_effects,
+        clippy::std_instead_of_alloc,
+        clippy::std_instead_of_core
+    )]
+    mod tests;
+    mod version;
+}
 
 pub mod raw;
 
