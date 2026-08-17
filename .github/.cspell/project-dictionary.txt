@@ -6,6 +6,7 @@ amswap
 andc
 andn
 aqrl
+argfile
 armasm
 atomicsabi
 attiny
@@ -38,6 +39,7 @@ cpus
 csel
 cset
 cskyv
+Ctarget
 cxchg
 cxchgweak
 dbar
@@ -202,5 +204,6 @@ zaamo
 zabha
 zacas
 zalasr
+Zallow
 zalrsc
 ztso
