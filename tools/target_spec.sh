@@ -102,18 +102,108 @@ cat >>"${utils_file}" <<EOF
 pub(crate) use self::imp::RegSize;
 EOF
 
+# TODO: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/AArch64/AArch64Processors.td
+#       uses a lot of ProcessorAlias...
+# target=aarch64-unknown-none-softfloat
+# aarch64_lse2=()
+# aarch64_lse128=()
+# aarch64_rcpc3=()
+# for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+#   cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
+#   target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
+#   if [[ "${target_features}" == *"\"lse2\""* ]]; then
+#     aarch64_lse2+=("${cpu}")
+#   fi
+#   if [[ "${target_features}" == *"\"lse128\""* ]]; then
+#     aarch64_lse128+=("${cpu}")
+#   fi
+#   if [[ "${target_features}" == *"\"rcpc3\""* ]]; then
+#     aarch64_rcpc3+=("${cpu}")
+#   fi
+# done
+
+target=powerpc-unknown-linux-gnu
+powerpc_msync=()
+powerpc_partword_quadword_atomics=()
+for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+  if [[ "${cpu}" == 'future' ]]; then
+    # In the recent LLVM, "future" is based on pwr11 features,
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L571
+    # but on the minimum external LLVM version of the oldest rustc version which we can use asm_experimental_arch
+    # on this target (see matrix.sh), "future" is based on pwr10 features.
+    # https://github.com/llvm/llvm-project/blob/llvmorg-12.0.0/llvm/lib/Target/PowerPC/PPC.td#L370
+    cfgs=$(rustc --print cfg --target "${target}" -C target-cpu=pwr10)
+  else
+    cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
+  fi
+  target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
+  if [[ "${target_features}" == *"\"msync\""* ]]; then
+    powerpc_msync+=("${cpu}")
+  fi
+  if [[ "${target_features}" == *"\"partword-atomics\""* ]] && [[ "${target_features}" == *"\"quadword-atomics\""* ]]; then
+    powerpc_partword_quadword_atomics+=("${cpu}")
+  fi
+done
+
+target=sparc-unknown-none-elf
+sparc_leoncasa=()
+sparc_v9=()
+for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+  cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
+  target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
+  if [[ "${target_features}" == *"\"leoncasa\""* ]]; then
+    sparc_leoncasa+=("${cpu}")
+  fi
+  if [[ "${target_features}" == *"\"v9\""* ]]; then
+    sparc_v9+=("${cpu}")
+  fi
+done
+
+target=m68k-unknown-none-elf
+m68k_isa_68020=()
+m68k_isa_68060=()
+for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+  cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
+  target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
+  if [[ "${target_features}" == *"\"isa-68020\""* ]]; then
+    m68k_isa_68020+=("${cpu}")
+  fi
+  if [[ "${target_features}" == *"\"isa-68060\""* ]]; then
+    m68k_isa_68060+=("${cpu}")
+  fi
+done
+
+target=avr-none
+avr_tinyencoding=()
+avr_rmw=()
+avr_lowbytefirst=()
+for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+  cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
+  target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
+  if [[ "${target_features}" == *"\"tinyencoding\""* ]]; then
+    avr_tinyencoding+=("${cpu}")
+  fi
+  if [[ "${target_features}" == *"\"rmw\""* ]]; then
+    avr_rmw+=("${cpu}")
+  fi
+  if [[ "${target_features}" == *"\"lowbytefirst\""* ]]; then
+    avr_lowbytefirst+=("${cpu}")
+  fi
+done
+
 arm_but_thumb_mode=()
 thumb_but_arm_mode=()
 for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end'); do
   cfgs=$(rustc --print cfg --target "${target}")
+  target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
   case "${target}" in
     thumb*)
-      if ! grep -Fq 'target_feature="thumb-mode"' <<<"${cfgs}"; then
+      if [[ "${target_features}" != *"\"thumb-mode\""* ]]; then
         thumb_but_arm_mode+=("${target}")
       fi
       ;;
     *)
-      if grep -Fq 'target_feature="thumb-mode"' <<<"${cfgs}"; then
+      if [[ "${target_features}" == *"\"thumb-mode\""* ]]; then
         arm_but_thumb_mode+=("${target}")
       fi
       ;;
@@ -126,7 +216,19 @@ fi
 
 # sort and dedup
 IFS=$'\n'
-arm_but_thumb_mode=($(LC_ALL=C sort -u <<<"${arm_but_thumb_mode[*]}" | sed -E 's/^/    "/g; s/$/",/g'))
+# aarch64_lse2=($(LC_ALL=C sort -u <<<"${aarch64_lse2[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+# aarch64_lse128=($(LC_ALL=C sort -u <<<"${aarch64_lse128[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+# aarch64_rcpc3=($(LC_ALL=C sort -u <<<"${aarch64_rcpc3[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+powerpc_msync=($(LC_ALL=C sort -u <<<"${powerpc_msync[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+powerpc_partword_quadword_atomics=($(LC_ALL=C sort -u <<<"${powerpc_partword_quadword_atomics[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+sparc_leoncasa=($(LC_ALL=C sort -u <<<"${sparc_leoncasa[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+sparc_v9=($(LC_ALL=C sort -u <<<"${sparc_v9[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+m68k_isa_68020=($(LC_ALL=C sort -u <<<"${m68k_isa_68020[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+m68k_isa_68060=($(LC_ALL=C sort -u <<<"${m68k_isa_68060[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+avr_tinyencoding=($(LC_ALL=C sort -u <<<"${avr_tinyencoding[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+avr_rmw=($(LC_ALL=C sort -u <<<"${avr_rmw[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+avr_lowbytefirst=($(LC_ALL=C sort -u <<<"${avr_lowbytefirst[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+arm_but_thumb_mode=($(LC_ALL=C sort -u <<<"${arm_but_thumb_mode[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
 IFS=$'\n\t'
 
 cat >|"${build_file}" <<EOF
@@ -134,8 +236,29 @@ cat >|"${build_file}" <<EOF
 // This file is @generated by ${0##*/}.
 // It is not intended for manual editing.
 
-#[rustfmt::skip]
-pub(crate) static ARM_BUT_THUMB_MODE: &[&str] = &[
-${arm_but_thumb_mode[*]}
-];
+#![cfg_attr(rustfmt, rustfmt::skip)]
+
 EOF
+
+print_list() {
+  local name="$1"
+  shift
+  local list=${*+"$*"$'\n'}
+  cat >>"${build_file}" <<EOF
+pub(crate) static ${name}: &[&str] = &[
+${list}];
+EOF
+}
+# print_list AARCH64_LSE2_CPU "${aarch64_lse2[@]}"
+# print_list AARCH64_LSE128_CPU "${aarch64_lse128[@]}"
+# print_list AARCH64_RCPC3_CPU "${aarch64_rcpc3[@]}"
+print_list POWERPC_MSYNC_CPU "${powerpc_msync[@]}"
+print_list POWERPC_PARTWORD_QUADWORD_ATOMICS_CPU "${powerpc_partword_quadword_atomics[@]}"
+print_list SPARC_LEONCASA_CPU "${sparc_leoncasa[@]}"
+print_list SPARC_V9_CPU "${sparc_v9[@]}"
+print_list M68K_ISA_68020_CPU "${m68k_isa_68020[@]}"
+print_list M68K_ISA_68060_CPU "${m68k_isa_68060[@]}"
+print_list AVR_TINYENCODING_CPU "${avr_tinyencoding[@]}"
+print_list AVR_RMW_CPU "${avr_rmw[@]}"
+print_list AVR_LOWBYTEFIRST_CPU "${avr_lowbytefirst[@]}"
+print_list ARM_BUT_THUMB_MODE "${arm_but_thumb_mode[@]}"

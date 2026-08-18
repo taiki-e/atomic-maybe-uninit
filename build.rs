@@ -191,8 +191,12 @@ fn main() {
             let mut x87 = target_os != "none";
             if let Some(cpu) = rustflags.target_cpu {
                 match cpu {
-                    "i486" => no_cmpxchg8b = true,
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/X86/X86.td#L1896-L1899
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/X86/X86.td#L2243-L2248
                     "i386" => no_cmpxchg = true,
+                    "i486" | "winchip-c6" | "winchip2" | "c3" => no_cmpxchg8b = true,
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/X86/X86.td#L1950
+                    "lakemont" => x87 = false,
                     _ => {}
                 }
             }
@@ -221,8 +225,8 @@ fn main() {
             // target_feature "lse2"/"lse128"/"rcpc3" is unstable and available on rustc side since nightly-2024-08-30: https://github.com/rust-lang/rust/pull/128192
             if !version.probe(82, 2024, 8, 29) || needs_target_feature_fallback(&version, None) {
                 // AArch64 macOS always supports FEAT_LSE2 because M1 is Armv8.4 with all features of Armv8.5 except FEAT_BTI:
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/AArch64/AArch64Processors.td#L1558
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/AArch64/AArch64Processors.td#L1180
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/AArch64/AArch64Processors.td#L1458
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/AArch64/AArch64Processors.td#L1052
                 // Script to get builtin targets that support FEAT_LSE2 by default:
                 // $ (for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "aarch64" or .value.arch == "arm64ec" then .key else empty end'); do rustc --print cfg --target "${target}" | grep -Fq '"lse2"' && printf '%s\n' "${target}"; done)
                 let mut lse2 = target_os == "macos";
@@ -553,31 +557,27 @@ fn main() {
         "powerpc" | "powerpc64" => {
             // target_feature "msync" is unstable and available on rustc side since nightly-2025-03-04: https://github.com/rust-lang/rust/pull/137860
             if !version.probe(87, 2025, 3, 3) || needs_target_feature_fallback(&version, None) {
-                let mut pwr8_features = false;
+                let mut partword_quadword_atomics = false;
                 let mut msync = false;
                 if let Some(cpu) = rustflags.target_cpu {
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L666
                     if let Some(mut cpu_version) = cpu.strip_prefix("pwr") {
                         cpu_version = cpu_version.strip_suffix('x').unwrap_or(cpu_version); // for pwr5x and pwr6x
                         if let Ok(cpu_version) = cpu_version.parse::<u32>() {
-                            pwr8_features = cpu_version >= 8;
+                            partword_quadword_atomics = cpu_version >= 8;
                         }
                     } else {
-                        match cpu {
-                            // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L789
-                            // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L557
-                            // On the minimum external LLVM version of the oldest rustc version which we can use asm_experimental_arch
-                            // on this target (see CI config for more), "future" is based on pwr10 features.
-                            // https://github.com/llvm/llvm-project/blob/llvmorg-12.0.0/llvm/lib/Target/PowerPC/PPC.td#L370
-                            "future" | "ppc64le" => pwr8_features = true,
-                            // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L145
-                            "440" | "450" | "e500" => msync = true,
-                            _ => {}
+                        if generated::POWERPC_PARTWORD_QUADWORD_ATOMICS_CPU.contains(&cpu) {
+                            partword_quadword_atomics = true;
+                        }
+                        if generated::POWERPC_MSYNC_CPU.contains(&cpu) {
+                            msync = true;
                         }
                     }
                 } else {
-                    // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L789
+                    // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L804
                     // See also https://github.com/rust-lang/rust/issues/59932
-                    pwr8_features = target_arch == "powerpc64"
+                    partword_quadword_atomics = target_arch == "powerpc64"
                         && env::var("CARGO_CFG_TARGET_ENDIAN")
                             .expect("CARGO_CFG_TARGET_ENDIAN not set")
                             == "little";
@@ -589,8 +589,8 @@ fn main() {
                                 .any(|abi| abi == "spe"));
                 }
                 // power8 features: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L498
-                let mut partword_atomics = pwr8_features;
-                let mut quadword_atomics = pwr8_features;
+                let mut partword_atomics = partword_quadword_atomics;
+                let mut quadword_atomics = partword_quadword_atomics;
                 for &(enabled, name) in &rustflags.target_feature {
                     // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L595
                     match name {
@@ -615,8 +615,8 @@ fn main() {
             let mut arch9_features = false; // z196+
             if let Some(cpu) = rustflags.target_cpu {
                 // LLVM and GCC recognize the same names:
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/SystemZ/SystemZProcessors.td
-                // https://github.com/gcc-mirror/gcc/blob/releases/gcc-15.2.0/gcc/config/s390/s390.opt#L58-L128
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZProcessors.td
+                // https://github.com/gcc-mirror/gcc/blob/releases/gcc-16.1.0/gcc/config/s390/s390.opt#L58-L128
                 if let Some(arch_version) = cpu.strip_prefix("arch") {
                     if let Ok(arch_version) = arch_version.parse::<u32>() {
                         arch9_features = arch_version >= 9;
@@ -649,22 +649,24 @@ fn main() {
             let mut v7 = false;
             let is_linux_or_solaris = target_os == "linux" || target_os == "solaris";
             if let Some(cpu) = rustflags.target_cpu {
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/Sparc/Sparc.td#L143
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/Sparc/Sparc.td#L175
                 match cpu {
-                    "myriad2" | "myriad2.1" | "myriad2.2" | "myriad2.3" | "ma2100" | "ma2150"
-                    | "ma2155" | "ma2450" | "ma2455" | "ma2x5x" | "ma2080" | "ma2085"
-                    | "ma2480" | "ma2485" | "ma2x8x" | "gr712rc" | "leon4" | "gr740" => {
-                        leoncasa = true;
-                    }
-                    // v8plus is ABI feature so not associated with -C target-cpu.
-                    "v9" | "ultrasparc" | "ultrasparc3" | "niagara" | "niagara2" | "niagara3"
-                    | "niagara4" => v9 = true,
+                    // https://github.com/llvm/llvm-project/pull/205810
+                    "leon3" if version.llvm < 23 => {}
                     "v7" => v7 = true,
-                    _ => {}
+                    _ => {
+                        if generated::SPARC_LEONCASA_CPU.contains(&cpu) {
+                            leoncasa = true;
+                        }
+                        if generated::SPARC_V9_CPU.contains(&cpu) {
+                            // v8plus is ABI feature so not associated with -C target-cpu.
+                            v9 = true;
+                        }
+                    }
                 }
             } else {
                 // https://github.com/rust-lang/rust/blob/1.94.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L19
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0/clang/lib/Driver/ToolChains/Arch/Sparc.cpp#L169
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/clang/lib/Driver/ToolChains/Arch/Sparc.cpp#L169
                 v9 = is_linux_or_solaris;
                 // https://github.com/rust-lang/rust/blob/1.94.0/compiler/rustc_target/src/spec/targets/sparc_unknown_none_elf.rs#L12
                 v7 = target == "sparc-unknown-none-elf";
@@ -695,7 +697,7 @@ fn main() {
             let mut mips1 = false;
             let mut r5900 = false;
             if let Some(cpu) = rustflags.target_cpu {
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/Mips/Mips.td#L259
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/Mips/Mips.td#L266
                 match cpu {
                     "mips1" => mips1 = true,
                     "r5900" => r5900 = true,
@@ -708,17 +710,15 @@ fn main() {
                     && (target_os == "psx"
                         || env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default() == "psx");
             }
+            // MIPS-I has no SYNC and LL/SC.
+            // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/Mips/MipsInstrInfo.td#L2199
+            // R5900 has no LL/SC.
+            // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/Mips/Mips64InstrInfo.td#L259
+            // Note that R5900 short loop erratum fix is needless in our code since only LL/SC code path has loop in asm!.
             if mips1 {
-                // MIPS-I has no SYNC and LL/SC.
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/Mips/MipsInstrInfo.td#L2179
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/Mips/MipsInstrInfo.td#L2235
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_sync");
-                println!("cargo:rustc-cfg=atomic_maybe_uninit_no_ll_sc");
             }
-            if r5900 {
-                // R5900 has no LL/SC.
-                // https://github.com/llvm/llvm-project/blob/32134a64b195f7804698418b6f416e761d890dea/llvm/lib/Target/Mips/Mips64InstrInfo.td#L259
-                // Note that R5900 short loop erratum fix is needless in our code since only LL/SC code path has loop in asm!.
+            if r5900 || mips1 {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_ll_sc");
             }
         }
@@ -728,14 +728,12 @@ fn main() {
                 let mut isa_68020 = false;
                 let mut isa_68060 = false;
                 if let Some(cpu) = rustflags.target_cpu {
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/M68k/M68k.td#L69
-                    match cpu {
-                        "M68020" | "M68030" | "M68040" => isa_68020 = true,
-                        "M68060" => {
-                            isa_68020 = true;
-                            isa_68060 = true;
-                        }
-                        _ => {}
+                    // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/M68k/M68k.td#L69
+                    if generated::M68K_ISA_68020_CPU.contains(&cpu) {
+                        isa_68020 = true;
+                    }
+                    if generated::M68K_ISA_68060_CPU.contains(&cpu) {
+                        isa_68060 = true;
                     }
                 } else {
                     // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L7
@@ -781,9 +779,8 @@ fn main() {
             }
         }
         "avr" => {
-            // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/AVR/AVRDevices.td
-            let mut tiny = false; // FamilyTiny
-            let mut xmegau = false; // FamilyXMEGAU
+            let mut tinyencoding = false; // FamilyTiny
+            let mut rmw = false; // FamilyXMEGAU
             let mut lowbytefirst = false; // FamilyXMEGA* | attiny102 | attiny104
             let mut llvm_missing_lowbytefirst = false;
             let cpu = match rustflags.target_cpu {
@@ -793,6 +790,7 @@ fn main() {
                     target.rsplit_once('-').unwrap_or(("", "")).1
                 }
             };
+            // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/AVR/AVRDevices.td#L256
             match cpu {
                 // attiny4/attiny5/attiny9/attiny10: 12.3. Accessing 16-bit Registers of https://ww1.microchip.com/downloads/en/DeviceDoc/atmel-8127-avr-8-bit-microcontroller-attiny4-attiny5-attiny9-attiny10_datasheet.pdf
                 //   > To perform a 16-bit write operation, the high byte must be written before the low byte.
@@ -800,60 +798,30 @@ fn main() {
                 //   > To do a 16-bit write, the high byte must be written before the low byte.
                 // attiny40: 12.9 Accessing Registers in 16-bit Mode of https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-8263-8-bit-AVR-Microcontroller-tinyAVR-ATtiny40_Datasheet.pdf
                 //   > To do a 16-bit write, the high byte must be written before the low byte.
-                "avrtiny" | "attiny4" | "attiny5" | "attiny9" | "attiny10" | "attiny20"
-                | "attiny40" => tiny = true,
                 // attiny102/attiny104: 8.9. Accessing 16-bit Registers of https://ww1.microchip.com/downloads/en/devicedoc/atmel-42505-8-bit-avr-microcontrollers-attiny102-attiny104_datasheet.pdf
                 //   > For a write operation, the low byte of the 16-bit register must be written before the high byte.
                 "attiny102" | "attiny104" => {
-                    tiny = true;
+                    tinyencoding = true;
                     lowbytefirst = true;
-                    // LLVM 22 doesn't handle attiny102/attiny104 as lowbytefirst.
+                    // LLVM (as of 23) doesn't handle attiny102/attiny104 as lowbytefirst.
                     llvm_missing_lowbytefirst = true;
                 }
-                "atxmega16a4u" | "atxmega16c4" | "atxmega32a4u" | "atxmega32c3" | "atxmega32c4"
-                | "atxmega32e5" | "atxmega16e5" | "atxmega8e5" | "atxmega64a3u"
-                | "atxmega64a4u" | "atxmega64b1" | "atxmega64b3" | "atxmega64c3"
-                | "atxmega64a1u" | "atxmega128a3u" | "atxmega128b1" | "atxmega128b3"
-                | "atxmega128c3" | "atxmega192a3u" | "atxmega192c3" | "atxmega256a3u"
-                | "atxmega256a3bu" | "atxmega256c3" | "atxmega384c3" | "atxmega128a1u"
-                | "atxmega128a4u" => {
-                    xmegau = true;
-                    lowbytefirst = true;
+                _ => {
+                    if generated::AVR_TINYENCODING_CPU.contains(&cpu) {
+                        tinyencoding = true;
+                    }
+                    if generated::AVR_RMW_CPU.contains(&cpu) {
+                        rmw = true;
+                    }
+                    if generated::AVR_LOWBYTEFIRST_CPU.contains(&cpu) {
+                        lowbytefirst = true;
+                    }
                 }
-                "avrxmega1" | "avrxmega2" | "avrxmega3" | "avrxmega4" | "avrxmega5"
-                | "avrxmega6" | "avrxmega7" | "atxmega16a4" | "atxmega16d4" | "atxmega32a4"
-                | "atxmega32d3" | "atxmega32d4" | "atxmega64a3" | "atxmega64d3" | "atxmega64d4"
-                | "atxmega64a1" | "atxmega128a3" | "atxmega128d3" | "atxmega128d4"
-                | "atxmega192a3" | "atxmega192d3" | "atxmega256a3" | "atxmega256a3b"
-                | "atxmega256d3" | "atxmega384d3" | "atxmega128a1" | "attiny202" | "attiny402"
-                | "attiny204" | "attiny404" | "attiny804" | "attiny1604" | "attiny406"
-                | "attiny806" | "attiny1606" | "attiny807" | "attiny1607" | "attiny212"
-                | "attiny412" | "attiny214" | "attiny414" | "attiny814" | "attiny1614"
-                | "attiny416" | "attiny816" | "attiny1616" | "attiny3216" | "attiny417"
-                | "attiny817" | "attiny1617" | "attiny3217" | "attiny1624" | "attiny1626"
-                | "attiny1627" | "attiny3224" | "attiny3226" | "attiny3227" | "atmega808"
-                | "atmega809" | "atmega1608" | "atmega1609" | "atmega3208" | "atmega3209"
-                | "atmega4808" | "atmega4809" | "avr64da28" | "avr64da32" | "avr64da48"
-                | "avr64da64" | "avr64db28" | "avr64db32" | "avr64db48" | "avr64db64"
-                | "avr64dd14" | "avr64dd20" | "avr64dd28" | "avr64dd32" | "avr64du28"
-                | "avr64du32" | "avr64ea28" | "avr64ea32" | "avr64ea48" | "avr64sd28"
-                | "avr64sd32" | "avr64sd48" | "avr16dd20" | "avr16dd28" | "avr16dd32"
-                | "avr16du14" | "avr16du20" | "avr16du28" | "avr16du32" | "avr32da28"
-                | "avr32da32" | "avr32da48" | "avr32db28" | "avr32db32" | "avr32db48"
-                | "avr32dd14" | "avr32dd20" | "avr32dd28" | "avr32dd32" | "avr32du14"
-                | "avr32du20" | "avr32du28" | "avr32du32" | "avr16eb14" | "avr16eb20"
-                | "avr16eb28" | "avr16eb32" | "avr16ea28" | "avr16ea32" | "avr16ea48"
-                | "avr32ea28" | "avr32ea32" | "avr32ea48" | "avr32sd20" | "avr32sd28"
-                | "avr32sd32" | "avr128da28" | "avr128da32" | "avr128da48" | "avr128da64"
-                | "avr128db28" | "avr128db32" | "avr128db48" | "avr128db64" => lowbytefirst = true,
-                _ => {}
             }
             // target_feature "tinyencoding"/"lowbytefirst"/"rmw" is unstable and available on rustc side since nightly-2026-02-08: https://github.com/rust-lang/rust/pull/146900
             let needs_target_feature_fallback =
                 !version.probe(95, 2026, 2, 7) || needs_target_feature_fallback(&version, None);
             if needs_target_feature_fallback || llvm_missing_lowbytefirst {
-                let mut tinyencoding = tiny;
-                let mut rmw = xmegau;
                 for &(enabled, name) in &rustflags.target_feature {
                     // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L981
                     match name {
@@ -873,7 +841,7 @@ fn main() {
         "csky" => {
             let mut no_ldex_stex = true;
             if let Some(cpu) = rustflags.target_cpu {
-                // https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0-rc1/llvm/lib/Target/CSKY/CSKY.td#L373
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/CSKY/CSKY.td#L373
                 if cpu.starts_with("ck860") || cpu.starts_with("c860") {
                     no_ldex_stex = false;
                 }
@@ -892,7 +860,8 @@ fn main() {
         //     // atomic_fetch_{add,and,xor,or}, {,cmp}xchg{32_32,_64}: LLVM 17+ (17 is our min LLVM version) https://github.com/llvm/llvm-project/commit/d0d1431ab1c88dd2fb8c09ae28909da3fb5f3a57
         //     // load_acquire, store_release: LLVM 21+ https://github.com/llvm/llvm-project/commit/17bfc00f7c4a424d7b5dc6da575865833701fd1a
         //     let mut v4 = false;
-        //     if let Some(cpu) = target_cpu() {
+        //     if let Some(cpu) = rustflags.target_cpu {
+        //         // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/BPF/BPF.td
         //         if let Some(cpu_version) = cpu.strip_prefix("v") {
         //             if let Ok(cpu_version) = cpu_version.parse::<u32>() {
         //                 if version.llvm >= 21 {

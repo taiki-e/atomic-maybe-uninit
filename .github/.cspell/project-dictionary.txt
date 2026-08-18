@@ -11,8 +11,6 @@ armasm
 atomicsabi
 attiny
 atxmega
-avrtiny
-avrxmega
 balign
 beqz
 beqzc
@@ -66,6 +64,7 @@ ishld
 isync
 kuser
 LAAL
+lakemont
 lamcas
 lclang
 ldar
@@ -179,7 +178,6 @@ tinyencoding
 tsim
 uart
 udevadm
-ultrasparc
 umax
 umin
 unguaranteed
@@ -189,6 +187,7 @@ uxth
 versatilepb
 virt
 vmovdqa
+winchip
 wokwi
 wreg
 xadd
