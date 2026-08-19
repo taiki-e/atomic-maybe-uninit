@@ -108,7 +108,8 @@ EOF
 # aarch64_lse2=()
 # aarch64_lse128=()
 # aarch64_rcpc3=()
-# for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+# cpus=$(rustc --print target-cpus --target "${target}")
+# while IFS= read -r cpu; do
 #   cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
 #   target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
 #   if [[ "${target_features}" == *"\"lse2\""* ]]; then
@@ -120,12 +121,13 @@ EOF
 #   if [[ "${target_features}" == *"\"rcpc3\""* ]]; then
 #     aarch64_rcpc3+=("${cpu}")
 #   fi
-# done
+# done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^native$/d')
 
 target=powerpc-unknown-linux-gnu
 powerpc_msync=()
 powerpc_partword_quadword_atomics=()
-for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+cpus=$(rustc --print target-cpus --target "${target}")
+while IFS= read -r cpu; do
   if [[ "${cpu}" == 'future' ]]; then
     # In the recent LLVM, "future" is based on pwr11 features,
     # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L571
@@ -143,12 +145,13 @@ for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | 
   if [[ "${target_features}" == *"\"partword-atomics\""* ]] && [[ "${target_features}" == *"\"quadword-atomics\""* ]]; then
     powerpc_partword_quadword_atomics+=("${cpu}")
   fi
-done
+done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^native$/d')
 
 target=sparc-unknown-none-elf
 sparc_leoncasa=()
 sparc_v9=()
-for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+cpus=$(rustc --print target-cpus --target "${target}")
+while IFS= read -r cpu; do
   cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
   target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
   if [[ "${target_features}" == *"\"leoncasa\""* ]]; then
@@ -157,12 +160,13 @@ for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | 
   if [[ "${target_features}" == *"\"v9\""* ]]; then
     sparc_v9+=("${cpu}")
   fi
-done
+done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^native$/d')
 
 target=m68k-unknown-none-elf
 m68k_isa_68020=()
 m68k_isa_68060=()
-for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+cpus=$(rustc --print target-cpus --target "${target}")
+while IFS= read -r cpu; do
   cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
   target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
   if [[ "${target_features}" == *"\"isa-68020\""* ]]; then
@@ -171,13 +175,14 @@ for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | 
   if [[ "${target_features}" == *"\"isa-68060\""* ]]; then
     m68k_isa_68060+=("${cpu}")
   fi
-done
+done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^native$/d')
 
 target=avr-none
 avr_tinyencoding=()
 avr_rmw=()
 avr_lowbytefirst=()
-for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | sed -E 's/^    //g; s/ .*//g; /^native$/d'); do
+cpus=$(rustc --print target-cpus --target "${target}")
+while IFS= read -r cpu; do
   cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
   target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
   if [[ "${target_features}" == *"\"tinyencoding\""* ]]; then
@@ -189,11 +194,12 @@ for cpu in $(rustc --print target-cpus --target "${target}" | grep -E '^    ' | 
   if [[ "${target_features}" == *"\"lowbytefirst\""* ]]; then
     avr_lowbytefirst+=("${cpu}")
   fi
-done
+done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^native$/d')
 
 arm_but_thumb_mode=()
 thumb_but_arm_mode=()
-for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end'); do
+specs=$(rustc -Z unstable-options --print all-target-specs-json)
+while IFS= read -r target; do
   cfgs=$(rustc --print cfg --target "${target}")
   target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
   case "${target}" in
@@ -208,7 +214,7 @@ for target in $(rustc -Z unstable-options --print all-target-specs-json | jq -r 
       fi
       ;;
   esac
-done
+done < <(jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' <<<"${specs}")
 if [[ ${#thumb_but_arm_mode[@]} -ne 0 ]]; then
   IFS=' '
   bail "thumb* but in arm mode...: ${thumb_but_arm_mode[*]}"

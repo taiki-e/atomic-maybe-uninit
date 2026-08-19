@@ -508,10 +508,12 @@ fn main() {
                         // https://github.com/rust-lang/rust/pull/130877
                         dep!(zaamo);
                     }
-                    b"a" if check_a || check_za => {
+                    _ if !check_a && !check_za => {}
+                    b"a" => {
                         a = enabled;
                         dep!(zaamo, zalrsc);
                     }
+                    b"rva23u64" => dep!(a, zaamo, zalrsc),
                     _ if !check_za => {}
                     b"zabha" => {
                         zabha = enabled;
