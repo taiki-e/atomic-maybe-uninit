@@ -684,6 +684,7 @@ impl<T: Primitive> AtomicMaybeUninit<T> {
     /// An alias for [`try_update`](Self::try_update).
     #[inline]
     #[cfg_attr(debug_assertions, track_caller)]
+    // TODO(semver): remove in the next breaking release.
     #[deprecated(note = "renamed to `try_update` for consistency", since = "0.3.21")]
     pub fn fetch_update<F>(
         &self,

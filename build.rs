@@ -232,7 +232,7 @@ fn main() {
                 let mut lse2 = target_os == "macos";
                 let mut lse128 = false;
                 let mut rcpc3 = false;
-                // TODO: Handles cases where a specific target cpu
+                // TODO: Handles cases where a specific target cpu / ver target feature
                 // implicitly enables target feature.
                 for &(enabled, name) in &rustflags.target_feature {
                     // As of 1.99.0-nightly (nightly-2026-08-15):

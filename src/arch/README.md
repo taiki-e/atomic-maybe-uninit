@@ -84,7 +84,7 @@ The following instructions are atomic if the address is properly aligned and the
 - `LOAD_ACQ`/`STORE_REL`: {8,16,32,64}-bit Acquire load / Release store. (Linux 6.15+ on [x86_64](https://github.com/torvalds/linux/commit/5341c9a4d833009071595230e3a038a823265a86)/[aarch64](https://github.com/torvalds/linux/commit/9bb12368d539d40457af593bc1b6b380430cc9d7), Linux 6.16+ on [riscv64](https://github.com/torvalds/linux/commit/8afd3170d5116385740aef8ab77d10b83f9b8e60), Linux 6.17+ on [powerpc64](https://github.com/torvalds/linux/commit/cf2a6de32cabbf84a889e24a9ee7c51dee4a1f70), Linux 7.1+ on [loongarch64](https://github.com/torvalds/linux/commit/ee823fe7c12f92bac5e5b1ea6dd0ac8b267dd464), etc.)
 
 Looking at the actual JIT implementations (e.g., [aarch64](https://github.com/torvalds/linux/blob/v7.1/arch/arm64/net/bpf_jit_comp.c#L845), [riscv64](https://github.com/torvalds/linux/blob/v7.1/arch/riscv/net/bpf_jit.h#L1293)) and [riscv](https://github.com/torvalds/linux/commit/20a759df3bba35bf5c3ddec0c02ad69b603b584c)/[powerpc](https://github.com/torvalds/linux/commit/b1e7cee96127468c2483cf10c2899c9b5cf79bf8)/[s390x](https://github.com/torvalds/linux/commit/68378982f0b21de02ac3c6a11e2420badefcb4bc) fixes in Linux 6.10, the ordering of atomic instructions matches that described in the "ORDERING" section of the [documentation for atomic types in the core kernel APIs](https://docs.kernel.org/core-api/wrappers/atomic_t.html).
-TODO: mips/loongarch64 JIT implementations are still wrong about ordering...
+Note that mips/loongarch64 JIT implementations are still wrong about ordering ([upstream bug report](https://bugzilla.kernel.org/show_bug.cgi?id=221870)).
 
 Note that not all host architectures support the same operations.
 
