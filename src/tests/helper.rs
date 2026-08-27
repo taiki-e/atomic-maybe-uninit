@@ -1353,10 +1353,10 @@ impl<T: raw::AtomicLoad + PartialEq + core::fmt::Debug> Array<T> {
         mark_defined(&self.arr.0);
         let base = self.base;
         let idx = self.idx;
-        for i in 0..self.arr.0.len() {
+        for (i, a) in self.arr.0.iter().enumerate().take(self.arr.0.len()) {
             if i != idx {
                 assert_eq!(
-                    unsafe { (*self.arr.0[i].as_ptr()).assume_init() },
+                    unsafe { (*a.as_ptr()).assume_init() },
                     base,
                     "value at index {i} has changed, but must not change other than value at index {idx}"
                 );
