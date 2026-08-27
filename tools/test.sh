@@ -336,8 +336,6 @@ run() {
     esac
     skip=''
     case "${target}" in
-      # TODO(i686-pc-windows-gnu): cannot find crt2.o/rsbegin.o/rsend.o when building std
-      i686-pc-windows-gnu) skip=1 ;;
       # TODO(hexagon): haw to pass build-std-features to cargo-careful?
       hexagon-unknown-linux-musl) skip=1 ;;
       arm64ec-pc-windows-msvc)

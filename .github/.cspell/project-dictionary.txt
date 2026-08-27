@@ -135,8 +135,6 @@ rdinit
 risbg
 rlim
 rlimit
-rsbegin
-rsend
 RVWMO
 sbci
 SCDP
