@@ -113,8 +113,11 @@ jobs:
           target: ${{ matrix.target }}
           runner: ${{ matrix.container && 'native' || '' }}
         if: steps.prepare.outputs.target-not-host == 'true' && !startsWith(matrix.target, 'csky-')
+      # We use qemu-system instead of qemu-user because csky_cmpxchg (trap 2) support is broken:
+      # https://github.com/williamhuang99/qemu/blob/csky-qemu-v3/linux-user/csky/cpu_loop.c#L111-L130
       # TODO: not yet supported in setup-cross-toolchain-action
-      - run: |
+      - name: Set up C-SKY toolchain
+        run: |
           retry() {
             for i in {1..10}; do
               if "$@"; then
@@ -125,6 +128,28 @@ jobs:
             done
             "$@"
           }
+          retry sudo apt-get -o Acquire::Retries=10 -qq update
+          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+            e2fsprogs \
+            libaio1 \
+            libdaxctl1 \
+            libgcrypt20 \
+            libglib2.0-0 \
+            libgnutls30 \
+            libjpeg-turbo8 \
+            liblzo2-2 \
+            libndctl6 \
+            libnuma1 \
+            libpam0g \
+            libpixman-1-0 \
+            libpmem1 \
+            libpng16-16 \
+            libsasl2-2 \
+            libseccomp2 \
+            libsnappy1v5 \
+            libudev1 \
+            libvdeplug2
+
           target_lower="${TARGET//-/_}"
           target_lower="${target_lower//./_}"
           target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
@@ -136,21 +161,50 @@ jobs:
           printf '%s\n' "CARGO_TARGET_${target_upper}_LINKER=csky-abiv2-linux-gcc" >>"${GITHUB_ENV}"
           case "${TARGET}" in
             *hf)
-              qemu_cpu=ck860fv
-              # +crt-static: Workaround for C-SKY QEMU issue
-              flags=' -C target-feature=+crt-static'
+              artifact_job=1251564492
+              image_sha256=2b1a00786e3a858337986c03fd36d5b649f46988cb668ff13976b91e34eb85d4
+              rootfs_sha256=fa6a2a7b90c7e6d4f09a7926138597e150412a9064d3fbc9f539582cdc1e315c
+              qemu_cpu=c860v
+              qemu_smp=2
+              flags=''
               ;;
             *)
-              # https://github.com/taiki-e/atomic-maybe-uninit/pull/32#issuecomment-3341287749
-              qemu_cpu=ck860
-              # +crt-static: Workaround for C-SKY QEMU issue
+              artifact_job=1251564457
+              image_sha256=0840cac22524fe519d8908e995e79cb7a599c0fce76975db304788c0d03cabbb
+              rootfs_sha256=2f2a80bb664219f8d2933246b5633d3c068254a1485c7569583a0cdc677b2d7c
+              qemu_cpu=c810v
+              qemu_smp=1
               # ldex/stex requires ck860*
-              flags=' -C target-feature=+crt-static -C target-cpu=ck860'
+              # TODO: remove once we implemented csky_cmpxchg (trap 2) support
+              flags=' -C target-cpu=ck860'
               ;;
           esac
+
+          image_dir="${RUNNER_TEMP}/csky-${qemu_cpu}"
+          mkdir -p -- "${image_dir}"
+          image_url="https://gitlab.com/c-sky/buildroot/-/jobs/${artifact_job}/artifacts/raw/output/images"
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 -o "${image_dir}/Image.xz" "${image_url}/Image.xz"
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 -o "${image_dir}/rootfs.ext2.xz" "${image_url}/rootfs.ext2.xz"
+          sha256sum -c - >/dev/null <<EOF
+          ${image_sha256} *${image_dir}/Image.xz
+          ${rootfs_sha256} *${image_dir}/rootfs.ext2.xz
+          EOF
+          xz --decompress --keep -- "${image_dir}/Image.xz" "${image_dir}/rootfs.ext2.xz"
+
+          debugfs -w -R 'mkdir /mnt/host' "${image_dir}/rootfs.ext2"
+          debugfs -w -R "write ${GITHUB_WORKSPACE}/tools/qemu-system-csky-init.sh /init" "${image_dir}/rootfs.ext2"
+          debugfs -w -R 'set_inode_field /init mode 0100755' "${image_dir}/rootfs.ext2"
+
+          qemu_system="${HOME}/gcc-csky-linux-gnuabiv2/bin/qemu-system-cskyv2"
+          "${qemu_system}" --version
           printf 'RUSTFLAGS=%s\n' "${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
           printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
-          printf '%s\n' "CARGO_TARGET_${target_upper}_RUNNER=qemu-cskyv2 -cpu ${qemu_cpu}" >>"${GITHUB_ENV}"
+          printf '%s\n' "CARGO_TARGET_${target_upper}_RUNNER=${GITHUB_WORKSPACE}/tools/qemu-system-csky-runner.sh" >>"${GITHUB_ENV}"
+          printf 'CSKY_QEMU_SYSTEM=%s\n' "${qemu_system}" >>"${GITHUB_ENV}"
+          printf 'CSKY_KERNEL=%s\n' "${image_dir}/Image" >>"${GITHUB_ENV}"
+          printf 'CSKY_ROOTFS=%s\n' "${image_dir}/rootfs.ext2" >>"${GITHUB_ENV}"
+          printf 'CSKY_QEMU_CPU=%s\n' "${qemu_cpu}" >>"${GITHUB_ENV}"
+          printf 'CSKY_QEMU_SMP=%s\n' "${qemu_smp}" >>"${GITHUB_ENV}"
           printf 'BUILD_STD=-Z''build-std\n' >>"${GITHUB_ENV}"
         env:
           TARGET: ${{ matrix.target }}
@@ -170,8 +224,7 @@ jobs:
             case "${TARGET}" in
               # TODO(macos): error: linker stderr: ld: ignoring duplicate libraries: '-lc', '-lm'
               # TODO(windows): error: linker stdout: C:\a\portable-atomic\portable-atomic\target\debug\deps\portable_atomic-6f0d7f05900c9263.exe : warning LNK4072: section count 101 exceeds max (96); image may not run
-              # TODO(csky): error: linker stderr: /home/runner/gcc-csky-linux-gnuabiv2/bin/../lib/gcc/csky-linux-gnuabiv2/6.3.0/../../../../csky-linux-gnuabiv2/bin/ld: file ....o's arch flag ck860 conflict with target ck810,set target arch flag to ck860
-              *-darwin* | *-windows-* | csky*) ;;
+              *-darwin* | *-windows-*) ;;
               *) flags+=" -D linker_messages" ;;
             esac
           fi

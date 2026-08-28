@@ -218,7 +218,7 @@ for target in "${targets[@]}"; do
   base_os=''
   base_container=''
   case "${target}" in
-    armeb-unknown-linux-gnueabi) base_os=ubuntu-22.04 ;;
+    armeb-unknown-linux-gnueabi | csky*) base_os=ubuntu-22.04 ;;
     aarch64-unknown-linux-gnu | armv7*-linux-gnueabihf | thumbv7*-linux-gnueabihf) base_os=ubuntu-24.04-arm ;;
     arm*-unknown-linux-gnueabi)
       base_os=ubuntu-24.04-arm
