@@ -255,9 +255,24 @@ macro_rules! atomic_sub_word {
                 val: MaybeUninit<Self>,
                 order: Ordering,
             ) -> MaybeUninit<Self> {
-                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
+                let (dst, shift, mut mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<u32>;
+                let mut val = crate::utils::extend32::$ty::zero(val);
 
+                // Separate from non-pure asm to allow omitting shifts.
+                // SAFETY: calling SLL is safe
+                unsafe {
+                    asm!(
+                        "ssl {shift}",        // sar = for_sll(shift & 31)
+                        "sll {mask}, {mask}", // mask <<= sar
+                        "sll {val}, {val}",   // val <<= sar
+                        val = inout(reg) val,
+                        mask = inout(reg) mask,
+                        shift = in(reg) shift,
+                        out("sar") _,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! swap {
@@ -265,9 +280,6 @@ macro_rules! atomic_sub_word {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "ssl {shift}",                  // sar = for_sll(shift & 31)
-                                "sll {mask}, {mask}",           // mask <<= sar
-                                "sll {val}, {val}",             // val <<= sar
                                 $release,                       // fence
                                 n!("l32i", "{out}, {dst}, 0"),  // atomic { out = *dst }
                                 "2:", // 'retry:
@@ -280,13 +292,11 @@ macro_rules! atomic_sub_word {
                                     "bne {tmp}, {out}, 2b",     // if tmp != out { jump 'retry }
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
-                                val = inout(reg) crate::utils::extend32::$ty::zero(val) => _,
+                                val = in(reg) val,
                                 out = out(reg) out,
-                                shift = in(reg) shift,
-                                mask = inout(reg) mask => _,
+                                mask = in(reg) mask,
                                 tmp = out(reg) _,
                                 out("scompare1") _,
-                                out("sar") _,
                                 options(nostack, preserves_flags),
                             )
                         };
@@ -307,10 +317,28 @@ macro_rules! atomic_sub_word {
                 failure: Ordering,
             ) -> (MaybeUninit<Self>, bool) {
                 let order = crate::utils::upgrade_success_ordering(success, failure);
-                let (dst, shift, mask) = crate::utils::create_sub_word_mask_values(dst);
+                let (dst, shift, mut mask) = crate::utils::create_sub_word_mask_values(dst);
                 let mut out: MaybeUninit<u32>;
                 let mut r: u32 = 0;
+                let mut old = crate::utils::extend32::$ty::zero(old);
+                let mut new = crate::utils::extend32::$ty::zero(new);
 
+                // Separate from non-pure asm to allow omitting shifts.
+                // SAFETY: calling SLL is safe
+                unsafe {
+                    asm!(
+                        "ssl {shift}",        // sar = for_sll(shift & 31)
+                        "sll {mask}, {mask}", // mask <<= sar
+                        "sll {old}, {old}",   // old <<= sar
+                        "sll {new}, {new}",   // new <<= sar
+                        old = inout(reg) old,
+                        new = inout(reg) new,
+                        mask = inout(reg) mask,
+                        shift = in(reg) shift,
+                        out("sar") _,
+                        options(pure, nomem, nostack, preserves_flags),
+                    );
+                }
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     macro_rules! cmpxchg {
@@ -318,10 +346,6 @@ macro_rules! atomic_sub_word {
                             // Implement sub-word atomic operations using word-sized CAS loop.
                             // See also create_sub_word_mask_values.
                             asm!(
-                                "ssl {shift}",                  // sar = for_sll(shift & 31)
-                                "sll {mask}, {mask}",           // mask <<= sar
-                                "sll {old}, {old}",             // old <<= sar
-                                "sll {new}, {new}",             // new <<= sar
                                 $release,                       // fence
                                 n!("l32i", "{out}, {dst}, 0"),  // atomic { out = *dst }
                                 "2:", // 'retry:
@@ -338,15 +362,13 @@ macro_rules! atomic_sub_word {
                                 "3:", // 'cmp-fail:
                                 $acquire,                       // fence
                                 dst = in(reg) ptr_reg!(dst),
-                                old = inout(reg) crate::utils::extend32::$ty::zero(old) => _,
-                                new = inout(reg) crate::utils::extend32::$ty::zero(new) => _,
+                                old = in(reg) old,
+                                new = in(reg) new,
                                 out = out(reg) out,
-                                shift = in(reg) shift,
-                                mask = inout(reg) mask => _,
+                                mask = in(reg) mask,
                                 tmp = out(reg) _,
                                 r = inout(reg) r,
                                 out("scompare1") _,
-                                out("sar") _,
                                 options(nostack, preserves_flags),
                             )
                         };
