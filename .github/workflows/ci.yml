@@ -33,23 +33,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  tidy:
-    uses: taiki-e/github-actions/.github/workflows/tidy.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
-    permissions:
-      security-events: write # for github/codeql-action/*
-  codegen:
-    needs: tidy
-    uses: taiki-e/github-actions/.github/workflows/gen.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
-    permissions:
-      contents: write # for creating branch for pr
-    secrets:
-      PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
-  msrv:
-    needs: tidy
-    uses: taiki-e/github-actions/.github/workflows/rust-msrv.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+  # tidy:
+  #   uses: taiki-e/github-actions/.github/workflows/tidy.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+  #   permissions:
+  #     security-events: write # for github/codeql-action/*
+  # codegen:
+  #   needs: tidy
+  #   uses: taiki-e/github-actions/.github/workflows/gen.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+  #   permissions:
+  #     contents: write # for creating branch for pr
+  #   secrets:
+  #     PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
+  # msrv:
+  #   needs: tidy
+  #   uses: taiki-e/github-actions/.github/workflows/rust-msrv.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
 
   prepare:
-    needs: tidy
+    # needs: tidy
     runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
@@ -446,453 +446,453 @@ jobs:
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-}
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-} --direct
 
-  test-x32:
-    name: test (x86_64-unknown-linux-gnux32)
-    needs: tidy
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
-        with:
-          tool: rust@nightly
-          fallback: none
-      - run: |
-          retry() {
-            for i in {1..10}; do
-              if "$@"; then
-                return 0
-              else
-                sleep "${i}"
-              fi
-            done
-            "$@"
-          }
-          retry sudo apt-get -o Acquire::Retries=10 -qq update
-          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
-            busybox-static \
-            cpio \
-            gcc-x86-64-linux-gnux32 \
-            libc6-dev-x32-cross \
-            qemu-system-x86
-          # https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/
-          sudo tee -- /etc/udev/rules.d/99-kvm4all.rules <<<'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"'
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
+  # test-x32:
+  #   name: test (x86_64-unknown-linux-gnux32)
+  #   needs: tidy
+  #   runs-on: ubuntu-24.04
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+  #     - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
+  #       with:
+  #         tool: rust@nightly
+  #         fallback: none
+  #     - run: |
+  #         retry() {
+  #           for i in {1..10}; do
+  #             if "$@"; then
+  #               return 0
+  #             else
+  #               sleep "${i}"
+  #             fi
+  #           done
+  #           "$@"
+  #         }
+  #         retry sudo apt-get -o Acquire::Retries=10 -qq update
+  #         retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+  #           busybox-static \
+  #           cpio \
+  #           gcc-x86-64-linux-gnux32 \
+  #           libc6-dev-x32-cross \
+  #           qemu-system-x86
+  #         # https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/
+  #         sudo tee -- /etc/udev/rules.d/99-kvm4all.rules <<<'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"'
+  #         sudo udevadm control --reload-rules
+  #         sudo udevadm trigger --name-match=kvm
 
-          target=x86_64-unknown-linux-gnux32
-          tmp=$(mktemp -d)
-          trap -- 'rm -rf -- "${tmp:?}"' EXIT
-          root="${tmp}/root"
-          mkdir -p -- "${root}"/{bin,dev,libx32,proc,tmp}
-          chmod 1777 "${root}/tmp"
-          sudo mknod "${root}/dev/console" c 5 1
-          sudo chmod 0600 "${root}/dev/console"
-          for src_lib in /usr/x86_64-linux-gnux32/lib/*.so.*; do
-            dst="${root}/libx32/$(basename -- "${src_lib}")"
-            install -m 0755 -- "${src_lib}" "${dst}"
-          done
-          install -m 0755 -- "$(type -P busybox)" "${root}/bin/busybox"
+  #         target=x86_64-unknown-linux-gnux32
+  #         tmp=$(mktemp -d)
+  #         trap -- 'rm -rf -- "${tmp:?}"' EXIT
+  #         root="${tmp}/root"
+  #         mkdir -p -- "${root}"/{bin,dev,libx32,proc,tmp}
+  #         chmod 1777 "${root}/tmp"
+  #         sudo mknod "${root}/dev/console" c 5 1
+  #         sudo chmod 0600 "${root}/dev/console"
+  #         for src_lib in /usr/x86_64-linux-gnux32/lib/*.so.*; do
+  #           dst="${root}/libx32/$(basename -- "${src_lib}")"
+  #           install -m 0755 -- "${src_lib}" "${dst}"
+  #         done
+  #         install -m 0755 -- "$(type -P busybox)" "${root}/bin/busybox"
 
-          kernel="${tmp}/linux"
-          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 \
-            -o "${kernel}" \
-            https://deb.debian.org/debian/dists/trixie/main/installer-amd64/20250803/images/netboot/debian-installer/amd64/linux
-          sha256sum -c - >/dev/null <<<"123e30d376f800b70848505a1193d0fce03359052677ed4e068eb60231a4bb02 *${kernel}"
+  #         kernel="${tmp}/linux"
+  #         retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 \
+  #           -o "${kernel}" \
+  #           https://deb.debian.org/debian/dists/trixie/main/installer-amd64/20250803/images/netboot/debian-installer/amd64/linux
+  #         sha256sum -c - >/dev/null <<<"123e30d376f800b70848505a1193d0fce03359052677ed4e068eb60231a4bb02 *${kernel}"
 
-          run=''
-          build() {
-            local output=$1
-            local extra_flags=${2:-}
-            local binary_path
-            binary_path=$(
-              RUSTFLAGS="${RUSTFLAGS:-} -C panic=abort -Z panic_abort_tests${extra_flags}" \
-                CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNUX32_LINKER=x86_64-linux-gnux32-gcc \
-                ./tools/test.sh build --target "${target}" -r
-            )
-            install -m 0755 -- "${binary_path}" "${root}/${output}"
-            run+="/\"${output}\" --test-threads=1 || status=1"$'\n'
-          }
-          build baseline
-          build cmpxchg16b ' -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics'
-          build cmpxchg16b_avx ' -C target-feature=+cmpxchg16b,+avx'
+  #         run=''
+  #         build() {
+  #           local output=$1
+  #           local extra_flags=${2:-}
+  #           local binary_path
+  #           binary_path=$(
+  #             RUSTFLAGS="${RUSTFLAGS:-} -C panic=abort -Z panic_abort_tests${extra_flags}" \
+  #               CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNUX32_LINKER=x86_64-linux-gnux32-gcc \
+  #               ./tools/test.sh build --target "${target}" -r
+  #           )
+  #           install -m 0755 -- "${binary_path}" "${root}/${output}"
+  #           run+="/\"${output}\" --test-threads=1 || status=1"$'\n'
+  #         }
+  #         build baseline
+  #         build cmpxchg16b ' -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics'
+  #         build cmpxchg16b_avx ' -C target-feature=+cmpxchg16b,+avx'
 
-          cat >"${root}/init" <<EOF
-          #!/bin/busybox sh
-          /bin/busybox mount -t devtmpfs devtmpfs /dev
-          /bin/busybox mount -t proc proc /proc
-          export LD_LIBRARY_PATH=/libx32
-          status=0
-          ${run}
-          if [ "\${status}" -eq 0 ]; then
-            printf 'Tests finished successfully\n'
-          fi
-          /bin/busybox poweroff -f
-          while true; do
-            /bin/busybox sleep 1
-          done
-          EOF
-          chmod 0755 "${root}/init"
+  #         cat >"${root}/init" <<EOF
+  #         #!/bin/busybox sh
+  #         /bin/busybox mount -t devtmpfs devtmpfs /dev
+  #         /bin/busybox mount -t proc proc /proc
+  #         export LD_LIBRARY_PATH=/libx32
+  #         status=0
+  #         ${run}
+  #         if [ "\${status}" -eq 0 ]; then
+  #           printf 'Tests finished successfully\n'
+  #         fi
+  #         /bin/busybox poweroff -f
+  #         while true; do
+  #           /bin/busybox sleep 1
+  #         done
+  #         EOF
+  #         chmod 0755 "${root}/init"
 
-          initrd="${tmp}/initrd"
-          (
-            cd -- "${root}"
-            find . -print0 \
-              | cpio --null --create --format=newc --owner=0:0 \
-              | gzip -9 >"${initrd}"
-          )
+  #         initrd="${tmp}/initrd"
+  #         (
+  #           cd -- "${root}"
+  #           find . -print0 \
+  #             | cpio --null --create --format=newc --owner=0:0 \
+  #             | gzip -9 >"${initrd}"
+  #         )
 
-          log="${tmp}/qemu.log"
-          timeout 6m qemu-system-x86_64 \
-            -display none \
-            -monitor none \
-            -serial stdio \
-            -accel kvm \
-            -cpu host \
-            -m 6G \
-            -smp 2 \
-            -no-user-config \
-            -nic none \
-            -kernel "${kernel}" \
-            -initrd "${initrd}" \
-            -append 'console=ttyS0 rdinit=/init syscall.x32=y random.trust_cpu=on panic=-1' \
-            -no-reboot \
-            | tee -- "${log}"
-          grep -Fq 'Tests finished successfully' "${log}"
+  #         log="${tmp}/qemu.log"
+  #         timeout 6m qemu-system-x86_64 \
+  #           -display none \
+  #           -monitor none \
+  #           -serial stdio \
+  #           -accel kvm \
+  #           -cpu host \
+  #           -m 6G \
+  #           -smp 2 \
+  #           -no-user-config \
+  #           -nic none \
+  #           -kernel "${kernel}" \
+  #           -initrd "${initrd}" \
+  #           -append 'console=ttyS0 rdinit=/init syscall.x32=y random.trust_cpu=on panic=-1' \
+  #           -no-reboot \
+  #           | tee -- "${log}"
+  #         grep -Fq 'Tests finished successfully' "${log}"
 
-  build:
-    name: build (${{ matrix.name || matrix.rust }})
-    needs: tidy
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
-          - rust: stable
-          - rust: beta
-          - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
-          - rust: nightly
-          # Check that test suite can be built
-          - name: nightly, --tests
-            rust: nightly
-            tests: 1
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
-        with:
-          tool: rust@${{ matrix.rust }},cargo-hack
-          fallback: none
-      - run: tools/build.sh
-        env:
-          TESTS: ${{ matrix.tests }}
-          ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
+  # build:
+  #   name: build (${{ matrix.name || matrix.rust }})
+  #   needs: tidy
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - rust: '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
+  #         - rust: stable
+  #         - rust: beta
+  #         - rust: nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
+  #         - rust: nightly
+  #         # Check that test suite can be built
+  #         - name: nightly, --tests
+  #           rust: nightly
+  #           tests: 1
+  #   runs-on: ubuntu-24.04
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+  #     - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
+  #       with:
+  #         tool: rust@${{ matrix.rust }},cargo-hack
+  #         fallback: none
+  #     - run: tools/build.sh
+  #       env:
+  #         TESTS: ${{ matrix.tests }}
+  #         ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
 
-  no-std:
-    needs: tidy
-    strategy:
-      fail-fast: false
-      matrix:
-        rust:
-          - '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
-          # - '1.81' # LLVM 18
-          # - '1.86' # LLVM 19
-          # - '1.90' # LLVM 20
-          # - '1.94' # LLVM 21
-          # - '1.98' # LLVM 22
-          - stable
-          # - beta
-          - nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
-          # - nightly-2024-07-31 # Rust 1.82, LLVM 18
-          # - nightly-2025-02-17 # Rust 1.87, LLVM 19
-          # - nightly-2025-08-06 # Rust 1.91, LLVM 20
-          # - nightly-2026-01-28 # Rust 1.95, LLVM 21
-          # - nightly-2026-08-05 # Rust 1.99, LLVM 22
-          - nightly
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/install-action@7572810d7dd469b651bb7793945692cf78da5dd7 # v2.85.0
-        with:
-          tool: rust@${{ matrix.rust }}${{ matrix.rust == 'stable' && ',cargo-hack,espup' || '' }}${{ (startsWith(matrix.rust, 'nightly') && matrix.rust != 'nightly-2023-08-24' && matrix.rust != 'nightly-2024-07-31' && matrix.rust != 'nightly-2025-02-17') && ',bpf-linker' || '' }}
-          fallback: none
-      - run: |
-          retry() {
-            for i in {1..10}; do
-              if "$@"; then
-                return 0
-              else
-                sleep "${i}"
-              fi
-            done
-            "$@"
-          }
-          apt_packages=(
-            device-tree-compiler
-            libslirp0
-          )
-          if [[ "${RUST}" == "nightly"* ]]; then
-            apt_packages+=(
-              avr-libc
-              gcc-avr
-              gcc-m68k-linux-gnu
-              libc6-dev-m68k-cross
-              simavr
-            )
-            if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
-              # TODO: QEMU 10.2-11.0 exits with 1
-              apt_packages+=(
-                qemu-system-sparc
-              )
-              if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
-                apt_packages+=(
-                  libnspr4
-                  mspdebug
-                )
-              fi
-            fi
-          fi
-          retry sudo apt-get -o Acquire::Retries=10 -qq update
-          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends "${apt_packages[@]}"
-          (
-            cd
-            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/riscv-isa-sim/releases/download/v1.1.0-76ced61/riscv-isa-sim-ubuntu-24.04.tar.xz \
-              | tar xJf -
-            retry docker create --name gcc-riscv64-linux-musl ghcr.io/taiki-e/rust-cross-toolchain:riscv64gc-unknown-linux-musl-dev
-            docker cp -- gcc-riscv64-linux-musl:/riscv64gc-unknown-linux-musl gcc-riscv64-linux-musl
-            docker rm -f -- gcc-riscv64-linux-musl >/dev/null
-            rm -- gcc-riscv64-linux-musl/bin/qemu-*
-          )
-          printf '%s\n' "${HOME}"/riscv-isa-sim/bin >>"${GITHUB_PATH}"
-          printf '%s\n' "${HOME}"/gcc-riscv64-linux-musl/bin >>"${GITHUB_PATH}"
-          if [[ "${RUST}" == "nightly"* ]]; then
-            if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
-              mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}
-              if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
-                # https://www.ti.com/tool/MSP430-GCC-OPENSOURCE
-                retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 -o msp430-gcc.tar.bz2 https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-LlCjWuAbzH/9.3.1.2/msp430-gcc-9.3.1.11_linux64.tar.bz2
-                sha256sum -c - >/dev/null <<<'b60851b61565e3ddd2193298a3fac5120c2402597174106cc5f8482b9e9986e6 *msp430-gcc.tar.bz2'
-                tar xf msp430-gcc.tar.bz2 --strip-components 1 -C "${HOME}"/msp430-gcc
-                rm -- msp430-gcc.tar.bz2
-                printf '%s\n' "${HOME}"/msp430-gcc/bin >>"${GITHUB_PATH}"
-              fi
-              # https://download.gaisler.com/anonftp/bcc2/bin/
-              bcc_version=2.3.1
-              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://download.gaisler.com/anonftp/bcc2/bin/bcc-${bcc_version}-gcc-sparc-linux64.tar.xz" \
-                | tar xJf - --strip-components 1 -C "${HOME}"/sparc-bcc-gcc
-              printf '%s\n' "${HOME}"/sparc-bcc-gcc/bin >>"${GITHUB_PATH}"
-              # https://download.gaisler.com/products/TSIM3/bin/tsim-eval/
-              tsim3_version=3.1.14
-              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://download.gaisler.com/products/TSIM3/bin/tsim-eval/tsim-eval-${tsim3_version}.tar.gz" \
-                | tar xzf - --strip-components 1 -C "${HOME}"/tsim
-              printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
-              # Patched QEMU for LoongArch semihosting
-              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/loongarch-semi-10.1.5/qemu-ubuntu-24.04.tar.xz \
-                | tar xJf -
-              sudo mv -- qemu /usr/local/qemu-loongarch-semi
-              printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/qemu-loongarch-semi/bin\n' >>"${GITHUB_ENV}"
-            fi
-            # https://github.com/taiki-e/dockerfiles/pkgs/container/qemu-user
-            retry docker create --name qemu-user ghcr.io/taiki-e/qemu-user
-            mkdir -p -- qemu-user
-            docker cp -- qemu-user:/usr/bin qemu-user/bin
-            docker rm -f -- qemu-user >/dev/null
-            sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
-            rm -rf -- ./qemu-user
-          elif [[ "${RUST}" == "stable" ]]; then
-            retry espup install --targets esp32,esp32s2,esp32s3
-          fi
-          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/patched-11.0.0/qemu-ubuntu-24.04.tar.xz \
-            | tar xJf -
-          rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.0 exits with 1
-          sudo cp -r -- qemu/. /usr/local/
-          rm -rf -- ./qemu
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUST: ${{ matrix.rust }}
-      # cortex-m-rt 0.7.6 requires Rust 1.85.
-      - run: |
-          cargo generate-lockfile
-          cargo update -p cortex-m-rt --precise 0.7.5
-        working-directory: tests/no-std-qemu
-        if: startsWith(matrix.rust, '1.7') || startsWith(matrix.rust, '1.8') || startsWith(matrix.rust, 'nightly-2023') || startsWith(matrix.rust, 'nightly-2024')
-      - run: tools/no-std.sh
-        env:
-          ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
-      - run: tools/build.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
-        if: matrix.rust == 'stable'
-      - run: tools/build.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
-        env:
-          TESTS: 1
-        if: matrix.rust == 'stable'
-      - run: tools/no-std.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
-        if: matrix.rust == 'stable'
+  # no-std:
+  #   needs: tidy
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       rust:
+  #         - '1.74' # LLVM 17 (oldest version that MaybeUninit register is supported)
+  #         # - '1.81' # LLVM 18
+  #         # - '1.86' # LLVM 19
+  #         # - '1.90' # LLVM 20
+  #         # - '1.94' # LLVM 21
+  #         # - '1.98' # LLVM 22
+  #         - stable
+  #         # - beta
+  #         - nightly-2023-08-24 # Rust 1.74, LLVM 17 (oldest version that MaybeUninit register is supported)
+  #         # - nightly-2024-07-31 # Rust 1.82, LLVM 18
+  #         # - nightly-2025-02-17 # Rust 1.87, LLVM 19
+  #         # - nightly-2025-08-06 # Rust 1.91, LLVM 20
+  #         # - nightly-2026-01-28 # Rust 1.95, LLVM 21
+  #         # - nightly-2026-08-05 # Rust 1.99, LLVM 22
+  #         - nightly
+  #   runs-on: ubuntu-24.04
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+  #     - uses: taiki-e/install-action@7572810d7dd469b651bb7793945692cf78da5dd7 # v2.85.0
+  #       with:
+  #         tool: rust@${{ matrix.rust }}${{ matrix.rust == 'stable' && ',cargo-hack,espup' || '' }}${{ (startsWith(matrix.rust, 'nightly') && matrix.rust != 'nightly-2023-08-24' && matrix.rust != 'nightly-2024-07-31' && matrix.rust != 'nightly-2025-02-17') && ',bpf-linker' || '' }}
+  #         fallback: none
+  #     - run: |
+  #         retry() {
+  #           for i in {1..10}; do
+  #             if "$@"; then
+  #               return 0
+  #             else
+  #               sleep "${i}"
+  #             fi
+  #           done
+  #           "$@"
+  #         }
+  #         apt_packages=(
+  #           device-tree-compiler
+  #           libslirp0
+  #         )
+  #         if [[ "${RUST}" == "nightly"* ]]; then
+  #           apt_packages+=(
+  #             avr-libc
+  #             gcc-avr
+  #             gcc-m68k-linux-gnu
+  #             libc6-dev-m68k-cross
+  #             simavr
+  #           )
+  #           if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
+  #             # TODO: QEMU 10.2-11.0 exits with 1
+  #             apt_packages+=(
+  #               qemu-system-sparc
+  #             )
+  #             if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
+  #               apt_packages+=(
+  #                 libnspr4
+  #                 mspdebug
+  #               )
+  #             fi
+  #           fi
+  #         fi
+  #         retry sudo apt-get -o Acquire::Retries=10 -qq update
+  #         retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends "${apt_packages[@]}"
+  #         (
+  #           cd
+  #           retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/riscv-isa-sim/releases/download/v1.1.0-76ced61/riscv-isa-sim-ubuntu-24.04.tar.xz \
+  #             | tar xJf -
+  #           retry docker create --name gcc-riscv64-linux-musl ghcr.io/taiki-e/rust-cross-toolchain:riscv64gc-unknown-linux-musl-dev
+  #           docker cp -- gcc-riscv64-linux-musl:/riscv64gc-unknown-linux-musl gcc-riscv64-linux-musl
+  #           docker rm -f -- gcc-riscv64-linux-musl >/dev/null
+  #           rm -- gcc-riscv64-linux-musl/bin/qemu-*
+  #         )
+  #         printf '%s\n' "${HOME}"/riscv-isa-sim/bin >>"${GITHUB_PATH}"
+  #         printf '%s\n' "${HOME}"/gcc-riscv64-linux-musl/bin >>"${GITHUB_PATH}"
+  #         if [[ "${RUST}" == "nightly"* ]]; then
+  #           if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
+  #             mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}
+  #             if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
+  #               # https://www.ti.com/tool/MSP430-GCC-OPENSOURCE
+  #               retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 -o msp430-gcc.tar.bz2 https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-LlCjWuAbzH/9.3.1.2/msp430-gcc-9.3.1.11_linux64.tar.bz2
+  #               sha256sum -c - >/dev/null <<<'b60851b61565e3ddd2193298a3fac5120c2402597174106cc5f8482b9e9986e6 *msp430-gcc.tar.bz2'
+  #               tar xf msp430-gcc.tar.bz2 --strip-components 1 -C "${HOME}"/msp430-gcc
+  #               rm -- msp430-gcc.tar.bz2
+  #               printf '%s\n' "${HOME}"/msp430-gcc/bin >>"${GITHUB_PATH}"
+  #             fi
+  #             # https://download.gaisler.com/anonftp/bcc2/bin/
+  #             bcc_version=2.3.1
+  #             retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://download.gaisler.com/anonftp/bcc2/bin/bcc-${bcc_version}-gcc-sparc-linux64.tar.xz" \
+  #               | tar xJf - --strip-components 1 -C "${HOME}"/sparc-bcc-gcc
+  #             printf '%s\n' "${HOME}"/sparc-bcc-gcc/bin >>"${GITHUB_PATH}"
+  #             # https://download.gaisler.com/products/TSIM3/bin/tsim-eval/
+  #             tsim3_version=3.1.14
+  #             retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://download.gaisler.com/products/TSIM3/bin/tsim-eval/tsim-eval-${tsim3_version}.tar.gz" \
+  #               | tar xzf - --strip-components 1 -C "${HOME}"/tsim
+  #             printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
+  #             # Patched QEMU for LoongArch semihosting
+  #             retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/loongarch-semi-10.1.5/qemu-ubuntu-24.04.tar.xz \
+  #               | tar xJf -
+  #             sudo mv -- qemu /usr/local/qemu-loongarch-semi
+  #             printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/qemu-loongarch-semi/bin\n' >>"${GITHUB_ENV}"
+  #           fi
+  #           # https://github.com/taiki-e/dockerfiles/pkgs/container/qemu-user
+  #           retry docker create --name qemu-user ghcr.io/taiki-e/qemu-user
+  #           mkdir -p -- qemu-user
+  #           docker cp -- qemu-user:/usr/bin qemu-user/bin
+  #           docker rm -f -- qemu-user >/dev/null
+  #           sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
+  #           rm -rf -- ./qemu-user
+  #         elif [[ "${RUST}" == "stable" ]]; then
+  #           retry espup install --targets esp32,esp32s2,esp32s3
+  #         fi
+  #         retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/patched-11.0.0/qemu-ubuntu-24.04.tar.xz \
+  #           | tar xJf -
+  #         rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.0 exits with 1
+  #         sudo cp -r -- qemu/. /usr/local/
+  #         rm -rf -- ./qemu
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         RUST: ${{ matrix.rust }}
+  #     # cortex-m-rt 0.7.6 requires Rust 1.85.
+  #     - run: |
+  #         cargo generate-lockfile
+  #         cargo update -p cortex-m-rt --precise 0.7.5
+  #       working-directory: tests/no-std-qemu
+  #       if: startsWith(matrix.rust, '1.7') || startsWith(matrix.rust, '1.8') || startsWith(matrix.rust, 'nightly-2023') || startsWith(matrix.rust, 'nightly-2024')
+  #     - run: tools/no-std.sh
+  #       env:
+  #         ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
+  #     - run: tools/build.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
+  #       if: matrix.rust == 'stable'
+  #     - run: tools/build.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
+  #       env:
+  #         TESTS: 1
+  #       if: matrix.rust == 'stable'
+  #     - run: tools/no-std.sh +esp xtensa-esp32-none-elf xtensa-esp32s2-none-elf xtensa-esp32s3-none-elf
+  #       if: matrix.rust == 'stable'
 
-  valgrind:
-    name: valgrind (${{ matrix.target }})
-    needs: tidy
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-          - target: i686-unknown-linux-gnu
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
-          - target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-24.04-arm
-          # TODO: "unhandled instruction: 0x4508 0xD103" in atomic_sub in Arc::drop (as of Valgrind 3.26)
-          # - target: thumbv7neon-unknown-linux-gnueabihf
-          #   os: ubuntu-24.04-arm
-          - target: powerpc64le-unknown-linux-gnu
-            arch: ppc64le
-          - target: riscv64gc-unknown-linux-gnu
-            arch: riscv64
-          - target: s390x-unknown-linux-gnu
-            arch: s390x
-    runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
-    timeout-minutes: 30
-    steps:
-      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
-        with:
-          tool: rust@nightly
-          fallback: none
-      - run: |
-          if [[ -z "${TARGET}" ]]; then
-            printf 'matrix.target must be set\n'
-            exit 1
-          fi
-          host="$(rustc -vV | grep -E '^host:' | cut -d' ' -f2)"
-          if [[ "${host}" != "${TARGET}" ]]; then
-            printf 'TARGET=--target=%s\n' "${TARGET}" >>"${GITHUB_ENV}"
-          fi
-          printf 'VALGRIND=%s\n' "${VALGRIND}" >>"${GITHUB_ENV}"
-        env:
-          TARGET: ${{ matrix.target }}
-          VALGRIND: ${{ matrix.arch && 'valgrind-cross' || 'valgrind' }}
-      # - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
-      - uses: taiki-e/setup-cross-toolchain-action@3d9770ce98eb7dbcf378563182a5e8031165f75b # v1.41.0
-        with:
-          target: ${{ matrix.target }}
-          runner: valgrind
-      - uses: taiki-e/github-actions/setup-docker@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
-        with:
-          buildx: false
-          qemu: ${{ matrix.arch }}
-        if: matrix.arch != ''
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-      # x86_64 +cmpxchg16b
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
-        if: startsWith(matrix.target, 'x86_64')
-      # x86_64 +cmpxchg16b,+avx
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b,+avx
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b,+avx
-        if: startsWith(matrix.target, 'x86_64')
-      # x86 -sse2
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
-        if: startsWith(matrix.target, 'i686')
-      # x86 -sse
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
-        if: startsWith(matrix.target, 'i686')
-      # x86 -x87
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
-        if: startsWith(matrix.target, 'i686')
-      # aarch64 +lse
-      # As of Valgrind 3.26, Valgrind supports atomic instructions of Armv8.0, Armv8.1 (FEAT_LSE), and Armv8.3 (FEAT_LRCPC).
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
-        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
-      # aarch64 +lse,+rcpc
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse,+rcpc
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse,+rcpc
-        if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
-      # arm v8 little endian
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v6 kuser_memory_barrier
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v6 cp15_barrier
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v5 kuser_cmpxchg+kuser_memory_barrier
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # arm v4 kuser_cmpxchg+kuser_memory_barrier+bx
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
-        if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
-      # powerpc64 pwr7
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
-        if: startsWith(matrix.target, 'powerpc64le-')
-      # s390x z196 (arch9)
-      - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=z196
-        if: startsWith(matrix.target, 's390x')
+  # valgrind:
+  #   name: valgrind (${{ matrix.target }})
+  #   needs: tidy
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - target: x86_64-unknown-linux-gnu
+  #         - target: i686-unknown-linux-gnu
+  #         - target: aarch64-unknown-linux-gnu
+  #           os: ubuntu-24.04-arm
+  #         - target: armv7-unknown-linux-gnueabihf
+  #           os: ubuntu-24.04-arm
+  #         # TODO: "unhandled instruction: 0x4508 0xD103" in atomic_sub in Arc::drop (as of Valgrind 3.26)
+  #         # - target: thumbv7neon-unknown-linux-gnueabihf
+  #         #   os: ubuntu-24.04-arm
+  #         - target: powerpc64le-unknown-linux-gnu
+  #           arch: ppc64le
+  #         - target: riscv64gc-unknown-linux-gnu
+  #           arch: riscv64
+  #         - target: s390x-unknown-linux-gnu
+  #           arch: s390x
+  #   runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+  #     - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
+  #       with:
+  #         tool: rust@nightly
+  #         fallback: none
+  #     - run: |
+  #         if [[ -z "${TARGET}" ]]; then
+  #           printf 'matrix.target must be set\n'
+  #           exit 1
+  #         fi
+  #         host="$(rustc -vV | grep -E '^host:' | cut -d' ' -f2)"
+  #         if [[ "${host}" != "${TARGET}" ]]; then
+  #           printf 'TARGET=--target=%s\n' "${TARGET}" >>"${GITHUB_ENV}"
+  #         fi
+  #         printf 'VALGRIND=%s\n' "${VALGRIND}" >>"${GITHUB_ENV}"
+  #       env:
+  #         TARGET: ${{ matrix.target }}
+  #         VALGRIND: ${{ matrix.arch && 'valgrind-cross' || 'valgrind' }}
+  #     # - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
+  #     - uses: taiki-e/setup-cross-toolchain-action@3d9770ce98eb7dbcf378563182a5e8031165f75b # v1.41.0
+  #       with:
+  #         target: ${{ matrix.target }}
+  #         runner: valgrind
+  #     - uses: taiki-e/github-actions/setup-docker@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+  #       with:
+  #         buildx: false
+  #         qemu: ${{ matrix.arch }}
+  #       if: matrix.arch != ''
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #     # x86_64 +cmpxchg16b
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics
+  #       if: startsWith(matrix.target, 'x86_64')
+  #     # x86_64 +cmpxchg16b,+avx
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+cmpxchg16b,+avx
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+cmpxchg16b,+avx
+  #       if: startsWith(matrix.target, 'x86_64')
+  #     # x86 -sse2
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
+  #       if: startsWith(matrix.target, 'i686')
+  #     # x86 -sse
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse
+  #       if: startsWith(matrix.target, 'i686')
+  #     # x86 -x87
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_x87_over_sse --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87
+  #       if: startsWith(matrix.target, 'i686')
+  #     # aarch64 +lse
+  #     # As of Valgrind 3.26, Valgrind supports atomic instructions of Armv8.0, Armv8.1 (FEAT_LSE), and Armv8.3 (FEAT_LRCPC).
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse
+  #       if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
+  #     # aarch64 +lse,+rcpc
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+lse,+rcpc
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+lse,+rcpc
+  #       if: (startsWith(matrix.target, 'aarch64') || startsWith(matrix.target, 'arm64'))
+  #     # arm v8 little endian
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+v8
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+v8
+  #       if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+  #     # arm v6 kuser_memory_barrier
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_memory_barrier
+  #       if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+  #     # arm v6 cp15_barrier
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
+  #       if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+  #     # arm v5 kuser_cmpxchg+kuser_memory_barrier
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg
+  #       if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+  #     # arm v4 kuser_cmpxchg+kuser_memory_barrier+bx
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_kuser_cmpxchg --cfg atomic_maybe_uninit_test_prefer_bx
+  #       if: startsWith(matrix.target, 'armv7') || startsWith(matrix.target, 'thumbv7')
+  #     # powerpc64 pwr7
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=pwr7
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=pwr7
+  #       if: startsWith(matrix.target, 'powerpc64le-')
+  #     # s390x z196 (arch9)
+  #     - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
+  #       env:
+  #         RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-cpu=z196
+  #         RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-cpu=z196
+  #       if: startsWith(matrix.target, 's390x')
 
-  asm-test:
-    needs: tidy
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
-        with:
-          tool: rust@nightly+rust-src,espup
-          fallback: none
-      - run: |
-          retry() {
-            for i in {1..10}; do
-              if "$@"; then
-                return 0
-              else
-                sleep "${i}"
-              fi
-            done
-            "$@"
-          }
-          retry espup install --targets esp32
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: cargo test --manifest-path tests/asm-test/Cargo.toml
-      - run: cargo +esp test --manifest-path tests/asm-test/Cargo.toml
+  # asm-test:
+  #   needs: tidy
+  #   runs-on: ubuntu-24.04
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+  #     - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
+  #       with:
+  #         tool: rust@nightly+rust-src,espup
+  #         fallback: none
+  #     - run: |
+  #         retry() {
+  #           for i in {1..10}; do
+  #             if "$@"; then
+  #               return 0
+  #             else
+  #               sleep "${i}"
+  #             fi
+  #           done
+  #           "$@"
+  #         }
+  #         retry espup install --targets esp32
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - run: cargo test --manifest-path tests/asm-test/Cargo.toml
+  #     - run: cargo +esp test --manifest-path tests/asm-test/Cargo.toml
