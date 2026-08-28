@@ -561,6 +561,7 @@ fn main() {
             if !version.probe(87, 2025, 3, 3) || needs_target_feature_fallback(&version, None) {
                 let mut partword_quadword_atomics = false;
                 let mut msync = false;
+                // Note that `-C target-cpu=native` is currently ignored.
                 if let Some(cpu) = rustflags.target_cpu {
                     // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L666
                     if let Some(mut cpu_version) = cpu.strip_prefix("pwr") {
@@ -615,6 +616,7 @@ fn main() {
         }
         "s390x" => {
             let mut arch9_features = false; // z196+
+            // Note that `-C target-cpu=native` is currently ignored.
             if let Some(cpu) = rustflags.target_cpu {
                 // LLVM and GCC recognize the same names:
                 // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZProcessors.td
@@ -698,6 +700,7 @@ fn main() {
         "mips" | "mips64" => {
             let mut mips1 = false;
             let mut r5900 = false;
+            // Note that `-C target-cpu=native` is currently ignored.
             if let Some(cpu) = rustflags.target_cpu {
                 // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/Mips/Mips.td#L266
                 match cpu {
