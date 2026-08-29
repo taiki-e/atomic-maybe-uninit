@@ -678,7 +678,11 @@ fn main() {
             // target_feature "leoncasa"/"v9" is unstable and available on rustc side since nightly-2024-11-11: https://github.com/rust-lang/rust/pull/132552
             // Note: nightly-2024-11-10 is unavailable: https://github.com/rust-lang/rust/issues/132838
             if !version.probe(84, 2024, 11, 10) || needs_target_feature_fallback(&version, None) {
-                let mut v8plus = is_linux_or_solaris;
+                let mut v8plus = is_linux_or_solaris
+                    || env::var("CARGO_CFG_TARGET_ABI")
+                        .unwrap_or_default()
+                        .split(',')
+                        .any(|abi| abi == "v8plus");
                 for &(enabled, name) in &rustflags.target_feature {
                     // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L959
                     match name {
