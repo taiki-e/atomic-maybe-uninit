@@ -632,11 +632,11 @@ type RetInt = RegSize;
 pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetInt, RetInt) {
     #[cfg(atomic_maybe_uninit_no_strict_provenance)]
     use self::ptr::MutPtrExt as _;
-    // RISC-V, MIPS, SPARC, LoongArch, Xtensa, BPF: shift amount of 32-bit shift instructions is 5 bits unsigned (0-31).
-    // PowerPC, C-SKY: shift amount of 32-bit shift instructions is 6 bits unsigned (0-63) and shift amount 32-63 means "clear".
+    // BPF, LoongArch, MIPS, RISC-V, SPARC, Xtensa: shift amount of 32-bit shift instructions is 5 bits unsigned (0-31).
+    // C-SKY, PowerPC, s390x: shift amount of 32-bit shift instructions is 6 bits unsigned (0-63) and shift amount 32-63 means "clear".
+    // On s390x, we use 32-bit rotate instructions instead.
     // Arm: shift amount of 32-bit shift instructions is 8 bits unsigned (0-255).
     // Hexagon: shift amount of 32-bit shift instructions is 7 bits signed (-64-63) and negative shift amount means "reverse the direction of the shift".
-    // (On s390x, we don't use the mask returned from this function.)
     // (See also https://devblogs.microsoft.com/oldnewthing/20230904-00/?p=108704 for others)
     const SHIFT_MASK: bool = !cfg!(any(
         target_arch = "bpf",
@@ -659,10 +659,11 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
     let ptr_lsb = if SHIFT_MASK {
         ptr.addr() & PTR_MASK
     } else {
-        // We use 32-bit wrapping shift instructions in asm on these platforms.
+        // We use 32-bit wrapping shift/rotate instructions in asm on these platforms.
         ptr.addr()
     };
     #[allow(clippy::arithmetic_side_effects)]
+    // On s390x, we use 32-bit rotate instructions instead.
     let shift = if cfg!(any(target_endian = "little", target_arch = "s390x")) {
         ptr_lsb << 3
     } else {
@@ -673,7 +674,7 @@ pub(crate) fn create_sub_word_mask_values<T>(ptr: *mut T) -> (*mut MinWord, RetI
     if SHIFT_MASK {
         mask <<= shift;
     }
-    // only low bits are used on s390x, cast usize to u32 is no-op on 32-bit targets.
+    // Only low bits are used on s390x, cast usize to u32 is no-op on 32-bit targets.
     #[cfg_attr(
         any(target_arch = "s390x", target_pointer_width = "32"),
         allow(clippy::cast_possible_truncation)
