@@ -48,11 +48,13 @@ macro_rules! serialization {
     };
 }
 
-// Extracts and checks condition code.
+// Extracts and checks condition code 0.
+// https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0/llvm/lib/Target/SystemZ/SystemZISelDAGToDAG.cpp#L1968
 #[inline(always)]
-const fn extract_cc(r: i64) -> bool {
-    const BIT: i64 = 1 << 31;
-    r.wrapping_add(-268435456) & BIT != 0
+pub(crate) fn extract_cc0(r: i64) -> bool {
+    const ADD: i64 = -(1 << 28);
+    const MASK: i64 = 1 << 31;
+    r.wrapping_add(ADD) & MASK != 0
 }
 
 // -----------------------------------------------------------------------------
@@ -166,16 +168,16 @@ macro_rules! atomic {
                 unsafe {
                     asm!(
                         concat!("cs", $suffix, " {old}, {new}, 0({dst})"), // atomic { if *dst == old { cc = 0; *dst = new } else { cc = 1; old = *dst } }
-                        "ipm {r}",                                         // r[:] = cc
-                        dst = in(reg_addr) ptr_reg!(dst),
+                        "ipm {dst}",                                       // dst[32..=39] = [0, cc, pm]
+                        // Reuse dst instead of using lateout to work around Valgrind false positive.
+                        dst = inout(reg_addr) ptr_reg!(dst) => r,
                         new = in(reg) new,
-                        r = lateout(reg) r,
                         old = inout(reg) old => out,
                         // Do not use `preserves_flags` because CS{,G} modifies the condition code.
                         options(nostack),
                     );
                 }
-                (out, extract_cc(r))
+                (out, extract_cc0(r))
             }
         }
     };
@@ -255,20 +257,21 @@ macro_rules! atomic_sub_word {
                             "cs {prev}, {tmp}, 0({dst})",                           // atomic { if *dst == prev { cc = 0; *dst = tmp } else { cc = 1; prev = *dst } }
                             "jl 2b",                                                // if cc == 1 { jump 'retry }
                         "3:", // 'cmp-fail:
-                        "ipm {tmp}",                                                // tmp[:] = cc
+                        "ipm {prev}",                                               // prev[32..=39] = [0, cc, pm]
                         dst = in(reg_addr) ptr_reg!(dst),
-                        prev = out(reg) _,
+                        // Reuse prev instead of tmp to work around Valgrind false positive.
+                        prev = out(reg) r,
                         old = in(reg) crate::utils::extend32::$ty::zero(old),
                         new = inout(reg) new => _,
                         shift = in(reg_addr) shift,
                         shift_c = in(reg_addr) shift.wrapping_neg(),
-                        tmp = out(reg) r,
+                        tmp = out(reg) _,
                         out = out(reg) out,
                         // Do not use `preserves_flags` because CS, CR, and RISBG modify the condition code.
                         options(nostack),
                     );
                 }
-                (out, extract_cc(r))
+                (out, extract_cc0(r))
             }
         }
     };
@@ -402,9 +405,9 @@ impl AtomicCompareExchange for u128 {
                 ($new_hi:tt, $new_lo:tt) => {
                     asm!(
                         concat!("cdsg %r0, %", $new_hi, ", 0({dst})"), // atomic { if *dst == r0:r1 { cc = 0; *dst = new_hi:new_lo } else { cc = 1; r0:r1 = *dst } }
-                        "ipm {r}",                                     // r[:] = cc
-                        dst = in(reg_addr) ptr_reg!(dst),
-                        r = lateout(reg) r,
+                        "ipm {dst}",                                   // dst[32..=39] = [0, cc, pm]
+                        // Reuse dst instead of using lateout to work around Valgrind false positive.
+                        dst = inout(reg_addr) ptr_reg!(dst) => r,
                         // Quadword atomic instructions work with even/odd pair of specified register and subsequent register.
                         inout("r0") old.pair.hi => prev_hi,
                         inout("r1") old.pair.lo => prev_lo,
@@ -420,7 +423,7 @@ impl AtomicCompareExchange for u128 {
             cmpxchg!("r4", "r5");
             #[cfg(target_os = "zos")]
             cmpxchg!("r12", "r13");
-            (MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, extract_cc(r))
+            (MaybeUninit128 { pair: Pair { lo: prev_lo, hi: prev_hi } }.whole, extract_cc0(r))
         }
     }
 }

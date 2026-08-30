@@ -99,7 +99,6 @@ lwsync
 mcpu
 membar
 memcg
-memcheck
 memd
 memlock
 memw
