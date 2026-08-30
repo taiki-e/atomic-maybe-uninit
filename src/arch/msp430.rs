@@ -58,7 +58,7 @@ macro_rules! atomic {
                 // SAFETY: the caller must uphold the safety contract.
                 unsafe {
                     asm!(
-                        concat!("mov.", $suffix, " @{src}, {out}"), // atomic { out = *src }
+                        concat!("mov.", $suffix, " @{src}, {out}"), // atomic { out = zero_extend(*src) }
                         src = in(reg) src,
                         out = lateout(reg) out,
                         options(nostack, preserves_flags),
@@ -99,7 +99,7 @@ macro_rules! atomic {
                 unsafe {
                     asm!(
                         disable!(),                                   // atomic {
-                        concat!("mov.", $suffix, " @{dst}, {out}"),   //   out = *dst
+                        concat!("mov.", $suffix, " @{dst}, {out}"),   //   out = zero_extend(*dst)
                         concat!("mov.", $suffix, " {val}, 0({dst})"), //   *dst = val
                         restore!(),                                   // }
                         dst = in(reg) dst,
@@ -129,7 +129,7 @@ macro_rules! atomic {
                 unsafe {
                     asm!(
                         disable!(),                                   // atomic {
-                        concat!("mov.", $suffix, " @{dst}, {out}"),   //   out = *dst
+                        concat!("mov.", $suffix, " @{dst}, {out}"),   //   out = zero_extend(*dst)
                         concat!("xor.", $suffix, " {out}, {old}"),    //   old ^= out; if old == 0 { SR.Z = 1 } else { SR.Z = 0 }
                         "jne 2f",                                     //   if SR.Z == 0 { jump 'cmp-fail }
                         concat!("mov.", $suffix, " {new}, 0({dst})"), //   *dst = new
