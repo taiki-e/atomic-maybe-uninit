@@ -147,6 +147,35 @@ while IFS= read -r cpu; do
   fi
 done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^native$/d')
 
+target=loongarch64-unknown-linux-gnu
+loongarch64_lam_bh=()
+loongarch64_lamcas=()
+loongarch64_scq=()
+cpus=$(rustc --print target-cpus --target "${target}")
+while IFS= read -r cpu; do
+  cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
+  target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
+  if [[ "${target_features}" == *"\"lam-bh\""* ]]; then
+    loongarch64_lam_bh+=("${cpu}")
+  fi
+  if [[ "${target_features}" == *"\"lamcas\""* ]]; then
+    loongarch64_lamcas+=("${cpu}")
+  fi
+  if [[ "${target_features}" == *"\"scq\""* ]]; then
+    loongarch64_scq+=("${cpu}")
+  fi
+done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^native$/d')
+if [[ "${loongarch64_lam_bh[*]}" != "${loongarch64_lamcas[*]}" ]]; then
+  bail "loongarch64_lam_bh and loongarch64_lamcas cannot be merged"
+fi
+if [[ "${loongarch64_lam_bh[*]}" != "${loongarch64_scq[*]}" ]]; then
+  bail "loongarch64_lam_bh and loongarch64_scq cannot be merged"
+fi
+loongarch64_lam_bh_lamcas_scq=("${loongarch64_lam_bh[@]}")
+unset loongarch64_lam_bh
+unset loongarch64_lamcas
+unset loongarch64_scq
+
 target=sparc-unknown-none-elf
 sparc_leoncasa=()
 sparc_v9=()
@@ -227,6 +256,7 @@ IFS=$'\n'
 # aarch64_rcpc3=($(LC_ALL=C sort -u <<<"${aarch64_rcpc3[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
 powerpc_msync=($(LC_ALL=C sort -u <<<"${powerpc_msync[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
 powerpc_partword_quadword_atomics=($(LC_ALL=C sort -u <<<"${powerpc_partword_quadword_atomics[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
+loongarch64_lam_bh_lamcas_scq=($(LC_ALL=C sort -u <<<"${loongarch64_lam_bh_lamcas_scq[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
 sparc_leoncasa=($(LC_ALL=C sort -u <<<"${sparc_leoncasa[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
 sparc_v9=($(LC_ALL=C sort -u <<<"${sparc_v9[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
 m68k_isa_68020=($(LC_ALL=C sort -u <<<"${m68k_isa_68020[*]}" | sed -E 's/^/    "/g; s/$/",/g; /^ *"",/d'))
@@ -260,6 +290,7 @@ EOF
 # print_list AARCH64_RCPC3_CPU "${aarch64_rcpc3[@]}"
 print_list POWERPC_MSYNC_CPU "${powerpc_msync[@]}"
 print_list POWERPC_PARTWORD_QUADWORD_ATOMICS_CPU "${powerpc_partword_quadword_atomics[@]}"
+print_list LOONGARCH64_LAM_BH_LAMCAS_SCQ_CPU "${loongarch64_lam_bh_lamcas_scq[@]}"
 print_list SPARC_LEONCASA_CPU "${sparc_leoncasa[@]}"
 print_list SPARC_V9_CPU "${sparc_v9[@]}"
 print_list M68K_ISA_68020_CPU "${m68k_isa_68020[@]}"

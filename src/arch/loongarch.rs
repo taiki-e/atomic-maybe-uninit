@@ -19,7 +19,7 @@ use core::{
 };
 
 #[cfg(target_arch = "loongarch64")]
-#[cfg(target_feature = "scq")]
+#[cfg(any(target_feature = "scq", atomic_maybe_uninit_target_feature = "scq"))]
 use crate::utils::{MaybeUninit128, Pair};
 use crate::{
     raw::{AtomicCompareExchange, AtomicLoad, AtomicStore, AtomicSwap},
@@ -28,8 +28,8 @@ use crate::{
 
 #[cfg(not(all(
     target_arch = "loongarch64",
-    target_feature = "lam-bh",
-    target_feature = "lamcas",
+    any(target_feature = "lam-bh", atomic_maybe_uninit_target_feature = "lam-bh"),
+    any(target_feature = "lamcas", atomic_maybe_uninit_target_feature = "lamcas"),
 )))]
 macro_rules! sll_w {
     ($val:expr, $shift:expr) => {{
@@ -66,8 +66,8 @@ macro_rules! sll_w {
 }
 #[cfg(not(all(
     target_arch = "loongarch64",
-    target_feature = "lam-bh",
-    target_feature = "lamcas",
+    any(target_feature = "lam-bh", atomic_maybe_uninit_target_feature = "lam-bh"),
+    any(target_feature = "lamcas", atomic_maybe_uninit_target_feature = "lamcas"),
 )))]
 #[inline(always)]
 fn srl_w(mut val: MaybeUninit<u32>, shift: RegSize) -> MaybeUninit<u32> {
@@ -179,7 +179,11 @@ macro_rules! atomic_load {
     };
 }
 
-#[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh", not(atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap))))]
+#[cfg(not(all(
+    target_arch = "loongarch64",
+    any(target_feature = "lam-bh", atomic_maybe_uninit_target_feature = "lam-bh"),
+    not(atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap),
+)))]
 #[rustfmt::skip]
 macro_rules! atomic_store_st {
     ($ty:ident, $suffix:tt) => {
@@ -219,7 +223,10 @@ macro_rules! atomic_store_st {
 }
 
 #[cfg(target_arch = "loongarch64")]
-#[cfg(any(not(atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap), target_feature = "lam-bh"))]
+#[cfg(any(
+    not(atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap),
+    any(target_feature = "lam-bh", atomic_maybe_uninit_target_feature = "lam-bh"),
+))]
 macro_rules! atomic_store_swap_amswap {
     ($ty:ident, $suffix:tt) => {
         impl AtomicStore for $ty {
@@ -290,7 +297,10 @@ macro_rules! atomic_store_swap_amswap {
     };
 }
 
-#[cfg(all(target_arch = "loongarch64", target_feature = "lamcas"))]
+#[cfg(all(
+    target_arch = "loongarch64",
+    any(target_feature = "lamcas", atomic_maybe_uninit_target_feature = "lamcas"),
+))]
 #[rustfmt::skip]
 macro_rules! atomic_cas_amcas {
     ($ty:ident, $suffix:tt) => {
@@ -384,9 +394,15 @@ macro_rules! atomic {
                 out
             }
         }
-        #[cfg(all(target_arch = "loongarch64", target_feature = "lamcas"))]
+        #[cfg(all(
+            target_arch = "loongarch64",
+            any(target_feature = "lamcas", atomic_maybe_uninit_target_feature = "lamcas"),
+        ))]
         atomic_cas_amcas!($ty, $suffix);
-        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lamcas")))]
+        #[cfg(not(all(
+            target_arch = "loongarch64",
+            any(target_feature = "lamcas", atomic_maybe_uninit_target_feature = "lamcas"),
+        )))]
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
@@ -446,11 +462,20 @@ macro_rules! atomic {
 macro_rules! atomic_sub_word {
     ($ty:ident, $suffix:tt) => {
         atomic_load!($ty, $suffix);
-        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh")))]
+        #[cfg(not(all(
+            target_arch = "loongarch64",
+            any(target_feature = "lam-bh", atomic_maybe_uninit_target_feature = "lam-bh"),
+        )))]
         atomic_store_st!($ty, $suffix);
-        #[cfg(all(target_arch = "loongarch64", target_feature = "lam-bh"))]
+        #[cfg(all(
+            target_arch = "loongarch64",
+            any(target_feature = "lam-bh", atomic_maybe_uninit_target_feature = "lam-bh"),
+        ))]
         atomic_store_swap_amswap!($ty, $suffix);
-        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lam-bh")))]
+        #[cfg(not(all(
+            target_arch = "loongarch64",
+            any(target_feature = "lam-bh", atomic_maybe_uninit_target_feature = "lam-bh"),
+        )))]
         impl AtomicSwap for $ty {
             #[inline]
             unsafe fn __atomic_swap_impl(
@@ -485,9 +510,15 @@ macro_rules! atomic_sub_word {
                 crate::utils::extend32::$ty::extract(srl_w(out, shift))
             }
         }
-        #[cfg(all(target_arch = "loongarch64", target_feature = "lamcas"))]
+        #[cfg(all(
+            target_arch = "loongarch64",
+            any(target_feature = "lamcas", atomic_maybe_uninit_target_feature = "lamcas"),
+        ))]
         atomic_cas_amcas!($ty, $suffix);
-        #[cfg(not(all(target_arch = "loongarch64", target_feature = "lamcas")))]
+        #[cfg(not(all(
+            target_arch = "loongarch64",
+            any(target_feature = "lamcas", atomic_maybe_uninit_target_feature = "lamcas"),
+        )))]
         impl AtomicCompareExchange for $ty {
             // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/xEc1cxE16
             #[inline]
@@ -559,7 +590,7 @@ atomic!(u64, "d");
 // 128-bit atomics on LoongArch64
 
 #[cfg(target_arch = "loongarch64")]
-#[cfg(target_feature = "scq")]
+#[cfg(any(target_feature = "scq", atomic_maybe_uninit_target_feature = "scq"))]
 #[rustfmt::skip]
 macro_rules! atomic128 {
     () => {
@@ -706,7 +737,7 @@ macro_rules! atomic128 {
 }
 
 #[cfg(target_arch = "loongarch64")]
-#[cfg(target_feature = "scq")]
+#[cfg(any(target_feature = "scq", atomic_maybe_uninit_target_feature = "scq"))]
 atomic128!();
 
 // -----------------------------------------------------------------------------
@@ -756,22 +787,34 @@ macro_rules! cfg_has_atomic_64 {
 macro_rules! cfg_no_atomic_64 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(all(target_arch = "loongarch64", target_feature = "scq"))]
+#[cfg(all(
+    target_arch = "loongarch64",
+    any(target_feature = "scq", atomic_maybe_uninit_target_feature = "scq")
+))]
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };
 }
-#[cfg(all(target_arch = "loongarch64", target_feature = "scq"))]
+#[cfg(all(
+    target_arch = "loongarch64",
+    any(target_feature = "scq", atomic_maybe_uninit_target_feature = "scq")
+))]
 #[macro_export]
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => {};
 }
-#[cfg(not(all(target_arch = "loongarch64", target_feature = "scq")))]
+#[cfg(not(all(
+    target_arch = "loongarch64",
+    any(target_feature = "scq", atomic_maybe_uninit_target_feature = "scq")
+)))]
 #[macro_export]
 macro_rules! cfg_has_atomic_128 {
     ($($tt:tt)*) => {};
 }
-#[cfg(not(all(target_arch = "loongarch64", target_feature = "scq")))]
+#[cfg(not(all(
+    target_arch = "loongarch64",
+    any(target_feature = "scq", atomic_maybe_uninit_target_feature = "scq")
+)))]
 #[macro_export]
 macro_rules! cfg_no_atomic_128 {
     ($($tt:tt)*) => { $($tt)* };

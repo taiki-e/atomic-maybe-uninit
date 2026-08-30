@@ -17,6 +17,9 @@ pub(crate) static POWERPC_PARTWORD_QUADWORD_ATOMICS_CPU: &[&str] = &[
     "pwr8",
     "pwr9",
 ];
+pub(crate) static LOONGARCH64_LAM_BH_LAMCAS_SCQ_CPU: &[&str] = &[
+    "la664",
+];
 pub(crate) static SPARC_LEONCASA_CPU: &[&str] = &[
     "gr712rc",
     "gr740",
