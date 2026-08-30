@@ -289,7 +289,7 @@ fn main() {
                     subarch = subarch.split_once('-').unwrap_or((subarch, "")).0; // ignore vender/os/env
                     let (mut subarch, suffix) = subarch.split_once('.').unwrap_or((subarch, "")); // .base/.main suffix
                     let mut known = true;
-                    // As of rustc nightly-2026-03-08, there are the following "vN*" patterns:
+                    // As of nightly-2026-03-08, there are the following "vN*" patterns:
                     // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
                     // ""
                     // "v4t"
@@ -530,7 +530,7 @@ fn main() {
                     _ => {}
                 }
             }
-            // As of rustc 1.93, target_feature "zalasr" is not available on rustc side:
+            // As of Rust 1.93, target_feature "zalasr" is not available on rustc side:
             if version.llvm >= 22 {
                 // available non-experimental since LLVM 22 https://github.com/llvm/llvm-project/pull/177331
                 emit_target_feature_fallback("zalasr", zalasr);
@@ -615,35 +615,35 @@ fn main() {
             }
         }
         "s390x" => {
-            let mut arch9_features = false; // z196+
+            let mut arch_version = 8; // LLVM's baseline (z10): https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZProcessors.td#L16-L17
             // Note that `-C target-cpu=native` is currently ignored.
             if let Some(cpu) = rustflags.target_cpu {
                 // LLVM and GCC recognize the same names:
                 // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZProcessors.td
                 // https://github.com/gcc-mirror/gcc/blob/releases/gcc-16.1.0/gcc/config/s390/s390.opt#L58-L128
-                if let Some(arch_version) = cpu.strip_prefix("arch") {
-                    if let Ok(arch_version) = arch_version.parse::<u32>() {
-                        arch9_features = arch_version >= 9;
+                if let Some(v) = cpu.strip_prefix("arch") {
+                    if let Ok(v) = v.parse::<u32>() {
+                        arch_version = v;
                     }
                 } else {
                     match cpu {
                         "z196" | "zEC12" | "z13" | "z14" | "z15" | "z16" | "z17" => {
-                            arch9_features = true;
-                        }
+                            arch_version = 9;
+                        } // 9-
                         _ => {}
                     }
                 }
             }
-            // arch9 features: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZFeatures.td#L103
-            let mut fast_serialization = arch9_features;
+            // arch9 (z196) features: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZFeatures.td#L103
+            let mut fast_serialization = arch_version >= 9;
             for &(enabled, name) in &rustflags.target_feature {
                 match name {
                     b"fast-serialization" => fast_serialization = enabled,
                     _ => {}
                 }
             }
-            // As of rustc 1.90, target_feature "fast-serialization" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/target_features.rs#L719
+            // As of Rust 1.98, target_feature "fast-serialization" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.98.0/compiler/rustc_target/src/target_features.rs#L898
             // bcr 14,0
             emit_target_feature_fallback("fast-serialization", fast_serialization);
         }
