@@ -287,10 +287,10 @@ fn main() {
                 {
                     subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
                     subarch = subarch.split_once('-').unwrap_or((subarch, "")).0; // ignore vender/os/env
-                    let (mut subarch, suffix) = subarch.split_once('.').unwrap_or((subarch, "")); // .base/.main suffix
+                    let (mut subarch, suffix) = subarch.rsplit_once('.').unwrap_or((subarch, "")); // .base/.main suffix
                     let mut known = true;
-                    // As of nightly-2026-03-08, there are the following "vN*" patterns:
-                    // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
+                    // As of nightly-2026-09-09, there are the following "vN*" patterns:
+                    // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/\-.*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
                     // ""
                     // "v4t"
                     // "v5te"
@@ -308,8 +308,10 @@ fn main() {
                     // "v8m"
                     // "v8r"
                     //
+                    // And https://github.com/rust-lang/rust/pull/162519 will add "v8.1m".
+                    //
                     // - v7, v7a, v7neon, v7s, and v7k are aclass
-                    // - v6m, v7em, v7m, and v8m are mclass
+                    // - v6m, v7em, v7m, v8m, and v8.1m are mclass
                     // - v7r and v8r are rclass
                     //
                     // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
@@ -323,7 +325,7 @@ fn main() {
                     match subarch {
                         "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8" | "v8a" | "v9" | "v9a" => {} // aclass
                         "v7r" | "v8r" | "v9r" => {} // rclass
-                        "v6m" | "v7em" | "v7m" | "v8m" => mclass = true,
+                        "v6m" | "v7em" | "v7m" | "v8m" | "v8.1m" => mclass = true,
                         // arm-linux-androideabi is v5te
                         // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L19
                         _ if target == "arm-linux-androideabi" => subarch = "v5te",
