@@ -34,7 +34,7 @@ doc-scrape-examples = false
 fastrand = "2"
 paste = "1"
 quickcheck = { version = "1", default-features = false, git = "https://github.com/taiki-e/quickcheck.git", rev = "f0c72378d7d21b45b4f479be03a0e01ee4aca036" } # https://github.com/BurntSushi/quickcheck/pull/304 + https://github.com/BurntSushi/quickcheck/pull/282 + https://github.com/BurntSushi/quickcheck/pull/296 + rand -> fastrand + lower MSRV
-test-helper = { features = ["std", "sys", "valgrind"], git = "https://github.com/taiki-e/test-helper.git", rev = "24b3ad70c19ea8de9cd4c87f2e549b930f1e3305" }
+test-helper = { features = ["std", "sys", "valgrind"], git = "https://github.com/taiki-e/test-helper.git", rev = "b931ac1a34794aede5b019c613e50157a35a7ec4" }
 
 [lints]
 workspace = true
