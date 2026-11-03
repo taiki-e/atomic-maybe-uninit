@@ -125,7 +125,8 @@ EOF
 
 target=powerpc-unknown-linux-gnu
 powerpc_msync=()
-powerpc_partword_quadword_atomics=()
+powerpc_partword_atomics=()
+powerpc_quadword_atomics=()
 cpus=$(rustc --print target-cpus --target "${target}")
 while IFS= read -r cpu; do
   if [[ "${cpu}" == 'future' ]]; then
@@ -142,10 +143,19 @@ while IFS= read -r cpu; do
   if [[ "${target_features}" == *"\"msync\""* ]]; then
     powerpc_msync+=("${cpu}")
   fi
-  if [[ "${target_features}" == *"\"partword-atomics\""* ]] && [[ "${target_features}" == *"\"quadword-atomics\""* ]]; then
-    powerpc_partword_quadword_atomics+=("${cpu}")
+  if [[ "${target_features}" == *"\"partword-atomics\""* ]]; then
+    powerpc_partword_atomics+=("${cpu}")
+  fi
+  if [[ "${target_features}" == *"\"quadword-atomics\""* ]]; then
+    powerpc_quadword_atomics+=("${cpu}")
   fi
 done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^native$/d')
+if [[ "${powerpc_partword_atomics[*]}" != "${powerpc_quadword_atomics[*]}" ]]; then
+  bail "powerpc_partword_atomics and powerpc_quadword_atomics cannot be merged"
+fi
+powerpc_partword_quadword_atomics=("${powerpc_partword_atomics[@]}")
+unset powerpc_partword_atomics
+unset powerpc_quadword_atomics
 
 target=loongarch64-unknown-linux-gnu
 loongarch64_lam_bh=()
