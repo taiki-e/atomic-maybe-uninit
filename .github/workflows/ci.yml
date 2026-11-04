@@ -237,9 +237,9 @@ jobs:
       # x86 -sse2
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
-        if: startsWith(matrix.target, 'i686')
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+sse
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+sse
+        if: startsWith(matrix.target, 'i586')
       # x86 -sse
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
         env:
@@ -748,8 +748,8 @@ jobs:
       # x86 -sse2
       - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_sse_over_sse2
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_sse_over_sse2
         if: startsWith(matrix.target, 'i686')
       # x86 -sse
       - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}

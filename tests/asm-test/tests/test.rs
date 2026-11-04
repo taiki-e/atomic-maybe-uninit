@@ -159,8 +159,8 @@ fn test() {
         Revision::new("x86_64_cmpxchg16b_avx_msvc", "x86_64-pc-windows-msvc")
             .rustc_args(["-C", "target-feature=+cmpxchg16b,+avx"]),
         Revision::new("x86_sse2", "i686-unknown-linux-gnu"),
-        Revision::new("x86_sse", "i686-unknown-linux-gnu")
-            .rustc_args(["-C", "target-feature=-sse2"]),
+        Revision::new("x86_sse", "i586-unknown-linux-gnu")
+            .rustc_args(["-C", "target-feature=+sse"]),
         Revision::new("x86_x87", "i586-unknown-linux-gnu"),
         Revision::new("x86_no_x87", "i586-unknown-linux-gnu")
             .rustc_args(["--cfg", "atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87"]),

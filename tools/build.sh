@@ -416,12 +416,10 @@ build() {
           x_cargo "${args[@]}" "$@"
       fi
       ;;
-    i686*)
-      CARGO_TARGET_DIR="${target_dir}/sse" \
-        RUSTFLAGS="${target_rustflags} -C target-feature=-sse2" \
-        x_cargo "${args[@]}" "$@"
-      ;;
     i586*)
+      CARGO_TARGET_DIR="${target_dir}/sse" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+sse" \
+        x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/no-x87" \
         RUSTFLAGS="${target_rustflags} -C target-feature=-x87" \
         x_cargo "${args[@]}" "$@"

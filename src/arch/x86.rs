@@ -46,7 +46,11 @@ delegate_size!(delegate_cas);
 use core::arch::x86::__m128;
 #[cfg(target_arch = "x86")]
 #[cfg(not(atomic_maybe_uninit_no_cmpxchg8b))]
-#[cfg(all(target_feature = "sse2", not(atomic_maybe_uninit_test_prefer_x87_over_sse)))]
+#[cfg(all(
+    target_feature = "sse2",
+    not(atomic_maybe_uninit_test_prefer_sse_over_sse2),
+    not(atomic_maybe_uninit_test_prefer_x87_over_sse),
+))]
 use core::arch::x86::__m128i;
 #[cfg(target_arch = "x86_64")]
 #[cfg(target_feature = "cmpxchg16b")]
@@ -252,7 +256,11 @@ impl AtomicLoad for u64 {
     unsafe fn atomic_load(src: *const MaybeUninit<Self>, _order: Ordering) -> MaybeUninit<Self> {
         debug_assert_atomic_unsafe_precondition!(src, u64);
 
-        #[cfg(all(target_feature = "sse2", not(atomic_maybe_uninit_test_prefer_x87_over_sse)))]
+        #[cfg(all(
+            target_feature = "sse2",
+            not(atomic_maybe_uninit_test_prefer_sse_over_sse2),
+            not(atomic_maybe_uninit_test_prefer_x87_over_sse),
+        ))]
         // SAFETY: the caller must uphold the safety contract.
         // cfg guarantees that the CPU supports SSE.
         // load by MOVQ has SeqCst semantics.
@@ -271,7 +279,7 @@ impl AtomicLoad for u64 {
             mem::transmute::<MaybeUninit<__m128i>, [MaybeUninit<Self>; 2]>(out)[0]
         }
         #[cfg(all(
-            not(target_feature = "sse2"),
+            any(not(target_feature = "sse2"), atomic_maybe_uninit_test_prefer_sse_over_sse2),
             target_feature = "sse",
             not(atomic_maybe_uninit_test_prefer_x87_over_sse),
         ))]

@@ -362,12 +362,12 @@ asm_test::compare_exchange::u64::acqrel_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -382,12 +382,12 @@ asm_test::compare_exchange::u64::seqcst_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -402,12 +402,12 @@ asm_test::compare_exchange::u64::acqrel_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -422,12 +422,12 @@ asm_test::compare_exchange::u64::acqrel_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -442,12 +442,12 @@ asm_test::compare_exchange::u64::acquire_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -462,12 +462,12 @@ asm_test::compare_exchange::u64::relaxed_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -482,12 +482,12 @@ asm_test::compare_exchange::u64::release_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -502,12 +502,12 @@ asm_test::compare_exchange::u64::seqcst_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -522,12 +522,12 @@ asm_test::compare_exchange::u64::seqcst_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -542,12 +542,12 @@ asm_test::compare_exchange::u64::acquire_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -562,12 +562,12 @@ asm_test::compare_exchange::u64::acquire_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -582,12 +582,12 @@ asm_test::compare_exchange::u64::relaxed_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -602,12 +602,12 @@ asm_test::compare_exchange::u64::relaxed_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -622,12 +622,12 @@ asm_test::compare_exchange::u64::release_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -642,12 +642,12 @@ asm_test::compare_exchange::u64::release_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1022,12 +1022,12 @@ asm_test::compare_exchange_weak::u64::acqrel_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1042,12 +1042,12 @@ asm_test::compare_exchange_weak::u64::seqcst_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1062,12 +1062,12 @@ asm_test::compare_exchange_weak::u64::acqrel_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1082,12 +1082,12 @@ asm_test::compare_exchange_weak::u64::acqrel_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1102,12 +1102,12 @@ asm_test::compare_exchange_weak::u64::acquire_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1122,12 +1122,12 @@ asm_test::compare_exchange_weak::u64::relaxed_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1142,12 +1142,12 @@ asm_test::compare_exchange_weak::u64::release_seqcst:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1162,12 +1162,12 @@ asm_test::compare_exchange_weak::u64::seqcst_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1182,12 +1182,12 @@ asm_test::compare_exchange_weak::u64::seqcst_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1202,12 +1202,12 @@ asm_test::compare_exchange_weak::u64::acquire_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1222,12 +1222,12 @@ asm_test::compare_exchange_weak::u64::acquire_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1242,12 +1242,12 @@ asm_test::compare_exchange_weak::u64::relaxed_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1262,12 +1262,12 @@ asm_test::compare_exchange_weak::u64::relaxed_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1282,12 +1282,12 @@ asm_test::compare_exchange_weak::u64::release_acquire:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1302,12 +1302,12 @@ asm_test::compare_exchange_weak::u64::release_relaxed:
         push              ebx
         push              edi
         push              esi
+        mov               esi, dword ptr [esp + 0x10]
         mov               eax, dword ptr [esp + 0x18]
         mov               edx, dword ptr [esp + 0x1c]
         mov               ebx, dword ptr [esp + 0x20]
         mov               ecx, dword ptr [esp + 0x24]
         mov               edi, dword ptr [esp + 0x14]
-        mov               esi, dword ptr [esp + 0x10]
         lock cmpxchg8b    qword ptr [edi]
         mov               dword ptr [esi], eax
         mov               dword ptr [esi + 0x4], edx
@@ -1495,13 +1495,24 @@ asm_test::swap::u32::release:
 asm_test::swap::u64::acqrel:
         push              ebx
         push              esi
-        mov               esi, dword ptr [esp + 0xc]
         mov               ecx, dword ptr [esp + 0x14]
         mov               ebx, dword ptr [esp + 0x10]
+        mov               esi, dword ptr [esp + 0xc]
         mov               eax, dword ptr [esi]
         mov               edx, dword ptr [esi + 0x4]
-        nop               word ptr cs:[eax + eax]
-        nop               dword ptr [eax]
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
 0:
         lock cmpxchg8b    qword ptr [esi]
         jne               0b
@@ -1512,13 +1523,24 @@ asm_test::swap::u64::acqrel:
 asm_test::swap::u64::seqcst:
         push              ebx
         push              esi
-        mov               esi, dword ptr [esp + 0xc]
         mov               ecx, dword ptr [esp + 0x14]
         mov               ebx, dword ptr [esp + 0x10]
+        mov               esi, dword ptr [esp + 0xc]
         mov               eax, dword ptr [esi]
         mov               edx, dword ptr [esi + 0x4]
-        nop               word ptr cs:[eax + eax]
-        nop               dword ptr [eax]
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
 0:
         lock cmpxchg8b    qword ptr [esi]
         jne               0b
@@ -1529,13 +1551,24 @@ asm_test::swap::u64::seqcst:
 asm_test::swap::u64::acquire:
         push              ebx
         push              esi
-        mov               esi, dword ptr [esp + 0xc]
         mov               ecx, dword ptr [esp + 0x14]
         mov               ebx, dword ptr [esp + 0x10]
+        mov               esi, dword ptr [esp + 0xc]
         mov               eax, dword ptr [esi]
         mov               edx, dword ptr [esi + 0x4]
-        nop               word ptr cs:[eax + eax]
-        nop               dword ptr [eax]
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
 0:
         lock cmpxchg8b    qword ptr [esi]
         jne               0b
@@ -1546,13 +1579,24 @@ asm_test::swap::u64::acquire:
 asm_test::swap::u64::relaxed:
         push              ebx
         push              esi
-        mov               esi, dword ptr [esp + 0xc]
         mov               ecx, dword ptr [esp + 0x14]
         mov               ebx, dword ptr [esp + 0x10]
+        mov               esi, dword ptr [esp + 0xc]
         mov               eax, dword ptr [esi]
         mov               edx, dword ptr [esi + 0x4]
-        nop               word ptr cs:[eax + eax]
-        nop               dword ptr [eax]
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
 0:
         lock cmpxchg8b    qword ptr [esi]
         jne               0b
@@ -1563,13 +1607,24 @@ asm_test::swap::u64::relaxed:
 asm_test::swap::u64::release:
         push              ebx
         push              esi
-        mov               esi, dword ptr [esp + 0xc]
         mov               ecx, dword ptr [esp + 0x14]
         mov               ebx, dword ptr [esp + 0x10]
+        mov               esi, dword ptr [esp + 0xc]
         mov               eax, dword ptr [esi]
         mov               edx, dword ptr [esi + 0x4]
-        nop               word ptr cs:[eax + eax]
-        nop               dword ptr [eax]
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
 0:
         lock cmpxchg8b    qword ptr [esi]
         jne               0b
@@ -1632,23 +1687,23 @@ asm_test::store::u32::release:
         ret
 
 asm_test::store::u64::seqcst:
-        xorps             xmm0, xmm0
         mov               eax, dword ptr [esp + 0x4]
+        xorps             xmm0, xmm0
         movlps            xmm0, qword ptr [esp + 0x8] # xmm0 = mem[0,1],xmm0[2,3]
         movlps            qword ptr [eax], xmm0
         lock or           dword ptr [esp], 0x0
         ret
 
 asm_test::store::u64::relaxed:
-        xorps             xmm0, xmm0
         mov               eax, dword ptr [esp + 0x4]
+        xorps             xmm0, xmm0
         movlps            xmm0, qword ptr [esp + 0x8] # xmm0 = mem[0,1],xmm0[2,3]
         movlps            qword ptr [eax], xmm0
         ret
 
 asm_test::store::u64::release:
-        xorps             xmm0, xmm0
         mov               eax, dword ptr [esp + 0x4]
+        xorps             xmm0, xmm0
         movlps            xmm0, qword ptr [esp + 0x8] # xmm0 = mem[0,1],xmm0[2,3]
         movlps            qword ptr [eax], xmm0
         ret
