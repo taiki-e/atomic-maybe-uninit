@@ -314,12 +314,13 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
         if: matrix.target == 'arm-unknown-linux-gnueabi'
       # arm pre-v6 thumb
-      - run: tools/test.sh -vv --tests ${TARGET:-} -Z build-std
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+thumb-mode
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+thumb-mode
-        # "LLVM ERROR: underestimated function size" with old nightly
-        if: startsWith(matrix.rust, 'nightly') && (matrix.target == 'armv5te-unknown-linux-gnueabi' || (matrix.target == 'armv4t-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2024') && !startsWith(matrix.rust, 'nightly-2025') && !startsWith(matrix.rust, 'nightly-2026-01'))) && !startsWith(matrix.rust, 'nightly-2023')
+      # TODO: compiler_builtins bug that uses non-thumb1 instructions.
+      # - run: tools/test.sh -vv --tests ${TARGET:-} -Z build-std
+      #   env:
+      #     RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+thumb-mode
+      #     RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+thumb-mode
+      #   # "LLVM ERROR: underestimated function size" with old nightly
+      #   if: startsWith(matrix.rust, 'nightly') && (matrix.target == 'armv5te-unknown-linux-gnueabi' || (matrix.target == 'armv4t-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2024') && !startsWith(matrix.rust, 'nightly-2025') && !startsWith(matrix.rust, 'nightly-2026-01'))) && !startsWith(matrix.rust, 'nightly-2023')
       # powerpc +msync
       - run: tools/test.sh -vv --tests ${TARGET:-} -Z build-std
         env:
