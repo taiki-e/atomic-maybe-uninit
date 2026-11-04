@@ -63,10 +63,11 @@ fn test() {
         // AVR
         Revision::new("avr", "avr-none")
             .rustc_args(["-C", "target-cpu=atmega2560"]),
-        Revision::new("avr_tinyencoding", "avr-none")
-            .rustc_args(["-C", "target-cpu=attiny40"]),
-        Revision::new("avr_tinyencoding_lowbytefirst", "avr-none")
-            .rustc_args(["-C", "target-cpu=attiny104"]),
+        // TODO: LLVM bug: no registers from class available to allocate in function
+        // Revision::new("avr_tinyencoding", "avr-none")
+        //     .rustc_args(["-C", "target-cpu=attiny40"]),
+        // Revision::new("avr_tinyencoding_lowbytefirst", "avr-none")
+        //     .rustc_args(["-C", "target-cpu=attiny104"]),
         Revision::new("avr_lowbytefirst", "avr-none")
             .rustc_args(["-C", "target-cpu=atxmega384d3"]),
         Revision::new("avr_lowbytefirst_rmw", "avr-none")
