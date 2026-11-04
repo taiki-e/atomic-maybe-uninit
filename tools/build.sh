@@ -421,7 +421,7 @@ build() {
         RUSTFLAGS="${target_rustflags} -C target-feature=+sse" \
         x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/no-x87" \
-        RUSTFLAGS="${target_rustflags} -C target-feature=-x87" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87" \
         x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/no-cmpxchg8b" \
         RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_no_cmpxchg8b" \
