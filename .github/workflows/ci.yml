@@ -637,11 +637,6 @@ jobs:
               retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://download.gaisler.com/products/TSIM3/bin/tsim-eval/tsim-eval-${tsim3_version}.tar.gz" \
                 | tar xzf - --strip-components 1 -C "${HOME}"/tsim
               printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
-              # Patched QEMU for LoongArch semihosting
-              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/loongarch-semi-10.1.5/qemu-ubuntu-24.04.tar.xz \
-                | tar xJf -
-              sudo mv -- qemu /usr/local/qemu-loongarch-semi
-              printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/qemu-loongarch-semi/bin\n' >>"${GITHUB_ENV}"
             fi
             # https://github.com/taiki-e/dockerfiles/pkgs/container/qemu-user
             retry docker create --name qemu-user ghcr.io/taiki-e/qemu-user
@@ -658,6 +653,11 @@ jobs:
           rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.0 exits with 1
           sudo cp -r -- qemu/. /usr/local/
           rm -rf -- ./qemu
+          # Patched QEMU for LoongArch semihosting
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/loongarch-semi-10.1.5/qemu-ubuntu-24.04.tar.xz \
+            | tar xJf -
+          sudo mv -- qemu /usr/local/qemu-loongarch-semi
+          printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/qemu-loongarch-semi/bin\n' >>"${GITHUB_ENV}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUST: ${{ matrix.rust }}
