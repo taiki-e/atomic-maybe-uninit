@@ -98,7 +98,7 @@ toolchains=(
   1.86 # LLVM 19
   1.90 # LLVM 20
   1.94 # LLVM 21
-  # 1.98 # LLVM 22
+  1.98 # LLVM 22
   stable
   beta
   nightly
