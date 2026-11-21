@@ -364,7 +364,7 @@ for target in "${targets[@]}"; do
   esac
   # Test with cranelift backend.
   case "${target}" in
-    # https://github.com/rust-lang/rust/blob/1.93.0/src/bootstrap/src/utils/helpers.rs#L228
+    # https://github.com/rust-lang/rust/blob/1.100.0/src/bootstrap/src/utils/helpers.rs#L244
     # TODO(cranelift): s390x-unknown-linux-gnu: cranelift doesn't support asm for s390x yet
     # TODO(cranelift): riscv64gc-unknown-linux-gnu: cranelift doesn't support cfg(target_feature) yet: https://github.com/rust-lang/rustc_codegen_cranelift/issues/1400
     x86_64-unknown-linux-gnu | aarch64-unknown-linux-gnu | x86_64-apple-darwin | aarch64-apple-darwin | x86_64-pc-windows-msvc)

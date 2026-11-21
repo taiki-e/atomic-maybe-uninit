@@ -200,7 +200,7 @@ info() {
 is_no_std() {
   case "$1" in
     *-linux-none*) ;;
-    # https://github.com/rust-lang/rust/blob/1.90.0/library/std/build.rs#L61
+    # https://github.com/rust-lang/rust/blob/1.100.0/library/std/build.rs#L67
     # ESP-IDF supports std, but it is often broken.
     *-none* | *-psp* | *-psx* | *-cuda* | avr* | *-espidf | m68k*) return 0 ;;
   esac

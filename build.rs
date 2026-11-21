@@ -185,8 +185,8 @@ fn main() {
             let mut no_cmpxchg = false;
             // i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work on pre-nightly-2024-12-14 or non-nightly.
             // And core assumes x87 is always available.
-            // https://github.com/rust-lang/rust/blob/1.90.0/library/core/src/num/dec2flt/fpu.rs#L6
-            // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/i686_unknown_uefi.rs#L24
+            // https://github.com/rust-lang/rust/blob/1.100.0/library/core/src/num/imp/dec2flt/fpu.rs#L22
+            // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/i686_unknown_uefi.rs#L24
             // However, custom bare metal targets tend to disable x87 and do not use floats.
             let mut x87 = target_os != "none";
             if let Some(cpu) = rustflags.target_cpu {
@@ -212,7 +212,7 @@ fn main() {
             // target_feature "x87" is unstable and available on rustc side since nightly-2024-12-14: https://github.com/rust-lang/rust/pull/133099
             if !version.probe(85, 2024, 12, 13) || needs_target_feature_fallback(&version, None) {
                 for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L425
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L427
                     match name {
                         b"x87" => x87 = enabled,
                         _ => {}
@@ -256,7 +256,7 @@ fn main() {
                             }
                         };
                     }
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L216
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L218
                     match name {
                         b"lse2" => lse2 = enabled,
                         b"lse128" => lse128 = enabled,
@@ -327,10 +327,10 @@ fn main() {
                         "v7r" | "v8r" | "v9r" => {} // rclass
                         "v6m" | "v7em" | "v7m" | "v8m" | "v8.1m" => mclass = true,
                         // arm-linux-androideabi is v5te
-                        // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L19
+                        // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L21
                         _ if target == "arm-linux-androideabi" => subarch = "v5te",
                         // armeb-unknown-linux-gnueabi is v8 & aclass
-                        // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L20
+                        // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L20
                         _ if target == "armeb-unknown-linux-gnueabi" => subarch = "v8",
                         // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
                         "" => subarch = "v6",
@@ -348,7 +348,7 @@ fn main() {
                     }
                     if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
                         // Armv8-M is not considered as v8 by LLVM.
-                        // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
+                        // https://github.com/rust-lang/rust/blob/1.100.0/library/stdarch/crates/core_arch/src/arm_shared/mod.rs
                         if mclass {
                             // Armv8-M Mainline is a superset of Armv7-M.
                             // Armv8-M Baseline is a superset of Armv6-M.
@@ -390,7 +390,7 @@ fn main() {
                             }
                         };
                     }
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L160
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L160
                     match name {
                         b"v8" => dep!(v5te, v6, thumb2, v7, acquire_release),
                         b"acquire-release" => acquire_release = enabled,
@@ -496,7 +496,7 @@ fn main() {
                         }
                     };
                 }
-                // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L674
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L678
                 match name {
                     b"zalasr" => zalasr = enabled,
                     b"zacas" if check_zacas => {
@@ -613,7 +613,7 @@ fn main() {
             let mut partword_atomics = partword_quadword_atomics;
             let mut quadword_atomics = partword_quadword_atomics;
             for &(enabled, name) in &rustflags.target_feature {
-                // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L595
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L597
                 match name {
                     b"partword-atomics" => partword_atomics = enabled,
                     b"quadword-atomics" => quadword_atomics = enabled,
@@ -634,6 +634,7 @@ fn main() {
                 }
                 emit_target_feature_fallback("msync", msync);
             }
+            // As of Rust 1.100, target_feature "fence-keeps-reservation" is not available on rustc side.
             emit_target_feature_fallback("fence-keeps-reservation", fence_keeps_reservation);
         }
         "s390x" => {
@@ -664,8 +665,8 @@ fn main() {
                     _ => {}
                 }
             }
-            // As of Rust 1.98, target_feature "fast-serialization" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.98.0/compiler/rustc_target/src/target_features.rs#L898
+            // As of Rust 1.100, target_feature "fast-serialization" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L937
             // bcr 14,0
             emit_target_feature_fallback("fast-serialization", fast_serialization);
         }
@@ -690,7 +691,7 @@ fn main() {
                     }
                 }
                 for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L904
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L916
                     match name {
                         b"lam-bh" => lam_bh = enabled,
                         b"lamcas" => lamcas = enabled,
@@ -725,10 +726,10 @@ fn main() {
                     }
                 }
             } else {
-                // https://github.com/rust-lang/rust/blob/1.94.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L19
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L22
                 // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/clang/lib/Driver/ToolChains/Arch/Sparc.cpp#L169
                 v9 = is_linux_or_solaris;
-                // https://github.com/rust-lang/rust/blob/1.94.0/compiler/rustc_target/src/spec/targets/sparc_unknown_none_elf.rs#L12
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/sparc_unknown_none_elf.rs#L12
                 v7 = target == "sparc-unknown-none-elf";
             }
             // target_feature "leoncasa"/"v9" is unstable and available on rustc side since nightly-2024-11-11: https://github.com/rust-lang/rust/pull/132552
@@ -740,7 +741,7 @@ fn main() {
                         .split(',')
                         .any(|abi| abi == "v8plus");
                 for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L959
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L971
                     match name {
                         b"leoncasa" => leoncasa = enabled,
                         b"v9" => v9 = enabled,
@@ -769,7 +770,7 @@ fn main() {
                     _ => {}
                 }
             } else {
-                // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/mipsel_sony_psx.rs#L26
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/mipsel_sony_psx.rs#L27
                 // (old rustc uses target_env instead of target_os: https://github.com/rust-lang/rust/commit/111f2e8a39fce63c6daac7eae88023f1e87c15d4)
                 mips1 = target_arch == "mips"
                     && (target_os == "psx"
@@ -801,7 +802,7 @@ fn main() {
                         isa_68060 = true;
                     }
                 } else {
-                    // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L7
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L7
                     isa_68020 = target_os == "linux";
                 }
                 for &(enabled, name) in &rustflags.target_feature {
@@ -820,7 +821,7 @@ fn main() {
                             }
                         };
                     }
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L967
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L986
                     match name {
                         b"isa-68060" => {
                             isa_68060 = enabled;
@@ -888,7 +889,7 @@ fn main() {
                 !version.probe(95, 2026, 2, 7) || needs_target_feature_fallback(&version, None);
             if needs_target_feature_fallback || llvm_missing_lowbytefirst {
                 for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L981
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L1000
                     match name {
                         b"tinyencoding" => tinyencoding = enabled,
                         b"rmw" => rmw = enabled,
@@ -911,7 +912,7 @@ fn main() {
                     no_ldex_stex = false;
                 }
             } else {
-                // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/csky_unknown_linux_gnuabiv2hf.rs#L20
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/csky_unknown_linux_gnuabiv2hf.rs#L22
                 if target == "csky-unknown-linux-gnuabiv2hf" {
                     no_ldex_stex = false;
                 }
