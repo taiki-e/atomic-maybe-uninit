@@ -10,7 +10,6 @@ pub(crate) static POWERPC_MSYNC_CPU: &[&str] = &[
     "e500",
 ];
 pub(crate) static POWERPC_PARTWORD_QUADWORD_ATOMICS_CPU: &[&str] = &[
-    "future",
     "ppc64le",
     "pwr10",
     "pwr11",

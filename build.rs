@@ -46,7 +46,7 @@ fn main() {
 
     if version.minor >= 80 {
         println!(
-            r#"cargo:rustc-check-cfg=cfg(target_feature,values("acquire-release","fast-serialization","zalasr"))"#
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("acquire-release","fast-serialization","fence-keeps-reservation","zalasr"))"#
         );
 
         // Custom cfgs set by build script. Not public API.
@@ -57,7 +57,7 @@ fn main() {
         // TODO: handle multi-line emit_target_feature_fallback
         // grep -F 'emit_target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*emit_target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","acquire-release","fast-serialization","isa-68020","isa-68060","lam-bh","lamcas","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","scq","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8plus","v9","x87","zaamo","zabha","zacas","zalasr","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","acquire-release","fast-serialization","fence-keeps-reservation","isa-68020","isa-68060","lam-bh","lamcas","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","scq","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8plus","v9","x87","zaamo","zabha","zacas","zalasr","zalrsc"))"#
         );
     }
 
@@ -559,52 +559,71 @@ fn main() {
             }
         }
         "powerpc" | "powerpc64" => {
-            // target_feature "msync" is unstable and available on rustc side since nightly-2025-03-04: https://github.com/rust-lang/rust/pull/137860
-            if !version.probe(87, 2025, 3, 3) || needs_target_feature_fallback(&version, None) {
-                let mut partword_quadword_atomics = false;
-                let mut msync = false;
-                // Note that `-C target-cpu=native` is currently ignored.
-                if let Some(cpu) = rustflags.target_cpu {
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L666
-                    if let Some(mut cpu_version) = cpu.strip_prefix("pwr") {
-                        cpu_version = cpu_version.strip_suffix('x').unwrap_or(cpu_version); // for pwr5x and pwr6x
-                        if let Ok(cpu_version) = cpu_version.parse::<u32>() {
-                            partword_quadword_atomics = cpu_version >= 8;
-                        }
-                    } else {
-                        if generated::POWERPC_PARTWORD_QUADWORD_ATOMICS_CPU.contains(&cpu) {
-                            partword_quadword_atomics = true;
-                        }
-                        if generated::POWERPC_MSYNC_CPU.contains(&cpu) {
-                            msync = true;
-                        }
+            let mut fence_keeps_reservation = false;
+            let mut partword_quadword_atomics = false;
+            let mut msync = false;
+            // Note that `-C target-cpu=native` is currently ignored.
+            if let Some(mut cpu) = rustflags.target_cpu {
+                // In the recent LLVM, "future" is based on pwr11 features,
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L571
+                // but on the minimum external LLVM version of the oldest rustc version which we can use asm_experimental_arch
+                // on this target (see matrix.sh), "future" is based on pwr10 features.
+                // https://github.com/llvm/llvm-project/blob/llvmorg-12.0.0/llvm/lib/Target/PowerPC/PPC.td#L370
+                if cpu == "future" {
+                    cpu = "pwr10";
+                }
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L666
+                if let Some(mut cpu_version) = cpu.strip_prefix("pwr") {
+                    cpu_version = cpu_version.strip_suffix('x').unwrap_or(cpu_version); // for pwr5x and pwr6x
+                    if let Ok(cpu_version) = cpu_version.parse::<u32>() {
+                        partword_quadword_atomics = cpu_version >= 8;
+                        // POWER7 and later keep the reservation across the release fence:
+                        // https://github.com/llvm/llvm-project/pull/214867
+                        fence_keeps_reservation = cpu_version >= 7;
                     }
                 } else {
-                    // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L804
-                    // See also https://github.com/rust-lang/rust/issues/59932
-                    partword_quadword_atomics = target_arch == "powerpc64"
-                        && env::var("CARGO_CFG_TARGET_ENDIAN")
-                            .expect("CARGO_CFG_TARGET_ENDIAN not set")
-                            == "little";
-                    msync = target_arch == "powerpc"
-                        && (target.ends_with("spe")
-                            || env::var("CARGO_CFG_TARGET_ABI")
-                                .unwrap_or_default()
-                                .split(',')
-                                .any(|abi| abi == "spe"));
-                }
-                // power8 features: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L498
-                let mut partword_atomics = partword_quadword_atomics;
-                let mut quadword_atomics = partword_quadword_atomics;
-                for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L595
-                    match name {
-                        b"partword-atomics" => partword_atomics = enabled,
-                        b"quadword-atomics" => quadword_atomics = enabled,
-                        b"msync" => msync = enabled,
-                        _ => {}
+                    if generated::POWERPC_PARTWORD_QUADWORD_ATOMICS_CPU.contains(&cpu) {
+                        partword_quadword_atomics = true;
+                    }
+                    if generated::POWERPC_MSYNC_CPU.contains(&cpu) {
+                        msync = true;
+                    }
+                    if cpu == "ppc64le" {
+                        fence_keeps_reservation = true;
                     }
                 }
+            } else {
+                // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L804
+                // See also https://github.com/rust-lang/rust/issues/59932
+                let ppc64le = target_arch == "powerpc64"
+                    && env::var("CARGO_CFG_TARGET_ENDIAN")
+                        .expect("CARGO_CFG_TARGET_ENDIAN not set")
+                        == "little";
+                partword_quadword_atomics = ppc64le;
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/base/aix.rs#L18
+                fence_keeps_reservation = ppc64le || target_os == "aix";
+                msync = target_arch == "powerpc"
+                    && (target.ends_with("spe")
+                        || env::var("CARGO_CFG_TARGET_ABI")
+                            .unwrap_or_default()
+                            .split(',')
+                            .any(|abi| abi == "spe"));
+            }
+            // power8 features: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L498
+            let mut partword_atomics = partword_quadword_atomics;
+            let mut quadword_atomics = partword_quadword_atomics;
+            for &(enabled, name) in &rustflags.target_feature {
+                // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L595
+                match name {
+                    b"partword-atomics" => partword_atomics = enabled,
+                    b"quadword-atomics" => quadword_atomics = enabled,
+                    b"msync" => msync = enabled,
+                    b"fence-keeps-reservation" => fence_keeps_reservation = enabled,
+                    _ => {}
+                }
+            }
+            // target_feature "msync" is unstable and available on rustc side since nightly-2025-03-04: https://github.com/rust-lang/rust/pull/137860
+            if !version.probe(87, 2025, 3, 3) || needs_target_feature_fallback(&version, None) {
                 // target_feature "partword-atomics"/"quadword-atomics" is unstable and available on rustc side since nightly-2024-09-28: https://github.com/rust-lang/rust/pull/130873
                 if !version.probe(83, 2024, 9, 27) || needs_target_feature_fallback(&version, None)
                 {
@@ -615,6 +634,7 @@ fn main() {
                 }
                 emit_target_feature_fallback("msync", msync);
             }
+            emit_target_feature_fallback("fence-keeps-reservation", fence_keeps_reservation);
         }
         "s390x" => {
             let mut arch_version = 8; // LLVM's baseline (z10): https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZProcessors.td#L16-L17

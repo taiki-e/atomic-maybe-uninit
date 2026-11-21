@@ -129,16 +129,7 @@ powerpc_partword_atomics=()
 powerpc_quadword_atomics=()
 cpus=$(rustc --print target-cpus --target "${target}")
 while IFS= read -r cpu; do
-  if [[ "${cpu}" == 'future' ]]; then
-    # In the recent LLVM, "future" is based on pwr11 features,
-    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L571
-    # but on the minimum external LLVM version of the oldest rustc version which we can use asm_experimental_arch
-    # on this target (see matrix.sh), "future" is based on pwr10 features.
-    # https://github.com/llvm/llvm-project/blob/llvmorg-12.0.0/llvm/lib/Target/PowerPC/PPC.td#L370
-    cfgs=$(rustc --print cfg --target "${target}" -C target-cpu=pwr10)
-  else
-    cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
-  fi
+  cfgs=$(rustc --print cfg --target "${target}" -C target-cpu="${cpu}")
   target_features=$(grep -E '^target_feature=' <<<"${cfgs}" || true)
   if [[ "${target_features}" == *"\"msync\""* ]]; then
     powerpc_msync+=("${cpu}")
@@ -149,7 +140,7 @@ while IFS= read -r cpu; do
   if [[ "${target_features}" == *"\"quadword-atomics\""* ]]; then
     powerpc_quadword_atomics+=("${cpu}")
   fi
-done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^native$/d')
+done < <(grep -E '^    ' <<<"${cpus}" | sed -E 's/^    //g; s/ .*//g; /^(native|future)$/d')
 if [[ "${powerpc_partword_atomics[*]}" != "${powerpc_quadword_atomics[*]}" ]]; then
   bail "powerpc_partword_atomics and powerpc_quadword_atomics cannot be merged"
 fi
