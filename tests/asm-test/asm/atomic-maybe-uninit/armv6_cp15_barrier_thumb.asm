@@ -2216,13 +2216,13 @@ asm_test::store::u64::release:
 1:
         tst               r2, #255
         beq               9f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
         mov               r6, #1
         bne               2f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
         strexd            r6, r4, r5, [r1]
         cmp               r6, #0
         beq               3f
@@ -2256,13 +2256,13 @@ asm_test::store::u64::release:
 7:
         tst               r2, #255
         beq               15f
+        mcr               p15, #0x0, r8, c7, c10, #0x5
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
         mov               r6, #1
         bne               8f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
         strexd            r6, r4, r5, [r1]
 8:
         mcr               p15, #0x0, r8, c7, c10, #0x5
@@ -2271,13 +2271,13 @@ asm_test::store::u64::release:
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, pc}
 9:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
         mov               r6, #1
         bne               10f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
         strexd            r6, r4, r5, [r1]
 10:
         eor               r1, r6, #1
@@ -2314,13 +2314,13 @@ asm_test::store::u64::release:
         strb              r1, [r0, #0x8]
         pop               {r4, r5, r6, r7, r8, pc}
 15:
+        mcr               p15, #0x0, r8, c7, c10, #0x5
         ldrexd            r2, r3, [r1]
         eor               r7, r3, r12
         eor               r6, r2, lr
         orrs              r6, r6, r7
         mov               r6, #1
         bne               16f
-        mcr               p15, #0x0, r8, c7, c10, #0x5
         strexd            r6, r4, r5, [r1]
         cmp               r6, #0
         bne               16f
@@ -2603,10 +2603,10 @@ asm_test::store::u64::release:
         beq               9f
         mov               r1, #1
         mov               r3, #0
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrexb            lr, [r0]
         cmp               lr, r12
         bne               2f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strexb            r1, r2, [r0]
         cmp               r1, #0
         beq               3f
@@ -2640,10 +2640,10 @@ asm_test::store::u64::release:
         beq               15f
         mov               r1, #1
         mov               r3, #0
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrexb            lr, [r0]
         cmp               lr, r12
         bne               8f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strexb            r1, r2, [r0]
 8:
         mcr               p15, #0x0, r3, c7, c10, #0x5
@@ -2654,10 +2654,10 @@ asm_test::store::u64::release:
 9:
         mov               r1, #1
         mov               r3, #0
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrexb            lr, [r0]
         cmp               lr, r12
         bne               10f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strexb            r1, r2, [r0]
 10:
         clz               r0, r1
@@ -2693,10 +2693,10 @@ asm_test::store::u64::release:
 15:
         mov               r1, #1
         mov               r3, #0
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrexb            lr, [r0]
         cmp               lr, r12
         bne               16f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strexb            r1, r2, [r0]
         cmp               r1, #0
         bne               16f
@@ -2978,10 +2978,10 @@ asm_test::store::u64::release:
         beq               9f
         mov               r1, #1
         mov               r3, #0
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrexh            lr, [r0]
         cmp               lr, r12
         bne               2f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strexh            r1, r2, [r0]
         cmp               r1, #0
         beq               3f
@@ -3015,10 +3015,10 @@ asm_test::store::u64::release:
         beq               15f
         mov               r1, #1
         mov               r3, #0
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrexh            lr, [r0]
         cmp               lr, r12
         bne               8f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strexh            r1, r2, [r0]
 8:
         mcr               p15, #0x0, r3, c7, c10, #0x5
@@ -3029,10 +3029,10 @@ asm_test::store::u64::release:
 9:
         mov               r1, #1
         mov               r3, #0
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrexh            lr, [r0]
         cmp               lr, r12
         bne               10f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strexh            r1, r2, [r0]
 10:
         clz               r0, r1
@@ -3068,10 +3068,10 @@ asm_test::store::u64::release:
 15:
         mov               r1, #1
         mov               r3, #0
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrexh            lr, [r0]
         cmp               lr, r12
         bne               16f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strexh            r1, r2, [r0]
         cmp               r1, #0
         bne               16f
@@ -3338,10 +3338,10 @@ asm_test::store::u64::release:
         mov               r3, #0
         tst               r12, #255
         beq               9f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               2f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strex             lr, r2, [r0]
         cmp               lr, #0
         beq               3f
@@ -3373,10 +3373,10 @@ asm_test::store::u64::release:
         mov               r3, #0
         tst               r12, #255
         beq               15f
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               8f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strex             lr, r2, [r0]
 8:
         mcr               p15, #0x0, r3, c7, c10, #0x5
@@ -3385,10 +3385,10 @@ asm_test::store::u64::release:
         mov               r0, r12
         pop               {r11, pc}
 9:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               10f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strex             lr, r2, [r0]
 10:
         clz               r0, lr
@@ -3419,10 +3419,10 @@ asm_test::store::u64::release:
         mov               r0, r12
         pop               {r11, pc}
 15:
+        mcr               p15, #0x0, r3, c7, c10, #0x5
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               16f
-        mcr               p15, #0x0, r3, c7, c10, #0x5
         strex             lr, r2, [r0]
         cmp               lr, #0
         bne               16f
