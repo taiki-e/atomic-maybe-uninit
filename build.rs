@@ -920,25 +920,24 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_ldex_stex");
             }
         }
-        // TODO(bpf): Enable once https://github.com/aya-rs/bpf-linker/pull/386 released.
-        // "bpf" => {
-        //     // atomic_fetch_{add,and,xor,or}, {,cmp}xchg{32_32,_64}: LLVM 17+ (17 is our min LLVM version) https://github.com/llvm/llvm-project/commit/d0d1431ab1c88dd2fb8c09ae28909da3fb5f3a57
-        //     // load_acquire, store_release: LLVM 21+ https://github.com/llvm/llvm-project/commit/17bfc00f7c4a424d7b5dc6da575865833701fd1a
-        //     let mut v4 = false;
-        //     if let Some(cpu) = rustflags.target_cpu {
-        //         // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/BPF/BPF.td
-        //         if let Some(cpu_version) = cpu.strip_prefix("v") {
-        //             if let Ok(cpu_version) = cpu_version.parse::<u32>() {
-        //                 if version.llvm >= 21 {
-        //                     v4 = cpu_version >= 4;
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     if v4 {
-        //         println!("cargo:rustc-cfg=atomic_maybe_uninit_v4");
-        //     }
-        // }
+        "bpf" => {
+            // atomic_fetch_{add,and,xor,or}, {,cmp}xchg{32_32,_64}: LLVM 17+ (17 is our min LLVM version) https://github.com/llvm/llvm-project/commit/d0d1431ab1c88dd2fb8c09ae28909da3fb5f3a57
+            // load_acquire, store_release: LLVM 21+ https://github.com/llvm/llvm-project/commit/17bfc00f7c4a424d7b5dc6da575865833701fd1a
+            let mut v4 = false;
+            if let Some(cpu) = rustflags.target_cpu {
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/BPF/BPF.td
+                if let Some(cpu_version) = cpu.strip_prefix("v") {
+                    if let Ok(cpu_version) = cpu_version.parse::<u32>() {
+                        if version.llvm >= 21 {
+                            v4 = cpu_version >= 4;
+                        }
+                    }
+                }
+            }
+            if v4 {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_v4");
+            }
+        }
         _ => {}
     }
 }
