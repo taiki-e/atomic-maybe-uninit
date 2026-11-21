@@ -79,6 +79,8 @@ Feel free to submit an issue if your target is not supported yet.
 
 This crate uses inline assembly to implement atomic operations (this is currently the only sound way to perform atomic operations on uninitialized values), so it is currently not compatible with [Miri](https://github.com/rust-lang/miri/issues/11) and [most kinds of Sanitizers](https://github.com/google/sanitizers/issues/192).
 
+Also, Valgrind reports "Conditional jump or move depends on uninitialized value(s)" error for CAS on potentially uninitialized integers -- which is correct, that's exactly what the implementation does, but we are doing this inside inline assembly so it should be fine. (Effectively we are adding partial `freeze` capabilities to Rust via inline assembly. This pattern has not been blessed by the language team, but is also not known to cause any problems.)
+
 ## Related Projects
 
 - [portable-atomic]: Portable atomic types including support for 128-bit atomics, atomic float, etc.
