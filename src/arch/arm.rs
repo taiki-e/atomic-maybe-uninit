@@ -176,15 +176,12 @@ cfg_sel!({
             };
         }
         #[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
-        macro_rules! if_not_native_dmb {
-            ($($tt:tt)*) => {
+        macro_rules! weak_release_fence {
+            (before_ll, $release:expr) => {
                 ""
             };
-        }
-        #[cfg(any(target_feature = "v7", atomic_maybe_uninit_target_feature = "v7"))]
-        macro_rules! if_native_dmb {
-            ($($tt:tt)*) => {
-                $($tt)*
+            (after_cmp, $release:expr) => {
+                $release
             };
         }
     }
@@ -350,17 +347,11 @@ cfg_sel!({
             any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
             not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
         ))]
-        macro_rules! if_not_native_dmb {
-            ($($tt:tt)*) => {
-                $($tt)*
+        macro_rules! weak_release_fence {
+            (before_ll, $release:expr) => {
+                $release
             };
-        }
-        #[cfg(all(
-            any(target_feature = "v6", atomic_maybe_uninit_target_feature = "v6"),
-            not(atomic_maybe_uninit_test_prefer_kuser_cmpxchg),
-        ))]
-        macro_rules! if_native_dmb {
-            ($($tt:tt)*) => {
+            (after_cmp, $release:expr) => {
                 ""
             };
         }
@@ -482,13 +473,11 @@ cfg_sel!({
                 )
             };
         }
-        macro_rules! if_not_native_dmb {
-            ($($tt:tt)*) => {
-                $($tt)*
+        macro_rules! weak_release_fence {
+            (before_ll, $release:expr) => {
+                $release
             };
-        }
-        macro_rules! if_native_dmb {
-            ($($tt:tt)*) => {
+            (after_cmp, $release:expr) => {
                 ""
             };
         }
@@ -884,11 +873,11 @@ macro_rules! atomic {
                                 // In weak CAS without native dmb, always emit release fence because
                                 // fence may clear a reservation by traps (https://github.com/rust-lang/rust/issues/60605)
                                 // or indirect branches.
-                                if_not_native_dmb!($release),                      // fence
+                                weak_release_fence!(before_ll, $release),          // fence
                                 concat!("ldrex", $suffix, " {out}, [{dst}]"),      // atomic { out = zero_extend(*dst); EXCLUSIVE = dst }
                                 "cmp {out}, {old}",                                // if out == old { Z = 1 } else { Z = 0 }
                                 concat!("bne ", $cmp_fail_label),                  // if Z == 0 { jump 'cmp-fail }
-                                if_native_dmb!($release),                          // fence
+                                weak_release_fence!(after_cmp, $release),          // fence
                                 concat!("strex", $suffix, " {r}, {new}, [{dst}]"), // atomic { if EXCLUSIVE == dst { *dst = new; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                                 if_any!($branch_after_sc, "cmp {r}, #0"),          // if r == 0 { Z = 1 } else { Z = 0 }
                                 $branch_after_sc,                                  // if ? { jump '? }
@@ -1627,14 +1616,14 @@ impl AtomicCompareExchange for u64 {
                         // In weak CAS without native dmb, always emit release fence because
                         // fence may clear a reservation by traps (https://github.com/rust-lang/rust/issues/60605)
                         // or indirect branches.
-                        if_not_native_dmb!($release),             // fence
+                        weak_release_fence!(before_ll, $release), // fence
                         "ldrexd r2, r3, [{dst}]",                 // atomic { r2:r3 = *dst; EXCLUSIVE = dst }
                         "eor {tmp}, r3, {old_hi}",                // tmp = r3 ^ old_hi
                         "eor {r}, r2, {old_lo}",                  // r = r2 ^ old_lo
                         "orrs {r}, {tmp}",                        // r |= tmp; if r == 0 { Z = 1 } else { Z = 0 }
                         "mov {r}, #1",                            // r = 1
                         concat!("bne ", $cmp_fail_label),         // if Z == 0 { jump 'cmp-fail }
-                        if_native_dmb!($release),                 // fence
+                        weak_release_fence!(after_cmp, $release), // fence
                         "strexd {r}, r4, r5, [{dst}]",            // atomic { if EXCLUSIVE == dst { *dst = r4:r5; r = 0 } else { r = 1 }; EXCLUSIVE = None }
                         if_any!($branch_after_sc, "cmp {r}, #0"), // if r == 0 { Z = 1 } else { Z = 0 }
                         $branch_after_sc,                         // if ? { jump '? }
