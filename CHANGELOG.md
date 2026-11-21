@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [0.3.22] - 2026-11-21
+
 - Support BPF (experimental). ([#37](https://github.com/taiki-e/atomic-maybe-uninit/pull/37), [4cb7587](https://github.com/taiki-e/atomic-maybe-uninit/commit/4cb75877392fd61ef66d63925a23eeccdce7b9da))
 
 - Fix always failing weak CAS on [pre-POWER7 PowerPC](https://github.com/rust-lang/rust/issues/160723) and [Armv6](https://github.com/rust-lang/rust/issues/60605). ([2fe0567](https://github.com/taiki-e/atomic-maybe-uninit/commit/2fe0567c0ed1aaec81ad1228dd0c8fd5a2099d1c), [9a61d0a](https://github.com/taiki-e/atomic-maybe-uninit/commit/9a61d0a393b5eb77d4cdfd89dd2deb19f6b2d0b7))
@@ -535,7 +537,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.21...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.22...HEAD
+[0.3.22]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.21...v0.3.22
 [0.3.21]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.20...v0.3.21
 [0.3.20]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.19...v0.3.20
 [0.3.19]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...v0.3.19
