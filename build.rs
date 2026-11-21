@@ -532,7 +532,8 @@ fn main() {
                     _ => {}
                 }
             }
-            // As of Rust 1.93, target_feature "zalasr" is not available on rustc side:
+            // As of Rust 1.100, target_feature "zalasr" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L678
             if version.llvm >= 22 {
                 // available non-experimental since LLVM 22 https://github.com/llvm/llvm-project/pull/177331
                 emit_target_feature_fallback("zalasr", zalasr);
@@ -634,7 +635,8 @@ fn main() {
                 }
                 emit_target_feature_fallback("msync", msync);
             }
-            // As of Rust 1.100, target_feature "fence-keeps-reservation" is not available on rustc side.
+            // As of Rust 1.100, target_feature "fence-keeps-reservation" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L597
             emit_target_feature_fallback("fence-keeps-reservation", fence_keeps_reservation);
         }
         "s390x" => {
@@ -660,6 +662,7 @@ fn main() {
             // arch9 (z196) features: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZFeatures.td#L103
             let mut fast_serialization = arch_version >= 9;
             for &(enabled, name) in &rustflags.target_feature {
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L937
                 match name {
                     b"fast-serialization" => fast_serialization = enabled,
                     _ => {}
