@@ -114,8 +114,12 @@ jobs:
           target: ${{ matrix.target }}
           runner: ${{ matrix.container && 'native' || '' }}
         if: steps.prepare.outputs.target-not-host == 'true' && !startsWith(matrix.target, 'csky-')
+      # Use qemu-system because the C-SKY qemu-user runner has a broken csky_cmpxchg
+      # (trap 2) emulation, which also affects glibc:
+      # https://github.com/XUANTIE-RV/qemu/blob/xuantie-qemu-9.0/linux-user/csky/cpu_loop.c#L112
       # TODO: not yet supported in setup-cross-toolchain-action
-      - run: |
+      - name: Set up C-SKY toolchain
+        run: |
           retry() {
             for i in {1..10}; do
               if "$@"; then
@@ -126,33 +130,163 @@ jobs:
             done
             "$@"
           }
-          target_lower="${TARGET//-/_}"
-          target_lower="${target_lower//./_}"
-          target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
+          retry sudo apt-get -o Acquire::Retries=10 -qq update
+          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+            e2fsprogs \
+            libaio1 \
+            libdaxctl1 \
+            libgcrypt20 \
+            libglib2.0-0 \
+            libgnutls30 \
+            libjpeg-turbo8 \
+            liblzo2-2 \
+            libndctl6 \
+            libnuma1 \
+            libpam0g \
+            libpixman-1-0 \
+            libpmem1 \
+            libpng16-16 \
+            libsasl2-2 \
+            libseccomp2 \
+            libsnappy1v5 \
+            libudev1 \
+            libvdeplug2
+
+          target_upper=$(tr '[:lower:].-' '[:upper:]__' <<<"${TARGET}")
+          toolchain_dir="${HOME}/gcc-csky-linux-gnuabiv2"
           # https://github.com/taiki-e/rust-cross-toolchain/pkgs/container/rust-cross-toolchain
           retry docker create --name gcc-csky-linux-gnuabiv2 "ghcr.io/taiki-e/rust-cross-toolchain:${TARGET}-dev-amd64"
-          docker cp -- "gcc-csky-linux-gnuabiv2:/${TARGET}" "${HOME}"/gcc-csky-linux-gnuabiv2
+          docker cp -- "gcc-csky-linux-gnuabiv2:/${TARGET}" "${toolchain_dir}"
           docker rm -f -- gcc-csky-linux-gnuabiv2 >/dev/null
-          printf '%s\n' "${HOME}"/gcc-csky-linux-gnuabiv2/bin >>"${GITHUB_PATH}"
-          printf '%s\n' "CARGO_TARGET_${target_upper}_LINKER=csky-abiv2-linux-gcc" >>"${GITHUB_ENV}"
-          case "${TARGET}" in
-            *hf)
-              qemu_cpu=ck860fv
-              # +crt-static: Workaround for C-SKY QEMU issue
-              flags=' -C target-feature=+crt-static'
-              ;;
-            *)
-              # https://github.com/taiki-e/atomic-maybe-uninit/pull/32#issuecomment-3341287749
-              qemu_cpu=ck860
-              # +crt-static: Workaround for C-SKY QEMU issue
+          printf '%s\n' "${toolchain_dir}/bin" >>"${GITHUB_PATH}"
+          # https://github.com/c-sky/buildroot/releases/tag/v1.0.10.1
+          artifact_job=1251564492
+          image_sha256=2b1a00786e3a858337986c03fd36d5b649f46988cb668ff13976b91e34eb85d4
+          rootfs_sha256=fa6a2a7b90c7e6d4f09a7926138597e150412a9064d3fbc9f539582cdc1e315c
+          # +crt-static: Workaround for C-SKY QEMU bug
+          flags=' -C target-feature=+crt-static'
+          if [[ "${TARGET}" != *hf ]]; then
               # ldex/stex requires ck860*
-              flags=' -C target-feature=+crt-static -C target-cpu=ck860'
-              ;;
-          esac
-          printf 'RUSTFLAGS=%s\n' "${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
-          printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
-          printf '%s\n' "CARGO_TARGET_${target_upper}_RUNNER=qemu-cskyv2 -cpu ${qemu_cpu}" >>"${GITHUB_ENV}"
-          printf 'BUILD_STD=-Z''build-std\n' >>"${GITHUB_ENV}"
+              flags+=' -C target-cpu=ck860'
+          fi
+
+          image_dir="${RUNNER_TEMP}/csky"
+          mkdir -p -- "${image_dir}"
+          image_url="https://gitlab.com/c-sky/buildroot/-/jobs/${artifact_job}/artifacts/raw/output/images"
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 -o "${image_dir}/Image.xz" "${image_url}/Image.xz"
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 -o "${image_dir}/rootfs.ext2.xz" "${image_url}/rootfs.ext2.xz"
+          sha256sum -c - >/dev/null <<EOF
+          ${image_sha256} *${image_dir}/Image.xz
+          ${rootfs_sha256} *${image_dir}/rootfs.ext2.xz
+          EOF
+          xz --decompress -- "${image_dir}/Image.xz" "${image_dir}/rootfs.ext2.xz"
+
+          cat >"${image_dir}/init" <<'EOF'
+          #!/bin/sh
+          /bin/busybox mount -t proc proc /proc
+
+          export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
+          export CI=true
+          export GITHUB_ACTIONS=true
+          export RUST_BACKTRACE=1
+          export RUST_TEST_THREADS=1
+
+          status=1
+          if /bin/busybox mount -t 9p -o trans=virtio,version=9p2000.L,msize=1048576 hostshare /mnt/host; then
+            if /bin/busybox xargs -0 /mnt/host/test </mnt/host/args; then
+              status=0
+            else
+              status=$?
+            fi
+          fi
+
+          if [ "${status}" -eq 0 ]; then
+            printf 'C-SKY tests finished successfully\n'
+          else
+            printf 'C-SKY tests failed with status %s\n' "${status}"
+          fi
+
+          while true; do
+            /bin/busybox sleep 1
+          done
+          EOF
+          debugfs -w -R 'mkdir /mnt/host' "${image_dir}/rootfs.ext2"
+          debugfs -w -R "write ${image_dir}/init /init" "${image_dir}/rootfs.ext2"
+          debugfs -w -R 'set_inode_field /init mode 0100755' "${image_dir}/rootfs.ext2"
+
+          runner="${image_dir}/qemu-system-csky-runner.sh"
+          cat >"${runner}" <<'EOF'
+          #!/usr/bin/env bash
+          set -CeEuo pipefail
+          IFS=$'\n\t'
+          trap -- 's=$?; printf >&2 "%s\n" "${0##*/}:${LINENO}: \`${BASH_COMMAND}\` exit with ${s}"; exit ${s}' ERR
+
+          image_dir=$(dirname -- "$0")
+          binary=$1
+          shift
+
+          tmp=$(mktemp -d)
+          qemu_pid=''
+          cleanup() {
+            if [[ -n "${qemu_pid}" ]]; then
+              kill -- "${qemu_pid}" 2>/dev/null || true
+              wait "${qemu_pid}" 2>/dev/null || true
+            fi
+            rm -rf -- "${tmp:?}"
+          }
+          trap -- cleanup EXIT
+          shared="${tmp}/shared"
+          mkdir -- "${shared}"
+          install -m 0755 -- "${binary}" "${shared}/test"
+          if [[ $# -gt 0 ]]; then
+            printf '%s\0' "$@"
+          fi >"${shared}/args"
+
+          log="${tmp}/qemu.log"
+          TMPDIR="${tmp}" qemu-system-cskyv2 \
+            -M virt \
+            -cpu c860v \
+            -smp 2 \
+            -m 1G \
+            -display none \
+            -monitor none \
+            -serial stdio \
+            -no-user-config \
+            -nic none \
+            -kernel "${image_dir}/Image" \
+            -append 'console=ttyS0,115200 rootwait root=/dev/vda rw init=/init panic=-1 quiet' \
+            -drive "file=${image_dir}/rootfs.ext2,format=raw,id=hd0,snapshot=on" \
+            -device virtio-blk-device,drive=hd0 \
+            -fsdev "local,id=fsdev0,path=${shared},security_model=none" \
+            -device virtio-9p-device,id=fs0,fsdev=fsdev0,mount_tag=hostshare \
+            -no-reboot \
+            >"${log}" 2>&1 &
+          qemu_pid=$!
+          for _ in {1..360}; do
+            if grep -Eq 'C-SKY tests (finished successfully|failed with status)' "${log}"; then
+              break
+            fi
+            if ! kill -0 -- "${qemu_pid}" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          kill -- "${qemu_pid}" 2>/dev/null || true
+          wait "${qemu_pid}" 2>/dev/null || true
+          qemu_pid=''
+          cat -- "${log}"
+          grep -Fq 'C-SKY tests finished successfully' "${log}"
+          EOF
+          chmod 0755 "${runner}"
+
+          "${toolchain_dir}/bin/qemu-system-cskyv2" --version
+          cat >>"${GITHUB_ENV}" <<EOF
+          RUSTFLAGS=${RUSTFLAGS}${flags}
+          RUSTDOCFLAGS=${RUSTDOCFLAGS}${flags}
+          CARGO_TARGET_${target_upper}_LINKER=csky-abiv2-linux-gcc
+          CARGO_TARGET_${target_upper}_RUNNER=${runner}
+          BUILD_STD=-Zbuild-std
+          EOF
         env:
           TARGET: ${{ matrix.target }}
         if: startsWith(matrix.target, 'csky-')
@@ -171,7 +305,7 @@ jobs:
             case "${TARGET}" in
               # TODO(macos): error: linker stderr: ld: ignoring duplicate libraries: '-lc', '-lm'
               # TODO(windows): error: linker stdout: C:\a\portable-atomic\portable-atomic\target\debug\deps\portable_atomic-6f0d7f05900c9263.exe : warning LNK4072: section count 101 exceeds max (96); image may not run
-              # TODO(csky): error: linker stderr: /home/runner/gcc-csky-linux-gnuabiv2/bin/../lib/gcc/csky-linux-gnuabiv2/6.3.0/../../../../csky-linux-gnuabiv2/bin/ld: file ....o's arch flag ck860 conflict with target ck810,set target arch flag to ck860
+              # TODO(csky): these jobs use ck860/ck860v, but the available sysroot libraries use ck810
               *-darwin* | *-windows-* | csky*) ;;
               *) flags+=" -D linker_messages" ;;
             esac
