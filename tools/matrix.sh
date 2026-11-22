@@ -23,6 +23,7 @@ bail() {
 targets=(
   # x86_64
   x86_64-unknown-linux-gnu
+  x86_64-unknown-linux-gnux32
   x86_64-apple-darwin
   x86_64-pc-windows-msvc
 
@@ -233,6 +234,8 @@ for target in "${targets[@]}"; do
 
   test_only_on_nightly=''
   case "${target}" in
+    # x86_64-unknown-linux-gnux32:
+    #   x32 tests use unstable -Z panic_abort_tests.
     # x86_64-apple-darwin:
     #   We test only one version because we do not have macOS-specific code and
     #   x86_64-specific code is also tested on Linux using multiple versions.
@@ -242,7 +245,7 @@ for target in "${targets[@]}"; do
     # armv7-unknown-linux-gnueabi:
     #   We test only one version because we do not have soft-float-specific code and
     #   Armv7-specific code is also tested on hard-float target using multiple versions.
-    x86_64-apple-darwin | aarch64-pc-windows-msvc | armv7-unknown-linux-gnueabi) test_only_on_nightly=1 ;;
+    x86_64-unknown-linux-gnux32 | x86_64-apple-darwin | aarch64-pc-windows-msvc | armv7-unknown-linux-gnueabi) test_only_on_nightly=1 ;;
   esac
 
   if [[ -z "${test_only_on_nightly}" ]]; then
@@ -275,6 +278,9 @@ for target in "${targets[@]}"; do
     esac
     flags=''
     case "${target}" in
+      x86_64-unknown-linux-gnux32)
+        flags="-C panic=abort -Z panic_abort_tests"
+        ;;
       arm64ec* | s390x*)
         case "${toolchain}" in
           1.8[4-6]) toolchain='' ;; # Handled in min stable toolchain
