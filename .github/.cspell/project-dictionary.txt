@@ -127,6 +127,7 @@ mfcr
 mfence
 mgba
 mknod
+mmap
 movi
 movlps
 movq
