@@ -79,7 +79,7 @@ fn test() {
         // Revision::new("bpf_v4", "bpfel-unknown-none")
         //     .rustc_args(["-C", "target-cpu=v4"]),
         // C-SKY
-        Revision::new("csky", "csky-unknown-linux-gnuabiv2")
+        Revision::new("csky_ck860", "csky-unknown-linux-gnuabiv2")
             .rustc_args(["-C", "target-cpu=ck860"]),
         // Hexagon
         Revision::new("hexagon", "hexagon-unknown-linux-musl"),
