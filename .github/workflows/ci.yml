@@ -185,8 +185,6 @@ jobs:
           cat >"${image_dir}/init" <<'EOF'
           #!/bin/sh
           /bin/busybox mount -t proc proc /proc
-
-          export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
           export CI=true
           export GITHUB_ACTIONS=true
           export RUST_BACKTRACE=1
@@ -334,7 +332,6 @@ jobs:
           /bin/busybox mount -t devtmpfs devtmpfs /dev
           /bin/busybox mount -t proc proc /proc
           export LD_LIBRARY_PATH=/libx32
-          export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
           export CI=true
           export GITHUB_ACTIONS=true
           export RUST_BACKTRACE=1
@@ -765,8 +762,6 @@ jobs:
           rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.0 exits with 1
           sudo cp -r -- qemu/. /usr/local/
           rm -rf -- ./qemu
-          # Patched QEMU for LoongArch semihosting
-          printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/bin\n' >>"${GITHUB_ENV}"
           if [[ "${RUST}" == "nightly"* ]]; then
             if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
               mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}
