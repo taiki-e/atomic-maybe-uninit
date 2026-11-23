@@ -731,7 +731,7 @@ jobs:
               simavr
             )
             if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
-              # TODO: QEMU 10.2-11.0 exits with 1
+              # TODO: QEMU 10.2-11.1 exits with 1
               apt_packages+=(
                 qemu-system-sparc
               )
@@ -759,7 +759,7 @@ jobs:
           qemu_version=11.1.3
           retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://github.com/taiki-e/qemu/releases/download/patched-${qemu_version}/qemu-system-x86_64-linux.tar.zst" \
             | tar xf - --zstd
-          rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.0 exits with 1
+          rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.1 exits with 1
           sudo cp -r -- qemu/. /usr/local/
           rm -rf -- ./qemu
           if [[ "${RUST}" == "nightly"* ]]; then
