@@ -116,7 +116,7 @@ jobs:
           fi
         env:
           TARGET: ${{ matrix.target }}
-      - uses: taiki-e/setup-cross-toolchain-action@12b7ad4acfa95a1476779d6c06699b96ec1691f8 # v1.42.0
+      - uses: taiki-e/setup-cross-toolchain-action@be174937b799f896bac421e9f8250f4fff986a3c # v1.43.0
         with:
           target: ${{ matrix.target }}
           runner: ${{ matrix.container && 'native' || '' }}
@@ -765,6 +765,14 @@ jobs:
           )
           printf '%s\n' "${HOME}"/riscv-isa-sim/bin >>"${GITHUB_PATH}"
           printf '%s\n' "${HOME}"/gcc-riscv64-linux-musl/bin >>"${GITHUB_PATH}"
+          qemu_version=11.1.3
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://github.com/taiki-e/qemu/releases/download/patched-${qemu_version}/qemu-system-x86_64-linux.tar.zst" \
+            | tar xf - --zstd
+          rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.0 exits with 1
+          sudo cp -r -- qemu/. /usr/local/
+          rm -rf -- ./qemu
+          # Patched QEMU for LoongArch semihosting
+          printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/bin\n' >>"${GITHUB_ENV}"
           if [[ "${RUST}" == "nightly"* ]]; then
             if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
               mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}
@@ -787,22 +795,15 @@ jobs:
                 | tar xzf - --strip-components 1 -C "${HOME}"/tsim
               printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
             fi
-            # https://github.com/taiki-e/dockerfiles/pkgs/container/qemu-user
-            retry docker create --name qemu-user ghcr.io/taiki-e/qemu-user
-            mkdir -p -- qemu-user
-            docker cp -- qemu-user:/usr/bin qemu-user/bin
-            docker rm -f -- qemu-user >/dev/null
+            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://github.com/taiki-e/qemu/releases/download/patched-${qemu_version}/qemu-user-x86_64-linux.tar.zst" \
+              | tar xf - --zstd
             sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
             rm -rf -- ./qemu-user
           elif [[ "${RUST}" == "stable" ]]; then
             retry espup install --targets esp32,esp32s2,esp32s3
           fi
-          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/patched-11.0.0/qemu-ubuntu-24.04.tar.xz \
-            | tar xJf -
-          rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.0 exits with 1
-          sudo cp -r -- qemu/. /usr/local/
-          rm -rf -- ./qemu
           # Patched QEMU for LoongArch semihosting
+          # TODO: patched-11.1.3 hang on la32
           retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/loongarch-semi-10.1.5/qemu-ubuntu-24.04.tar.xz \
             | tar xJf -
           sudo mv -- qemu /usr/local/qemu-loongarch-semi
