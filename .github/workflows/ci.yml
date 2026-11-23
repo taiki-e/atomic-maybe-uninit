@@ -34,20 +34,27 @@ concurrency:
 
 jobs:
   tidy:
-    uses: taiki-e/github-actions/.github/workflows/tidy.yml@a2bc8ad241bd3c7fa2ba3239d7dca7a032a17095 # 2026.11.22
+    uses: taiki-e/github-actions/.github/workflows/tidy.yml@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
     permissions:
       security-events: write # for github/codeql-action/*
   codegen:
     needs: tidy
-    uses: taiki-e/github-actions/.github/workflows/gen.yml@a2bc8ad241bd3c7fa2ba3239d7dca7a032a17095 # 2026.11.22
+    uses: taiki-e/github-actions/.github/workflows/gen.yml@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
     permissions:
       contents: write # for creating branch for pr
       pull-requests: read # for gh pr list
     secrets:
       PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
+  codeql:
+    needs: tidy
+    uses: taiki-e/github-actions/.github/workflows/codeql.yml@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
+    permissions:
+      security-events: write # for github/codeql-action/*
+    with:
+      language: rust
   msrv:
     needs: tidy
-    uses: taiki-e/github-actions/.github/workflows/rust-msrv.yml@a2bc8ad241bd3c7fa2ba3239d7dca7a032a17095 # 2026.11.22
+    uses: taiki-e/github-actions/.github/workflows/rust-msrv.yml@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
 
   prepare:
     needs: tidy
@@ -71,7 +78,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/github-actions/free-device-space@a2bc8ad241bd3c7fa2ba3239d7dca7a032a17095 # 2026.11.22
+      - uses: taiki-e/github-actions/free-device-space@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
         if: startsWith(matrix.target, 'hexagon')
       - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends gcc libc6-dev
         if: matrix.container != ''
@@ -869,7 +876,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           runner: valgrind
-      - uses: taiki-e/github-actions/setup-docker@a2bc8ad241bd3c7fa2ba3239d7dca7a032a17095 # 2026.11.22
+      - uses: taiki-e/github-actions/setup-docker@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
         with:
           buildx: false
           qemu: ${{ matrix.arch }}
