@@ -82,12 +82,6 @@ jobs:
         if: startsWith(matrix.target, 'hexagon')
       - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends gcc libc6-dev
         if: matrix.container != ''
-      # - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
-      #   if: startsWith(matrix.os, 'ubuntu') || matrix.os == ''
-      # - run: brew install moreutils
-      #   if: startsWith(matrix.os, 'macos')
-      # - run: C:/msys64/usr/bin/pacman -S --noconfirm moreutils
-      #   if: startsWith(matrix.os, 'windows')
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
         with:
           # 0.4.8 fails with at least nightly-2023-05-09 to nightly-2024-01-05
@@ -872,7 +866,6 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
           VALGRIND: ${{ matrix.arch && 'valgrind-cross' || 'valgrind' }}
-      # - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
       - uses: taiki-e/setup-cross-toolchain-action@3d9770ce98eb7dbcf378563182a5e8031165f75b # v1.41.0
         with:
           target: ${{ matrix.target }}
