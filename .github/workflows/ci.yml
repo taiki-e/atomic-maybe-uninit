@@ -110,7 +110,7 @@ jobs:
           fi
         env:
           TARGET: ${{ matrix.target }}
-      - uses: taiki-e/setup-cross-toolchain-action@be174937b799f896bac421e9f8250f4fff986a3c # v1.43.0
+      - uses: taiki-e/setup-cross-toolchain-action@0375eb1d01bea430aa3202965839a7092960a23b # v1.43.1
         with:
           target: ${{ matrix.target }}
           runner: ${{ matrix.container && 'native' || '' }}
@@ -730,17 +730,11 @@ jobs:
               libc6-dev-m68k-cross
               simavr
             )
-            if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
-              # TODO: QEMU 10.2-11.1 exits with 1
+            if [[ "${RUST}" != "nightly-2023-08-24" ]] && [[ "${RUST}" != "nightly-2025-08-06" ]]; then
               apt_packages+=(
-                qemu-system-sparc
+                libnspr4
+                mspdebug
               )
-              if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
-                apt_packages+=(
-                  libnspr4
-                  mspdebug
-                )
-              fi
             fi
           fi
           retry sudo apt-get -o Acquire::Retries=10 -qq update
@@ -756,13 +750,18 @@ jobs:
           )
           printf '%s\n' "${HOME}"/riscv-isa-sim/bin >>"${GITHUB_PATH}"
           printf '%s\n' "${HOME}"/gcc-riscv64-linux-musl/bin >>"${GITHUB_PATH}"
-          qemu_version=11.1.3
-          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://github.com/taiki-e/qemu/releases/download/patched-${qemu_version}/qemu-system-x86_64-linux.tar.zst" \
+          qemu_version=11.1.3-patched.0
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://github.com/taiki-e/qemu/releases/download/v${qemu_version}/qemu-system-x86_64-linux.tar.zst" \
             | tar xf - --zstd
-          rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.1 exits with 1
           sudo cp -r -- qemu/. /usr/local/
           rm -rf -- ./qemu
+          # Patched QEMU for LoongArch semihosting
+          printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/bin\n' >>"${GITHUB_ENV}"
           if [[ "${RUST}" == "nightly"* ]]; then
+            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://github.com/taiki-e/qemu/releases/download/v${qemu_version}/qemu-user-x86_64-linux.tar.zst" \
+              | tar xf - --zstd
+            sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
+            rm -rf -- ./qemu-user
             if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
               mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}
               if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
@@ -784,19 +783,9 @@ jobs:
                 | tar xzf - --strip-components 1 -C "${HOME}"/tsim
               printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
             fi
-            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://github.com/taiki-e/qemu/releases/download/patched-${qemu_version}/qemu-user-x86_64-linux.tar.zst" \
-              | tar xf - --zstd
-            sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
-            rm -rf -- ./qemu-user
           elif [[ "${RUST}" == "stable" ]]; then
             retry espup install --targets esp32,esp32s2,esp32s3
           fi
-          # Patched QEMU for LoongArch semihosting
-          # TODO: patched-11.1.3 hang on la32
-          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/loongarch-semi-10.1.5/qemu-ubuntu-24.04.tar.xz \
-            | tar xJf -
-          sudo mv -- qemu /usr/local/qemu-loongarch-semi
-          printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/qemu-loongarch-semi/bin\n' >>"${GITHUB_ENV}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUST: ${{ matrix.rust }}
@@ -855,7 +844,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
           VALGRIND: ${{ matrix.arch && 'valgrind-cross' || 'valgrind' }}
-      - uses: taiki-e/setup-cross-toolchain-action@3d9770ce98eb7dbcf378563182a5e8031165f75b # v1.41.0
+      - uses: taiki-e/setup-cross-toolchain-action@0375eb1d01bea430aa3202965839a7092960a23b # v1.43.1
         with:
           target: ${{ matrix.target }}
           runner: valgrind
