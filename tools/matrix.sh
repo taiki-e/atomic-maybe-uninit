@@ -321,10 +321,10 @@ for target in "${targets[@]}"; do
           nightly) toolchain=nightly-2026-01-28 ;;
         esac
         ;;
-      mips64* | mipsisa64r6*)
+      mipsisa64r6*)
         case "${toolchain}" in
-          1.99) toolchain='' ;; # LLVM 23 bug https://github.com/llvm/llvm-project/issues/112010
-          # TODO(mips): LLVM 23 bug https://github.com/llvm/llvm-project/issues/112010
+          1.99) toolchain='' ;; # compiler SIGILL with LLVM 23
+          # TODO(mips): compiler SIGILL with LLVM 23
           nightly) toolchain=nightly-2026-08-05 ;;
         esac
         ;;
