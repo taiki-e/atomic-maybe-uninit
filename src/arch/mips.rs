@@ -310,7 +310,6 @@ macro_rules! atomic {
         }
         #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicCompareExchange for $ty {
-            // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/zj3194Pc9
             #[inline]
             unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,
@@ -420,7 +419,6 @@ macro_rules! atomic_sub_word {
         }
         #[cfg(not(atomic_maybe_uninit_no_ll_sc))]
         impl AtomicCompareExchange for $ty {
-            // Note: both GCC 15 and LLVM 22 implement weak CAS with strong CAS: https://godbolt.org/z/zj3194Pc9
             #[inline]
             unsafe fn __atomic_compare_exchange_impl(
                 dst: *mut MaybeUninit<Self>,

@@ -60,7 +60,7 @@ Currently, all CPU architectures supported by Rust (x86, x86_64, Arm, AArch64, A
 \[2] Requires `cmpxchg16b` target feature (enabled by default on Apple, Windows (except Windows 7), and Fuchsia targets).<br>
 \[3] Armv6+ or Linux/Android, except for M-profile architecture such as thumbv6m, thumbv7m, etc.<br>
 \[4] Requires `zacas` target feature.<br>
-\[5] Requires `scq` target feature and Rust 1.97+.<br>
+\[5] Requires `scq` target feature.<br>
 \[6] Requires `quadword-atomics` target feature (enabled by default on powerpc64le).<br>
 \[7] Requires `v9` and `v8plus` target features (both enabled by default on Linux).<br>
 \[8] Requires target-cpu M68020 (Linux's default), M68030, M68040, or M68060 (Linux/NetBSD only).<br>
@@ -78,6 +78,8 @@ Feel free to submit an issue if your target is not supported yet.
 ## Limitations
 
 This crate uses inline assembly to implement atomic operations (this is currently the only sound way to perform atomic operations on uninitialized values), so it is currently not compatible with [Miri](https://github.com/rust-lang/miri/issues/11) and [most kinds of Sanitizers](https://github.com/google/sanitizers/issues/192).
+
+Also, Valgrind reports "Conditional jump or move depends on uninitialized value(s)" error for CAS on potentially uninitialized integers -- which is correct, that's exactly what the implementation does, but we are doing this inside inline assembly so it should be fine. (Effectively we are adding partial `freeze` capabilities to Rust via inline assembly. This pattern has not been blessed by the language team, but is also not known to cause any problems.)
 
 ## Related Projects
 

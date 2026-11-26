@@ -23,6 +23,7 @@ bail() {
 targets=(
   # x86_64
   x86_64-unknown-linux-gnu
+  x86_64-unknown-linux-gnux32
   x86_64-apple-darwin
   x86_64-pc-windows-msvc
 
@@ -98,7 +99,7 @@ toolchains=(
   1.86 # LLVM 19
   1.90 # LLVM 20
   1.94 # LLVM 21
-  # 1.98 # LLVM 22
+  1.98 # LLVM 22
   stable
   beta
   nightly
@@ -194,9 +195,8 @@ add_matrix() {
     return
   fi
   case "${target}" in
-    *-windows-gnullvm) ;;
-    x86_64-pc-windows-msvc) ;;
-    x86_64*-windows* | i?86*-windows*) toolchain="${toolchain}-${target}" ;;
+    *-windows-gnullvm | x86_64-pc-windows-msvc) ;;
+    x86_64*-windows*) toolchain="${toolchain}-${target}" ;;
   esac
   local target_out="\"rust\": \"${toolchain}\""
   target_out+=",\"target\": \"${target}\""
@@ -218,7 +218,7 @@ for target in "${targets[@]}"; do
   base_os=''
   base_container=''
   case "${target}" in
-    armeb-unknown-linux-gnueabi) base_os=ubuntu-22.04 ;;
+    armeb-unknown-linux-gnueabi | csky*) base_os=ubuntu-22.04 ;;
     aarch64-unknown-linux-gnu | armv7*-linux-gnueabihf | thumbv7*-linux-gnueabihf) base_os=ubuntu-24.04-arm ;;
     arm*-unknown-linux-gnueabi)
       base_os=ubuntu-24.04-arm
@@ -227,13 +227,15 @@ for target in "${targets[@]}"; do
     x86_64*-apple-* | i?86*-apple-*) base_os=macos-15-intel ;;
     aarch64*-apple-* | arm*-apple-*) base_os=macos-latest ;;
     x86_64*-windows* | i?86*-windows*) base_os=windows-latest ;;
-    aarch64*-windows* | arm*-windows*) base_os=windows-11-arm ;;
+    aarch64*-windows* | arm*-windows* | thumb*-windows*) base_os=windows-11-arm ;;
   esac
   os="${base_os}"
   container="${base_container}"
 
   test_only_on_nightly=''
   case "${target}" in
+    # x86_64-unknown-linux-gnux32:
+    #   x32 tests use unstable -Z panic_abort_tests.
     # x86_64-apple-darwin:
     #   We test only one version because we do not have macOS-specific code and
     #   x86_64-specific code is also tested on Linux using multiple versions.
@@ -243,7 +245,7 @@ for target in "${targets[@]}"; do
     # armv7-unknown-linux-gnueabi:
     #   We test only one version because we do not have soft-float-specific code and
     #   Armv7-specific code is also tested on hard-float target using multiple versions.
-    x86_64-apple-darwin | aarch64-pc-windows-msvc | armv7-unknown-linux-gnueabi) test_only_on_nightly=1 ;;
+    x86_64-unknown-linux-gnux32 | x86_64-apple-darwin | aarch64-pc-windows-msvc | armv7-unknown-linux-gnueabi) test_only_on_nightly=1 ;;
   esac
 
   if [[ -z "${test_only_on_nightly}" ]]; then
@@ -276,6 +278,9 @@ for target in "${targets[@]}"; do
     esac
     flags=''
     case "${target}" in
+      x86_64-unknown-linux-gnux32)
+        flags="-C panic=abort -Z panic_abort_tests"
+        ;;
       arm64ec* | s390x*)
         case "${toolchain}" in
           1.8[4-6]) toolchain='' ;; # Handled in min stable toolchain
@@ -284,14 +289,6 @@ for target in "${targets[@]}"; do
       powerpc*)
         case "${toolchain}" in
           1.95) toolchain='' ;; # Handled in min stable toolchain
-        esac
-        ;;
-      armeb-unknown-linux-gnueabi)
-        case "${toolchain}" in
-          1.8[7-9] | 1.9[0-6]) toolchain='' ;; # SIGILL on QEMU with LLVM 20-22
-          # TODO(arm): SIGILL on QEMU with LLVM 20-22
-          stable | beta) toolchain='' ;;
-          nightly) toolchain=nightly-2025-02-17 ;;
         esac
         ;;
       hexagon-unknown-linux-musl)
@@ -316,10 +313,10 @@ for target in "${targets[@]}"; do
           nightly) toolchain=nightly-2026-01-28 ;;
         esac
         ;;
-      mips64* | mipsisa64r6*)
+      mipsisa64r6*)
         case "${toolchain}" in
-          1.99) toolchain='' ;; # LLVM 23 bug https://github.com/llvm/llvm-project/issues/112010
-          # TODO(mips): LLVM 23 bug https://github.com/llvm/llvm-project/issues/112010
+          1.99) toolchain='' ;; # compiler SIGILL with LLVM 23
+          # TODO(mips): compiler SIGILL with LLVM 23
           nightly) toolchain=nightly-2026-08-05 ;;
         esac
         ;;
@@ -331,11 +328,6 @@ for target in "${targets[@]}"; do
     armeb-unknown-linux-gnueabi) ;;
     aarch64-unknown-linux-gnu | armv7*-linux-gnueabihf | thumbv7*-linux-gnueabihf | arm*-unknown-linux-gnueabi)
       toolchain=nightly
-      case "${target}" in
-        armv7*-linux-gnueabihf | thumbv7*-linux-gnueabihf | arm-unknown-linux-gnueabi | armv7-unknown-linux-gnueabi)
-          toolchain=nightly-2025-02-17 # TODO(arm): SIGILL on QEMU with LLVM 20-22
-          ;;
-      esac
       os=''
       container=''
       flags=''
@@ -364,7 +356,7 @@ for target in "${targets[@]}"; do
   esac
   # Test with cranelift backend.
   case "${target}" in
-    # https://github.com/rust-lang/rust/blob/1.93.0/src/bootstrap/src/utils/helpers.rs#L228
+    # https://github.com/rust-lang/rust/blob/1.100.0/src/bootstrap/src/utils/helpers.rs#L244
     # TODO(cranelift): s390x-unknown-linux-gnu: cranelift doesn't support asm for s390x yet
     # TODO(cranelift): riscv64gc-unknown-linux-gnu: cranelift doesn't support cfg(target_feature) yet: https://github.com/rust-lang/rustc_codegen_cranelift/issues/1400
     x86_64-unknown-linux-gnu | aarch64-unknown-linux-gnu | x86_64-apple-darwin | aarch64-apple-darwin | x86_64-pc-windows-msvc)

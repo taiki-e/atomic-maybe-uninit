@@ -51,7 +51,7 @@ macro_rules! serialization {
 // Extracts and checks condition code 0.
 // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0/llvm/lib/Target/SystemZ/SystemZISelDAGToDAG.cpp#L1968
 #[inline(always)]
-pub(crate) fn extract_cc0(r: i64) -> bool {
+fn extract_cc0(r: i64) -> bool {
     const ADD: i64 = -(1 << 28);
     const MASK: i64 = 1 << 31;
     r.wrapping_add(ADD) & MASK != 0

@@ -54,16 +54,15 @@ macro_rules! atomic {
                                 options(nostack, preserves_flags),
                             );
                         }
-                        // TODO(bpf): Enable once https://github.com/aya-rs/bpf-linker/pull/386 released.
-                        // #[cfg(atomic_maybe_uninit_v4)]
-                        // Ordering::Relaxed | Ordering::Acquire => {
-                        //     asm!(
-                        //         concat!("{out} = load_acquire((", stringify!($ty), " *)({src} + 0))"), // atomic { out = *src }
-                        //         src = in(reg) src,
-                        //         out = lateout($reg) out,
-                        //         options(nostack, preserves_flags),
-                        //     );
-                        // }
+                        #[cfg(atomic_maybe_uninit_v4)]
+                        Ordering::Relaxed | Ordering::Acquire => {
+                            asm!(
+                                concat!("{out} = load_acquire((", stringify!($ty), " *)({src} + 0))"), // atomic { out = *src }
+                                src = in(reg) src,
+                                out = lateout($reg) out,
+                                options(nostack, preserves_flags),
+                            );
+                        }
                         _ => {
                             const ZERO: $ty = 0;
                             asm!(
@@ -99,17 +98,16 @@ macro_rules! atomic {
                                 options(nostack, preserves_flags),
                             );
                         }
-                        // TODO(bpf): Enable once https://github.com/aya-rs/bpf-linker/pull/386 released.
-                        // #[cfg(atomic_maybe_uninit_v4)]
-                        // Ordering::Relaxed | Ordering::Release => {
-                        //     asm!(
-                        //         concat!("store_release((", stringify!($ty), " *)({dst} + 0), {val})"), // atomic { *dst = val }
-                        //         dst = in(reg) dst,
-                        //         // TODO(bpf): use inout to avoid rustc or LLVM bug (last checked: nightly-2026-07-22 / LLVM 22): in(wreg) sometimes allocated to reg
-                        //         val = $reg_in($reg) val $($reg_in_out)*,
-                        //         options(nostack, preserves_flags),
-                        //     );
-                        // }
+                        #[cfg(atomic_maybe_uninit_v4)]
+                        Ordering::Relaxed | Ordering::Release => {
+                            asm!(
+                                concat!("store_release((", stringify!($ty), " *)({dst} + 0), {val})"), // atomic { *dst = val }
+                                dst = in(reg) dst,
+                                // TODO(bpf): use inout to avoid rustc or LLVM bug (last checked: nightly-2026-07-22 / LLVM 22): in(wreg) sometimes allocated to reg
+                                val = $reg_in($reg) val $($reg_in_out)*,
+                                options(nostack, preserves_flags),
+                            );
+                        }
                         _ => {
                             <$ty as AtomicSwap>::atomic_swap(
                                 dst,

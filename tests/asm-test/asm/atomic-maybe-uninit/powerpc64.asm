@@ -1419,11 +1419,11 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         slw               5, 5, 8
         rldicr            9, 3, 0, 61
         srd               6, 6, 7
+        lwsync
         lwarx             3, 0, 9
         and               7, 3, 6
         cmpw              7, 4
         bf-               2, 0f
-        lwsync
         andc              7, 3, 6
         or                7, 7, 5
         stwcx.            7, 0, 9
@@ -1445,11 +1445,11 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         slw               5, 5, 8
         rldicr            9, 3, 0, 61
         srd               6, 6, 7
+        lwsync
         lwarx             3, 0, 9
         and               7, 3, 6
         cmpw              7, 4
         bf-               2, 0f
-        lwsync
         andc              7, 3, 6
         or                7, 7, 5
         stwcx.            7, 0, 9
@@ -1709,11 +1709,11 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         slw               5, 5, 8
         rldicr            9, 3, 0, 61
         srd               6, 6, 7
+        lwsync
         lwarx             3, 0, 9
         and               7, 3, 6
         cmpw              7, 4
         bf-               2, 0f
-        lwsync
         andc              7, 3, 6
         or                7, 7, 5
         stwcx.            7, 0, 9
@@ -1737,11 +1737,11 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         slw               5, 5, 8
         rldicr            9, 3, 0, 61
         srd               6, 6, 7
+        lwsync
         lwarx             3, 0, 9
         and               7, 3, 6
         cmpw              7, 4
         bf-               2, 0f
-        lwsync
         andc              7, 3, 6
         or                7, 7, 5
         stwcx.            7, 0, 9
@@ -1814,11 +1814,11 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         slw               5, 5, 7
         rldicr            8, 3, 0, 61
         sld               6, 6, 7
+        lwsync
         lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
         bf-               2, 0f
-        lwsync
         andc              9, 3, 6
         or                9, 9, 5
         stwcx.            9, 0, 8
@@ -1840,11 +1840,11 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         slw               5, 5, 7
         rldicr            8, 3, 0, 61
         sld               6, 6, 7
+        lwsync
         lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
         bf-               2, 0f
-        lwsync
         andc              9, 3, 6
         or                9, 9, 5
         stwcx.            9, 0, 8
@@ -2104,11 +2104,11 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         slw               5, 5, 7
         rldicr            8, 3, 0, 61
         sld               6, 6, 7
+        lwsync
         lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
         bf-               2, 0f
-        lwsync
         andc              9, 3, 6
         or                9, 9, 5
         stwcx.            9, 0, 8
@@ -2132,11 +2132,11 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         slw               5, 5, 7
         rldicr            8, 3, 0, 61
         sld               6, 6, 7
+        lwsync
         lwarx             3, 0, 8
         and               9, 3, 6
         cmpw              9, 4
         bf-               2, 0f
-        lwsync
         andc              9, 3, 6
         or                9, 9, 5
         stwcx.            9, 0, 8
@@ -2173,10 +2173,10 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         blr
 
 asm_test::compare_exchange_weak::u32::acqrel_acquire:
+        lwsync
         lwarx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
-        lwsync
         stwcx.            5, 0, 3
 0:
         isync
@@ -2186,10 +2186,10 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         blr
 
 asm_test::compare_exchange_weak::u32::acqrel_relaxed:
+        lwsync
         lwarx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
-        lwsync
         stwcx.            5, 0, 3
         bf-               2, 0f
         isync
@@ -2320,10 +2320,10 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         blr
 
 asm_test::compare_exchange_weak::u32::release_acquire:
+        lwsync
         lwarx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
-        lwsync
         stwcx.            5, 0, 3
         bt+               2, 1f
 0:
@@ -2335,10 +2335,10 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         blr
 
 asm_test::compare_exchange_weak::u32::release_relaxed:
+        lwsync
         lwarx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
-        lwsync
         stwcx.            5, 0, 3
 0:
         mfcr              3
@@ -2373,10 +2373,10 @@ asm_test::compare_exchange_weak::u64::seqcst_seqcst:
         blr
 
 asm_test::compare_exchange_weak::u64::acqrel_acquire:
+        lwsync
         ldarx             6, 0, 3
         cmpd              4, 6
         bf-               2, 0f
-        lwsync
         stdcx.            5, 0, 3
 0:
         isync
@@ -2386,10 +2386,10 @@ asm_test::compare_exchange_weak::u64::acqrel_acquire:
         blr
 
 asm_test::compare_exchange_weak::u64::acqrel_relaxed:
+        lwsync
         ldarx             6, 0, 3
         cmpd              4, 6
         bf-               2, 0f
-        lwsync
         stdcx.            5, 0, 3
         bf-               2, 0f
         isync
@@ -2520,10 +2520,10 @@ asm_test::compare_exchange_weak::u64::relaxed_relaxed:
         blr
 
 asm_test::compare_exchange_weak::u64::release_acquire:
+        lwsync
         ldarx             6, 0, 3
         cmpd              4, 6
         bf-               2, 0f
-        lwsync
         stdcx.            5, 0, 3
         bt+               2, 1f
 0:
@@ -2535,10 +2535,10 @@ asm_test::compare_exchange_weak::u64::release_acquire:
         blr
 
 asm_test::compare_exchange_weak::u64::release_relaxed:
+        lwsync
         ldarx             6, 0, 3
         cmpd              4, 6
         bf-               2, 0f
-        lwsync
         stdcx.            5, 0, 3
 0:
         mfcr              3

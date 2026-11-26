@@ -3,10 +3,10 @@
 /*
 Run-time CPU feature detection on x86_64 by using CPUID.
 
-Adapted from https://github.com/rust-lang/rust/blob/1.92.0/library/std_detect/src/detect/os/x86.rs.
+Adapted from https://github.com/rust-lang/rust/blob/1.100.0/library/std_detect/src/detect/os/x86.rs.
 */
 
-// SGX doesn't support CPUID: https://github.com/rust-lang/rust/blob/1.92.0/library/std_detect/src/detect/os/x86.rs#L30-L33
+// SGX doesn't support CPUID: https://github.com/rust-lang/rust/blob/1.100.0/library/stdarch/crates/core_arch/src/x86/cpuid.rs#L63
 #[cfg(target_env = "sgx")]
 compile_error!("internal error: this module is not supported on this environment");
 
@@ -20,10 +20,10 @@ fn _detect(mut info: CpuInfo) -> CpuInfo {
     #[allow(unused_unsafe)] // safe in newer rustc
     // SAFETY: Calling `__cpuid` is safe on all x86_64 CPUs except for SGX,
     // which doesn't support `cpuid`.
-    // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/x86/cpuid.rs#L102-L109
+    // https://github.com/rust-lang/rust/blob/1.100.0/library/stdarch/crates/core_arch/src/x86/cpuid.rs#L63
     let CpuidResult { ecx: proc_info_ecx, .. } = unsafe { __cpuid(1) };
 
-    // https://github.com/rust-lang/rust/blob/1.92.0/library/std_detect/src/detect/os/x86.rs#L166-L236
+    // https://github.com/rust-lang/rust/blob/1.100.0/library/std_detect/src/detect/os/x86.rs#L167-L258
     let cpu_xsave = test(proc_info_ecx, 26);
     if cpu_xsave {
         let cpu_osxsave = test(proc_info_ecx, 27);

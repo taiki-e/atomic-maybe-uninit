@@ -853,10 +853,10 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
 
 asm_test::compare_exchange_weak::u8::seqcst_acquire:
         clrlwi            4, 4, 24
-        sync
         lbarx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
+        sync
         stbcx.            5, 0, 3
 0:
         isync
@@ -867,10 +867,10 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
 
 asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         clrlwi            4, 4, 24
-        sync
         lbarx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
+        sync
         stbcx.            5, 0, 3
         bf-               2, 0f
         isync
@@ -1068,10 +1068,10 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
 
 asm_test::compare_exchange_weak::u16::seqcst_acquire:
         clrlwi            4, 4, 16
-        sync
         lharx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
+        sync
         sthcx.            5, 0, 3
 0:
         isync
@@ -1082,10 +1082,10 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
 
 asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         clrlwi            4, 4, 16
-        sync
         lharx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
+        sync
         sthcx.            5, 0, 3
         bf-               2, 0f
         isync
@@ -1275,10 +1275,10 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         blr
 
 asm_test::compare_exchange_weak::u32::seqcst_acquire:
-        sync
         lwarx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
+        sync
         stwcx.            5, 0, 3
 0:
         isync
@@ -1288,10 +1288,10 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         blr
 
 asm_test::compare_exchange_weak::u32::seqcst_relaxed:
-        sync
         lwarx             6, 0, 3
         cmpw              4, 6
         bf-               2, 0f
+        sync
         stwcx.            5, 0, 3
         bf-               2, 0f
         isync

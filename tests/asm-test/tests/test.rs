@@ -36,11 +36,13 @@ fn test() {
             .rustc_args(["-C", "target-feature=-outline-atomics"]),
         // Arm
         Revision::new("armv4t", "armv4t-unknown-linux-gnueabi"),
-        Revision::new("armv4t_thumb", "armv4t-unknown-linux-gnueabi")
-            .rustc_args(["-C", "target-feature=+thumb-mode"]),
+        // TODO: compiler_builtins bug that uses non-thumb1 instructions.
+        // Revision::new("armv4t_thumb", "armv4t-unknown-linux-gnueabi")
+        //     .rustc_args(["-C", "target-feature=+thumb-mode"]),
         Revision::new("armv5te", "armv5te-unknown-linux-gnueabi"),
-        Revision::new("armv5te_thumb", "armv5te-unknown-linux-gnueabi")
-            .rustc_args(["-C", "target-feature=+thumb-mode"]),
+        // TODO: compiler_builtins bug that uses non-thumb1 instructions.
+        // Revision::new("armv5te_thumb", "armv5te-unknown-linux-gnueabi")
+        //     .rustc_args(["-C", "target-feature=+thumb-mode"]),
         Revision::new("armv6_kuser_memory_barrier", "arm-unknown-linux-gnueabi"),
         Revision::new("armv6_cp15_barrier", "arm-unknown-linux-gnueabi")
             .rustc_args(["--cfg", "atomic_maybe_uninit_use_cp15_barrier"]),
@@ -61,10 +63,11 @@ fn test() {
         // AVR
         Revision::new("avr", "avr-none")
             .rustc_args(["-C", "target-cpu=atmega2560"]),
-        Revision::new("avr_tinyencoding", "avr-none")
-            .rustc_args(["-C", "target-cpu=attiny40"]),
-        Revision::new("avr_tinyencoding_lowbytefirst", "avr-none")
-            .rustc_args(["-C", "target-cpu=attiny104"]),
+        // TODO: LLVM bug: no registers from class available to allocate in function
+        // Revision::new("avr_tinyencoding", "avr-none")
+        //     .rustc_args(["-C", "target-cpu=attiny40"]),
+        // Revision::new("avr_tinyencoding_lowbytefirst", "avr-none")
+        //     .rustc_args(["-C", "target-cpu=attiny104"]),
         Revision::new("avr_lowbytefirst", "avr-none")
             .rustc_args(["-C", "target-cpu=atxmega384d3"]),
         Revision::new("avr_lowbytefirst_rmw", "avr-none")
@@ -76,7 +79,8 @@ fn test() {
         // Revision::new("bpf_v4", "bpfel-unknown-none")
         //     .rustc_args(["-C", "target-cpu=v4"]),
         // C-SKY
-        Revision::new("csky", "csky-unknown-linux-gnuabiv2")
+        Revision::new("csky", "csky-unknown-linux-gnuabiv2"),
+        Revision::new("csky_ck860", "csky-unknown-linux-gnuabiv2")
             .rustc_args(["-C", "target-cpu=ck860"]),
         // Hexagon
         Revision::new("hexagon", "hexagon-unknown-linux-musl"),
@@ -157,8 +161,8 @@ fn test() {
         Revision::new("x86_64_cmpxchg16b_avx_msvc", "x86_64-pc-windows-msvc")
             .rustc_args(["-C", "target-feature=+cmpxchg16b,+avx"]),
         Revision::new("x86_sse2", "i686-unknown-linux-gnu"),
-        Revision::new("x86_sse", "i686-unknown-linux-gnu")
-            .rustc_args(["-C", "target-feature=-sse2"]),
+        Revision::new("x86_sse", "i586-unknown-linux-gnu")
+            .rustc_args(["-C", "target-feature=+sse"]),
         Revision::new("x86_x87", "i586-unknown-linux-gnu"),
         Revision::new("x86_no_x87", "i586-unknown-linux-gnu")
             .rustc_args(["--cfg", "atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87"]),

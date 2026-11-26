@@ -44,6 +44,8 @@ TODO: document overview
 
 (Refs: Section E2.2 "Atomicity in the Arm architecture" of Arm® Architecture Reference Manual for A-profile architecture, Section B7.2 "Atomicity" of Arm® v8-M Architecture Reference Manual, Section A3.5.3 "Atomicity in the ARM architecture" of ARM® Architecture Reference Manual ARMv7-A and ARMv7-R edition, Section A3.5.3 "Atomicity in the Arm architecture" of Arm® v7-M Architecture Reference Manual, Section A3.5.1 "Atomicity in the ARM architecture" of ARM® v6-M Architecture Reference Manual)
 
+Both [GCC 16](https://godbolt.org/z/zdP7ToGbs) and LLVM 23 implement weak CAS.
+
 ## AVR
 
 target_arch: avr<br>
@@ -83,8 +85,8 @@ The following instructions are atomic if the address is properly aligned and the
   - `CMPXCHG`: {32,64}-bit CAS(SeqCst, Relaxed)
 - `LOAD_ACQ`/`STORE_REL`: {8,16,32,64}-bit Acquire load / Release store. (Linux 6.15+ on [x86_64](https://github.com/torvalds/linux/commit/5341c9a4d833009071595230e3a038a823265a86)/[aarch64](https://github.com/torvalds/linux/commit/9bb12368d539d40457af593bc1b6b380430cc9d7), Linux 6.16+ on [riscv64](https://github.com/torvalds/linux/commit/8afd3170d5116385740aef8ab77d10b83f9b8e60), Linux 6.17+ on [powerpc64](https://github.com/torvalds/linux/commit/cf2a6de32cabbf84a889e24a9ee7c51dee4a1f70), Linux 7.1+ on [loongarch64](https://github.com/torvalds/linux/commit/ee823fe7c12f92bac5e5b1ea6dd0ac8b267dd464), etc.)
 
-Looking at the actual JIT implementations (e.g., [aarch64](https://github.com/torvalds/linux/blob/v7.1/arch/arm64/net/bpf_jit_comp.c#L845), [riscv64](https://github.com/torvalds/linux/blob/v7.1/arch/riscv/net/bpf_jit.h#L1293)) and [riscv](https://github.com/torvalds/linux/commit/20a759df3bba35bf5c3ddec0c02ad69b603b584c)/[powerpc](https://github.com/torvalds/linux/commit/b1e7cee96127468c2483cf10c2899c9b5cf79bf8)/[s390x](https://github.com/torvalds/linux/commit/68378982f0b21de02ac3c6a11e2420badefcb4bc) fixes in Linux 6.10, the ordering of atomic instructions matches that described in the "ORDERING" section of the [documentation for atomic types in the core kernel APIs](https://docs.kernel.org/core-api/wrappers/atomic_t.html).
-Note that mips/loongarch64 JIT implementations are still wrong about ordering ([upstream bug report](https://bugzilla.kernel.org/show_bug.cgi?id=221870)).
+Looking at the actual JIT implementations (e.g., [aarch64](https://github.com/torvalds/linux/blob/v7.1/arch/arm64/net/bpf_jit_comp.c#L845), [riscv64](https://github.com/torvalds/linux/blob/v7.1/arch/riscv/net/bpf_jit.h#L1293)), [riscv](https://github.com/torvalds/linux/commit/20a759df3bba35bf5c3ddec0c02ad69b603b584c)/[powerpc](https://github.com/torvalds/linux/commit/b1e7cee96127468c2483cf10c2899c9b5cf79bf8)/[s390x](https://github.com/torvalds/linux/commit/68378982f0b21de02ac3c6a11e2420badefcb4bc) fixes in Linux 6.10, and [loongarch](https://github.com/torvalds/linux/commit/576412d98297bd0b3b837c20643ab2e1ba54766f) fixes in Linux 7.3, the ordering of atomic instructions matches that described in the "ORDERING" section of the [documentation for atomic types in the core kernel APIs](https://docs.kernel.org/core-api/wrappers/atomic_t.html).
+Note that mips JIT implementations are still wrong about ordering ([upstream bug report](https://bugzilla.kernel.org/show_bug.cgi?id=221870)).
 
 Note that not all host architectures support the same operations.
 
@@ -109,12 +111,16 @@ TODO: document overview
 
 (Refs: [Section 5.12 "Atomic operations"](https://docs.qualcomm.com/doc/80-N2040-60/topic/memory.html#atomic-operations) and [section 5.11 "Memory ordering"](https://docs.qualcomm.com/doc/80-N2040-60/topic/memory.html#memory-ordering) of Qualcomm Hexagon V79 Programmer Reference Manual)
 
+LLVM 23 implements weak CAS with strong CAS.
+
 ## LoongArch
 
 target_arch: loongarch32, loongarch64<br>
 Implementation: [loongarch.rs](loongarch.rs)<br>
 
 TODO: add reference link and document overview
+
+Both [GCC 16](https://godbolt.org/z/v765h73qP) and LLVM 23 implement weak CAS with strong CAS.
 
 ## M68k
 
@@ -135,6 +141,8 @@ The following instructions are atomic if the address is properly aligned and the
   (Refs: Section 3.1.11 "Multiprocessor Instructions" of M68000 FAMILY Programmer's Reference Manual)
 
 Note that CAS2 is not yet supported in LLVM (as of 23) (our code use `.2byte` directive to work around it).
+
+Linux `atomic_cmpxchg_32` syscall is not lock-free because it takes `mmap_lock` ([with CONFIG_MMU](https://github.com/torvalds/linux/blob/v7.3/arch/m68k/kernel/sys_m68k.c#L477), [without CONFIG_MMU](https://github.com/torvalds/linux/blob/v7.3/arch/m68k/kernel/sys_m68k.c#L552)).
 
 ## MIPS
 
@@ -161,6 +169,8 @@ None of the above instructions imply a memory barrier.
 Several types of memory barriers are provided by SYNC instruction, but only SYNC (SYNC 0) is mandatory.
 <br>
 (Refs: Section 4.6.2 "Memory Barriers" and section 4.6.3 "Implicit Memory Barriers" of MIPS® Coherence Protocol Specification)
+
+Both [GCC 16](https://godbolt.org/z/ao1oseqYf) and LLVM 23 implement weak CAS with strong CAS.
 
 ## MSP430
 
@@ -267,6 +277,8 @@ None of the above instructions imply a memory barrier.
 sync corresponds to SeqCst semantics, lwsync corresponds to Acquire/Release semantics, and isync
 with appropriate sequence corresponds to Acquire semantics.
 
+Both [GCC 16](https://godbolt.org/z/1T7jqEoPa) and LLVM 23 implement weak CAS.
+
 ## RISC-V
 
 target_arch: riscv32, riscv64<br>
@@ -304,6 +316,8 @@ The mappings from the C/C++ atomic operations are described in the [RISC-V Atomi
 
 Note: "A" extension comprises instructions provided by Zalrsc and Zaamo extensions,
 Zabha and Zacas extensions depends upon Zaamo extension.
+
+Both [GCC 16](https://godbolt.org/z/cbEhxMnva) and LLVM 23 implement weak CAS with strong CAS.
 
 (RV128 is not currently ratified, so it is [not mentioned in the ISA manual](https://github.com/riscv/riscv-isa-manual/pull/1942).)
 

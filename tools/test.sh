@@ -29,11 +29,7 @@ x_cargo() {
   if [[ -n "${CARGO_PROFILE_RELEASE_LTO:-}" ]]; then
     printf '%s\n' "+ CARGO_PROFILE_RELEASE_LTO='${CARGO_PROFILE_RELEASE_LTO}' \\"
   fi
-  if [[ -n "${TS:-}" ]]; then
-    x "${cargo}" ${pre_args[@]+"${pre_args[@]}"} "$@" 2>&1 | "${TS}" -i '%.s  '
-  else
-    x "${cargo}" ${pre_args[@]+"${pre_args[@]}"} "$@"
-  fi
+  x "${cargo}" ${pre_args[@]+"${pre_args[@]}"} "$@"
   printf '\n'
 }
 retry() {
@@ -135,13 +131,6 @@ if [[ "${rustc_version}" =~ nightly|dev ]]; then
 fi
 export RUST_TEST_THREADS=1
 export ATOMIC_MAYBE_UNINIT_DENY_WARNINGS=1
-if [[ -n "${CI:-}" ]]; then
-  if type -P ts >/dev/null; then
-    TS=ts
-  elif [[ -e C:/msys64/usr/bin/ts ]]; then
-    TS=C:/msys64/usr/bin/ts
-  fi
-fi
 
 args=()
 if [[ -z "${target}" ]] && [[ ${#build_std[@]} -gt 0 ]]; then
@@ -228,7 +217,6 @@ case "${cmd}" in
 esac
 case "${cmd}" in
   build*)
-    TS=''
     args+=(--no-run ${release[@]+"${release[@]}"})
     x_cargo test ${build_std[@]+"${build_std[@]}"} ${cargo_options[@]+"${cargo_options[@]}"} "${args[@]}" >&2
     manifest_path=$(cargo ${pre_args[@]+"${pre_args[@]}"} locate-project --message-format=plain)

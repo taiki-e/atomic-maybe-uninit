@@ -12,6 +12,36 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Work around LLVM bug causing SIGILL on Armv6+ with LLVM 20+. ([16871d0](https://github.com/taiki-e/atomic-maybe-uninit/commit/16871d0dd5794a064f47f42a0dd22c17ae024146))
+
+## [0.3.22] - 2026-11-21
+
+- Support BPF (experimental). ([#37](https://github.com/taiki-e/atomic-maybe-uninit/pull/37), [4cb7587](https://github.com/taiki-e/atomic-maybe-uninit/commit/4cb75877392fd61ef66d63925a23eeccdce7b9da))
+
+- Fix always failing weak CAS on [pre-POWER7 PowerPC](https://github.com/rust-lang/rust/issues/160723) and [Armv6](https://github.com/rust-lang/rust/issues/60605). ([2fe0567](https://github.com/taiki-e/atomic-maybe-uninit/commit/2fe0567c0ed1aaec81ad1228dd0c8fd5a2099d1c), [9a61d0a](https://github.com/taiki-e/atomic-maybe-uninit/commit/9a61d0a393b5eb77d4cdfd89dd2deb19f6b2d0b7))
+
+- Fix build error on Xtensa with `-C target-feature=-density`. ([8ca9348](https://github.com/taiki-e/atomic-maybe-uninit/commit/8ca9348e220e115b0f57e01f7a4bfa1f72bcaf68))
+
+- Work around Valgrind false positive. ([fe94c11](https://github.com/taiki-e/atomic-maybe-uninit/commit/fe94c11276583c3d4d8bbd3f3e94d04e8c13b815))
+
+- Support loongarch64 lam-bh/lamcas/scq on pre-1.97 stable rustc. ([1f8b7cf](https://github.com/taiki-e/atomic-maybe-uninit/commit/1f8b7cf4716836397356cb786ffe5267d9de9da1))
+
+- Optimize Hexagon 64-bit CAS. ([014f28a](https://github.com/taiki-e/atomic-maybe-uninit/commit/014f28a98740c824c8c79cb45f4f9eda09bfc791))
+
+- Optimize Xtensa {8,16}-bit swap/CAS. ([cf6dc79](https://github.com/taiki-e/atomic-maybe-uninit/commit/cf6dc790c654670136e902b43a2ad93b3e4d210b))
+
+- Optimize PowerPC SeqCst CAS with non-SeqCst failure ordering on POWER7+. ([2fe0567](https://github.com/taiki-e/atomic-maybe-uninit/commit/2fe0567c0ed1aaec81ad1228dd0c8fd5a2099d1c))
+
+- Use track_caller in `try_update`, `update`, and `fetch_update` when debug assertions are enabled. `fetch_update` previously had this, but it was accidentally removed by 0.3.21. ([817f3f9](https://github.com/taiki-e/atomic-maybe-uninit/commit/817f3f9f19ff117e4ed6435791d2333a55f7170c))
+
+- Improve `-C target-feature`/`-C target-cpu` handling on stable and old nightly. ([b3ef037](https://github.com/taiki-e/atomic-maybe-uninit/commit/b3ef037eda4c9b4404810cbf835feda21fd3a49c), [a76bbc2](https://github.com/taiki-e/atomic-maybe-uninit/commit/a76bbc24544e555d66b7823eee8f015ee43a9bae), [f4eb811](https://github.com/taiki-e/atomic-maybe-uninit/commit/f4eb81158538f7cf3bdd8cc27350836b8dccac1f), [6001b06](https://github.com/taiki-e/atomic-maybe-uninit/commit/6001b065ee68bdee75d2fc648fc72776e177733f), [e93f03a](https://github.com/taiki-e/atomic-maybe-uninit/commit/e93f03a33519e1fb1b104847d6ae210002903da8))
+
+- Improve compile-time detection of armv8 target features on stable. ([231fb3d](https://github.com/taiki-e/atomic-maybe-uninit/commit/231fb3d6f1a3d1a40f8d6b6cf01028eaaaa290c2), [fd56503](https://github.com/taiki-e/atomic-maybe-uninit/commit/fd565034c71a71929c62817adb6c833b9450eef3))
+
+- Improve compile-time detection of sparc32 v8plus ABI on stable. ([10573e8](https://github.com/taiki-e/atomic-maybe-uninit/commit/10573e84667b438a4e160e5e5359eb8df9ba1329))
+
+- Documentation improvements.
+
 ## [0.3.21] - 2026-07-19
 
 - Add `try_update` and `update`. (align to the [std atomic change in Rust 1.95](https://github.com/rust-lang/rust/pull/148590)) ([0e28b20](https://github.com/taiki-e/atomic-maybe-uninit/commit/0e28b20e3208c2ca68f3fed3beac890a29f4ab27))
@@ -509,7 +539,8 @@ This release includes improvements to platform support, various optimizations, [
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.21...HEAD
+[Unreleased]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.22...HEAD
+[0.3.22]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.21...v0.3.22
 [0.3.21]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.20...v0.3.21
 [0.3.20]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.19...v0.3.20
 [0.3.19]: https://github.com/taiki-e/atomic-maybe-uninit/compare/v0.3.18...v0.3.19

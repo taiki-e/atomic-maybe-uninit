@@ -1,6 +1,6 @@
 [package]
 name = "atomic-maybe-uninit"
-version = "0.3.21" #publish:version
+version = "0.3.22" #publish:version
 edition = "2021"
 # NB: Sync with rust-version field in other Cargo.toml files and msrv badge in README.md
 rust-version = "1.74" # For MaybeUninit registers in asm!: https://github.com/rust-lang/rust/pull/114790
@@ -34,7 +34,7 @@ doc-scrape-examples = false
 fastrand = "2"
 paste = "1"
 quickcheck = { version = "1", default-features = false, git = "https://github.com/taiki-e/quickcheck.git", rev = "f0c72378d7d21b45b4f479be03a0e01ee4aca036" } # https://github.com/BurntSushi/quickcheck/pull/304 + https://github.com/BurntSushi/quickcheck/pull/282 + https://github.com/BurntSushi/quickcheck/pull/296 + rand -> fastrand + lower MSRV
-test-helper = { features = ["std", "sys", "valgrind"], git = "https://github.com/taiki-e/test-helper.git", rev = "24b3ad70c19ea8de9cd4c87f2e549b930f1e3305" }
+taiki-e-test-helper = { version = "0.1", features = ["std", "valgrind"] }
 
 [lints]
 workspace = true
@@ -80,7 +80,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # CPU is specified in a custom target, since rustc does not have target
     # features to indicate them, and target name beginning with i386- may
     # actually be i686 (e.g., i386-apple-ios)
-    # https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/base/apple/mod.rs#L68
+    # https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/base/apple/mod.rs#L66
     # x86: Assume CPU does not have CMPXCHG8B instruction.
     # This is a cfg for compatibility with 80486/80386, but note that
     # LLVM does not support those CPUs well: https://reviews.llvm.org/D18802
@@ -100,7 +100,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     # This is a cfg for compatibility with SPARC-V7.
     # 'cfg(atomic_maybe_uninit_no_stbar)', # check-cfg is already set by build script
     # Not public API.
-    'cfg(atomic_maybe_uninit_test_detect_false,atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_kuser_memory_barrier,atomic_maybe_uninit_test_prefer_kuser_cmpxchg,atomic_maybe_uninit_test_prefer_bx,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,atomic_maybe_uninit_test_prefer_swap_over_cas,qemu,valgrind,valgrind_cross)',
+    'cfg(atomic_maybe_uninit_test_detect_false,atomic_maybe_uninit_test_prefer_sse_over_sse2,atomic_maybe_uninit_test_prefer_x87_over_sse,atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87,atomic_maybe_uninit_test_prefer_kuser_memory_barrier,atomic_maybe_uninit_test_prefer_kuser_cmpxchg,atomic_maybe_uninit_test_prefer_bx,atomic_maybe_uninit_test_prefer_zalrsc_over_zaamo,atomic_maybe_uninit_test_prefer_zacas_over_zalrsc_for_sub_word,atomic_maybe_uninit_test_prefer_st_ll_sc_over_amswap,atomic_maybe_uninit_test_prefer_swap_over_cas,qemu,valgrind,valgrind_cross)',
 ] }
 unnameable_types = "warn"
 unreachable_pub = "warn"

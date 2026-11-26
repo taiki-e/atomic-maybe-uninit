@@ -1456,10 +1456,10 @@ asm_test::compare_exchange_weak::u8::acqrel_seqcst:
         uxtb              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexb            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexb            r1, r2, [r0]
 0:
         blx               r4
@@ -1474,10 +1474,10 @@ asm_test::compare_exchange_weak::u8::seqcst_seqcst:
         uxtb              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexb            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexb            r1, r2, [r0]
 0:
         blx               r4
@@ -1492,10 +1492,10 @@ asm_test::compare_exchange_weak::u8::acqrel_acquire:
         uxtb              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexb            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexb            r1, r2, [r0]
 0:
         blx               r4
@@ -1510,10 +1510,10 @@ asm_test::compare_exchange_weak::u8::acqrel_relaxed:
         uxtb              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexb            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexb            r1, r2, [r0]
         cmp               r1, #0
         bne               0f
@@ -1567,10 +1567,10 @@ asm_test::compare_exchange_weak::u8::release_seqcst:
         uxtb              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexb            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexb            r1, r2, [r0]
         cmp               r1, #0
         beq               1f
@@ -1588,10 +1588,10 @@ asm_test::compare_exchange_weak::u8::seqcst_acquire:
         uxtb              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexb            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexb            r1, r2, [r0]
 0:
         blx               r4
@@ -1606,10 +1606,10 @@ asm_test::compare_exchange_weak::u8::seqcst_relaxed:
         uxtb              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexb            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexb            r1, r2, [r0]
         cmp               r1, #0
         bne               0f
@@ -1695,10 +1695,10 @@ asm_test::compare_exchange_weak::u8::release_acquire:
         uxtb              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexb            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexb            r1, r2, [r0]
         cmp               r1, #0
         beq               1f
@@ -1716,10 +1716,10 @@ asm_test::compare_exchange_weak::u8::release_relaxed:
         uxtb              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexb            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexb            r1, r2, [r0]
 0:
         clz               r0, r1
@@ -1733,10 +1733,10 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         uxth              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexh            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexh            r1, r2, [r0]
 0:
         blx               r4
@@ -1751,10 +1751,10 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         uxth              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexh            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexh            r1, r2, [r0]
 0:
         blx               r4
@@ -1769,10 +1769,10 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         uxth              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexh            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexh            r1, r2, [r0]
 0:
         blx               r4
@@ -1787,10 +1787,10 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         uxth              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexh            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexh            r1, r2, [r0]
         cmp               r1, #0
         bne               0f
@@ -1844,10 +1844,10 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         uxth              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexh            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexh            r1, r2, [r0]
         cmp               r1, #0
         beq               1f
@@ -1865,10 +1865,10 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         uxth              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexh            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexh            r1, r2, [r0]
 0:
         blx               r4
@@ -1883,10 +1883,10 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         uxth              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexh            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexh            r1, r2, [r0]
         cmp               r1, #0
         bne               0f
@@ -1972,10 +1972,10 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         uxth              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexh            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexh            r1, r2, [r0]
         cmp               r1, #0
         beq               1f
@@ -1993,10 +1993,10 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         uxth              r12, r1
         mov               r1, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrexh            r3, [r0]
         cmp               r3, r12
         bne               0f
-        blx               r4
         strexh            r1, r2, [r0]
 0:
         clz               r0, r1
@@ -2009,10 +2009,10 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         mvn               r4, #95
         mov               r3, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
-        blx               r4
         strex             r3, r2, [r0]
 0:
         blx               r4
@@ -2026,10 +2026,10 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         mvn               r4, #95
         mov               r3, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
-        blx               r4
         strex             r3, r2, [r0]
 0:
         blx               r4
@@ -2043,10 +2043,10 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         mvn               r4, #95
         mov               r3, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
-        blx               r4
         strex             r3, r2, [r0]
 0:
         blx               r4
@@ -2060,10 +2060,10 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         mvn               r4, #95
         mov               r3, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
-        blx               r4
         strex             r3, r2, [r0]
         cmp               r3, #0
         bne               0f
@@ -2114,10 +2114,10 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         mvn               r4, #95
         mov               r3, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
-        blx               r4
         strex             r3, r2, [r0]
         cmp               r3, #0
         beq               1f
@@ -2134,10 +2134,10 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         mvn               r4, #95
         mov               r3, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
-        blx               r4
         strex             r3, r2, [r0]
 0:
         blx               r4
@@ -2151,10 +2151,10 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         mvn               r4, #95
         mov               r3, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
-        blx               r4
         strex             r3, r2, [r0]
         cmp               r3, #0
         bne               0f
@@ -2235,10 +2235,10 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         mvn               r4, #95
         mov               r3, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
-        blx               r4
         strex             r3, r2, [r0]
         cmp               r3, #0
         beq               1f
@@ -2255,10 +2255,10 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
         mvn               r4, #95
         mov               r3, #1
         sub               r4, r4, #61440
+        blx               r4
         ldrex             r12, [r0]
         cmp               r12, r1
         bne               0f
-        blx               r4
         strex             r3, r2, [r0]
 0:
         clz               r0, r3
@@ -2274,13 +2274,13 @@ asm_test::compare_exchange_weak::u64::acqrel_seqcst:
         mov               r8, r2
         ldr               r4, [sp, #0x20]
         ldr               r5, [sp, #0x24]
+        blx               r7
         ldrexd            r2, r3, [r1]
         eor               r6, r3, r12
         eor               r9, r2, r8
         orrs              r9, r9, r6
         mov               r9, #1
         bne               0f
-        blx               r7
         strexd            r9, r4, r5, [r1]
 0:
         blx               r7
@@ -2297,13 +2297,13 @@ asm_test::compare_exchange_weak::u64::seqcst_seqcst:
         mov               r8, r2
         ldr               r4, [sp, #0x20]
         ldr               r5, [sp, #0x24]
+        blx               r7
         ldrexd            r2, r3, [r1]
         eor               r6, r3, r12
         eor               r9, r2, r8
         orrs              r9, r9, r6
         mov               r9, #1
         bne               0f
-        blx               r7
         strexd            r9, r4, r5, [r1]
 0:
         blx               r7
@@ -2320,13 +2320,13 @@ asm_test::compare_exchange_weak::u64::acqrel_acquire:
         mov               r8, r2
         ldr               r4, [sp, #0x20]
         ldr               r5, [sp, #0x24]
+        blx               r7
         ldrexd            r2, r3, [r1]
         eor               r6, r3, r12
         eor               r9, r2, r8
         orrs              r9, r9, r6
         mov               r9, #1
         bne               0f
-        blx               r7
         strexd            r9, r4, r5, [r1]
 0:
         blx               r7
@@ -2343,13 +2343,13 @@ asm_test::compare_exchange_weak::u64::acqrel_relaxed:
         mov               r8, r2
         ldr               r4, [sp, #0x20]
         ldr               r5, [sp, #0x24]
+        blx               r7
         ldrexd            r2, r3, [r1]
         eor               r6, r3, r12
         eor               r9, r2, r8
         orrs              r9, r9, r6
         mov               r9, #1
         bne               0f
-        blx               r7
         strexd            r9, r4, r5, [r1]
         cmp               r9, #0
         bne               0f
@@ -2415,13 +2415,13 @@ asm_test::compare_exchange_weak::u64::release_seqcst:
         mov               r8, r2
         ldr               r4, [sp, #0x20]
         ldr               r5, [sp, #0x24]
+        blx               r7
         ldrexd            r2, r3, [r1]
         eor               r6, r3, r12
         eor               r9, r2, r8
         orrs              r9, r9, r6
         mov               r9, #1
         bne               0f
-        blx               r7
         strexd            r9, r4, r5, [r1]
         cmp               r9, #0
         beq               1f
@@ -2441,13 +2441,13 @@ asm_test::compare_exchange_weak::u64::seqcst_acquire:
         mov               r8, r2
         ldr               r4, [sp, #0x20]
         ldr               r5, [sp, #0x24]
+        blx               r7
         ldrexd            r2, r3, [r1]
         eor               r6, r3, r12
         eor               r9, r2, r8
         orrs              r9, r9, r6
         mov               r9, #1
         bne               0f
-        blx               r7
         strexd            r9, r4, r5, [r1]
 0:
         blx               r7
@@ -2464,13 +2464,13 @@ asm_test::compare_exchange_weak::u64::seqcst_relaxed:
         mov               r8, r2
         ldr               r4, [sp, #0x20]
         ldr               r5, [sp, #0x24]
+        blx               r7
         ldrexd            r2, r3, [r1]
         eor               r6, r3, r12
         eor               r9, r2, r8
         orrs              r9, r9, r6
         mov               r9, #1
         bne               0f
-        blx               r7
         strexd            r9, r4, r5, [r1]
         cmp               r9, #0
         bne               0f
@@ -2579,13 +2579,13 @@ asm_test::compare_exchange_weak::u64::release_acquire:
         mov               r8, r2
         ldr               r4, [sp, #0x20]
         ldr               r5, [sp, #0x24]
+        blx               r7
         ldrexd            r2, r3, [r1]
         eor               r6, r3, r12
         eor               r9, r2, r8
         orrs              r9, r9, r6
         mov               r9, #1
         bne               0f
-        blx               r7
         strexd            r9, r4, r5, [r1]
         cmp               r9, #0
         beq               1f
@@ -2605,13 +2605,13 @@ asm_test::compare_exchange_weak::u64::release_relaxed:
         mov               r8, r2
         ldr               r4, [sp, #0x20]
         ldr               r5, [sp, #0x24]
+        blx               r7
         ldrexd            r2, r3, [r1]
         eor               r6, r3, r12
         eor               r9, r2, r8
         orrs              r9, r9, r6
         mov               r9, #1
         bne               0f
-        blx               r7
         strexd            r9, r4, r5, [r1]
 0:
         eor               r1, r9, #1

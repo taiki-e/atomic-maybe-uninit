@@ -34,19 +34,19 @@ concurrency:
 
 jobs:
   tidy:
-    uses: taiki-e/github-actions/.github/workflows/tidy.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+    uses: taiki-e/github-actions/.github/workflows/tidy.yml@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
     permissions:
       security-events: write # for github/codeql-action/*
-  codegen:
+  codeql:
     needs: tidy
-    uses: taiki-e/github-actions/.github/workflows/gen.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+    uses: taiki-e/github-actions/.github/workflows/codeql.yml@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
     permissions:
-      contents: write # for creating branch for pr
-    secrets:
-      PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
+      security-events: write # for github/codeql-action/*
+    with:
+      language: rust
   msrv:
     needs: tidy
-    uses: taiki-e/github-actions/.github/workflows/rust-msrv.yml@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+    uses: taiki-e/github-actions/.github/workflows/rust-msrv.yml@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
 
   prepare:
     needs: tidy
@@ -70,16 +70,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/github-actions/free-device-space@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+      - uses: taiki-e/github-actions/free-device-space@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
         if: startsWith(matrix.target, 'hexagon')
       - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends gcc libc6-dev
         if: matrix.container != ''
-      # - run: sudo apt-get -o Acquire::Retries=10 -qq update && sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
-      #   if: startsWith(matrix.os, 'ubuntu') || matrix.os == ''
-      # - run: brew install moreutils
-      #   if: startsWith(matrix.os, 'macos')
-      # - run: C:/msys64/usr/bin/pacman -S --noconfirm moreutils
-      #   if: startsWith(matrix.os, 'windows')
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
         with:
           # 0.4.8 fails with at least nightly-2023-05-09 to nightly-2024-01-05
@@ -108,13 +102,17 @@ jobs:
           fi
         env:
           TARGET: ${{ matrix.target }}
-      - uses: taiki-e/setup-cross-toolchain-action@12b7ad4acfa95a1476779d6c06699b96ec1691f8 # v1.42.0
+      - uses: taiki-e/setup-cross-toolchain-action@0375eb1d01bea430aa3202965839a7092960a23b # v1.43.1
         with:
           target: ${{ matrix.target }}
           runner: ${{ matrix.container && 'native' || '' }}
-        if: steps.prepare.outputs.target-not-host == 'true' && !startsWith(matrix.target, 'csky-')
+        if: steps.prepare.outputs.target-not-host == 'true' && !startsWith(matrix.target, 'csky-') && matrix.target != 'x86_64-unknown-linux-gnux32'
+      # Use qemu-system because the C-SKY qemu-user runner has a broken csky_cmpxchg
+      # (trap 2) emulation, which also affects glibc:
+      # https://github.com/XUANTIE-RV/qemu/blob/xuantie-qemu-9.0/linux-user/csky/cpu_loop.c#L112
       # TODO: not yet supported in setup-cross-toolchain-action
-      - run: |
+      - name: Set up C-SKY toolchain
+        run: |
           retry() {
             for i in {1..10}; do
               if "$@"; then
@@ -125,36 +123,285 @@ jobs:
             done
             "$@"
           }
-          target_lower="${TARGET//-/_}"
-          target_lower="${target_lower//./_}"
-          target_upper=$(tr '[:lower:]' '[:upper:]' <<<"${target_lower}")
+          retry sudo apt-get -o Acquire::Retries=10 -qq update
+          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+            e2fsprogs \
+            libaio1 \
+            libdaxctl1 \
+            libgcrypt20 \
+            libglib2.0-0 \
+            libgnutls30 \
+            libjpeg-turbo8 \
+            liblzo2-2 \
+            libndctl6 \
+            libnuma1 \
+            libpam0g \
+            libpixman-1-0 \
+            libpmem1 \
+            libpng16-16 \
+            libsasl2-2 \
+            libseccomp2 \
+            libsnappy1v5 \
+            libudev1 \
+            libvdeplug2
+
+          target_upper=$(tr '[:lower:].-' '[:upper:]__' <<<"${TARGET}")
+          toolchain_dir="${HOME}/gcc-csky-linux-gnuabiv2"
           # https://github.com/taiki-e/rust-cross-toolchain/pkgs/container/rust-cross-toolchain
           retry docker create --name gcc-csky-linux-gnuabiv2 "ghcr.io/taiki-e/rust-cross-toolchain:${TARGET}-dev-amd64"
-          docker cp -- "gcc-csky-linux-gnuabiv2:/${TARGET}" "${HOME}"/gcc-csky-linux-gnuabiv2
+          docker cp -- "gcc-csky-linux-gnuabiv2:/${TARGET}" "${toolchain_dir}"
           docker rm -f -- gcc-csky-linux-gnuabiv2 >/dev/null
-          printf '%s\n' "${HOME}"/gcc-csky-linux-gnuabiv2/bin >>"${GITHUB_PATH}"
-          printf '%s\n' "CARGO_TARGET_${target_upper}_LINKER=csky-abiv2-linux-gcc" >>"${GITHUB_ENV}"
-          case "${TARGET}" in
-            *hf)
-              qemu_cpu=ck860fv
-              # +crt-static: Workaround for C-SKY QEMU issue
-              flags=' -C target-feature=+crt-static'
-              ;;
-            *)
-              # https://github.com/taiki-e/atomic-maybe-uninit/pull/32#issuecomment-3341287749
-              qemu_cpu=ck860
-              # +crt-static: Workaround for C-SKY QEMU issue
+          printf '%s\n' "${toolchain_dir}/bin" >>"${GITHUB_PATH}"
+          # https://github.com/c-sky/buildroot/releases/tag/v1.0.10.1
+          artifact_job=1251564492
+          image_sha256=2b1a00786e3a858337986c03fd36d5b649f46988cb668ff13976b91e34eb85d4
+          rootfs_sha256=fa6a2a7b90c7e6d4f09a7926138597e150412a9064d3fbc9f539582cdc1e315c
+          # +crt-static: Workaround for C-SKY QEMU bug
+          flags=' -C target-feature=+crt-static'
+          if [[ "${TARGET}" != *hf ]]; then
               # ldex/stex requires ck860*
-              flags=' -C target-feature=+crt-static -C target-cpu=ck860'
-              ;;
-          esac
-          printf 'RUSTFLAGS=%s\n' "${RUSTFLAGS}${flags}" >>"${GITHUB_ENV}"
-          printf 'RUSTDOCFLAGS=%s\n' "${RUSTDOCFLAGS}${flags}" >>"${GITHUB_ENV}"
-          printf '%s\n' "CARGO_TARGET_${target_upper}_RUNNER=qemu-cskyv2 -cpu ${qemu_cpu}" >>"${GITHUB_ENV}"
-          printf 'BUILD_STD=-Z''build-std\n' >>"${GITHUB_ENV}"
+              flags+=' -C target-cpu=ck860'
+          fi
+
+          image_dir="${RUNNER_TEMP}/csky"
+          mkdir -p -- "${image_dir}"
+          image_url="https://gitlab.com/c-sky/buildroot/-/jobs/${artifact_job}/artifacts/raw/output/images"
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 -o "${image_dir}/Image.xz" "${image_url}/Image.xz"
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 -o "${image_dir}/rootfs.ext2.xz" "${image_url}/rootfs.ext2.xz"
+          sha256sum -c - >/dev/null <<EOF
+          ${image_sha256} *${image_dir}/Image.xz
+          ${rootfs_sha256} *${image_dir}/rootfs.ext2.xz
+          EOF
+          xz --decompress -- "${image_dir}/Image.xz" "${image_dir}/rootfs.ext2.xz"
+
+          cat >"${image_dir}/init" <<'EOF'
+          #!/bin/sh
+          /bin/busybox mount -t proc proc /proc
+          export CI=true
+          export GITHUB_ACTIONS=true
+          export RUST_BACKTRACE=1
+          export RUST_TEST_THREADS=1
+
+          status=1
+          if /bin/busybox mount -t 9p -o trans=virtio,version=9p2000.L,msize=1048576 hostshare /mnt/host; then
+            if /bin/busybox xargs -0 /mnt/host/test </mnt/host/args; then
+              status=0
+            else
+              status=$?
+            fi
+          fi
+
+          if [ "${status}" -eq 0 ]; then
+            printf 'C-SKY tests finished successfully\n'
+          else
+            printf 'C-SKY tests failed with status %s\n' "${status}"
+          fi
+
+          while true; do
+            /bin/busybox sleep 1
+          done
+          EOF
+          debugfs -w -R 'mkdir /mnt/host' "${image_dir}/rootfs.ext2"
+          debugfs -w -R "write ${image_dir}/init /init" "${image_dir}/rootfs.ext2"
+          debugfs -w -R 'set_inode_field /init mode 0100755' "${image_dir}/rootfs.ext2"
+
+          runner="${image_dir}/qemu-system-csky-runner.sh"
+          cat >"${runner}" <<'EOF'
+          #!/usr/bin/env bash
+          set -CeEuo pipefail
+          IFS=$'\n\t'
+          trap -- 's=$?; printf >&2 "%s\n" "${0##*/}:${LINENO}: \`${BASH_COMMAND}\` exit with ${s}"; exit ${s}' ERR
+
+          image_dir=$(dirname -- "$0")
+          binary=$1
+          shift
+
+          tmp=$(mktemp -d)
+          qemu_pid=''
+          cleanup() {
+            if [[ -n "${qemu_pid}" ]]; then
+              kill -- "${qemu_pid}" 2>/dev/null || true
+              wait "${qemu_pid}" 2>/dev/null || true
+            fi
+            rm -rf -- "${tmp:?}"
+          }
+          trap -- cleanup EXIT
+          shared="${tmp}/shared"
+          mkdir -- "${shared}"
+          install -m 0755 -- "${binary}" "${shared}/test"
+          if [[ $# -gt 0 ]]; then
+            printf '%s\0' "$@"
+          fi >"${shared}/args"
+
+          log="${tmp}/qemu.log"
+          TMPDIR="${tmp}" qemu-system-cskyv2 \
+            -M virt \
+            -cpu c860v \
+            -smp 2 \
+            -m 1G \
+            -display none \
+            -monitor none \
+            -serial stdio \
+            -no-user-config \
+            -nic none \
+            -kernel "${image_dir}/Image" \
+            -append 'console=ttyS0,115200 rootwait root=/dev/vda rw init=/init panic=-1 quiet' \
+            -drive "file=${image_dir}/rootfs.ext2,format=raw,id=hd0,snapshot=on" \
+            -device virtio-blk-device,drive=hd0 \
+            -fsdev "local,id=fsdev0,path=${shared},security_model=none" \
+            -device virtio-9p-device,id=fs0,fsdev=fsdev0,mount_tag=hostshare \
+            -no-reboot \
+            >"${log}" 2>&1 &
+          qemu_pid=$!
+          for _ in {1..360}; do
+            if grep -Eq 'C-SKY tests (finished successfully|failed with status)' "${log}"; then
+              break
+            fi
+            if ! kill -0 -- "${qemu_pid}" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          kill -- "${qemu_pid}" 2>/dev/null || true
+          wait "${qemu_pid}" 2>/dev/null || true
+          qemu_pid=''
+          cat -- "${log}"
+          grep -Fq 'C-SKY tests finished successfully' "${log}"
+          EOF
+          chmod 0755 "${runner}"
+
+          "${toolchain_dir}/bin/qemu-system-cskyv2" --version
+          cat >>"${GITHUB_ENV}" <<EOF
+          RUSTFLAGS=${RUSTFLAGS}${flags}
+          RUSTDOCFLAGS=${RUSTDOCFLAGS}${flags}
+          CARGO_TARGET_${target_upper}_LINKER=csky-abiv2-linux-gcc
+          CARGO_TARGET_${target_upper}_RUNNER=${runner}
+          BUILD_STD=-Zbuild-std
+          EOF
         env:
           TARGET: ${{ matrix.target }}
         if: startsWith(matrix.target, 'csky-')
+      - name: Set up x32 toolchain
+        run: |
+          retry() {
+            for i in {1..10}; do
+              if "$@"; then
+                return 0
+              else
+                sleep "${i}"
+              fi
+            done
+            "$@"
+          }
+          retry sudo apt-get -o Acquire::Retries=10 -qq update
+          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
+            busybox-static \
+            cpio \
+            gcc-x86-64-linux-gnux32 \
+            libc6-dev-x32-cross \
+            qemu-system-x86
+          # https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/
+          sudo tee -- /etc/udev/rules.d/99-kvm4all.rules <<<'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"'
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+          image_dir="${RUNNER_TEMP}/x32"
+          root="${image_dir}/root"
+          mkdir -p -- "${root}"/{bin,dev,libx32,proc,tmp}
+          chmod 1777 "${root}/tmp"
+          sudo mknod -m 0600 "${root}/dev/console" c 5 1
+          install -m 0755 -- /usr/x86_64-linux-gnux32/lib/*.so.* "${root}/libx32/"
+          install -m 0755 -- "$(type -P busybox)" "${root}/bin/busybox"
+
+          kernel="${image_dir}/linux"
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 \
+            -o "${kernel}" \
+            https://deb.debian.org/debian/dists/trixie/main/installer-amd64/20250803/images/netboot/debian-installer/amd64/linux
+          sha256sum -c - >/dev/null <<<"123e30d376f800b70848505a1193d0fce03359052677ed4e068eb60231a4bb02 *${kernel}"
+
+          cat >"${root}/init" <<'EOF'
+          #!/bin/busybox sh
+          /bin/busybox mount -t devtmpfs devtmpfs /dev
+          /bin/busybox mount -t proc proc /proc
+          export LD_LIBRARY_PATH=/libx32
+          export CI=true
+          export GITHUB_ACTIONS=true
+          export RUST_BACKTRACE=1
+          export RUST_TEST_THREADS=1
+
+          if /bin/busybox xargs -0 /test </args; then
+            printf 'x32 tests finished successfully\n'
+          else
+            printf 'x32 tests failed with status %s\n' "$?"
+          fi
+          /bin/busybox poweroff -f
+          while true; do
+            /bin/busybox sleep 1
+          done
+          EOF
+          chmod 0755 "${root}/init"
+
+          (
+            cd -- "${root}"
+            find . -print0 \
+              | cpio --null --create --format=newc --owner=0:0 \
+              | gzip -1 >"${image_dir}/initrd.gz"
+          )
+
+          runner="${image_dir}/qemu-system-x32-runner.sh"
+          cat >"${runner}" <<'EOF'
+          #!/usr/bin/env bash
+          set -CeEuo pipefail
+          image_dir=$(dirname -- "$0")
+          binary=$1
+          shift
+
+          tmp=$(mktemp -d)
+          trap -- 'rm -rf -- "${tmp:?}"' EXIT
+          mkdir -- "${tmp}/payload"
+          install -m 0755 -- "${binary}" "${tmp}/payload/test"
+          if [[ $# -gt 0 ]]; then
+            printf '%s\0' "$@"
+          fi >"${tmp}/payload/args"
+
+          # Linux accepts concatenated initramfs archives. Append this invocation's
+          # test executable and arguments to the shared kernel-independent files.
+          initrd="${tmp}/initrd.gz"
+          {
+            cat -- "${image_dir}/initrd.gz"
+            (
+              cd -- "${tmp}/payload"
+              printf '%s\n' test args \
+                | cpio --quiet --create --format=newc --owner=0:0 \
+                | gzip -1
+            )
+          } >"${initrd}"
+
+          log="${tmp}/qemu.log"
+          timeout 6m qemu-system-x86_64 \
+            -display none \
+            -monitor none \
+            -serial stdio \
+            -accel kvm \
+            -cpu host \
+            -m 6G \
+            -smp 2 \
+            -no-user-config \
+            -nic none \
+            -kernel "${image_dir}/linux" \
+            -initrd "${initrd}" \
+            -append 'console=ttyS0 rdinit=/init syscall.x32=y random.trust_cpu=on panic=-1' \
+            -no-reboot \
+            | tee -- "${log}"
+          grep -Eq '^x32 tests finished successfully[[:space:]]*$' "${log}"
+          EOF
+          chmod 0755 "${runner}"
+
+          cat >>"${GITHUB_ENV}" <<EOF
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNUX32_LINKER=x86_64-linux-gnux32-gcc
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNUX32_RUNNER=${runner}
+          EOF
+        if: matrix.target == 'x86_64-unknown-linux-gnux32'
       - run: |
           target_lower="${TARGET//-/_}"
           target_lower="${target_lower//./_}"
@@ -170,7 +417,7 @@ jobs:
             case "${TARGET}" in
               # TODO(macos): error: linker stderr: ld: ignoring duplicate libraries: '-lc', '-lm'
               # TODO(windows): error: linker stdout: C:\a\portable-atomic\portable-atomic\target\debug\deps\portable_atomic-6f0d7f05900c9263.exe : warning LNK4072: section count 101 exceeds max (96); image may not run
-              # TODO(csky): error: linker stderr: /home/runner/gcc-csky-linux-gnuabiv2/bin/../lib/gcc/csky-linux-gnuabiv2/6.3.0/../../../../csky-linux-gnuabiv2/bin/ld: file ....o's arch flag ck860 conflict with target ck810,set target arch flag to ck860
+              # TODO(csky): these jobs use ck860/ck860v, but the available sysroot libraries use ck810
               *-darwin* | *-windows-* | csky*) ;;
               *) flags+=" -D linker_messages" ;;
             esac
@@ -236,9 +483,9 @@ jobs:
       # x86 -sse2
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
-        if: startsWith(matrix.target, 'i686')
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+sse
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+sse
+        if: startsWith(matrix.target, 'i586')
       # x86 -sse
       - run: tools/test.sh -vv --tests ${TARGET:-} ${BUILD_STD:-}
         env:
@@ -313,12 +560,13 @@ jobs:
           RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_use_cp15_barrier
         if: matrix.target == 'arm-unknown-linux-gnueabi'
       # arm pre-v6 thumb
-      - run: tools/test.sh -vv --tests ${TARGET:-} -Z build-std
-        env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+thumb-mode
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+thumb-mode
-        # "LLVM ERROR: underestimated function size" with old nightly
-        if: startsWith(matrix.rust, 'nightly') && (matrix.target == 'armv5te-unknown-linux-gnueabi' || (matrix.target == 'armv4t-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2024') && !startsWith(matrix.rust, 'nightly-2025') && !startsWith(matrix.rust, 'nightly-2026-01'))) && !startsWith(matrix.rust, 'nightly-2023')
+      # TODO: compiler_builtins bug that uses non-thumb1 instructions.
+      # - run: tools/test.sh -vv --tests ${TARGET:-} -Z build-std
+      #   env:
+      #     RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=+thumb-mode
+      #     RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=+thumb-mode
+      #   # "LLVM ERROR: underestimated function size" with old nightly
+      #   if: startsWith(matrix.rust, 'nightly') && (matrix.target == 'armv5te-unknown-linux-gnueabi' || (matrix.target == 'armv4t-unknown-linux-gnueabi' && !startsWith(matrix.rust, 'nightly-2024') && !startsWith(matrix.rust, 'nightly-2025') && !startsWith(matrix.rust, 'nightly-2026-01'))) && !startsWith(matrix.rust, 'nightly-2023')
       # powerpc +msync
       - run: tools/test.sh -vv --tests ${TARGET:-} -Z build-std
         env:
@@ -393,120 +641,6 @@ jobs:
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-}
       - run: cargo minimal-versions build --workspace --no-private --detach-path-deps=skip-exact --all-features ${TARGET:-} ${BUILD_STD:-} --direct
 
-  test-x32:
-    name: test (x86_64-unknown-linux-gnux32)
-    needs: tidy
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4
-        with:
-          tool: rust@nightly
-          fallback: none
-      - run: |
-          retry() {
-            for i in {1..10}; do
-              if "$@"; then
-                return 0
-              else
-                sleep "${i}"
-              fi
-            done
-            "$@"
-          }
-          retry sudo apt-get -o Acquire::Retries=10 -qq update
-          retry sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends \
-            busybox-static \
-            cpio \
-            gcc-x86-64-linux-gnux32 \
-            libc6-dev-x32-cross \
-            qemu-system-x86
-          # https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/
-          sudo tee -- /etc/udev/rules.d/99-kvm4all.rules <<<'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"'
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-          target=x86_64-unknown-linux-gnux32
-          tmp=$(mktemp -d)
-          trap -- 'rm -rf -- "${tmp:?}"' EXIT
-          root="${tmp}/root"
-          mkdir -p -- "${root}"/{bin,dev,libx32,proc,tmp}
-          chmod 1777 "${root}/tmp"
-          sudo mknod "${root}/dev/console" c 5 1
-          sudo chmod 0600 "${root}/dev/console"
-          for src_lib in /usr/x86_64-linux-gnux32/lib/*.so.*; do
-            dst="${root}/libx32/$(basename -- "${src_lib}")"
-            install -m 0755 -- "${src_lib}" "${dst}"
-          done
-          install -m 0755 -- "$(type -P busybox)" "${root}/bin/busybox"
-
-          kernel="${tmp}/linux"
-          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 \
-            -o "${kernel}" \
-            https://deb.debian.org/debian/dists/trixie/main/installer-amd64/20250803/images/netboot/debian-installer/amd64/linux
-          sha256sum -c - >/dev/null <<<"123e30d376f800b70848505a1193d0fce03359052677ed4e068eb60231a4bb02 *${kernel}"
-
-          run=''
-          build() {
-            local output=$1
-            local extra_flags=${2:-}
-            local binary_path
-            binary_path=$(
-              RUSTFLAGS="${RUSTFLAGS:-} -C panic=abort -Z panic_abort_tests${extra_flags}" \
-                CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNUX32_LINKER=x86_64-linux-gnux32-gcc \
-                ./tools/test.sh build --target "${target}" -r
-            )
-            install -m 0755 -- "${binary_path}" "${root}/${output}"
-            run+="/\"${output}\" --test-threads=1 || status=1"$'\n'
-          }
-          build baseline
-          build cmpxchg16b ' -C target-feature=+cmpxchg16b --cfg atomic_maybe_uninit_no_outline_atomics'
-          build cmpxchg16b_avx ' -C target-feature=+cmpxchg16b,+avx'
-
-          cat >"${root}/init" <<EOF
-          #!/bin/busybox sh
-          /bin/busybox mount -t devtmpfs devtmpfs /dev
-          /bin/busybox mount -t proc proc /proc
-          export LD_LIBRARY_PATH=/libx32
-          status=0
-          ${run}
-          if [ "\${status}" -eq 0 ]; then
-            printf 'Tests finished successfully\n'
-          fi
-          /bin/busybox poweroff -f
-          while true; do
-            /bin/busybox sleep 1
-          done
-          EOF
-          chmod 0755 "${root}/init"
-
-          initrd="${tmp}/initrd"
-          (
-            cd -- "${root}"
-            find . -print0 \
-              | cpio --null --create --format=newc --owner=0:0 \
-              | gzip -9 >"${initrd}"
-          )
-
-          log="${tmp}/qemu.log"
-          timeout 6m qemu-system-x86_64 \
-            -display none \
-            -monitor none \
-            -serial stdio \
-            -accel kvm \
-            -cpu host \
-            -m 6G \
-            -smp 2 \
-            -no-user-config \
-            -nic none \
-            -kernel "${kernel}" \
-            -initrd "${initrd}" \
-            -append 'console=ttyS0 rdinit=/init syscall.x32=y random.trust_cpu=on panic=-1' \
-            -no-reboot \
-            | tee -- "${log}"
-          grep -Fq 'Tests finished successfully' "${log}"
-
   build:
     name: build (${{ matrix.name || matrix.rust }})
     needs: tidy
@@ -561,7 +695,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      - uses: taiki-e/install-action@7572810d7dd469b651bb7793945692cf78da5dd7 # v2.85.0
+      - uses: taiki-e/install-action@c509219cf42fba86913069efd0ade2458c59337b # v2.90.1
         with:
           tool: rust@${{ matrix.rust }}${{ matrix.rust == 'stable' && ',cargo-hack,espup' || '' }}${{ (startsWith(matrix.rust, 'nightly') && matrix.rust != 'nightly-2023-08-24' && matrix.rust != 'nightly-2024-07-31' && matrix.rust != 'nightly-2025-02-17') && ',bpf-linker' || '' }}
           fallback: none
@@ -588,17 +722,11 @@ jobs:
               libc6-dev-m68k-cross
               simavr
             )
-            if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
-              # TODO: QEMU 10.2-11.0 exits with 1
+            if [[ "${RUST}" != "nightly-2023-08-24" ]] && [[ "${RUST}" != "nightly-2025-08-06" ]]; then
               apt_packages+=(
-                qemu-system-sparc
+                libnspr4
+                mspdebug
               )
-              if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
-                apt_packages+=(
-                  libnspr4
-                  mspdebug
-                )
-              fi
             fi
           fi
           retry sudo apt-get -o Acquire::Retries=10 -qq update
@@ -614,7 +742,18 @@ jobs:
           )
           printf '%s\n' "${HOME}"/riscv-isa-sim/bin >>"${GITHUB_PATH}"
           printf '%s\n' "${HOME}"/gcc-riscv64-linux-musl/bin >>"${GITHUB_PATH}"
+          qemu_version=11.1.3-patched.0
+          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://github.com/taiki-e/qemu/releases/download/v${qemu_version}/qemu-system-x86_64-linux.tar.zst" \
+            | tar xf - --zstd
+          sudo cp -r -- qemu/. /usr/local/
+          rm -rf -- ./qemu
+          # Patched QEMU for LoongArch semihosting
+          printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/bin\n' >>"${GITHUB_ENV}"
           if [[ "${RUST}" == "nightly"* ]]; then
+            retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://github.com/taiki-e/qemu/releases/download/v${qemu_version}/qemu-user-x86_64-linux.tar.zst" \
+              | tar xf - --zstd
+            sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
+            rm -rf -- ./qemu-user
             if [[ "${RUST}" != "nightly-2023-08-24" ]]; then
               mkdir -p -- "${HOME}"/{msp430-gcc,sparc-bcc-gcc,tsim}
               if [[ "${RUST}" != "nightly-2025-08-06" ]]; then
@@ -631,40 +770,17 @@ jobs:
                 | tar xJf - --strip-components 1 -C "${HOME}"/sparc-bcc-gcc
               printf '%s\n' "${HOME}"/sparc-bcc-gcc/bin >>"${GITHUB_PATH}"
               # https://download.gaisler.com/products/TSIM3/bin/tsim-eval/
-              tsim3_version=3.1.14
+              tsim3_version=3.1.15
               retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "https://download.gaisler.com/products/TSIM3/bin/tsim-eval/tsim-eval-${tsim3_version}.tar.gz" \
                 | tar xzf - --strip-components 1 -C "${HOME}"/tsim
               printf '%s\n' "${HOME}"/tsim/tsim/linux-x64 >>"${GITHUB_PATH}"
-              # Patched QEMU for LoongArch semihosting
-              retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/loongarch-semi-10.1.5/qemu-ubuntu-24.04.tar.xz \
-                | tar xJf -
-              sudo mv -- qemu /usr/local/qemu-loongarch-semi
-              printf 'LOONGARCH_QEMU_BIN_DIR=/usr/local/qemu-loongarch-semi/bin\n' >>"${GITHUB_ENV}"
             fi
-            # https://github.com/taiki-e/dockerfiles/pkgs/container/qemu-user
-            retry docker create --name qemu-user ghcr.io/taiki-e/qemu-user
-            mkdir -p -- qemu-user
-            docker cp -- qemu-user:/usr/bin qemu-user/bin
-            docker rm -f -- qemu-user >/dev/null
-            sudo mv -- qemu-user/bin/qemu-* /usr/local/bin/
-            rm -rf -- ./qemu-user
           elif [[ "${RUST}" == "stable" ]]; then
             retry espup install --targets esp32,esp32s2,esp32s3
           fi
-          retry curl --proto '=https' --tlsv1.2 -fsSL --retry 10 https://github.com/taiki-e/qemu/releases/download/patched-11.0.0/qemu-ubuntu-24.04.tar.xz \
-            | tar xJf -
-          rm -- qemu/bin/qemu-system-sparc # TODO: QEMU 10.2-11.0 exits with 1
-          sudo cp -r -- qemu/. /usr/local/
-          rm -rf -- ./qemu
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUST: ${{ matrix.rust }}
-      # cortex-m-rt 0.7.6 requires Rust 1.85.
-      - run: |
-          cargo generate-lockfile
-          cargo update -p cortex-m-rt --precise 0.7.5
-        working-directory: tests/no-std-qemu
-        if: startsWith(matrix.rust, '1.7') || startsWith(matrix.rust, '1.8') || startsWith(matrix.rust, 'nightly-2023') || startsWith(matrix.rust, 'nightly-2024')
       - run: tools/no-std.sh
         env:
           ALL_TARGETS_MUST_BE_AVAILABLE: ${{ matrix.rust == 'nightly' || '' }}
@@ -720,12 +836,11 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
           VALGRIND: ${{ matrix.arch && 'valgrind-cross' || 'valgrind' }}
-      # - run: apt-get -o Acquire::Retries=10 -qq update && apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends moreutils
-      - uses: taiki-e/setup-cross-toolchain-action@3d9770ce98eb7dbcf378563182a5e8031165f75b # v1.41.0
+      - uses: taiki-e/setup-cross-toolchain-action@0375eb1d01bea430aa3202965839a7092960a23b # v1.43.1
         with:
           target: ${{ matrix.target }}
           runner: valgrind
-      - uses: taiki-e/github-actions/setup-docker@e6a1170cbd07eb898017958967912976fce18f2d # 2026.7.3
+      - uses: taiki-e/github-actions/setup-docker@af422d7af8ef63e0ea0d84510aff17254fef31c2 # 2026.11.23
         with:
           buildx: false
           qemu: ${{ matrix.arch }}
@@ -746,8 +861,8 @@ jobs:
       # x86 -sse2
       - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
         env:
-          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} -C target-feature=-sse2
-          RUSTFLAGS: ${{ env.RUSTFLAGS }} -C target-feature=-sse2
+          RUSTDOCFLAGS: ${{ env.RUSTDOCFLAGS }} --cfg atomic_maybe_uninit_test_prefer_sse_over_sse2
+          RUSTFLAGS: ${{ env.RUSTFLAGS }} --cfg atomic_maybe_uninit_test_prefer_sse_over_sse2
         if: startsWith(matrix.target, 'i686')
       # x86 -sse
       - run: tools/test.sh "${VALGRIND}" -vv ${TARGET:-}
@@ -820,7 +935,7 @@ jobs:
   asm-test:
     needs: tidy
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2.83.4

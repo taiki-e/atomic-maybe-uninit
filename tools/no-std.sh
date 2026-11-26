@@ -23,7 +23,7 @@ default_targets=(
   thumbv8m.main-none-eabi
   thumbv8m.main-none-eabihf
   # v6
-  # armv6-none-eabi # TODO(arm): Hang on 64-bit atomics test in release mode
+  armv6-none-eabi
   thumbv6-none-eabi
 
   # riscv32
@@ -555,17 +555,16 @@ run() {
           RUSTFLAGS="${target_rustflags}" \
             x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
         done
-        # TODO(bpf): Enable once https://github.com/aya-rs/bpf-linker/pull/386 released.
-        # for feature in isize usize i64 u64 i32 u32; do
-        #   # CARGO_TARGET_DIR="${target_dir}/no-std-test-v4" \
-        #   #   RUSTFLAGS="${target_rustflags}" \
-        #   #   BPF_CPU=v4 \
-        #   #   x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
-        #   CARGO_TARGET_DIR="${target_dir}/no-std-test-v4" \
-        #     RUSTFLAGS="${target_rustflags}" \
-        #     BPF_CPU=v4 \
-        #     x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
-        # done
+        for feature in isize usize i64 u64 i32 u32; do
+          # CARGO_TARGET_DIR="${target_dir}/no-std-test-v4" \
+          #   RUSTFLAGS="${target_rustflags}" \
+          #   BPF_CPU=v4 \
+          #   x_cargo "${args[@]}" --no-default-features --features "${feature}" "$@"
+          CARGO_TARGET_DIR="${target_dir}/no-std-test-v4" \
+            RUSTFLAGS="${target_rustflags}" \
+            BPF_CPU=v4 \
+            x_cargo "${args[@]}" --no-default-features --features "${feature}" --release "$@"
+        done
         ;;
     esac
   )

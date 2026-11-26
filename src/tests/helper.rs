@@ -269,8 +269,6 @@ macro_rules! __test_atomic {
             }
         }
         #[test]
-        // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
-        #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_load_store() {
             let mut rng = fastrand::Rng::new();
             let (iterations, threads) = stress_test_config(&mut rng);
@@ -408,8 +406,6 @@ macro_rules! __test_atomic {
             }
         }
         #[test]
-        // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
-        #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_swap() {
             // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
@@ -953,8 +949,6 @@ macro_rules! __test_atomic {
             }
         }
         #[test]
-        // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
-        #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_compare_exchange() {
             // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
@@ -1038,8 +1032,6 @@ macro_rules! __test_atomic {
             });
         }
         #[test]
-        // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
-        #[cfg_attr(target_arch = "csky", ignore = "upstream bug")]
         fn stress_update() {
             // TODO(riscv): wrong result (as of Valgrind 3.26)
             #[cfg(valgrind)]
@@ -1414,11 +1406,10 @@ macro_rules! __stress_seqcst {
                 clippy::cast_possible_truncation,
             )]
             fn [<seqcst1 _ $read _ $load_order:lower _ $write _ $store_order:lower>]() {
-                if cfg!(all(
-                    qemu,
-                    any(target_arch = "aarch64", target_arch = "arm", target_arch = "arm64ec"),
-                )) {
-                    return; // TODO(arm,aarch64): QEMU bug as of QEMU 10.2
+                if cfg!(all(qemu, target_arch = "csky")) {
+                    // TODO(csky): C-SKY QEMU has a bug that treats SYNC as a no-op:
+                    // https://github.com/XUANTIE-RV/qemu/blob/xuantie-qemu-9.0/target/csky/translate_v2.c#L3069-L3071
+                    return;
                 }
                 __call_stress_test_fn!(
                     seqcst1, $ty, $read, $write, $load_order, $store_order);
@@ -1438,12 +1429,6 @@ macro_rules! __stress_seqcst {
         //         clippy::cast_possible_truncation,
         //     )]
         //     fn [<seqcst1 _ $read _ $load_order:lower _ $write _ $store_order:lower>]() {
-        //         if cfg!(all(
-        //             qemu,
-        //             any(target_arch = "aarch64", target_arch = "arm", target_arch = "arm64ec"),
-        //         )) {
-        //             return; // TODO(arm,aarch64): QEMU bug as of QEMU 10.2
-        //         }
         //         use crate::tests::helper::catch_unwind_on_non_seqcst_arch as can_panic;
         //         can_panic("c=2", test_helper::function_name!(), || __call_stress_test_fn!(
         //             seqcst1, $ty, $read, $write, $load_order, $store_order));
@@ -1597,11 +1582,12 @@ pub(crate) fn seqcst1<T: Send + Sync>(
 // Catches unwinding panic on architectures with weak memory models.
 pub(crate) fn catch_unwind_on_weak_memory_arch(pat: &str, function_name: &str, f: impl Fn()) {
     // With x86 TSO, RISC-V TSO (optional), SPARC TSO (optional, default?),
-    // and IBM-370 memory models should never be a panic here.
+    // IBM-370, and M68k memory models should never be a panic here.
     if cfg!(any(
         target_arch = "x86",
         target_arch = "x86_64",
         target_arch = "s390x",
+        target_arch = "m68k",
         target_arch = "sparc",
         target_arch = "sparc64",
         all(any(target_arch = "riscv32", target_arch = "riscv64"), target_feature = "ztso"),
@@ -1726,7 +1712,6 @@ macro_rules! __call_stress_test_fn {
 #[rustfmt::skip]
 macro_rules! stress_test {
     ($ty:ident) => {
-        #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
         paste::paste! {
             #[allow(
                 clippy::alloc_instead_of_core,
@@ -1761,7 +1746,6 @@ macro_rules! stress_test {
                 __stress_seqcst!(should_pass, $ty, load, store, SeqCst, SeqCst);
             }
         }
-        #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
         #[cfg(not(any(
             all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex),
             all(target_arch = "mips64", atomic_maybe_uninit_no_ll_sc),
@@ -1812,7 +1796,6 @@ macro_rules! stress_test {
                 __stress_seqcst!(should_pass, $ty, load, swap, SeqCst, SeqCst);
             }
         }
-        #[cfg(not(target_arch = "csky"))] // TODO(csky): hang or glibc/pthread assertion fail. likely due to broken libatomic: https://github.com/rust-lang/rust/issues/117306
         #[cfg(not(any(
             all(target_arch = "csky", atomic_maybe_uninit_no_ldex_stex),
             all(target_arch = "mips64", atomic_maybe_uninit_no_ll_sc),

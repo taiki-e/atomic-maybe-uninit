@@ -110,13 +110,12 @@ default_targets=(
   # # mips32r6
   # mipsisa32r6-unknown-linux-gnu
   # mipsisa32r6el-unknown-linux-gnu
-  # TODO(mips): LLVM 23 bug https://github.com/llvm/llvm-project/issues/112010
-  # # mips64r2
-  # mips64-unknown-linux-gnuabi64
-  # mips64el-unknown-linux-gnuabi64
-  # # mips64r6
-  # mipsisa64r6-unknown-linux-gnuabi64
-  # mipsisa64r6el-unknown-linux-gnuabi64
+  # mips64r2
+  mips64-unknown-linux-gnuabi64
+  mips64el-unknown-linux-gnuabi64
+  # mips64r6
+  mipsisa64r6-unknown-linux-gnuabi64
+  mipsisa64r6el-unknown-linux-gnuabi64
 
   # msp430
   # rustc -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "msp430" then .key else empty end'
@@ -200,7 +199,7 @@ info() {
 is_no_std() {
   case "$1" in
     *-linux-none*) ;;
-    # https://github.com/rust-lang/rust/blob/1.90.0/library/std/build.rs#L61
+    # https://github.com/rust-lang/rust/blob/1.100.0/library/std/build.rs#L67
     # ESP-IDF supports std, but it is often broken.
     *-none* | *-psp* | *-psx* | *-cuda* | avr* | *-espidf | m68k*) return 0 ;;
   esac
@@ -416,14 +415,12 @@ build() {
           x_cargo "${args[@]}" "$@"
       fi
       ;;
-    i686*)
-      CARGO_TARGET_DIR="${target_dir}/sse" \
-        RUSTFLAGS="${target_rustflags} -C target-feature=-sse2" \
-        x_cargo "${args[@]}" "$@"
-      ;;
     i586*)
+      CARGO_TARGET_DIR="${target_dir}/sse" \
+        RUSTFLAGS="${target_rustflags} -C target-feature=+sse" \
+        x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/no-x87" \
-        RUSTFLAGS="${target_rustflags} -C target-feature=-x87" \
+        RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_test_prefer_cmpxchg8b_over_x87" \
         x_cargo "${args[@]}" "$@"
       CARGO_TARGET_DIR="${target_dir}/no-cmpxchg8b" \
         RUSTFLAGS="${target_rustflags} --cfg atomic_maybe_uninit_no_cmpxchg8b" \

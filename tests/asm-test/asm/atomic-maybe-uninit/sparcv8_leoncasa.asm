@@ -602,7 +602,7 @@ asm_test::compare_exchange::u16::acqrel_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acqrel_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -643,7 +643,7 @@ asm_test::compare_exchange::u16::seqcst_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::seqcst_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -684,7 +684,7 @@ asm_test::compare_exchange::u16::acqrel_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acqrel_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -725,7 +725,7 @@ asm_test::compare_exchange::u16::acqrel_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acqrel_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -766,7 +766,7 @@ asm_test::compare_exchange::u16::acquire_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acquire_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -807,7 +807,7 @@ asm_test::compare_exchange::u16::relaxed_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::relaxed_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -848,7 +848,7 @@ asm_test::compare_exchange::u16::release_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::release_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -889,7 +889,7 @@ asm_test::compare_exchange::u16::seqcst_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::seqcst_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -930,7 +930,7 @@ asm_test::compare_exchange::u16::seqcst_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::seqcst_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -971,7 +971,7 @@ asm_test::compare_exchange::u16::acquire_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acquire_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -1008,7 +1008,7 @@ asm_test::compare_exchange::u16::acquire_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::acquire_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -1045,7 +1045,7 @@ asm_test::compare_exchange::u16::relaxed_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::relaxed_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -1082,7 +1082,7 @@ asm_test::compare_exchange::u16::relaxed_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::relaxed_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -1119,7 +1119,7 @@ asm_test::compare_exchange::u16::release_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::release_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -1160,7 +1160,7 @@ asm_test::compare_exchange::u16::release_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange::u16::release_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -1210,7 +1210,7 @@ asm_test::compare_exchange::u32::acqrel_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::acqrel_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1237,7 +1237,7 @@ asm_test::compare_exchange::u32::seqcst_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::seqcst_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1264,7 +1264,7 @@ asm_test::compare_exchange::u32::acqrel_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::acqrel_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1291,7 +1291,7 @@ asm_test::compare_exchange::u32::acqrel_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::acqrel_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1318,7 +1318,7 @@ asm_test::compare_exchange::u32::acquire_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::acquire_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1345,7 +1345,7 @@ asm_test::compare_exchange::u32::relaxed_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::relaxed_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1372,7 +1372,7 @@ asm_test::compare_exchange::u32::release_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::release_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1399,7 +1399,7 @@ asm_test::compare_exchange::u32::seqcst_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::seqcst_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1426,7 +1426,7 @@ asm_test::compare_exchange::u32::seqcst_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::seqcst_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1449,7 +1449,7 @@ asm_test::compare_exchange::u32::acquire_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::acquire_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1472,7 +1472,7 @@ asm_test::compare_exchange::u32::acquire_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::acquire_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1495,7 +1495,7 @@ asm_test::compare_exchange::u32::relaxed_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::relaxed_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1518,7 +1518,7 @@ asm_test::compare_exchange::u32::relaxed_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::relaxed_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1545,7 +1545,7 @@ asm_test::compare_exchange::u32::release_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::release_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -1572,7 +1572,7 @@ asm_test::compare_exchange::u32::release_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange::u32::release_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -2189,7 +2189,7 @@ asm_test::compare_exchange_weak::u16::acqrel_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acqrel_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2230,7 +2230,7 @@ asm_test::compare_exchange_weak::u16::seqcst_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::seqcst_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2271,7 +2271,7 @@ asm_test::compare_exchange_weak::u16::acqrel_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acqrel_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2312,7 +2312,7 @@ asm_test::compare_exchange_weak::u16::acqrel_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acqrel_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2353,7 +2353,7 @@ asm_test::compare_exchange_weak::u16::acquire_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acquire_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2394,7 +2394,7 @@ asm_test::compare_exchange_weak::u16::relaxed_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::relaxed_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2435,7 +2435,7 @@ asm_test::compare_exchange_weak::u16::release_seqcst:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::release_seqcst+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2476,7 +2476,7 @@ asm_test::compare_exchange_weak::u16::seqcst_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::seqcst_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2517,7 +2517,7 @@ asm_test::compare_exchange_weak::u16::seqcst_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::seqcst_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2558,7 +2558,7 @@ asm_test::compare_exchange_weak::u16::acquire_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acquire_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2595,7 +2595,7 @@ asm_test::compare_exchange_weak::u16::acquire_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::acquire_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2632,7 +2632,7 @@ asm_test::compare_exchange_weak::u16::relaxed_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::relaxed_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2669,7 +2669,7 @@ asm_test::compare_exchange_weak::u16::relaxed_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::relaxed_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2706,7 +2706,7 @@ asm_test::compare_exchange_weak::u16::release_acquire:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::release_acquire+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2747,7 +2747,7 @@ asm_test::compare_exchange_weak::u16::release_relaxed:
         sll               %i0, 3, %i3
         xor               %i3, 0x10, %i3
         sethi             %hi(0xfc00), %i4
-        or                %i4, 0x3ff, %i4	! ffff <asm_test::compare_exchange_weak::u16::release_relaxed+0xffff>
+        or                %i4, 0x3ff, %i4
         and               %i1, %i4, %i1
         and               %i2, %i4, %i2
         and               %i0, -4, %i5
@@ -2797,7 +2797,7 @@ asm_test::compare_exchange_weak::u32::acqrel_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::acqrel_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -2824,7 +2824,7 @@ asm_test::compare_exchange_weak::u32::seqcst_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::seqcst_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -2851,7 +2851,7 @@ asm_test::compare_exchange_weak::u32::acqrel_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::acqrel_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -2878,7 +2878,7 @@ asm_test::compare_exchange_weak::u32::acqrel_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::acqrel_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -2905,7 +2905,7 @@ asm_test::compare_exchange_weak::u32::acquire_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::acquire_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -2932,7 +2932,7 @@ asm_test::compare_exchange_weak::u32::relaxed_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::relaxed_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -2959,7 +2959,7 @@ asm_test::compare_exchange_weak::u32::release_seqcst:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::release_seqcst+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -2986,7 +2986,7 @@ asm_test::compare_exchange_weak::u32::seqcst_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::seqcst_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -3013,7 +3013,7 @@ asm_test::compare_exchange_weak::u32::seqcst_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::seqcst_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -3036,7 +3036,7 @@ asm_test::compare_exchange_weak::u32::acquire_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::acquire_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -3059,7 +3059,7 @@ asm_test::compare_exchange_weak::u32::acquire_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::acquire_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -3082,7 +3082,7 @@ asm_test::compare_exchange_weak::u32::relaxed_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::relaxed_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -3105,7 +3105,7 @@ asm_test::compare_exchange_weak::u32::relaxed_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::relaxed_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -3132,7 +3132,7 @@ asm_test::compare_exchange_weak::u32::release_acquire:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::release_acquire+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -3159,7 +3159,7 @@ asm_test::compare_exchange_weak::u32::release_relaxed:
         mov               %g0, %i0
         bne               0f
         nop
-        mov               1, %i0	! 1 <asm_test::compare_exchange_weak::u32::release_relaxed+0x1>
+        mov               1, %i0
 0:
         cmp               %i0, 0
         bne               1f
@@ -3374,7 +3374,7 @@ asm_test::swap::u16::acqrel:
         sll               %i0, 3, %i2
         xor               %i2, 0x10, %i2
         sethi             %hi(0xfc00), %i3
-        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::acqrel+0xffff>
+        or                %i3, 0x3ff, %i3
         and               %i1, %i3, %i1
         and               %i0, -4, %i4
         sll               %i1, %i2, %i1
@@ -3400,7 +3400,7 @@ asm_test::swap::u16::seqcst:
         sll               %i0, 3, %i2
         xor               %i2, 0x10, %i2
         sethi             %hi(0xfc00), %i3
-        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::seqcst+0xffff>
+        or                %i3, 0x3ff, %i3
         and               %i1, %i3, %i1
         and               %i0, -4, %i4
         sll               %i1, %i2, %i1
@@ -3426,7 +3426,7 @@ asm_test::swap::u16::acquire:
         sll               %i0, 3, %i2
         xor               %i2, 0x10, %i2
         sethi             %hi(0xfc00), %i3
-        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::acquire+0xffff>
+        or                %i3, 0x3ff, %i3
         and               %i1, %i3, %i1
         and               %i0, -4, %i4
         sll               %i1, %i2, %i1
@@ -3448,7 +3448,7 @@ asm_test::swap::u16::relaxed:
         sll               %i0, 3, %i2
         xor               %i2, 0x10, %i2
         sethi             %hi(0xfc00), %i3
-        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::relaxed+0xffff>
+        or                %i3, 0x3ff, %i3
         and               %i1, %i3, %i1
         and               %i0, -4, %i4
         sll               %i1, %i2, %i1
@@ -3470,7 +3470,7 @@ asm_test::swap::u16::release:
         sll               %i0, 3, %i2
         xor               %i2, 0x10, %i2
         sethi             %hi(0xfc00), %i3
-        or                %i3, 0x3ff, %i3	! ffff <asm_test::swap::u16::release+0xffff>
+        or                %i3, 0x3ff, %i3
         and               %i1, %i3, %i1
         and               %i0, -4, %i4
         sll               %i1, %i2, %i1

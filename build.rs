@@ -46,18 +46,18 @@ fn main() {
 
     if version.minor >= 80 {
         println!(
-            r#"cargo:rustc-check-cfg=cfg(target_feature,values("acquire-release","fast-serialization","zalasr"))"#
+            r#"cargo:rustc-check-cfg=cfg(target_feature,values("acquire-release","fast-serialization","fence-keeps-reservation","zalasr"))"#
         );
 
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_llvm_20_or_later,atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_ll_sc,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,atomic_maybe_uninit_v4)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_skip_black_box_workaround,atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_ll_sc,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,atomic_maybe_uninit_v4)"
         );
         // TODO: handle multi-line emit_target_feature_fallback
         // grep -F 'emit_target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*emit_target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","acquire-release","fast-serialization","isa-68020","isa-68060","lam-bh","lamcas","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","scq","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8plus","v9","x87","zaamo","zabha","zacas","zalasr","zalrsc"))"#
+            r#"cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_target_feature,values("a","acquire-release","fast-serialization","fence-keeps-reservation","isa-68020","isa-68060","lam-bh","lamcas","leoncasa","lowbytefirst","lse128","lse2","mclass","msync","partword-atomics","quadword-atomics","rcpc3","rmw","scq","thumb-mode","thumb2","tinyencoding","v5te","v6","v7","v8plus","v9","x87","zaamo","zabha","zacas","zalasr","zalrsc"))"#
         );
     }
 
@@ -94,8 +94,9 @@ fn main() {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_strict_provenance");
     }
 
-    if version_pass && version.llvm >= 20 {
-        println!("cargo:rustc-cfg=atomic_maybe_uninit_llvm_20_or_later");
+    // https://github.com/rust-lang/rust/issues/129585 for non-arm arch has been fixed in LLVM 20.
+    if version_pass && version.llvm >= 20 && target_arch != "arm" {
+        println!("cargo:rustc-cfg=atomic_maybe_uninit_skip_black_box_workaround");
     }
 
     match target_arch {
@@ -185,8 +186,8 @@ fn main() {
             let mut no_cmpxchg = false;
             // i586 is -C target-feature=+x87 by default, but cfg(target_feature = "x87") doesn't work on pre-nightly-2024-12-14 or non-nightly.
             // And core assumes x87 is always available.
-            // https://github.com/rust-lang/rust/blob/1.90.0/library/core/src/num/dec2flt/fpu.rs#L6
-            // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/i686_unknown_uefi.rs#L24
+            // https://github.com/rust-lang/rust/blob/1.100.0/library/core/src/num/imp/dec2flt/fpu.rs#L22
+            // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/i686_unknown_uefi.rs#L24
             // However, custom bare metal targets tend to disable x87 and do not use floats.
             let mut x87 = target_os != "none";
             if let Some(cpu) = rustflags.target_cpu {
@@ -212,7 +213,7 @@ fn main() {
             // target_feature "x87" is unstable and available on rustc side since nightly-2024-12-14: https://github.com/rust-lang/rust/pull/133099
             if !version.probe(85, 2024, 12, 13) || needs_target_feature_fallback(&version, None) {
                 for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L425
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L427
                     match name {
                         b"x87" => x87 = enabled,
                         _ => {}
@@ -256,7 +257,7 @@ fn main() {
                             }
                         };
                     }
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L216
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L218
                     match name {
                         b"lse2" => lse2 = enabled,
                         b"lse128" => lse128 = enabled,
@@ -286,11 +287,11 @@ fn main() {
                     target.strip_prefix("arm").or_else(|| target.strip_prefix("thumb"))
                 {
                     subarch = subarch.strip_prefix("eb").unwrap_or(subarch); // ignore endianness
-                    subarch = subarch.split_once('-').unwrap_or((subarch, "")).0; // ignore vender/os/env
-                    let (mut subarch, suffix) = subarch.split_once('.').unwrap_or((subarch, "")); // .base/.main suffix
+                    subarch = subarch.split_once('-').unwrap_or((subarch, "")).0; // ignore vendor/os/env
+                    let (mut subarch, suffix) = subarch.rsplit_once('.').unwrap_or((subarch, "")); // .base/.main suffix
                     let mut known = true;
-                    // As of nightly-2026-03-08, there are the following "vN*" patterns:
-                    // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/(\-|\.).*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
+                    // As of nightly-2026-09-09, there are the following "vN*" patterns:
+                    // $ rustc +nightly -Z unstable-options --print all-target-specs-json | jq -r '. | to_entries[] | if .value.arch == "arm" then .key else empty end' | sed -E 's/^(arm|thumb)(eb)?//; s/\-.*$//' | LC_ALL=C sort -u | sed -E 's/^/"/g; s/$/"/g'
                     // ""
                     // "v4t"
                     // "v5te"
@@ -308,8 +309,10 @@ fn main() {
                     // "v8m"
                     // "v8r"
                     //
+                    // And https://github.com/rust-lang/rust/pull/162519 will add "v8.1m".
+                    //
                     // - v7, v7a, v7neon, v7s, and v7k are aclass
-                    // - v6m, v7em, v7m, and v8m are mclass
+                    // - v6m, v7em, v7m, v8m, and v8.1m are mclass
                     // - v7r and v8r are rclass
                     //
                     // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
@@ -323,12 +326,12 @@ fn main() {
                     match subarch {
                         "v7" | "v7a" | "v7neon" | "v7s" | "v7k" | "v8" | "v8a" | "v9" | "v9a" => {} // aclass
                         "v7r" | "v8r" | "v9r" => {} // rclass
-                        "v6m" | "v7em" | "v7m" | "v8m" => mclass = true,
+                        "v6m" | "v7em" | "v7m" | "v8m" | "v8.1m" => mclass = true,
                         // arm-linux-androideabi is v5te
-                        // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L19
+                        // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/arm_linux_androideabi.rs#L21
                         _ if target == "arm-linux-androideabi" => subarch = "v5te",
                         // armeb-unknown-linux-gnueabi is v8 & aclass
-                        // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L20
+                        // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/armeb_unknown_linux_gnueabi.rs#L20
                         _ if target == "armeb-unknown-linux-gnueabi" => subarch = "v8",
                         // Legacy Arm architectures (pre-v7 except v6m) don't have *class target feature.
                         "" => subarch = "v6",
@@ -346,7 +349,7 @@ fn main() {
                     }
                     if known && (subarch.starts_with("v8") || subarch.starts_with("v9")) {
                         // Armv8-M is not considered as v8 by LLVM.
-                        // https://github.com/rust-lang/stdarch/blob/a0c30f3e3c75adcd6ee7efc94014ebcead61c507/crates/core_arch/src/arm_shared/mod.rs
+                        // https://github.com/rust-lang/rust/blob/1.100.0/library/stdarch/crates/core_arch/src/arm_shared/mod.rs
                         if mclass {
                             // Armv8-M Mainline is a superset of Armv7-M.
                             // Armv8-M Baseline is a superset of Armv6-M.
@@ -388,7 +391,7 @@ fn main() {
                             }
                         };
                     }
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L160
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L160
                     match name {
                         b"v8" => dep!(v5te, v6, thumb2, v7, acquire_release),
                         b"acquire-release" => acquire_release = enabled,
@@ -494,7 +497,7 @@ fn main() {
                         }
                     };
                 }
-                // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L674
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L678
                 match name {
                     b"zalasr" => zalasr = enabled,
                     b"zacas" if check_zacas => {
@@ -530,7 +533,8 @@ fn main() {
                     _ => {}
                 }
             }
-            // As of Rust 1.93, target_feature "zalasr" is not available on rustc side:
+            // As of Rust 1.100, target_feature "zalasr" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L678
             if version.llvm >= 22 {
                 // available non-experimental since LLVM 22 https://github.com/llvm/llvm-project/pull/177331
                 emit_target_feature_fallback("zalasr", zalasr);
@@ -557,52 +561,71 @@ fn main() {
             }
         }
         "powerpc" | "powerpc64" => {
-            // target_feature "msync" is unstable and available on rustc side since nightly-2025-03-04: https://github.com/rust-lang/rust/pull/137860
-            if !version.probe(87, 2025, 3, 3) || needs_target_feature_fallback(&version, None) {
-                let mut partword_quadword_atomics = false;
-                let mut msync = false;
-                // Note that `-C target-cpu=native` is currently ignored.
-                if let Some(cpu) = rustflags.target_cpu {
-                    // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L666
-                    if let Some(mut cpu_version) = cpu.strip_prefix("pwr") {
-                        cpu_version = cpu_version.strip_suffix('x').unwrap_or(cpu_version); // for pwr5x and pwr6x
-                        if let Ok(cpu_version) = cpu_version.parse::<u32>() {
-                            partword_quadword_atomics = cpu_version >= 8;
-                        }
-                    } else {
-                        if generated::POWERPC_PARTWORD_QUADWORD_ATOMICS_CPU.contains(&cpu) {
-                            partword_quadword_atomics = true;
-                        }
-                        if generated::POWERPC_MSYNC_CPU.contains(&cpu) {
-                            msync = true;
-                        }
+            let mut fence_keeps_reservation = false;
+            let mut partword_quadword_atomics = false;
+            let mut msync = false;
+            // Note that `-C target-cpu=native` is currently ignored.
+            if let Some(mut cpu) = rustflags.target_cpu {
+                // In the recent LLVM, "future" is based on pwr11 features,
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/PowerPC/PPC.td#L571
+                // but on the minimum external LLVM version of the oldest rustc version which we can use asm_experimental_arch
+                // on this target (see matrix.sh), "future" is based on pwr10 features.
+                // https://github.com/llvm/llvm-project/blob/llvmorg-12.0.0/llvm/lib/Target/PowerPC/PPC.td#L370
+                if cpu == "future" {
+                    cpu = "pwr10";
+                }
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L666
+                if let Some(mut cpu_version) = cpu.strip_prefix("pwr") {
+                    cpu_version = cpu_version.strip_suffix('x').unwrap_or(cpu_version); // for pwr5x and pwr6x
+                    if let Ok(cpu_version) = cpu_version.parse::<u32>() {
+                        partword_quadword_atomics = cpu_version >= 8;
+                        // POWER7 and later keep the reservation across the release fence:
+                        // https://github.com/llvm/llvm-project/pull/214867
+                        fence_keeps_reservation = cpu_version >= 7;
                     }
                 } else {
-                    // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L804
-                    // See also https://github.com/rust-lang/rust/issues/59932
-                    partword_quadword_atomics = target_arch == "powerpc64"
-                        && env::var("CARGO_CFG_TARGET_ENDIAN")
-                            .expect("CARGO_CFG_TARGET_ENDIAN not set")
-                            == "little";
-                    msync = target_arch == "powerpc"
-                        && (target.ends_with("spe")
-                            || env::var("CARGO_CFG_TARGET_ABI")
-                                .unwrap_or_default()
-                                .split(',')
-                                .any(|abi| abi == "spe"));
-                }
-                // power8 features: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L498
-                let mut partword_atomics = partword_quadword_atomics;
-                let mut quadword_atomics = partword_quadword_atomics;
-                for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L595
-                    match name {
-                        b"partword-atomics" => partword_atomics = enabled,
-                        b"quadword-atomics" => quadword_atomics = enabled,
-                        b"msync" => msync = enabled,
-                        _ => {}
+                    if generated::POWERPC_PARTWORD_QUADWORD_ATOMICS_CPU.contains(&cpu) {
+                        partword_quadword_atomics = true;
+                    }
+                    if generated::POWERPC_MSYNC_CPU.contains(&cpu) {
+                        msync = true;
+                    }
+                    if cpu == "ppc64le" {
+                        fence_keeps_reservation = true;
                     }
                 }
+            } else {
+                // powerpc64le is pwr8 by default https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L804
+                // See also https://github.com/rust-lang/rust/issues/59932
+                let ppc64le = target_arch == "powerpc64"
+                    && env::var("CARGO_CFG_TARGET_ENDIAN")
+                        .expect("CARGO_CFG_TARGET_ENDIAN not set")
+                        == "little";
+                partword_quadword_atomics = ppc64le;
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/base/aix.rs#L18
+                fence_keeps_reservation = ppc64le || target_os == "aix";
+                msync = target_arch == "powerpc"
+                    && (target.ends_with("spe")
+                        || env::var("CARGO_CFG_TARGET_ABI")
+                            .unwrap_or_default()
+                            .split(',')
+                            .any(|abi| abi == "spe"));
+            }
+            // power8 features: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/PowerPC/PPC.td#L498
+            let mut partword_atomics = partword_quadword_atomics;
+            let mut quadword_atomics = partword_quadword_atomics;
+            for &(enabled, name) in &rustflags.target_feature {
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L597
+                match name {
+                    b"partword-atomics" => partword_atomics = enabled,
+                    b"quadword-atomics" => quadword_atomics = enabled,
+                    b"msync" => msync = enabled,
+                    b"fence-keeps-reservation" => fence_keeps_reservation = enabled,
+                    _ => {}
+                }
+            }
+            // target_feature "msync" is unstable and available on rustc side since nightly-2025-03-04: https://github.com/rust-lang/rust/pull/137860
+            if !version.probe(87, 2025, 3, 3) || needs_target_feature_fallback(&version, None) {
                 // target_feature "partword-atomics"/"quadword-atomics" is unstable and available on rustc side since nightly-2024-09-28: https://github.com/rust-lang/rust/pull/130873
                 if !version.probe(83, 2024, 9, 27) || needs_target_feature_fallback(&version, None)
                 {
@@ -613,6 +636,9 @@ fn main() {
                 }
                 emit_target_feature_fallback("msync", msync);
             }
+            // As of Rust 1.100, target_feature "fence-keeps-reservation" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L597
+            emit_target_feature_fallback("fence-keeps-reservation", fence_keeps_reservation);
         }
         "s390x" => {
             let mut arch_version = 8; // LLVM's baseline (z10): https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZProcessors.td#L16-L17
@@ -637,13 +663,14 @@ fn main() {
             // arch9 (z196) features: https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/llvm/lib/Target/SystemZ/SystemZFeatures.td#L103
             let mut fast_serialization = arch_version >= 9;
             for &(enabled, name) in &rustflags.target_feature {
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L937
                 match name {
                     b"fast-serialization" => fast_serialization = enabled,
                     _ => {}
                 }
             }
-            // As of Rust 1.98, target_feature "fast-serialization" is not available on rustc side:
-            // https://github.com/rust-lang/rust/blob/1.98.0/compiler/rustc_target/src/target_features.rs#L898
+            // As of Rust 1.100, target_feature "fast-serialization" is not available on rustc side:
+            // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L937
             // bcr 14,0
             emit_target_feature_fallback("fast-serialization", fast_serialization);
         }
@@ -668,7 +695,7 @@ fn main() {
                     }
                 }
                 for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L904
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L916
                     match name {
                         b"lam-bh" => lam_bh = enabled,
                         b"lamcas" => lamcas = enabled,
@@ -703,10 +730,10 @@ fn main() {
                     }
                 }
             } else {
-                // https://github.com/rust-lang/rust/blob/1.94.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L19
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/sparc_unknown_linux_gnu.rs#L22
                 // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc3/clang/lib/Driver/ToolChains/Arch/Sparc.cpp#L169
                 v9 = is_linux_or_solaris;
-                // https://github.com/rust-lang/rust/blob/1.94.0/compiler/rustc_target/src/spec/targets/sparc_unknown_none_elf.rs#L12
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/sparc_unknown_none_elf.rs#L12
                 v7 = target == "sparc-unknown-none-elf";
             }
             // target_feature "leoncasa"/"v9" is unstable and available on rustc side since nightly-2024-11-11: https://github.com/rust-lang/rust/pull/132552
@@ -718,7 +745,7 @@ fn main() {
                         .split(',')
                         .any(|abi| abi == "v8plus");
                 for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L959
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L971
                     match name {
                         b"leoncasa" => leoncasa = enabled,
                         b"v9" => v9 = enabled,
@@ -747,7 +774,7 @@ fn main() {
                     _ => {}
                 }
             } else {
-                // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/mipsel_sony_psx.rs#L26
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/mipsel_sony_psx.rs#L27
                 // (old rustc uses target_env instead of target_os: https://github.com/rust-lang/rust/commit/111f2e8a39fce63c6daac7eae88023f1e87c15d4)
                 mips1 = target_arch == "mips"
                     && (target_os == "psx"
@@ -779,7 +806,7 @@ fn main() {
                         isa_68060 = true;
                     }
                 } else {
-                    // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L7
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/m68k_unknown_linux_gnu.rs#L7
                     isa_68020 = target_os == "linux";
                 }
                 for &(enabled, name) in &rustflags.target_feature {
@@ -798,7 +825,7 @@ fn main() {
                             }
                         };
                     }
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L967
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L986
                     match name {
                         b"isa-68060" => {
                             isa_68060 = enabled;
@@ -866,7 +893,7 @@ fn main() {
                 !version.probe(95, 2026, 2, 7) || needs_target_feature_fallback(&version, None);
             if needs_target_feature_fallback || llvm_missing_lowbytefirst {
                 for &(enabled, name) in &rustflags.target_feature {
-                    // https://github.com/rust-lang/rust/blob/eab115ea6d842276c6ad7b819e08297c8e7693f0/compiler/rustc_target/src/target_features.rs#L981
+                    // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/target_features.rs#L1000
                     match name {
                         b"tinyencoding" => tinyencoding = enabled,
                         b"rmw" => rmw = enabled,
@@ -889,7 +916,7 @@ fn main() {
                     no_ldex_stex = false;
                 }
             } else {
-                // https://github.com/rust-lang/rust/blob/1.90.0/compiler/rustc_target/src/spec/targets/csky_unknown_linux_gnuabiv2hf.rs#L20
+                // https://github.com/rust-lang/rust/blob/1.100.0/compiler/rustc_target/src/spec/targets/csky_unknown_linux_gnuabiv2hf.rs#L22
                 if target == "csky-unknown-linux-gnuabiv2hf" {
                     no_ldex_stex = false;
                 }
@@ -898,25 +925,24 @@ fn main() {
                 println!("cargo:rustc-cfg=atomic_maybe_uninit_no_ldex_stex");
             }
         }
-        // TODO(bpf): Enable once https://github.com/aya-rs/bpf-linker/pull/386 released.
-        // "bpf" => {
-        //     // atomic_fetch_{add,and,xor,or}, {,cmp}xchg{32_32,_64}: LLVM 17+ (17 is our min LLVM version) https://github.com/llvm/llvm-project/commit/d0d1431ab1c88dd2fb8c09ae28909da3fb5f3a57
-        //     // load_acquire, store_release: LLVM 21+ https://github.com/llvm/llvm-project/commit/17bfc00f7c4a424d7b5dc6da575865833701fd1a
-        //     let mut v4 = false;
-        //     if let Some(cpu) = rustflags.target_cpu {
-        //         // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/BPF/BPF.td
-        //         if let Some(cpu_version) = cpu.strip_prefix("v") {
-        //             if let Ok(cpu_version) = cpu_version.parse::<u32>() {
-        //                 if version.llvm >= 21 {
-        //                     v4 = cpu_version >= 4;
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     if v4 {
-        //         println!("cargo:rustc-cfg=atomic_maybe_uninit_v4");
-        //     }
-        // }
+        "bpf" => {
+            // atomic_fetch_{add,and,xor,or}, {,cmp}xchg{32_32,_64}: LLVM 17+ (17 is our min LLVM version) https://github.com/llvm/llvm-project/commit/d0d1431ab1c88dd2fb8c09ae28909da3fb5f3a57
+            // load_acquire, store_release: LLVM 21+ https://github.com/llvm/llvm-project/commit/17bfc00f7c4a424d7b5dc6da575865833701fd1a
+            let mut v4 = false;
+            if let Some(cpu) = rustflags.target_cpu {
+                // https://github.com/llvm/llvm-project/blob/llvmorg-23.1.0-rc1/llvm/lib/Target/BPF/BPF.td
+                if let Some(cpu_version) = cpu.strip_prefix("v") {
+                    if let Ok(cpu_version) = cpu_version.parse::<u32>() {
+                        if version.llvm >= 21 {
+                            v4 = cpu_version >= 4;
+                        }
+                    }
+                }
+            }
+            if v4 {
+                println!("cargo:rustc-cfg=atomic_maybe_uninit_v4");
+            }
+        }
         _ => {}
     }
 }
