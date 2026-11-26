@@ -12,6 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Work around LLVM bug causing SIGILL on Armv6+ with LLVM 20+. ([16871d0](https://github.com/taiki-e/atomic-maybe-uninit/commit/16871d0dd5794a064f47f42a0dd22c17ae024146))
+
 ## [0.3.22] - 2026-11-21
 
 - Support BPF (experimental). ([#37](https://github.com/taiki-e/atomic-maybe-uninit/pull/37), [4cb7587](https://github.com/taiki-e/atomic-maybe-uninit/commit/4cb75877392fd61ef66d63925a23eeccdce7b9da))
