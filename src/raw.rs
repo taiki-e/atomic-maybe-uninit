@@ -92,8 +92,8 @@ pub trait AtomicStore: Primitive {
     /// [read-only-memory]: core::sync::atomic#atomic-accesses-to-read-only-memory
     #[inline]
     unsafe fn atomic_store(dst: *mut MaybeUninit<Self>, val: MaybeUninit<Self>, order: Ordering) {
-        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        // Workaround LLVM bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_skip_black_box_workaround))]
         let val = core::hint::black_box(val);
         // SAFETY: the caller must uphold the safety contract.
         unsafe { Self::__atomic_store_impl(dst, val, order) }
@@ -146,8 +146,8 @@ pub trait AtomicSwap: AtomicLoad + AtomicStore {
         val: MaybeUninit<Self>,
         order: Ordering,
     ) -> MaybeUninit<Self> {
-        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        // Workaround LLVM bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_skip_black_box_workaround))]
         let val = core::hint::black_box(val);
         // SAFETY: the caller must uphold the safety contract.
         unsafe { Self::__atomic_swap_impl(dst, val, order) }
@@ -220,10 +220,10 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
         success: Ordering,
         failure: Ordering,
     ) -> (MaybeUninit<Self>, bool) {
-        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        // Workaround LLVM bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_skip_black_box_workaround))]
         let current = core::hint::black_box(current);
-        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        #[cfg(not(atomic_maybe_uninit_skip_black_box_workaround))]
         let new = core::hint::black_box(new);
         // SAFETY: the caller must uphold the safety contract.
         unsafe { Self::__atomic_compare_exchange_impl(dst, current, new, success, failure) }
@@ -286,10 +286,10 @@ pub trait AtomicCompareExchange: AtomicLoad + AtomicStore {
         success: Ordering,
         failure: Ordering,
     ) -> (MaybeUninit<Self>, bool) {
-        // Workaround LLVM pre-20 bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
-        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        // Workaround LLVM bug: https://github.com/rust-lang/rust/issues/129585#issuecomment-2360273081
+        #[cfg(not(atomic_maybe_uninit_skip_black_box_workaround))]
         let current = core::hint::black_box(current);
-        #[cfg(not(atomic_maybe_uninit_llvm_20_or_later))]
+        #[cfg(not(atomic_maybe_uninit_skip_black_box_workaround))]
         let new = core::hint::black_box(new);
         // SAFETY: the caller must uphold the safety contract.
         unsafe { Self::__atomic_compare_exchange_weak_impl(dst, current, new, success, failure) }

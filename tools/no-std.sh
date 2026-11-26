@@ -23,7 +23,7 @@ default_targets=(
   thumbv8m.main-none-eabi
   thumbv8m.main-none-eabihf
   # v6
-  # armv6-none-eabi # TODO(arm): Hang on 64-bit atomics test in release mode
+  armv6-none-eabi
   thumbv6-none-eabi
 
   # riscv32

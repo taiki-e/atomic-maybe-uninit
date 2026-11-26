@@ -52,7 +52,7 @@ fn main() {
         // Custom cfgs set by build script. Not public API.
         // grep -F 'cargo:rustc-cfg=' build.rs | grep -Ev '^ *//' | sed -E 's/^.*cargo:rustc-cfg=//; s/(=\\)?".*$//' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
         println!(
-            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_llvm_20_or_later,atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_ll_sc,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,atomic_maybe_uninit_v4)"
+            "cargo:rustc-check-cfg=cfg(atomic_maybe_uninit_skip_black_box_workaround,atomic_maybe_uninit_no_asm,atomic_maybe_uninit_no_cmpxchg,atomic_maybe_uninit_no_cmpxchg8b,atomic_maybe_uninit_no_const_mut_refs,atomic_maybe_uninit_no_diagnostic_namespace,atomic_maybe_uninit_no_ldex_stex,atomic_maybe_uninit_no_ll_sc,atomic_maybe_uninit_no_stbar,atomic_maybe_uninit_no_strict_provenance,atomic_maybe_uninit_no_sync,atomic_maybe_uninit_target_feature,atomic_maybe_uninit_unstable_asm_experimental_arch,atomic_maybe_uninit_v4)"
         );
         // TODO: handle multi-line emit_target_feature_fallback
         // grep -F 'emit_target_feature_fallback("' build.rs | grep -Ev '^ *//' | sed -E 's/^.*emit_target_feature_fallback\(//; s/",.*$/"/' | LC_ALL=C sort -u | tr '\n' ',' | sed -E 's/,$/\n/'
@@ -94,8 +94,9 @@ fn main() {
         println!("cargo:rustc-cfg=atomic_maybe_uninit_no_strict_provenance");
     }
 
-    if version_pass && version.llvm >= 20 {
-        println!("cargo:rustc-cfg=atomic_maybe_uninit_llvm_20_or_later");
+    // https://github.com/rust-lang/rust/issues/129585 for non-arm arch has been fixed in LLVM 20.
+    if version_pass && version.llvm >= 20 && target_arch != "arm" {
+        println!("cargo:rustc-cfg=atomic_maybe_uninit_skip_black_box_workaround");
     }
 
     match target_arch {

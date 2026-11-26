@@ -287,7 +287,7 @@
       "container": "debian:13-slim"
     },
     {
-      "rust": "nightly-2025-02-17",
+      "rust": "nightly",
       "target": "arm-unknown-linux-gnueabi"
     },
     {
@@ -297,7 +297,7 @@
       "container": "debian:13-slim"
     },
     {
-      "rust": "nightly-2025-02-17",
+      "rust": "nightly",
       "target": "armv7-unknown-linux-gnueabi"
     },
     {
@@ -321,7 +321,7 @@
       "os": "ubuntu-24.04-arm"
     },
     {
-      "rust": "nightly-2025-02-17",
+      "rust": "nightly",
       "target": "armv7-unknown-linux-gnueabihf"
     },
     {
@@ -345,7 +345,7 @@
       "os": "ubuntu-24.04-arm"
     },
     {
-      "rust": "nightly-2025-02-17",
+      "rust": "nightly",
       "target": "thumbv7neon-unknown-linux-gnueabihf"
     },
     {
@@ -354,7 +354,7 @@
       "os": "ubuntu-22.04"
     },
     {
-      "rust": "nightly-2025-02-17",
+      "rust": "nightly",
       "target": "armeb-unknown-linux-gnueabi",
       "os": "ubuntu-22.04"
     },

@@ -291,14 +291,6 @@ for target in "${targets[@]}"; do
           1.95) toolchain='' ;; # Handled in min stable toolchain
         esac
         ;;
-      armeb-unknown-linux-gnueabi)
-        case "${toolchain}" in
-          1.8[7-9] | 1.9[0-6]) toolchain='' ;; # SIGILL on QEMU with LLVM 20-22
-          # TODO(arm): SIGILL on QEMU with LLVM 20-22
-          stable | beta) toolchain='' ;;
-          nightly) toolchain=nightly-2025-02-17 ;;
-        esac
-        ;;
       hexagon-unknown-linux-musl)
         case "${toolchain}" in
           1.9[1-4]) toolchain='' ;; # "symbol 'fma' is already defined" error fixed in Rust 1.95 https://github.com/rust-lang/compiler-builtins/pull/1066
@@ -336,11 +328,6 @@ for target in "${targets[@]}"; do
     armeb-unknown-linux-gnueabi) ;;
     aarch64-unknown-linux-gnu | armv7*-linux-gnueabihf | thumbv7*-linux-gnueabihf | arm*-unknown-linux-gnueabi)
       toolchain=nightly
-      case "${target}" in
-        armv7*-linux-gnueabihf | thumbv7*-linux-gnueabihf | arm-unknown-linux-gnueabi | armv7-unknown-linux-gnueabi)
-          toolchain=nightly-2025-02-17 # TODO(arm): SIGILL on QEMU with LLVM 20-22
-          ;;
-      esac
       os=''
       container=''
       flags=''
